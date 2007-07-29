@@ -106,7 +106,7 @@ uses
   SysUtils;
 
 const
-  Version = 'UltraStar Deluxe V 1.00 RC1';
+  Version = 'UltraStar Deluxe V 1.00';
 
 var
   WndTitle: string;

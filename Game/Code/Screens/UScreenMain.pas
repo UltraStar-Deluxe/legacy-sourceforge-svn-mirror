@@ -25,7 +25,7 @@ type
 
 implementation
 
-uses Windows, UGraphic, UMain, UIni, UTexture, USongs, Textgl, opengl, ULanguage, UParty, UDLLManager, UScreenCredits, USkins;
+uses Windows, UGraphic, UMain, UIni, UTexture, USongs, Textgl, opengl, ULanguage, UParty, UDLLManager, UScreenCredits, USkins, ULog;
 
 
 function TScreenMain.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
@@ -62,11 +62,30 @@ begin
         begin
           if (SDL_ModState = KMOD_LALT) then
           begin
-            //Credits_Y := 600;
-            //Credits_Alpha := 0;
-            //Credits_Visible := True;
-            Music.PlayStart;
-            FadeTo(@ScreenCredits);
+            //If CreditsScreen is not Created -> Then Create
+            If (ScreenCredits = nil) then
+            begin
+              try
+                //Display White Loading Text
+                SetFontStyle(2); //Font: Outlined1
+                SetFontSize(12);
+                SetFontItalic(False);
+                SetFontPos (400 - glTextWidth ('Loading Credits ...')/2, 250); //Position
+                glColor4f(1,1,1,1);
+                glPrint('Loading Credits ...');
+                SwapBuffers;
+
+                ScreenCredits    :=       TScreenCredits.Create;
+              except
+                Log.LogError ('Couldn''t Create Credits Screen');
+              end;
+            end;
+
+            If (ScreenCredits <> nil) then
+            begin
+              Music.PlayStart;
+              FadeTo(@ScreenCredits);
+            end;
           end;
         end;
       SDLK_M:

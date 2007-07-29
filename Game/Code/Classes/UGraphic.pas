@@ -475,8 +475,9 @@ begin
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Stat Main', 3); Log.BenchmarkStart(3);
   ScreenStatDetail :=       TScreenStatDetail.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Stat Detail', 3); Log.BenchmarkStart(3);
-  ScreenCredits    :=       TScreenCredits.Create;
-  Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Credits', 3); Log.BenchmarkStart(3);
+  //Now Created when needed
+  //ScreenCredits    :=       TScreenCredits.Create;
+  //Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Credits', 3); Log.BenchmarkStart(3);
 
   end;
 
