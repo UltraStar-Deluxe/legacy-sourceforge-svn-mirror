@@ -170,6 +170,7 @@ begin
   deluxe_slidein := 0;
   Credits_Alpha := 0;
   Music.Open(soundpath + 'wome-credits-tune.mp3'); //danke kleinster liebster weeeetüüüüü!!
+  Music.SetVolume(100);  //Whiteshark, you hear me now? :P
   CTime:=0;
 //  setlength(CTime_hold,0);
 end;
