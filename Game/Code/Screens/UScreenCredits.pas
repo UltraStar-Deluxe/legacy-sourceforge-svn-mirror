@@ -69,8 +69,8 @@ const
   Funky_Text: AnsiString =
     'Grandma Deluxe has arrived! Thanks to Corvus5 for the massive work on UltraStar, Wome for the nice tune you´re hearing, '+
     'all the people who put massive effort and work in new songs (don´t forget UltraStar w/o songs would be nothing), ppl from '+
-    'irc helping us - eBandit and Gabari, scene ppl who really helped instead of compiling and running away. Greetings to DennisTheMenace for betatesting, '+
-    'Demoscene.tv, pouet.net, KakiArts, Sourceforge,..';
+    'irc helping us - eBandit and Gabari, scene ppl who really helped instead of compiling and running away. Thank for the translations to Jakob0 and Spearedge (Swedish), Pino (Dutch) and Canni (French). Greetings to DennisTheMenace for betatesting,  '+
+    'Demoscene.tv, KakiArts, Sourceforge,..';
 
 
   Timings: array[0..21] of Cardinal=(
