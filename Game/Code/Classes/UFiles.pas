@@ -2,7 +2,10 @@ unit UFiles;
 
 interface
 
-uses USongs, SysUtils, ULog, UMusic;
+uses USongs,
+     SysUtils,
+     ULog,
+     UMusic;
 
 procedure     InitializePaths; //Function sets All Absolute Paths eg. for Songs
 function    ReadTXTHeader(var Song: TSong): boolean; //Reads Standard TXT Header
@@ -129,11 +132,16 @@ end;
 //--------------------
 function ReadTXTHeader(var Song: TSong): boolean;
 var
-Line, Identifier, Value: String;
-Temp: word;
-Done: byte;
+  Line, Identifier, Value: String;
+  Temp: word;
+  Done: byte;
+  lWarnIfTagsNotFound : Boolean;
 begin
   Result := true;
+
+  lWarnIfTagsNotFound := ( lowercase( Song.Filename ) <> 'license.txt' ) AND
+                         ( lowercase( Song.Filename ) <> 'readme.txt'  ) ;
+
 
   //Read first Line
   ReadLn (SongFile, Line);
@@ -324,7 +332,12 @@ begin
     else
     begin
       Result := False;
-      Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.FileName);
+
+      if lWarnIfTagsNotFound then
+      begin
+        Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.FileName);
+      end;
+      
       break;
     end;
 
@@ -334,7 +347,8 @@ begin
   end;
 
   //Check if all Required Values are given
-  if (Done <> 15) then
+  if (Done <> 15)        AND
+     lWarnIfTagsNotFound then
   begin
     Result := False;
     if (Done and 8) = 0 then      //No BPM Flag
