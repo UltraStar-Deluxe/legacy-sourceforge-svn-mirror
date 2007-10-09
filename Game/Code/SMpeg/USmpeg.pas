@@ -1,7 +1,11 @@
 unit USmpeg;
 
 interface
-uses SDL, smpeg, OpenGL12, SysUtils, UIni;
+uses SDL,
+     smpeg,
+     OpenGL12,
+     SysUtils,
+     UIni;
 
 procedure OpenSmpeg(FileName: string);
 procedure SkipSmpeg(Time: single);

@@ -41,7 +41,9 @@ const
 implementation
 
 uses
-  SysUtils, zlportio, UTime;
+  SysUtils,
+  zlportio,
+  UTime;
 
 procedure TLCD.WriteCommand(B: Byte);
 // Wysylanie komend sterujacych

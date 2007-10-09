@@ -5,6 +5,40 @@ program UltraStar;
 {$R 'UltraStar.res' 'UltraStar.rc'}
 
 uses
+//------------------------------
+  //Includes - 3rd Party Libraries
+  //------------------------------
+  SDL          in 'lib\JEDI-SDLv1.0\SDL\Pas\SDL.pas',
+  moduleloader in 'lib\JEDI-SDLv1.0\SDL\Pas\moduleloader.pas',
+  sdlutils     in 'lib\JEDI-SDLv1.0\SDL\Pas\sdlutils.pas',
+  sdl_image    in 'lib\JEDI-SDLv1.0\SDL_Image\Pas\sdl_image.pas',
+  OpenGL12     in 'lib\JEDI-SDLv1.0\OpenGL\Pas\OpenGL12.pas',
+  sdl_ttf      in 'lib\JEDI-SDLv1.0\SDL_ttf\Pas\sdl_ttf.pas',
+  smpeg        in 'lib\JEDI-SDLv1.0\smpeg\Pas\smpeg.pas',
+
+
+  bass         in 'lib\bass\delphi\bass.pas',
+
+  PNGImage     in 'lib\PNGImage\PNGImage.pas',
+  PNGzLib      in 'lib\PNGImage\PNGzLib.pas',
+  pnglang      in 'lib\PNGImage\pnglang.pas',
+
+  midiout      in 'lib\midi\midiout.pas',
+  midiin       in 'lib\midi\midiin.pas',
+  Circbuf      in 'lib\midi\CIRCBUF.PAS',
+  MidiType     in 'lib\midi\MidiType.PAS',
+  MidiDefs     in 'lib\midi\MidiDefs.PAS',
+  MidiCons     in 'lib\midi\MidiCons.PAS',
+  MidiFile     in 'lib\midi\MidiFile.PAS',
+  Delphmcb     in 'lib\midi\Delphmcb.PAS',
+
+  zlportio     in 'lib\zlportio\zlportio.pas',
+  ddkint       in 'lib\zlportio\ddkint.pas',
+
+  SQLiteTable3 in 'lib\SQLite\SQLiteTable3.pas',
+  SQLite3      in 'lib\SQLite\SQLite3.pas',
+
+
   //------------------------------
   //Includes - Menu System
   //------------------------------
@@ -102,7 +136,6 @@ uses
   //Includes - Delphi
   //------------------------------
   Windows,
-  SDL,
   SysUtils;
 
 const
