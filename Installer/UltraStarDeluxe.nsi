@@ -52,7 +52,7 @@ var ICONS_GROUP
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "Setup.exe"
+OutFile "UltraStar-DX-1_01-SETUP.exe"
 InstallDir "$PROGRAMFILES\UltraStar Deluxe"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
