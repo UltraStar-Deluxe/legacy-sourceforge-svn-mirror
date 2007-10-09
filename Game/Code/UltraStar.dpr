@@ -139,7 +139,7 @@ uses
   SysUtils;
 
 const
-  Version = 'UltraStar Deluxe V 1.00';
+  Version = 'UltraStar Deluxe V 1.01';
 
 var
   WndTitle: string;
