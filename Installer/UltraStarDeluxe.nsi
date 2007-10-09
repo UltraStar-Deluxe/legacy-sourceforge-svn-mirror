@@ -172,7 +172,7 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR\Skins\Deluxe"
   File "..\Skins\Deluxe\Blue.ini"
   File "..\Skins\Deluxe\Summer.ini"
-  File "..\Skins\Deluxe\Thumbs.db"
+
   File "..\Skins\Deluxe\Winter.ini"
   File "..\Skins\Deluxe\[bg-load]blue.jpg"
   File "..\Skins\Deluxe\[bg-load]summer.jpg"
@@ -413,7 +413,7 @@ Section Uninstall
   Delete "$INSTDIR\Skins\Deluxe\[bg-load]summer.jpg"
   Delete "$INSTDIR\Skins\Deluxe\[bg-load]blue.jpg"
   Delete "$INSTDIR\Skins\Deluxe\Winter.ini"
-  Delete "$INSTDIR\Skins\Deluxe\Thumbs.db"
+
   Delete "$INSTDIR\Skins\Deluxe\Summer.ini"
   Delete "$INSTDIR\Skins\Deluxe\Blue.ini"
   Delete "$INSTDIR\Skins\Classic\[stat]mainBG3.jpg"
