@@ -1,3 +1,14 @@
+UltraStar Deluxe 1.01 (by Ultrastar Deluxe Team)
+-----------------------------
+Upd: Neue Sprachen hinzugefügt
+Upd: SDL Libary aktualisiert
+Upd: UsDx Installer als Download
+
+Fix: Girder support
+Fix: Lizenz des Demosongs stand als Fehler in der Error.log
+     (Errors für Dateien mit den Namen Readme.txt oder License.txt werden ignoriert)
+Fix: Auflösungs Fix um Ultrastar in Wine laufen zu lassen. (z.B. auf Linux)
+
 UltraStar Deluxe 1.00 (by Ultrastar Deluxe Team)
 -----------------------------
 

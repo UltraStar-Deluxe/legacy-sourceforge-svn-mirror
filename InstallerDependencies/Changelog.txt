@@ -1,3 +1,14 @@
+UltraStar Deluxe 1.01 (by Ultrastar Deluxe Team)
+-----------------------------
+Upd: New language files added
+Upd: Upgraded SDL Libary
+Upd: Offer Installer Download
+
+Fix: Girder support
+Fix: License file was mentioned in the error.log 
+     (There are no error reports for files named Readme.txt or License.txt)
+Fix: Resolution fix to support running in wine (e.g. on linux)
+
 UltraStar Deluxe 1.00 (by Ultrastar Deluxe Team)
 -----------------------------
 
