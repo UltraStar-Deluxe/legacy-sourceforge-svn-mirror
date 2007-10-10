@@ -3,7 +3,6 @@
 ; --------------------------------------------------------------
 
 !include "MUI.nsh"	; Include the macros for the Modern User Interface
-!include "ZipDLL.nsh"
 
 SetCompressor bzip2
 
@@ -63,7 +62,7 @@ SetCompressor bzip2
 ;!define MUI_FINISHPAGE_RUN_NOTCHECKED			; 
 ;!define MUI_FINISHPAGE_SHOWREADME .\documentation.pdf	;
 
-!define MUI_FINISHPAGE_LINK_LOCATION http://sourceforge.net/projects/ultrastardx
+!define MUI_FINISHPAGE_LINK_LOCATION http://www.ultrastardeluxe.org
 !define MUI_FINISHPAGE_NOREBOOTSUPPORT
 !define MUI_FINISHPAGE_TEXT_LARGE
 !define MUI_FINISHPAGE_TEXT "$(fp_text)"
@@ -430,7 +429,7 @@ Section $(sec1) Section1
 ;  CreateShortCut "$SMPROGRAMS.lnk" "$INSTDIR\Ultrastar.exe"
 ;  WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
   CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
-  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\Website.lnk" "http://ultrastardx.sourceforge.net/"
+  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\Website.lnk" "http://www.ultrastardeluxe.org/"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_uninstall).lnk" "$INSTDIR\Uninstall.exe"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_shortcut).lnk" "$INSTDIR\Ultrastar.exe"
 
@@ -463,15 +462,23 @@ Section /o $(sec2) Section2
   SetOutPath "$INSTDIR"
   CreateDirectory "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]"
   SetOutPath "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\"
+
+;  CreateDirectory "$INSTDIR\Songs\"
+;  SetOutPath "$INSTDIR\Songs\"
   
-  InetLoad::load "http://127.0.0.1/demosong.zip" "$EXEDIR\Songs\demosong.zip"
-  !insertmacro ZIPDLL_EXTRACT "$EXEDIR\Songs\demosong.zip" "$EXEDIR\Songs\"
+;  InetLoad::load "http://192.168.88.200/demosong.zip" "$INSTDIR\Songs\demosong.zip"
+;    Pop $0
+;    StrCmp $0 "OK" dlok
+;    MessageBox MB_OK|MB_ICONEXCLAMATION "Download Error, click OK to Continue" /SD IDOK
+;  dlok:
+
+;  ZipDLL::extractall "$INSTDIR\Songs\demosong.zip" "$INSTDIR\Songs"
   
-;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [BG].jpg"
-;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [CO].jpg"
-;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.ogg"
-;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.txt"
-;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\License.txt"
+  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [BG].jpg"
+  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [CO].jpg"
+  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.ogg"
+  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.txt"
+  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\License.txt"
 
 SectionEnd
 
@@ -553,8 +560,8 @@ LangString sm_uninstall ${LANG_ENGLISH} "Uninstall"
 LangString wp_title ${LANG_GERMAN} "Willkommen zur Installationsroutine von UltraStar Deluxe"	; Title String in Welcome Page
 LangString wp_title ${LANG_ENGLISH} "Welcome to the UltraStar Deluxe Setup Wizard"
 
-LangString wp_text ${LANG_GERMAN} "Dieser Assistent wird Sie durch die Installation von UltraStar Deluxe begleiten. UltraStar Deluxe ist ein kostenloses quelloffenes Karaokespiel, welches Singstar ähnelt. Diese Installationsroutine enthält den Bonus Song 'Dead Smiling Pirates - I 18' aus der CreativeCommons Datenbank, der optional installiert werden kann.\n\r\n\rDas UltraStar Deluxe Team wünscht viel Spaß\n\rProjekthomepage: http://sourceforge.net/projects/ultrastardx"
-LangString wp_text ${LANG_ENGLISH} "This wizard will guide you through the Installation of UltraStar Deluxe. UltraStar Deluxe is a free open source Karaoke game, which can be compared with Singstar. These Installation Wizard includes the bonus track 'Dead Smiling Pirates - I 18' from the CreativeCommons database and which can be installed seperatly.\n\r\n\rThe UltraStar Deluxe Team wishes you fun\n\rProject website: http://sourceforge.net/projects/ultrastardx"
+LangString wp_text ${LANG_GERMAN} "Dieser Assistent wird Sie durch die Installation von UltraStar Deluxe begleiten. UltraStar Deluxe ist ein kostenloses quelloffenes Karaokespiel, welches Singstar ähnelt. Diese Installationsroutine enthält den Bonus Song 'Dead Smiling Pirates - I 18' aus der CreativeCommons Datenbank, der optional installiert werden kann.\n\r\n\rDas UltraStar Deluxe Team wünscht viel Spaß\n\rProjekthomepage: http://www.ultrastardeluxe.org\n\rProject Forum: http://forum.ultrastardeluxe.org"
+LangString wp_text ${LANG_ENGLISH} "This wizard will guide you through the Installation of UltraStar Deluxe. UltraStar Deluxe is a free open source Karaoke game, which can be compared with Singstar. These Installation Wizard includes the bonus track 'Dead Smiling Pirates - I 18' from the CreativeCommons database and which can be installed seperatly.\n\r\n\rThe UltraStar Deluxe Team wishes you fun\n\rProject website: http://www.ultrastardeluxe.org\n\rProject Forum: http://forum.ultrastardeluxe.org"
 
 LangString fp_showreadme ${LANG_GERMAN} "Dokumentation ansehen (PDF)"	; "Show Readme" String in Finish Page
 LangString fp_showreadme ${LANG_ENGLISH} "See documentation (PDF)"
