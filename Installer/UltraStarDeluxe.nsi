@@ -3,6 +3,7 @@
 ; --------------------------------------------------------------
 
 !include "MUI.nsh"	; Include the macros for the Modern User Interface
+!include "ZipDLL.nsh"
 
 SetCompressor bzip2
 
@@ -20,8 +21,8 @@ SetCompressor bzip2
 
 !define icon_inst ".\ustar.ico"		; Icon for Installation
 !define icon_uninst ".\ustar.ico"	; Icon for Uninstallation
-!define bmp_header ".\header.png"	; Bitmap of the Installation Header (Size: 150x57 px)
-!define bmp_side ".\left-164x314.png"		; Bitmap on the left side of Welcome & Finish Page (Size: 164x314 px)
+!define bmp_header ".\header.bmp"	; Bitmap of the Installation Header (Size: 150x57 px)
+!define bmp_side ".\left-164x314.bmp"		; Bitmap on the left side of Welcome & Finish Page (Size: 164x314 px)
 !define mui_ini ".\ioSpecial.ini"	; Installation Options for Welcome & Finish Page
 !define license_bgcolor "FFFFFF"	; RGB Background Color for Licence agreement
 !define bmp_check ".\modern.bmp"	; Bitmap of Checks at Components Selection Page
@@ -463,11 +464,14 @@ Section /o $(sec2) Section2
   CreateDirectory "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]"
   SetOutPath "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\"
   
-  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [BG].jpg"
-  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [CO].jpg"
-  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.ogg"
-  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.txt"
-  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\License.txt"
+  InetLoad::load "http://127.0.0.1/demosong.zip" "$EXEDIR\Songs\demosong.zip"
+  !insertmacro ZIPDLL_EXTRACT "$EXEDIR\Songs\demosong.zip" "$EXEDIR\Songs\"
+  
+;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [BG].jpg"
+;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [CO].jpg"
+;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.ogg"
+;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.txt"
+;  File "..\Songs\Dead Smiling Pirates - I 18 [DEMO]\License.txt"
 
 SectionEnd
 
