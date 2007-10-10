@@ -347,20 +347,22 @@ begin
   end;
 
   //Check if all Required Values are given
-  if (Done <> 15)        AND
-     lWarnIfTagsNotFound then
+  if (Done <> 15) then
   begin
     Result := False;
-    if (Done and 8) = 0 then      //No BPM Flag
-    Log.LogError('BPM Tag Missing: ' + Song.FileName)
-    else if (Done and 4) = 0 then //No MP3 Flag
-    Log.LogError('MP3 Tag/File Missing: ' + Song.FileName)
-    else if (Done and 2) = 0 then //No Artist Flag
-    Log.LogError('Artist Tag Missing: ' + Song.FileName)
-    else if (Done and 1) = 0 then //No Title Flag
-    Log.LogError('Title Tag Missing: ' + Song.FileName)
-    else //unknown Error
-    Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.FileName);
+    If lWarnIfTagsNotFound then
+    begin
+      if (Done and 8) = 0 then      //No BPM Flag
+       Log.LogError('BPM Tag Missing: ' + Song.FileName)
+      else if (Done and 4) = 0 then //No MP3 Flag
+        Log.LogError('MP3 Tag/File Missing: ' + Song.FileName)
+      else if (Done and 2) = 0 then //No Artist Flag
+        Log.LogError('Artist Tag Missing: ' + Song.FileName)
+      else if (Done and 1) = 0 then //No Title Flag
+        Log.LogError('Title Tag Missing: ' + Song.FileName)
+      else //unknown Error
+        Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.FileName);
+    end;
   end;
 
 end;
