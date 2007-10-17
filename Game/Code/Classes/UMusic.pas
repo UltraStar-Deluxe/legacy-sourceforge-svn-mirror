@@ -219,7 +219,8 @@ begin
   Loop := false;
   fHWND := AllocateHWND( nil);
 
-  if not BASS_Init(1, 44100, 0, fHWND, nil) then begin
+  if BASS_Init(1, 44100, 0, fHWND, nil) = false then 
+  begin
     Application.MessageBox ('Could not initialize BASS', 'Error');
     Exit;
   end;
