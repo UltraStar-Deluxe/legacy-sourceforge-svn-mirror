@@ -149,45 +149,9 @@ var
   PP:   integer;  // another player variable
   S:    string;
   I:    integer;
-  Lev:  real;
   Skip: integer;
   V:    array[1..6] of boolean; // visibility array
-  MaxH: real; // maximum height of score bar
-  Wsp:  real;
 begin
-{  CountSkipTimeSet;
-
-  Animation := 0;
-  Fadeout := false;
-
-  Text[1].Text := AktSong.Artist + ' - ' + AktSong.Title;
-  Text[2].Text := '  ' + IntToStr((Round(Gracz[0].Punkty) div 10) * 10) + ' points';
-
-  Static[0].Texture.X := -2000;
-  Static[1].Texture.X := -2000;
-  Static[2].Texture.X := -2000;
-  Static[3].Texture.X := -2000;
-  Static[4].Texture.X := -2000;
-  Static[5].Texture.X := -2000;
-  Static[6].Texture.X := -2000;
-  Static[7].Texture.X := -2000;
-
-  Text[0].X := -2000;
-  Text[1].X := -2000;
-  Text[2].X := -2000;
-  Text[3].X := -2000;
-
-
-  case (Round(Gracz[0].Punkty) div 10) * 10 of
-    0..1000:        Text[3].Text := '  Tone Deaf';
-    2010..4000:     Text[3].Text := '  Amateur';
-    4010..6000:     Text[3].Text := '  Rising Star';
-    6010..8000:     Text[3].Text := '  Lead Singer';
-    8010..9000:     Text[3].Text := '  Hit Artist';
-    9010..10000:    Text[3].Text := '  Superstar';
-  end;
-
-  Music.PlayShuffle;}
 
   // Singstar
   Fadeout := false;
@@ -254,100 +218,17 @@ begin
   end;
 
   if PlayersPlay <= 3 then begin // only for 1 screen mode
-  for P := 0 to PlayersPlay-1 do begin
-    case PlayersPlay of
-      1:  PP := 1;
-      2:  PP := P + 2;
-      3:  PP := P + 4;
-    end;
-    //PP := 1;
+    for P := 0 to PlayersPlay-1 do begin
+      case PlayersPlay of
+        1:  PP := 1;
+        2:  PP := P + 2;
+        3:  PP := P + 4;
+      end;
 
-    Text[TextName[PP]].Text := Ini.Name[P];
+      //Replaced this whole thing with one Procedure call
+      FillPlayer(PP, P);
 
-    {{$IFDEF TRANSLATE}
-    case (Player[P].ScoreTotalI) of
-      0..2000:        Text[TextScore[PP]].Text := Language.Translate('SING_SCORE_TONE_DEAF');
-      2010..4000:     Text[TextScore[PP]].Text := Language.Translate('SING_SCORE_AMATEUR');
-      4010..6000:     Text[TextScore[PP]].Text := Language.Translate('SING_SCORE_RISING_STAR');
-      6010..8000:     Text[TextScore[PP]].Text := Language.Translate('SING_SCORE_LEAD_SINGER');
-      8010..9000:     Text[TextScore[PP]].Text := Language.Translate('SING_SCORE_HIT_ARTIST');
-      9010..9800:     Text[TextScore[PP]].Text := Language.Translate('SING_SCORE_SUPERSTAR');
-      9810..10000:    Text[TextScore[PP]].Text := Language.Translate('SING_SCORE_ULTRASTAR');
-    end;
-    {{$ELSE}{
-    case (Player[P].ScoreTotalI) of
-      0..2000:        Text[TextScore[PP]].Text := 'Tone Deaf';
-      2010..4000:     Text[TextScore[PP]].Text := 'Amateur';
-      4010..6000:     Text[TextScore[PP]].Text := 'Rising Star';
-      6010..8000:     Text[TextScore[PP]].Text := 'Lead Singer';
-      8010..9000:     Text[TextScore[PP]].Text := 'Hit Artist';
-      9010..9800:     Text[TextScore[PP]].Text := 'Superstar';
-      9810..10000:    Text[TextScore[PP]].Text := 'Ultrastar';
-    end;
-    {$ENDIF}
-
-    S := IntToStr(Player[P].ScoreI);
-    while (Length(S)<4) do S := '0' + S;
-    Text[TextNotesScore[PP]].Text := S;
-
-    S := IntToStr(Player[P].ScoreLineI);
-    while (Length(S)<4) do S := '0' + S;
-    Text[TextLineBonusScore[PP]].Text := S;
-
-    S := IntToStr(Player[P].ScoreGoldenI);
-    while (Length(S)<4) do S := '0' + S;
-    Text[TextGoldenNotesScore[PP]].Text := S;
-
-    S := IntToStr(Player[P].ScoreTotalI);
-    while (Length(S)<5) do S := '0' + S;
-    Text[TextTotalScore[PP]].Text := S;
-
-    // Level bar length
-{    Lev := ((Round(Player[P].Punkty) div 10) * 10) / 10000;
-    Static[StaticLevel[PP]].Texture.H := Round(Static[StaticBackLevel[PP]].Texture.H * Lev);
-    Static[StaticLevel[PP]].Texture.Y := Static[StaticBackLevel[PP]].Texture.Y + Static[StaticBackLevel[PP]].Texture.H  - Static[StaticLevel[PP]].Texture.H;
-    Static[StaticLevelRound[PP]].Texture.Y := Static[StaticLevel[PP]].Texture.Y - Static[StaticLevelRound[PP]].Texture.H;}
-    // doesn't align too much... (to fix)
-    // hint: play with wrapping textures
-    // resolution: setting TexY1 and TexY2 to 0.1 and 0.9
-
-    Lev := Player[P].ScoreTotalI / 10000;
-    MaxH := Static[StaticBackLevel[PP]].Texture.H + Static[StaticBackLevelRound[PP]].Texture.H / 2;
-
-    // developer note (Polish):
-    // w sumie np. 120 pix
-    // ten static moze miec 100 pix
-    // wlacza sie od 20 pix i rosnie do 120 pix
-    // wiec wysokosc = wyznaczona ilosc - 20
-    // nie moze byc mniejsze od 0
-    // Lev * MaxH = total number of pixels to draw
-    Static[StaticLevel[PP]].Visible := true;
-    Static[StaticLevel[PP]].Texture.H := Lev * MaxH - Static[StaticBackLevelRound[PP]].Texture.H / 2;
-    if Static[StaticLevel[PP]].Texture.H < 0 then Static[StaticLevel[PP]].Visible := false;
-
-    // Y doesn't change and depend on the back texture coordinate
-    Static[StaticLevel[PP]].Texture.Y := Static[StaticBackLevel[PP]].Texture.Y + Static[StaticBackLevel[PP]].Texture.H  - Static[StaticLevel[PP]].Texture.H;
-
-    // we modify LevelRound texture by changing it's Y. TexY1 and TexY2 change when the height to draw is lower than 20
-    if Lev * MaxH < Static[StaticBackLevelRound[PP]].Texture.H / 2 then begin
-      // when it's lower than 20 => we move TexY1 and TexY2 higher to show only part of this texture
-      Static[StaticLevelRound[PP]].Texture.Y := Static[StaticBackLevel[PP]].Texture.Y + Static[StaticBackLevel[PP]].Texture.H - Static[StaticBackLevelRound[PP]].Texture.H;
-      // - 0.25 when points = 0
-      // - 0 wnen there are more points
-      // if Lev * MaxH = Static[StaticBackLevelRound[PP]].Texture.H / 2) then we do not change it
-      // if Lev * MaxH = 0 then we substract 0.25
-      // we substract (0.25 - 0.25 * (Lev * MaxH)/Static[StaticBackLevelRound[PP]].Texture.H / 2)
-      Wsp := Lev * MaxH / (Static[StaticBackLevelRound[PP]].Texture.H / 2);
-      Static[StaticLevelRound[PP]].Texture.TexY1 := Static[StaticBackLevelRound[PP]].Texture.TexY1 - 0.25 + 0.25 * Wsp;
-      Static[StaticLevelRound[PP]].Texture.TexY2 := Static[StaticBackLevelRound[PP]].Texture.TexY2 - 0.25 + 0.25 * Wsp;
-    end else begin
-      // when it's higher or equal 20 => full texture is being shown
-      Static[StaticLevelRound[PP]].Texture.TexY1 := Static[StaticBackLevelRound[PP]].Texture.TexY1;
-      Static[StaticLevelRound[PP]].Texture.TexY2 := Static[StaticBackLevelRound[PP]].Texture.TexY2;
-      Static[StaticLevelRound[PP]].Texture.Y := Static[StaticLevel[PP]].Texture.Y - Static[StaticBackLevelRound[PP]].Texture.H;
-    end;
-
-  end; // for
+    end; // for
   end; // if
 
   LCD.HideCursor;
@@ -369,114 +250,6 @@ var
   P:      integer;
   C:      integer;
 begin
-  // star animation
-{  Animation := Animation + TimeSkip*1000;
-
-  // move right
-  Min := 0; Max := 500;
-  if (Animation >= Min) and (Animation < Max) then begin
-    Wsp := (Animation - Min) / (Max - Min);
-    Wsp2 := 1 - Wsp;
-
-    Static[0].Texture.X := 400 + Wsp2 * 50; // prawa mala
-    Static[0].Texture.Y := 150 - Wsp2 * 500;
-    Static[1].Texture.X := -50 - Wsp2 * 500; // lewa mala
-    Static[1].Texture.Y := 200 + Wsp2 * 50;
-    Static[2].Texture.X := 100 - Wsp2 * 200;  // gorna w prawo
-    Static[2].Texture.Y := 80 - Wsp2 * 200;
-    Static[3].Texture.X := -280 - Wsp2 * 1000; // lewa wieksza gorna
-    Static[3].Texture.Y := 90;
-
-
-    Static[4].Texture.X := -1200 + Wsp * 1000;
-    Text[0].X := Static[4].Texture.X + 430;
-  end;
-
-  // slowly move right
-  Min := 500; Max := 4100;
-  if (Animation >= Min) and (Animation < Max) then begin
-    Wsp := (Animation - Min) / (Max - Min);
-
-    Static[0].Texture.X := 400 - Wsp * 10; // prawa mala
-    Static[0].Texture.Y := 150 + Wsp * 50;
-    Static[1].Texture.X := -50 + Wsp * 50; // lewa mala
-    Static[1].Texture.Y := 200;
-    Static[2].Texture.X := 100 + Wsp * 50;  // gorna w prawo
-    Static[2].Texture.Y := 80 + Wsp * 30;
-    Static[3].Texture.X := -280 + Wsp * 200; // lewa wieksza gorna
-    Static[3].Texture.Y := 90;
-
-    Static[4].Texture.X := -200 + Wsp * 150; // duza glowna
-    Text[0].X := Static[4].Texture.X + 430;
-  end;
-
-  // fast move right
-  Min := 4100; Max := 4400;
-  if (Animation >= Min) and (Animation < Max) then begin
-    Wsp := (Animation - Min) / (Max - Min);
-    Wsp2 := 1 - Wsp;
-
-    Static[0].Texture.X := 390 - Wsp * 200; // prawa mala
-    Static[0].Texture.Y := 200 + Wsp * 1000;
-    Static[1].Texture.X := 0 + Wsp * 1000; // lewa mala
-    Static[1].Texture.Y := 200;
-    Static[2].Texture.X := 150 + Wsp * 1000;  // gorna w prawo
-    Static[2].Texture.Y := 110 + Wsp * 600;
-    Static[3].Texture.X := -80 + Wsp * 2000; // lewa wieksza gorna
-    Static[3].Texture.Y := 90;
-
-    Static[4].Texture.X := -50 + Wsp * 2000;
-    Text[0].X := Static[4].Texture.X + 430;
-
-    Static[7].Texture.X := 100 + Wsp2 * 3000;
-    Text[1].X := Static[7].Texture.X + 230; // 300
-    Text[1].Y := Static[7].Texture.Y + 140; // 120 Sh
-
-    Text[2].X := Static[7].Texture.X + 250;
-    Text[2].Y := Static[7].Texture.Y - 250;
-    Text[3].X := Static[7].Texture.X + 250;
-    Text[3].Y := Static[7].Texture.Y - 200;
-  end;
-
-  // last arrow
-  Min := 4400; Max := 8000;
-  if (Animation >= Min) and (Animation < Max) then begin
-    Wsp := (Animation - Min) / (Max - Min);
-
-    Static[7].Texture.X := 100 - Wsp * 100;
-    Text[1].X := Static[7].Texture.X + 230; // 300
-    Text[1].Y := Static[7].Texture.Y + 140; // 120
-
-    Text[2].X := Static[7].Texture.X + 250;
-    Text[2].Y := Static[7].Texture.Y - 250;
-    Text[3].X := Static[7].Texture.X + 250;
-    Text[3].Y := Static[7].Texture.Y - 200;
-  end;
-
-  // fade last arrow to left
-  Min := 8000; Max := 8300;
-  if (Animation >= Min) and (Animation < Max) then begin
-    Wsp := (Animation - Min) / (Max - Min);
-
-    Static[7].Texture.X := 0 - Wsp * 3000;
-    Static[7].Texture.Y := 340 - Wsp * 50;
-    Text[1].X := Static[7].Texture.X + 230; // 300 Sh
-    Text[1].Y := Static[7].Texture.Y + 140; // 120 Sh
-
-    Text[2].X := Static[7].Texture.X + 250;
-    Text[2].Y := Static[7].Texture.Y - 250;
-    Text[3].X := Static[7].Texture.X + 250;
-    Text[3].Y := Static[7].Texture.Y - 200;
-  end;
-
-  Min := 8300;
-  if (Animation >= Min) and (not Fadeout) then begin
-    Music.StopShuffle;
-    FadeTo(@ScreenSong);
-    Fadeout := true;
-  end;}
-
-
   // 0.5.0: try also use 4 players screen with nicks
   if PlayersPlay = 4 then begin
     for Item := 2 to 3 do begin
@@ -496,22 +269,6 @@ begin
 
       FillPlayer(Item, P);
 
-{      if ScreenAct = 1 then begin
-        LoadColor(
-          Static[StaticBoxLightest[Item]].Texture.ColR,
-          Static[StaticBoxLightest[Item]].Texture.ColG,
-          Static[StaticBoxLightest[Item]].Texture.ColB,
-          'P1Dark');
-      end;
-
-      if ScreenAct = 2 then begin
-        LoadColor(
-          Static[StaticBoxLightest[Item]].Texture.ColR,
-          Static[StaticBoxLightest[Item]].Texture.ColG,
-          Static[StaticBoxLightest[Item]].Texture.ColB,
-          'P4Dark');
-      end;}
-
     end;
   end;
 
@@ -521,31 +278,79 @@ end;
 procedure TScreenScore.FillPlayer(Item, P: integer);
 var
   S:    string;
+  Lev:  real;
+  MaxH: real; // maximum height of score bar
+  Wsp:  real;
 begin
   Text[TextName[Item]].Text := Ini.Name[P];
 
-  S := IntToStr((Round(Player[P].Score) div 10) * 10);
+  case (Player[P].ScoreTotalI) of
+    0..2000:        Text[TextScore[Item]].Text := Language.Translate('SING_SCORE_TONE_DEAF');
+    2010..4000:     Text[TextScore[Item]].Text := Language.Translate('SING_SCORE_AMATEUR');
+    4010..6000:     Text[TextScore[Item]].Text := Language.Translate('SING_SCORE_RISING_STAR');
+    6010..8000:     Text[TextScore[Item]].Text := Language.Translate('SING_SCORE_LEAD_SINGER');
+    8010..9000:     Text[TextScore[Item]].Text := Language.Translate('SING_SCORE_HIT_ARTIST');
+    9010..9800:     Text[TextScore[Item]].Text := Language.Translate('SING_SCORE_SUPERSTAR');
+    9810..10000:    Text[TextScore[Item]].Text := Language.Translate('SING_SCORE_ULTRASTAR');
+  end;
+
+
+  S := IntToStr(Player[P].ScoreI);
   while (Length(S)<4) do S := '0' + S;
-  Text[TextNotesScore[Item]].Text := S;
+    Text[TextNotesScore[Item]].Text := S;
 
-//  while (Length(S)<5) do S := '0' + S;
-//  Text[TextTotalScore[Item]].Text := S;
-
-//fixed: line bonus and golden notes don't show up,
-//       another bug: total score was shown without added golden-, linebonus
-    S := IntToStr(Player[P].ScoreTotalI);
-    while (Length(S)<5) do S := '0' + S;
-    Text[TextTotalScore[Item]].Text := S;
-
-    S := IntToStr(Player[P].ScoreLineI);
-    while (Length(S)<4) do S := '0' + S;
+  S := IntToStr(Player[P].ScoreLineI);
+  while (Length(S)<4) do S := '0' + S;
     Text[TextLineBonusScore[Item]].Text := S;
 
-    S := IntToStr(Player[P].ScoreGoldenI);
-    while (Length(S)<4) do S := '0' + S;
+  S := IntToStr(Player[P].ScoreGoldenI);
+  while (Length(S)<4) do S := '0' + S;
     Text[TextGoldenNotesScore[Item]].Text := S;
-//end of fix
 
+  S := IntToStr(Player[P].ScoreTotalI);
+  while (Length(S)<5) do S := '0' + S;
+    Text[TextTotalScore[Item]].Text := S;
+
+  // Level bar length
+
+
+  Lev := Player[P].ScoreTotalI / 10000;
+  MaxH := Static[StaticBackLevel[Item]].Texture.H + Static[StaticBackLevelRound[Item]].Texture.H / 2;
+
+  // developer note (Polish):
+  // w sumie np. 120 pix
+  // ten static moze miec 100 pix
+  // wlacza sie od 20 pix i rosnie do 120 pix
+  // wiec wysokosc = wyznaczona ilosc - 20
+  // nie moze byc mniejsze od 0
+  // Lev * MaxH = total number of pixels to draw
+  Static[StaticLevel[Item]].Visible := true;
+  Static[StaticLevel[Item]].Texture.H := Lev * MaxH - Static[StaticBackLevelRound[Item]].Texture.H / 2;
+  if Static[StaticLevel[Item]].Texture.H < 0 then Static[StaticLevel[Item]].Visible := false;
+
+  // Y doesn't change and depend on the back texture coordinate
+  Static[StaticLevel[Item]].Texture.Y := Static[StaticBackLevel[Item]].Texture.Y + Static[StaticBackLevel[Item]].Texture.H  - Static[StaticLevel[Item]].Texture.H;
+
+  // we modify LevelRound texture by changing it's Y. TexY1 and TexY2 change when the height to draw is lower than 20
+  if Lev * MaxH < Static[StaticBackLevelRound[Item]].Texture.H / 2 then begin
+    // when it's lower than 20 => we move TexY1 and TexY2 higher to show only part of this texture
+    Static[StaticLevelRound[Item]].Texture.Y := Static[StaticBackLevel[Item]].Texture.Y + Static[StaticBackLevel[Item]].Texture.H - Static[StaticBackLevelRound[Item]].Texture.H;
+    // - 0.25 when points = 0
+    // - 0 wnen there are more points
+    // if Lev * MaxH = Static[StaticBackLevelRound[Item]].Texture.H / 2) then we do not change it
+    // if Lev * MaxH = 0 then we substract 0.25
+    // we substract (0.25 - 0.25 * (Lev * MaxH)/Static[StaticBackLevelRound[Item]].Texture.H / 2)
+    Wsp := Lev * MaxH / (Static[StaticBackLevelRound[Item]].Texture.H / 2);
+    Static[StaticLevelRound[Item]].Texture.TexY1 := Static[StaticBackLevelRound[Item]].Texture.TexY1 - 0.25 + 0.25 * Wsp;
+    Static[StaticLevelRound[Item]].Texture.TexY2 := Static[StaticBackLevelRound[Item]].Texture.TexY2 - 0.25 + 0.25 * Wsp;
+  end else begin
+    // when it's higher or equal 20 => full texture is being shown
+    Static[StaticLevelRound[Item]].Texture.TexY1 := Static[StaticBackLevelRound[Item]].Texture.TexY1;
+    Static[StaticLevelRound[Item]].Texture.TexY2 := Static[StaticBackLevelRound[Item]].Texture.TexY2;
+    Static[StaticLevelRound[Item]].Texture.Y := Static[StaticLevel[Item]].Texture.Y - Static[StaticBackLevelRound[Item]].Texture.H;
+  end;
+
+  //Load Colors of Player Buttons and Nicks
   LoadColor(
     Text[TextName[Item]].ColR,
     Text[TextName[Item]].ColG,
@@ -569,6 +374,11 @@ begin
     Static[StaticBoxDark[Item]].Texture.ColG,
     Static[StaticBoxDark[Item]].Texture.ColB,
     'P' + IntToStr(P+1) + 'Dark');
+
+  {StaticBackLevel[Item]
+  StaticLevelRound[Item]
+  and another static has to be colored here to.
+  S/o please do this ^^}
 end;
 
 end.
