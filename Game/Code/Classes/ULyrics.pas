@@ -70,6 +70,7 @@ type
       property FontStyle: integer write SetFStyle;
       procedure AddWord(Text: string);
       procedure AddCzesc(NrCzesci: integer);
+      procedure ChangeCurText(Text: String);
 
       function SelectedLetter: integer;  // LCD
       function SelectedLength: integer;  // LCD
@@ -378,6 +379,11 @@ end;
 function TLyric.SelectedLength: integer;  // LCD
 begin
   Result := Length(Word[SelectedI].Text);
+end;
+
+procedure TLyric.ChangeCurText(Text: String);
+begin
+  Word[Selected].Text := Text;
 end;
 
 end.

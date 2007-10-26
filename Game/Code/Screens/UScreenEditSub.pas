@@ -574,15 +574,19 @@ begin
           // Exit Text Edit Mode
           TextEditMode := false;
         end;
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
+      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL, SDLK_RIGHTBRACKET, SDLK_HASH:
         begin
           Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst :=
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst + chr(ScanCode);
+            
+          Lyric.ChangeCurText(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst);
         end;
       SDLK_BACKSPACE:
         begin
           Delete(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst,
             Length(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst), 1);
+
+          Lyric.ChangeCurText(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst);
         end;
       SDLK_RIGHT:
         begin
