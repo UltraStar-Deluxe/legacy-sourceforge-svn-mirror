@@ -203,7 +203,7 @@ begin
           end;
           glViewPort((S-1) * ScreenW div Screens, 0, ScreenW div Screens, ScreenH);
           // blackscreen-hack
-          if not BlackScreen then
+          if (not BlackScreen) AND (S = 1) then
             NextScreen.onShow;
           lastTime:=GetTickCount;
           if (S=2) or (Screens = 1) then
@@ -252,7 +252,7 @@ begin
       end
       else
         // blackscreen hack
-        if not BlackScreen then
+        if (not BlackScreen) AND (S = 1) then
           NextScreen.OnShow;
 
 

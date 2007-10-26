@@ -83,12 +83,10 @@ var
 begin
   Fadeout := false;
 
-  //ReadScore(AktSong);
+  PMax := PlayersPlay - 1;
 
-  PMax := Ini.Players;
-  if Ini.Players = 4 then Ini.Players := 5;
   for I := 0 to PMax do
-    DataBase.AddScore(AktSong, Ini.Difficulty, Ini.Name[I], Round(Player[I].ScoreTotalI));
+    DataBase.AddScore(AktSong, Ini.Difficulty, Ini.Name[I], Player[I].ScoreTotalI);
 
   DataBase.WriteScore(AktSong);
   DataBase.ReadScore(AktSong);
