@@ -291,6 +291,7 @@ begin
         begin
           if SDL_ModState = 0 then begin
             // Play Sentence
+            PlaySentenceMidi := false;
             Click := true;
             Music.Stop;
             R := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
@@ -331,17 +332,50 @@ begin
 
       SDLK_SPACE:
         begin
-          // Play Sentence
-          PlaySentenceMidi := false; // stop midi
-          PlaySentence := true;
-          Click := false;
-          Music.Stop;
-          Music.MoveTo(GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start));
-          PlayStopTime := (GetTimeFromBeat(
+          //Thx to f1fth_freed0m for his One Note Midi Playback
+          if SDL_ModState = KMOD_LSHIFT then begin //Play One Notes Midi [Shift + Space]
+            PlaySentenceMidi := true;
+
+            MidiTime := USTime.GetTime;
+            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
+            MidiStop := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
+            LastClick := -100;
+          end
+
+          else if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL then begin
+            //Play One Notes Midi + MP3 [CTRL + Shift + Space]
+            PlaySentenceMidi := true;
+            MidiTime := USTime.GetTime;
+            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
+            MidiStop := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
+            LastClick := -100;
+
+            PlaySentence := true;
+            Click := true;
+            Music.Stop;
+            Music.MoveTo(GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start));
+            PlayStopTime := (GetTimeFromBeat(
+                             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start +
+                             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc));
+            Music.Play;
+            LastClick := -100;
+          end
+
+          Else
+          begin
+            // Play One Notes MP3 [Space]
+            PlaySentenceMidi := false; // stop midi
+            PlaySentence := true;
+            Click := false;
+            Music.Stop;
+
+            Music.MoveTo(GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start));
+            PlayStopTime := (GetTimeFromBeat(
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start +
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc));
-          Music.Play;
-          LastClick := -100;
+            Music.Play;
+            LastClick := -100;
+          end;
         end;
 
       SDLK_RETURN:
@@ -521,9 +555,8 @@ begin
       SDLK_G:
         begin
           case Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc of
-            0: Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 2;
-            1: Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 2;
-            2: Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 1;
+            0, 1: Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 2;
+            2:    Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 1;
           end; // case
           Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Freestyle := False;
         end;
