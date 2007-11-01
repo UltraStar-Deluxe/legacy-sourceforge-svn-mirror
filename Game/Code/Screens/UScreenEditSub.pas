@@ -94,7 +94,8 @@ begin
 
   If (PressedDown) then begin // Key Down
     case PressedKey of
-      SDLK_ESCAPE:
+      SDLK_ESCAPE,
+      SDLK_BACKSPACE:
         begin
           FadeTo(@ScreenSong);
         end;
