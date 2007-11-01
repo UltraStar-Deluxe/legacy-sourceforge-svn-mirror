@@ -62,7 +62,6 @@ begin
         end;
 
       SDLK_RETURN,
-      SDLK_BACKSPACE,
       SDLK_ESCAPE:
         begin
           Visible := False;

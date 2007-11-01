@@ -57,8 +57,7 @@ begin
         begin
           Result := false;
         end;
-      SDLK_ESCAPE,
-      SDLK_BACKSPACE :
+      SDLK_ESCAPE :
         begin
 //          Music.PlayBack;
 //          FadeTo(@MainScreen);
