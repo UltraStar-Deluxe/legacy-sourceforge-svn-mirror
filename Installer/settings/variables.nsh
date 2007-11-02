@@ -9,8 +9,14 @@
 
 !define exe "USdx"						; Current name of start exe (must also be defined in functions.nsh)
 
-!define demosong "http://ultrastardeluxe.xtremeweb-hosting.net/installer/song.zip" ; URL from where the demo song "I18" will be downloaded	
-!define demosong2 "http://ultrastardeluxe.xtremeweb-hosting.net/installer/song2.zip"  ; URL from where the demo song "Northern Star" will be downloaded	
+!define demosong "http://ultrastardeluxe.xtremeweb-hosting.net/installer/songs/song.zip" ; URL from where the demo song "I18" will be downloaded	
+!define demosong2 "http://ultrastardeluxe.xtremeweb-hosting.net/installer/songs/song2.zip"  ; URL from where the demo song "Northern Star" will be downloaded	
+
+; Theme URLs:
+
+!define dl_orange "http://ultrastardeluxe.xtremeweb-hosting.net/installer/themes/orange.zip"
+!define dl_vistar "http://ultrastardeluxe.xtremeweb-hosting.net/installer/themes/vistar.zip"
+!define dl_streetlight "http://ultrastardeluxe.xtremeweb-hosting.net/installer/themes/streetlight.zip"
 
 ; Other Language Strings (except Section Language Strings)
 ; can be found at .\langstrings.nsh
@@ -38,14 +44,14 @@
 
 ; Group Section Descriptions:
 
-!define eng_g1Sec1_desc "This will install the optional theme 'Orange' by Skar."
-!define ger_g1Sec1_desc "Dies fügt das optionale Motiv 'Orange' von Skar hinzu."
+!define eng_g1Sec1_desc "This will download the optional theme 'Orange' by Skar."
+!define ger_g1Sec1_desc "Dies lädt das optionale Motiv 'Orange' von Skar herunter."
 
-!define eng_g1Sec2_desc "This will install the optional theme 'Streetlight' by Skar."
-!define ger_g1Sec2_desc "Dies fügt das optionale Motiv 'Streetlight' von Skar hinzu."
+!define eng_g1Sec2_desc "This will download the optional theme 'Streetlight' by Skar."
+!define ger_g1Sec2_desc "Dies lädt das optionale Motiv 'Streetlight' von Skar herunter."
 
-!define eng_g1Sec3_desc "This will install the optional theme 'Vistar' by Skar."
-!define ger_g1Sec3_desc "Dies fügt das optionale Motiv 'Vistar' von Skar hinzu."
+!define eng_g1Sec3_desc "This will download the optional theme 'Vistar' by Skar."
+!define ger_g1Sec3_desc "Dies lädt das optionale Motiv 'Vistar' von Skar herunter."
 
 ; Skin:
 

@@ -328,15 +328,15 @@ Section /o "Dead Smiling Pirates - I 18" g2Section1
   SetOutPath "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\"
 
 ; Download song:
-NSISdl::download /TIMEOUT=30000 ${demosong} $TEMP\song.zip
+NSISdl::download /TIMEOUT=30000 ${demosong} $TEMP\Song-I-18.zip
 
 Pop $R0 ;Get the return value
   StrCmp $R0 "success" dlok
     MessageBox MB_OK|MB_ICONEXCLAMATION "Download Error, click OK to Continue" /SD IDOK
 dlok:
-nsisunz::Unzip "$TEMP\song.zip" "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\"
+nsisunz::Unzip "$TEMP\Song-I-18.zip" "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\"
 
-Delete "$TEMP\song.zip"
+Delete "$TEMP\Song-I-18.zip"
 
 SectionEnd
 
@@ -348,15 +348,15 @@ Section /o "Steven Dunston - Northern Star" g2Section2
   SetOutPath "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\"
 
 ; Download song:
-NSISdl::download /TIMEOUT=30000 ${demosong2} $TEMP\song.zip
+NSISdl::download /TIMEOUT=30000 ${demosong2} $TEMP\Song-Northern-Star.zip
 
 Pop $R0 ;Get the return value
   StrCmp $R0 "success" dlok
     MessageBox MB_OK|MB_ICONEXCLAMATION "Download Error, click OK to Continue" /SD IDOK
 dlok:
-nsisunz::Unzip "$TEMP\song.zip" "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\"
+nsisunz::Unzip "$TEMP\Song-Northern-Star.zip" "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\"
 
-Delete "$TEMP\song.zip"
+Delete "$TEMP\Song-Northern-Star.zip"
 
 SectionEnd
 
@@ -385,19 +385,49 @@ SectionGroup $(sec_group) Section3
 
  Section /o "Orange" g1Sec1
 
- !include ".\settings\optional\in_orange.nsh"
+; Download theme orange:
+NSISdl::download /TIMEOUT=30000 ${dl_orange} $TEMP\Theme-Orange.zip
+
+Pop $R0 ;Get the return value
+  StrCmp $R0 "success" dlok
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Download Error, click OK to Continue" /SD IDOK
+dlok:
+nsisunz::Unzip "$TEMP\Theme-Orange.zip" "$INSTDIR\"
+
+Delete "$TEMP\Theme-Orange.zip"
+
 
 SectionEnd
 
  Section /o "Streetlight" g1Sec2
 
- !include ".\settings\optional\in_streetlight.nsh"
+; Download theme Streetlight:
+NSISdl::download /TIMEOUT=30000 ${dl_streetlight} $TEMP\Theme-Streetlight.zip
+
+Pop $R0 ;Get the return value
+  StrCmp $R0 "success" dlok
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Download Error, click OK to Continue" /SD IDOK
+dlok:
+nsisunz::Unzip "$TEMP\Theme-Streetlight.zip" "$INSTDIR\"
+
+Delete "$TEMP\Theme-Streetlight.zip"
+
 
 SectionEnd
 
  Section /o "Vistar" g1Sec3
 
- !include ".\settings\optional\in_vistar.nsh"
+; Download theme Vistar:
+NSISdl::download /TIMEOUT=30000 ${dl_vistar} $TEMP\Theme-Vistar.zip
+
+Pop $R0 ;Get the return value
+  StrCmp $R0 "success" dlok
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Download Error, click OK to Continue" /SD IDOK
+dlok:
+nsisunz::Unzip "$TEMP\Theme-Vistar.zip" "$INSTDIR\"
+
+Delete "$TEMP\Theme-Vistar.zip"
+
 
 SectionEnd
 

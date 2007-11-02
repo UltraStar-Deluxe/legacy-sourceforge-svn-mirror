@@ -248,12 +248,18 @@ ${EndIf}
  Delete "$INSTDIR\Themes\Classic.ini"
  Delete "$INSTDIR\Themes\Deluxe.ini"
 
-; Delete provided Song
+; Delete provided Songs
  Delete "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [BG].jpg"
  Delete "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18 [CO].jpg"
  Delete "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.ogg"
  Delete "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\Dead Smiling Pirates - I 18.txt"
  Delete "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\License.txt"
+
+ Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star [BG].jpg"
+ Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star [CO].jpg"
+ Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star.mp3"
+ Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star v1.4.txt"
+ Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\License.txt"
 
 ; Delete only empty directories:
 
@@ -276,6 +282,9 @@ StrCpy $0 "$INSTDIR\Skins"
 Call un.DeleteIfEmpty
 
 StrCpy $0 "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]"
+Call un.DeleteIfEmpty
+
+StrCpy $0 "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]"
 Call un.DeleteIfEmpty
 
 StrCpy $0 "$INSTDIR\Songs"
