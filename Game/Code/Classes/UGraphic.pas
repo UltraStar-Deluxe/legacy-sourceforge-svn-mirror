@@ -174,7 +174,8 @@ procedure SwapBuffers;
 
 procedure LoadTextures;
 procedure InitializeScreen;
-procedure LoadScreens;
+procedure LoadScreens( aShowLoading : boolean = true );
+procedure UnLoadScreens;
 
 
 implementation
@@ -397,15 +398,19 @@ begin
   ScreenH := H;
 end;
 
-procedure LoadScreens;
+procedure LoadScreens( aShowLoading : boolean = true );
 begin
-  ScreenLoading := TScreenLoading.Create;
-  ScreenLoading.onShow;
-  Display.ActualScreen := @ScreenLoading;
-  ScreenLoading.Draw;
-  Display.Draw;
-  SwapBuffers;
 
+  ScreenLoading := TScreenLoading.Create;
+  if aShowLoading then
+  begin
+    ScreenLoading.onShow;
+    Display.ActualScreen := @ScreenLoading;
+    ScreenLoading.Draw;
+    Display.Draw;
+    SwapBuffers;
+  end;
+  
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Loading', 3); Log.BenchmarkStart(3);
 { ScreenWelcome :=          TScreenWelcome.Create; //'BG', 4, 3);
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Welcome', 3); Log.BenchmarkStart(3);}
@@ -480,5 +485,52 @@ begin
   //Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Credits', 3); Log.BenchmarkStart(3);
 
   end;
+
+procedure UnLoadScreens;
+begin
+(*
+  ScreenLoading := TScreenLoading.Create;
+  ScreenLoading.onShow;
+
+  Display.ActualScreen := @ScreenLoading;
+
+  ScreenLoading.Draw;
+  Display.Draw;
+  SwapBuffers;
+*)  
+
+  freeandnil( ScreenMain );
+  freeandnil( ScreenName );
+  freeandnil( ScreenLevel);
+  freeandnil( ScreenSong );
+  freeandnil( ScreenSongMenu );
+  freeandnil( ScreenSing );
+  freeandnil( ScreenScore);
+  freeandnil( ScreenTop5 );
+  freeandnil( ScreenOptions );
+  freeandnil( ScreenOptionsGame );
+  freeandnil( ScreenOptionsGraphics );
+  freeandnil( ScreenOptionsSound );
+  freeandnil( ScreenOptionsLyrics );
+//  freeandnil( ScreenOptionsThemes );
+  freeandnil( ScreenOptionsRecord );
+  freeandnil( ScreenOptionsAdvanced );
+  freeandnil( ScreenEditSub );
+  freeandnil( ScreenEdit );
+  freeandnil( ScreenEditConvert );
+  freeandnil( ScreenOpen );
+  freeandnil( ScreenSingModi );
+  freeandnil( ScreenSongMenu );
+  freeandnil( ScreenSongJumpto);
+  freeandnil( ScreenPopupCheck );
+  freeandnil( ScreenPopupError );
+  freeandnil( ScreenPartyNewRound );
+  freeandnil( ScreenPartyScore    );
+  freeandnil( ScreenPartyWin     );
+  freeandnil( ScreenPartyOptions  );
+  freeandnil( ScreenPartyPlayer   );
+  freeandnil( ScreenStatMain     );
+  freeandnil( ScreenStatDetail    );
+end;
 
 end.

@@ -36,7 +36,11 @@ var
 
 implementation
 
-uses IniFiles, Classes, SysUtils, ULog, UIni;
+uses IniFiles,
+     Classes,
+     SysUtils,
+     ULog,
+     UIni;
 
 constructor TSkin.Create;
 begin
@@ -153,7 +157,6 @@ begin
       SetLength(ISkin, Length(ISkin)+1);
       ISkin[High(ISkin)] := Skin[S].Name;
     end;
-
 end;
 
 end.

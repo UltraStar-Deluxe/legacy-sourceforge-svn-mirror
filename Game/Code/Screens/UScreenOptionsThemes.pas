@@ -34,13 +34,26 @@ begin
       SDLK_BACKSPACE :
         begin
           Ini.Save;
+
+          // Reload all screens, after Theme changed
+          // Todo : JB - Check if theme was actually changed
+          UGraphic.UnLoadScreens();
+          UGraphic.LoadScreens( false );          
+
           Music.PlayBack;
           FadeTo(@ScreenOptions);
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 3 then begin
+          if SelInteraction = 3 then
+          begin
             Ini.Save;
+
+            // Reload all screens, after Theme changed
+            // Todo : JB - Check if theme was actually changed
+            UGraphic.UnLoadScreens();
+            UGraphic.LoadScreens( false );
+
             Music.PlayBack;
             FadeTo(@ScreenOptions);
           end;
@@ -51,14 +64,16 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 2) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 2) then
+          begin
             Music.PlayOption;
             InteractInc;
           end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 2) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 2) then
+          begin
             Music.PlayOption;
             InteractDec;
           end;
@@ -75,6 +90,20 @@ begin
   begin
     Skin.OnThemeChange;
     UpdateSelectSlideOptions (Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
+
+    Theme.LoadTheme('Themes\' + ITheme[Ini.Theme] + '.ini', Ini.Color);
+
+    ScreenOptionsThemes := TScreenOptionsThemes.create();
+    ScreenOptionsThemes.onshow;
+    Display.ActualScreen := @ScreenOptionsThemes;
+    ScreenOptionsThemes.Draw;
+
+
+    Display.Draw;
+    SwapBuffers;
+
+    freeandnil( self );
+
   end;
 end;
 
@@ -86,6 +115,19 @@ begin
   begin
     Skin.OnThemeChange;
     UpdateSelectSlideOptions (Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
+
+    Theme.LoadTheme('Themes\' + ITheme[Ini.Theme] + '.ini', Ini.Color);
+
+    ScreenOptionsThemes := TScreenOptionsThemes.create();
+    ScreenOptionsThemes.onshow;
+
+    Display.ActualScreen := @ScreenOptionsThemes;
+    ScreenOptionsThemes.Draw;
+
+    Display.Draw;
+    SwapBuffers;
+    
+    freeandnil( self );
   end;
 end;
 
@@ -94,6 +136,7 @@ var
   I:      integer;
 begin
   inherited Create;
+  
 
   LoadFromTheme(Theme.OptionsThemes);
 
