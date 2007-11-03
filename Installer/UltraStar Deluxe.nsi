@@ -8,8 +8,8 @@
 !include ".\settings\functions.nsh"
 !include "WinVer.nsh"
 
-!define icon_inst "..\InstallerDependencies\icons\ustar.ico"		; Icon for Installation
-!define icon_uninst "..\InstallerDependencies\icons\uninstall.ico"	; Icon for Uninstallation
+!define icon_inst ".\icons\ustar.ico"		; Icon for Installation
+!define icon_uninst ".\icons\uninstall.ico"	; Icon for Uninstallation
 
 SetCompress Auto
 SetCompressor /SOLID lzma
@@ -65,6 +65,7 @@ SetDatablockOptimize On
 Name "${p_name} V.${version}"
 Brandingtext "${p_name} Installation"
 OutFile "Install ${p_name} V.${version}.exe"
+!define ins_name "Install ${p_name} V.${version}.exe"
 
 InstallDir "$PROGRAMFILES\${p_name}"
 
@@ -98,6 +99,10 @@ ShowUnInstDetails show
 !define MUI_STARTMENUPAGE_BGCOLOR "${smp_bgcolor}"	 ; RGB Background of Startmenu List and Textbox
 ;!define MUI_INSTFILESPAGE_COLORS "${dets_bgcolor}"	 ; Background Color of Details Screen while files are being extracted
 
+
+!define MUI_LANGDLL_WINDOWTITLE "USdx In-/Uninstaller: Choose language"
+!define MUI_LANGDLL_ALWAYSSHOW
+
 !define MUI_FINISHPAGE_NOAUTOCLOSE			 ; Allows user to check the log file of installation (Comment out if unwanted)
 !define MUI_UNFINISHPAGE_NOAUTOCLOSE			 ; Allows user to check the log file of uninstallation (Comment out if unwanted)
 
@@ -108,13 +113,6 @@ ShowUnInstDetails show
 !define MUI_FINISHPAGE_SHOWREADME
 !define MUI_FINISHPAGE_SHOWREADME_TEXT $(sc_desktop)
 !define MUI_FINISHPAGE_SHOWREADME_FUNCTION CreateDesktopShortCuts
-
-;Language Dialog Box Settings
-;!define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
-;!define PRODUCT_UNINST_ROOT_KEY "HKLM"
-;!define MUI_LANGDLL_REGISTRY_ROOT "${PRODUCT_UNINST_ROOT_KEY}"
-;!define MUI_LANGDLL_REGISTRY_KEY "${PRODUCT_UNINST_KEY}"
-;!define MUI_LANGDLL_REGISTRY_VALUENAME "NSIS:Language"
 
 ; --------------------------------------------------
 ; Begin of the installation routine
@@ -494,23 +492,53 @@ SectionEnd
 ; Function for Installation
 
 Function .onInit
-     !insertmacro MUI_LANGDLL_DISPLAY
+
+   System::Call 'kernel32::CreateMutexA(i 0, i 0, t "USdx Installer.exe") ?e'
+ 
+  Pop $R0
+ 
+  StrCmp $R0 0 +3
+    MessageBox MB_OK "The installer is already running."
+    Abort
+  
+  !insertmacro MUI_LANGDLL_DISPLAY
+
+  ReadRegStr $R0 HKLM \
+  "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
+  "UninstallString"
+  StrCmp $R0 "" done
+ 
+  MessageBox MB_YESNO|MB_ICONEXCLAMATION \
+  "${PRODUCT_NAME} is already installed. $\n$\nAre you sure you want to \
+  install it again?" \
+  IDYES done
+  Abort
+
+  
+done:
+
      !insertmacro MUI_INSTALLOPTIONS_EXTRACT_AS ".\settings\settings-1031.ini" "Settings-1031"
      !insertmacro MUI_INSTALLOPTIONS_EXTRACT_AS ".\settings\settings-1033.ini" "Settings-1033"
+
 FunctionEnd
 
 ; Function for Uninstallation
 
 Function un.onInit
 
-	loop:
 	${nsProcess::FindProcess} "USdx.exe" $R0
 	StrCmp $R0 0 0 +2
-	MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION 'UltraStar Deluxe cannot be uninstalled while its running!' IDOK loop IDCANCEL end
+	MessageBox MB_YESNO|MB_ICONEXCLAMATION 'UltraStar Deluxe cannot be uninstalled while its running! Do you want to close it?' IDYES closeit IDNO end
 
-	end:
+	closeit:
+	${nsProcess::KillProcess} "USdx.exe" $R0
+	goto continue
+
+	end: 
 	${nsProcess::Unload}
+	Abort
 
+	continue:
+   	!insertmacro MUI_LANGDLL_DISPLAY
 
-    !insertmacro MUI_LANGDLL_DISPLAY
 FunctionEnd

@@ -52,7 +52,7 @@ FunctionEnd
 !macroend
 !define WriteToConfig "!insertmacro WriteToConfig"
 
-; Finds and kills UltraStar Deluxe process
+; Finds UltraStar Deluxe process
 ;
 
 !define nsProcess::FindProcess `!insertmacro nsProcess::FindProcess`
