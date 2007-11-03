@@ -1,0 +1,195 @@
+UltraStar Deluxe 1.00 (by Ultrastar Deluxe Team)
+-----------------------------
+
+--------------
+Theme System
+--------------
+Upd: New Ultrastar 0.5.1 Skin/Theme Sytem
+Upd: Add ability to 0.5.1 System to load third party Themes to add usability
+Upd: Add ability to change Positions and some other things relating to Covers within the Theme
+Upd: Add ability to add reflections to the Covers
+Upd: New Method for displaying Covers in a Circle. Looks better with many Songs. (Turn Off On within the Theme)
+Upd: Add Equalizer Object to SongScreen
+Upd: Add ability to add reflection to Buttons and Statics (Reflection = 1)
+Upd: Add ability to Group Buttons to a Buttonmenu, see Deluxe Theme Main Menu Tools Collection
+Upd: Add ability to Hide Buttons within Theme. Useful for example for Mainscreen Exit Button
+Upd: Add ability to give Texts a Width, so the Text breaks at the given Position.
+ 
+--------------
+Recording Options
+--------------
+Upd: Ultrastar 0.5.2 Recording Options added
+Fix: Write Soundcards more then one Time to Ini
+Fix: Use of more then one SingStar Mic. adapter now Possible(2 Soundcards with same Name Patch)
+
+--------------
+Song Screen
+--------------
+Upd: Added Playlist Support
+
+Upd: Song Search (with Screen interface)
+Upd: Jump to Letter Hotkey
+Upd: Menu in Songscreen similar to Singstars
+Upd: Ability to change Playernames before singing
+Upd: Ability to change Song Preview Volume
+Upd: Song Preview Fade in
+
+--------------
+Party Mode
+--------------
+Upd: Added Party Mode:
+       3 Teams possible with up to 4 Players
+       => total of 12 Players
+Upd: Modi SDK: Possibility to create nearly any Modi with some Programming Skill
+Upd: 4 Custom Party Modi Plugins: Duell, Hold the Line, Until 5000, Blind Mode
+
+--------------
+Effects
+--------------
+Upd: New Perfect Note Effects
+Upd: Add Perfect Sentence Effect
+Upd: Golden Notes now with Singstar like Star Twinkle Effect, instead of just Yellow coloring
+Upd: Add Effect: Golden notes "Glow" when they are hit
+Upd: New Screen Fading Effect: Screen Blurs and "Flys" out of the Screen
+     looks better with every Background. More possibility for Theme Creators
+
+--------------
+Other
+--------------
+Upd: Added Deluxe Theme: Theme that has a look similiar to PS3 Singstar.
+Upd: New Score Saving System (SQLite Based)
+Upd: Statistic Screen with general Statistics and some Tables: 
+     Best Scores, Best Singers, Most Popular Songs, Most Popular Bands
+Upd: Add some on Screen Error Messages helping new Peoples
+Upd: Add Advanced Screen with some new Options.
+Upd: Add a Question PopUp before exiting
+Upd: Add ability to scale Background Images in Singscreen to Fullsize
+Upd: Show real Note in Editor (C, F#, etc.)
+Upd: New fonts added
+Upd: Add better support for Command-Line Parameters
+Fix: No crashes caused by corrupted Textfiles anymore.
+     Added inGame Errormessage Popup and Jump Back to Songscreen. So even the Party Mode,
+     isn't interuppted.
+Fix: Workaround for Cover and BG JPG Errors
+Fix: Videosize can now be changed again
+Fix: Bug in LineBonus Popup that can end up in a Memory Overflow
+Fix: Bug in SelectSlide with less then 3 Options, No Overlapping anymore. Automatic resizing
+Fix: Backgrounds can be used now in option Screens, too
+Fix: useless Memory usement when Song with Video is Played. When a Song with Video is played
+     there was some Memory that was not freeed at the End of the Song. This could have caused
+     too much Memory usement when many Songs with Video are Played.
+Fix: Some Changes in Memory usement and better Loading speed.
+Fix: Wrong Timings pressing T in Editor if 2 Notes from different Sentences overlap
+Fix: Editor crashes when last note of a sentence is deleted
+Fix: [Midi Converter]Notes are added more than once when a File is opened twice or the save                      button is pressed multiple times.
+Fix: [Midi Converter]Sentence Timings are calculated automaticly when Midi File is converted
+
+UltraStar 0.5.0 ultra-star.dl.am Mod X-Mas Edition (by Mota und Whiteshark)
+-----------------------------
+Upd: New faster and Error resistant Header reader
+Upd: Bewertungs Bar (Singstar Like)
+Upd: LineBonus + Popups
+
+Upd: Skin beautified
+
+UltraStar 0.5.0 ultra-star.dl.am Mod r10 (by Mota und Whiteshark)
+-----------------------------
+Fix: Minor Bug in Pause Method fixed.
+Fix: Fixed a Bug in Theme System
+Fix: New Note Texture Reading
+
+Upd: Numbers in SongSelection are now more meaningful
+Upd: Show Count of Songs in Category in Category Overview
+Upd: New Note Texture
+
+Upd: LanguageTag + Sorting
+Upd: Support for the Covers.ini from 0.5.1 - for all sorting options. The old behaviour without Covers.ini is also possible, just as well as a combination of both methods.
+
+UltraStar 0.5.0 ultra-star.dl.am Mod r9 (Release by Whiteshark)
+-----------------------------
+
+Upd: BPM and VideoGap Can now be read, too. But there will be an Errormessage in Error.log
+
+Upd, Beta: Pause. Press P and the Song will be paused, press P again and it will be continued. Pause Display and Menu missing.
+
+UltraStar 0.5.0 ultra-star.dl.am Mod r8b (Release by Whiteshark)
+-----------------------------
+Fix: Random Methods now work without Errors
+Fix: First Category is now shown at Startup.
+Fix: Music is played correctly after categorychange
+Fix: No wrong MP3 playing anymore
+Fix: After exit Singing Mode the Song is chossen in Song Screen
+Fix: Midi-konvertor Bug (Only Freestyle Notes instead of normal)
+
+Thx to: dennisthemenace and mota for Bug-Reports :P
+
+UltraStar 0.5.0 ultra-star.dl.am Mod r8a (Release by Whiteshark)
+-----------------------------
+Fix: Themes could not be Selected (workaround: Only 4 Themes possible)
+Fix: Correct category is displayed after pressing Escape
+
+Upd: new Random functions: R + [Strg]: Random in all Categorys;
+                           R + [Shift]: Random Category
+Upd: Chossen Category is displayed in the top left
+   
+UltraStar 0.5.0 ultra-star.dl.am Mod r8 (Release by Whiteshark)
+-----------------------------
+Fix: Creatorbug fixed
+Fix: Tabs=on Preview Bug
+
+Upd: Theme System ready
+   -Look for Themes at Startup
+   -ThemeOptions Screen working
+Upd: New Theme Colors :)
+Upd: Little changes at Editor
+   -Spaces in Header are corrected automaticaly
+   -Header is not Case Sensitive anymore
+
+Upd: Skin Folder Cleaned up, There are 2 Skins now: Motas and the Original Skin
+Upd: Categorys have their own noCover Image
+Upd: Rating Text (Ultrastar, Singstar, etc.) can now be Translated
+
+Upd: Inomplete Languages are corrected with Entrys from the English Language File
+
+Upd: new Category System:
+   -If a category is choosen only the Songs from this category are shown
+   -Press Escape to leave a category
+   -Press up or down to change the category.
+
+UltraStar 0.5.0 mota patch r7 (Release by Mota)
+-----------------------------
+- New Note Texture.
+- other new grafics.
+- New rating "Ultrastar" with more than 9810 Points.
+- Textsize-Bug in editor fixed.
+
+UltraStar 0.5.0 mota patch r6 - 17.11.06 (Release by Mota)
+----------------------------------------
+- Editiorfunctions for Golden/Freestyle-Notes. (Press [G] or [F])
+- Saving Methods of Editor changed
+- Changed Theme "SingStar".
+
+UltraStar 0.5.0 mota patch r5 - 16.11.06 (Release by Mota)
+----------------------------------------
+- Goldene Notes are displayed
+- Randomizing improved
+
+UltraStar 0.5.0 mota patch r4 (Release by Mota)
+-----------------------------
+- Perfect-Star animation
+
+UltraStar 0.5.0 mota patch r3 (Release by Mota)
+-----------------------------
+- Sorting Title2 and Artist2 -> Numbers in Category "#"
+
+UltraStar 0.5.0 mota patch r2 (Release by Mota)
+-----------------------------
+- Cover for all Categorys and Sortings can be choosen
+
+UltraStar 0.5.0 mota patch (Release by Mota)
+--------------------------
+- Cover for Edition sorting can be choosen
+
+UltraStar 0.5.0 (by Corvus5)
+--------------------------
+- Original Code
