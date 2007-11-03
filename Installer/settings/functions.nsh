@@ -4,6 +4,8 @@
 
 Function CreateDesktopShortCuts
 
+SetOutPath "$INSTDIR"
+
 CreateShortcut "$Desktop\$(sm_shortcut).lnk" "$INSTDIR\${exe2}.exe"
 
 FunctionEnd

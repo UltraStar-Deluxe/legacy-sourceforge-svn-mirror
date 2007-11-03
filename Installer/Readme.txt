@@ -1,18 +1,18 @@
-SOURCE (2th of November 2007, 23:35 UTC+1 MESZ)
+SOURCE (3th of November 2007, 14:00 UTC+1 MESZ)
 
 Build using Nullsoft Install System
-(http://nsis.sourceforge.net/Download)
+(http://nsis.sourceforge.net/)
 
----------------------------------------
-Plugins
----------------------------------------
+-----------------------------------------------
+Dependencies
+-----------------------------------------------
 
 The installer needs the plugins
-within the plugins dir.
+within the ..\InstallerDependencies\plugins dir.
 
--------------------------------------------
+-----------------------------------------------
 Custom language files (Dir: clanguage):
--------------------------------------------
+-----------------------------------------------
 
 Place the edited custom languages files in:
 

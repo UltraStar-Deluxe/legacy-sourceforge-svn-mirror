@@ -56,13 +56,12 @@
 ; Skin:
 
 !define gdf_path "$WINDIR\gdf.dll"		; Path to gdf.dll for Vista Game Explorer
-!define bmp_header ".\images\header.bmp"	; Bitmap of the Installation Header (Size: 150x57 px)
-!define bmp_side ".\images\left.bmp"		; Bitmap on the left side of Welcome & Finish Page (Size: 164x314 px)
+!define bmp_header "..\InstallerDependencies\images\header.bmp"	; Bitmap of the Installation Header (Size: 150x57 px)
+!define bmp_side "..\InstallerDependencies\images\left.bmp"		; Bitmap on the left side of Welcome & Finish Page (Size: 164x314 px)
 !define mui_ini ".\settings\io.ini"		; Installation Options for Welcome & Finish Page
 !define license_bgcolor "FFFFFF"		; RGB Background Color for Licence agreement
-!define bmp_check ".\images\modern.bmp"		; Bitmap of Checks at Components Selection Page
+!define bmp_check "..\InstallerDependencies\images\modern.bmp"		; Bitmap of Checks at Components Selection Page
 !define directory_bgcolor "FFFFFF"		; RGB Background Color for Directory textbox
 !define smp_bgcolor "FFFFFF"			; RGB Background of Startmenu List and Textbox
 ;!define dets_bgcolor "FFFFFF"			; Background Color of Details Screen while files are being extracted
-!define file_license "..\License.txt"		; Choose the file with the license agreement
-!define gameicon ".\images\mce.png"		; Name of the png file which will be displayed in MCE (Size: 170x170)
+!define file_license "..\InstallerDependencies\documents\License.txt"		; Choose the file with the license agreement

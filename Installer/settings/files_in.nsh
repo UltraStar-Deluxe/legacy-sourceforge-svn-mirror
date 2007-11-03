@@ -15,22 +15,24 @@
 ; Extract files to the directories:
 
   SetOutPath "$INSTDIR"
-  File "..\bass.dll"
-  File "..\Changelog.german.txt"
-  File "..\Changelog.txt"
-  File "..\documentation.pdf"
-  File "..\License.txt"
-  File "..\ReadMe.txt"
+  File "..\InstallerDependencies\dll\bass.dll"
+  File "..\InstallerDependencies\dll\SDL.dll"
+  File "..\InstallerDependencies\dll\smpeg.dll"
+  File "..\InstallerDependencies\dll\sqlite3.dll"
+
+  File "..\InstallerDependencies\documents\Changelog.german.txt"
+  File "..\InstallerDependencies\documents\Changelog.txt"
+  File "..\InstallerDependencies\documents\documentation.pdf"
+  File "..\InstallerDependencies\documents\License.txt"
+  File "..\InstallerDependencies\documents\ReadMe.txt"
+
   File "..\ScoreConverter.exe"
-  File "..\SDL.dll"
-  File "..\smpeg.dll"
-  File "..\sqlite3.dll"
   File "..\${exe}.exe"
 
 ${If} ${AtLeastWinVista}
 
   SetOutPath "$WINDIR"
-  File ".\plugins\gdf.dll"
+  File "..\InstallerDependencies\plugins\gdf.dll"
 
 ${EndIf}
 
@@ -39,6 +41,9 @@ ${EndIf}
   File "..\Covers\NoCover.jpg"
 
   SetOutPath "$INSTDIR\Languages\"
+
+  File "..\Languages\readme.txt"
+
   File "..\Languages\Catalan.ini"
   File "..\Languages\Dutch.ini"
   File "..\Languages\English.ini"
@@ -46,11 +51,10 @@ ${EndIf}
   File "..\Languages\German.ini"
   File "..\Languages\Italian.ini"
   File "..\Languages\Norwegian.ini"
-  File "..\Languages\readme.txt"
+  File "..\Languages\Portuguese.ini"
   File "..\Languages\Serbian.ini"
   File "..\Languages\Spanish.ini"
   File "..\Languages\Swedish.ini"
-  File "..\Languages\Portuguese.ini"
 
   SetOutPath "$INSTDIR\Plugins\"
   File "..\Plugins\Blind.dll"

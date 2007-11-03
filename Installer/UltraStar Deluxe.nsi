@@ -8,8 +8,8 @@
 !include ".\settings\functions.nsh"
 !include "WinVer.nsh"
 
-!define icon_inst ".\icons\ustar.ico"		; Icon for Installation
-!define icon_uninst ".\icons\uninstall.ico"	; Icon for Uninstallation
+!define icon_inst "..\InstallerDependencies\icons\ustar.ico"		; Icon for Installation
+!define icon_uninst "..\InstallerDependencies\icons\uninstall.ico"	; Icon for Uninstallation
 
 SetCompress Auto
 SetCompressor /SOLID lzma
@@ -24,7 +24,7 @@ SetDatablockOptimize On
 
 !include ".\settings\variables.nsh"
 
-!addPluginDir ".\plugins\"
+!addPluginDir "..\InstallerDependencies\plugins\"
 
 ; -------------------------------
 ; Strings for Installation Wizard
@@ -247,11 +247,12 @@ Section $(sec1) Section1
 
 ; Create shortcuts
 
-  SetOutPath $INSTDIR\
+  SetOutPath "$INSTDIR"
 
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 
   SetShellVarContext all
+  SetOutPath "$INSTDIR"
 
   CreateDirectory "${p_name}"
   CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
@@ -338,6 +339,8 @@ nsisunz::Unzip "$TEMP\Song-I-18.zip" "$INSTDIR\Songs\Dead Smiling Pirates - I 18
 
 Delete "$TEMP\Song-I-18.zip"
 
+  SetOutPath "$INSTDIR"
+
 SectionEnd
 
 Section /o "Steven Dunston - Northern Star" g2Section2
@@ -357,6 +360,8 @@ dlok:
 nsisunz::Unzip "$TEMP\Song-Northern-Star.zip" "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\"
 
 Delete "$TEMP\Song-Northern-Star.zip"
+
+  SetOutPath "$INSTDIR"
 
 SectionEnd
 
@@ -396,6 +401,7 @@ nsisunz::Unzip "$TEMP\Theme-Orange.zip" "$INSTDIR\"
 
 Delete "$TEMP\Theme-Orange.zip"
 
+  SetOutPath "$INSTDIR"
 
 SectionEnd
 
@@ -412,6 +418,7 @@ nsisunz::Unzip "$TEMP\Theme-Streetlight.zip" "$INSTDIR\"
 
 Delete "$TEMP\Theme-Streetlight.zip"
 
+  SetOutPath "$INSTDIR"
 
 SectionEnd
 
@@ -427,6 +434,8 @@ dlok:
 nsisunz::Unzip "$TEMP\Theme-Vistar.zip" "$INSTDIR\"
 
 Delete "$TEMP\Theme-Vistar.zip"
+
+  SetOutPath "$INSTDIR"
 
 
 SectionEnd
