@@ -27,8 +27,7 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 
 ID_GDF_XML           DATA     "UltraStar Deluxe.gdf.xml"
 ID_GDF_THUMBNAIL     DATA     "boxart.png"
-ID_ICON              ICON     "gameicon.ico"
+ID_ICON              ICON     "icon.ico"
 
-#endif
-// Neutral resources
+#endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
