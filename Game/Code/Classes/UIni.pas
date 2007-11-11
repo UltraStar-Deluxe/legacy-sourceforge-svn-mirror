@@ -251,12 +251,14 @@ begin
   // Resolution
   SetLength(IResolution, 0);
   Modes := SDL_ListModes(nil, SDL_OPENGL or SDL_FULLSCREEN); // Check if there are any modes available
+  if(Assigned(Modes)) then //this should solve the biggest wine problem | THANKS Linnex (11.11.07)
   repeat
     SetLength(IResolution, Length(IResolution) + 1);
     IResolution[High(IResolution)] := IntToStr(Modes^.w) + 'x' + IntToStr(Modes^.h);
     Inc(Modes);
   until Modes^ = nil;
-
+  end;
+  
   // if no modes were set, then failback to 800x600
   // as per http://sourceforge.net/forum/message.php?msg_id=4544965
   // THANKS : linnex at users.sourceforge.net

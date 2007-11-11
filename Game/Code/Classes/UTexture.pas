@@ -189,6 +189,12 @@ end;
 
 function TTextureUnit.LoadTexture(FromRegistry: boolean; Nazwa, Format, Typ: PChar; Col: LongWord): TTexture;
 var
+
+// a patch from Linnex, that solves the font problem in wine which causes chrashes
+  ChangeFormatBMP: TBitmap;
+// end of patch (11.11.07)
+
+
   Res:        TResourceStream;
   TextureB:   TBitmap;
   TextureJ:   TJPEGImage;
@@ -449,7 +455,18 @@ begin
   end;
 
   if Typ = 'Font' then begin
-    TextureB.PixelFormat := pf24bit;
+
+// a patch from Linnex, that solves the font problem in wine which causes chrashes
+   //TextureB.PixelFormat := pf24bit;
+   ChangeFormatBMP := TBitmap.Create();
+   ChangeFormatBMP.Assign(TextureB);
+   TextureB.PixelFormat := pf24bit;
+   TextureB.Width := ChangeFormatBMP.Width;
+   TextureB.Height := ChangeFormatBMP.Height;
+   TextureB.Canvas.Draw(0, 0, ChangeFormatBMP);
+   ChangeFormatBMP.Free;
+// end of patch (11.11.07)
+
     for Pet := 0 to TextureB.Height-1 do begin
       PPix := TextureB.ScanLine[Pet];
       for Pet2 := 0 to TextureB.Width-1 do begin
