@@ -1,4 +1,4 @@
-unit UIni;
+gunit UIni;
 
 interface
 uses IniFiles, ULog, SysUtils;
@@ -251,12 +251,11 @@ begin
   // Resolution
   SetLength(IResolution, 0);
   Modes := SDL_ListModes(nil, SDL_OPENGL or SDL_FULLSCREEN); // Check if there are any modes available
-  if(Assigned(Modes)) then //this should solve the biggest wine problem | THANKS Linnex (11.11.07)
-  repeat
+  while Assigned(Modes) do //this should solve the biggest wine problem | THANKS Linnex (11.11.07)
+  begin
     SetLength(IResolution, Length(IResolution) + 1);
     IResolution[High(IResolution)] := IntToStr(Modes^.w) + 'x' + IntToStr(Modes^.h);
     Inc(Modes);
-  until Modes^ = nil;
   end;
   
   // if no modes were set, then failback to 800x600
