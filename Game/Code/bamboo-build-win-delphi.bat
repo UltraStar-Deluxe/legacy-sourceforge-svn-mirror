@@ -17,4 +17,8 @@ upx --force -9 *.exe
 cd Installer
 "C:\Program Files\NSIS\makeNSIS.exe" UltraStarDeluxe.nsi
 
-cd ..\Game\Code
+cd u3portable
+7za.exe a -tzip Files.zip "Manifest\*" "Data\*" "Host\*"
+ren "Files.zip" "UltraStar Deluxe Portable.u3p"
+
+cd ..\..\Game\Code

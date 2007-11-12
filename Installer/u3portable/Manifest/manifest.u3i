@@ -1,0 +1,17 @@
+<u3manifest version="1.0">
+	<application uuid="0B458BEB-A9BB-4E93-B48F-F1EBA58D05BD" version="1.0.1">
+		<icon>USdx.ico</icon>
+		<name>UltraStar Deluxe Portable</name>
+		<vendor url="http://www.ultrastardeluxe.org">USdx Team</vendor>
+		<description>UltraStar Deluxe is a free open-source karaoke software for Windows that can be compared with Singstar.</description>
+		<options>
+			<minFreeSpace>7.0</minFreeSpace>
+		</options>
+		<i18n></i18n>
+	</application>
+		<actions>
+			<appStart cmd="%U3_HOST_EXEC_PATH%\start.bat"></appStart>
+			<appStop cmd="%U3_HOST_EXEC_PATH%\appstop.exe"> -t -s USdx</appStop>
+			<hostCleanUp cmd="%U3_HOST_EXEC_PATH%\appstop.exe"> -t -s USdx</hostCleanUp>
+		</actions>
+</u3manifest>
