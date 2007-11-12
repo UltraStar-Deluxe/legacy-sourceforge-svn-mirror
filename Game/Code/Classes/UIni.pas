@@ -1,4 +1,4 @@
-gunit UIni;
+unit UIni;
 
 interface
 uses IniFiles, ULog, SysUtils;
@@ -251,20 +251,32 @@ begin
   // Resolution
   SetLength(IResolution, 0);
   Modes := SDL_ListModes(nil, SDL_OPENGL or SDL_FULLSCREEN); // Check if there are any modes available
-  while Assigned(Modes) do //this should solve the biggest wine problem | THANKS Linnex (11.11.07)
-  begin
-    SetLength(IResolution, Length(IResolution) + 1);
-    IResolution[High(IResolution)] := IntToStr(Modes^.w) + 'x' + IntToStr(Modes^.h);
-    Inc(Modes);
-  end;
-  
-  // if no modes were set, then failback to 800x600
+
+  //this should solve the biggest wine problem | THANKS Linnex (11.11.07)
+  // if no modes were set, then fallback to 800x600
   // as per http://sourceforge.net/forum/message.php?msg_id=4544965
   // THANKS : linnex at users.sourceforge.net
-  if Length(IResolution) < 1 then
+
+  if (modes = PPSDL_Rect( 0 ) ) then
+  begin //NO modes available => Fallback to 800x600
+    SetLength(IResolution, 1);
+    IResolution[High(IResolution)] := '800x600';
+  end
+  {Else If (modes = PPSDL_Rect(-1)) then
   begin
-    SetLength(IResolution, Length(IResolution) + 1);
-    IResolution[High(IResolution)] := IntToStr(800) + 'x' + IntToStr(600);
+    //All Resolutions are Available
+    //This may be handled, too
+    // to-do : for future Version
+  end}
+  Else //Add all valid Modes
+  begin
+    I := 0;
+    Repeat
+      SetLength(IResolution, I + 1);
+      IResolution[I] := IntToStr((modes^)^.w) + 'x' + IntToStr((modes^)^.h);
+      Inc(I);
+      Inc(modes)
+    Until (modes^)=nil;
   end;
 
   // reverse order
