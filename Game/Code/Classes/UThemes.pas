@@ -705,6 +705,7 @@ type
     {$ENDIF}
 
     LastThemeBasic:   TThemeBasic;
+    procedure create_theme_objects();
   public
 
     Loading:          TThemeLoading;
@@ -803,6 +804,7 @@ end;
 
 constructor TTheme.Create(FileName: string; Color: integer);
 begin
+(*
   Loading := TThemeLoading.Create;
   Main := TThemeMain.Create;
   Name := TThemeName.Create;
@@ -835,6 +837,7 @@ begin
   //Stats Screens:
   StatMain :=   TThemeStatMain.Create;
   StatDetail := TThemeStatDetail.Create;
+*)
 
   LoadTheme(FileName, Color);
 
@@ -900,6 +903,8 @@ var
   I:    integer;
   Path: string;
 begin
+  create_theme_objects();
+
   Result := false;
   if FileExists(FileName) then begin
     Result := true;
@@ -910,7 +915,8 @@ begin
     ThemeIni := TMemIniFile.Create(FileName);
     {$ENDIF}
 
-    if ThemeIni.ReadString('Theme', 'Name', '') <> '' then begin
+    if ThemeIni.ReadString('Theme', 'Name', '') <> '' then
+    begin
 
       {Skin.SkinName := ThemeIni.ReadString('Theme', 'Name', 'Singstar');
       Skin.SkinPath := 'Skins\' + Skin.SkinName + '\';
@@ -2313,5 +2319,94 @@ begin
   DecimalSeparator := ',';
 end;
 
+procedure TTheme.create_theme_objects();
+begin
+  freeandnil( Loading       );
+  Loading       := TThemeLoading.Create;
+
+  freeandnil( Main      );
+  Main      := TThemeMain.Create;
+
+  freeandnil( Name      );
+  Name      := TThemeName.Create;
+
+  freeandnil( Level       );
+  Level       := TThemeLevel.Create;
+
+  freeandnil( Song      );
+  Song      := TThemeSong.Create;
+
+  freeandnil( Sing      );
+  Sing      := TThemeSing.Create;
+
+  freeandnil( Score       );
+  Score       := TThemeScore.Create;
+
+  freeandnil( Top5      );
+  Top5      := TThemeTop5.Create;
+
+  freeandnil( Options       );
+  Options       := TThemeOptions.Create;
+
+  freeandnil( OptionsGame       );
+  OptionsGame       := TThemeOptionsGame.Create;
+
+  freeandnil( OptionsGraphics       );
+  OptionsGraphics       := TThemeOptionsGraphics.Create;
+
+  freeandnil( OptionsSound      );
+  OptionsSound      := TThemeOptionsSound.Create;
+
+  freeandnil( OptionsLyrics       );
+  OptionsLyrics       := TThemeOptionsLyrics.Create;
+
+  freeandnil( OptionsThemes       );
+  OptionsThemes       := TThemeOptionsThemes.Create;
+
+  freeandnil( OptionsRecord       );
+  OptionsRecord       := TThemeOptionsRecord.Create;
+
+  freeandnil( OptionsAdvanced       );
+  OptionsAdvanced       := TThemeOptionsAdvanced.Create;
+
+
+  freeandnil( ErrorPopup      );
+  ErrorPopup      := TThemeError.Create;
+
+  freeandnil( CheckPopup      );
+  CheckPopup      := TThemeCheck.Create;
+
+
+  freeandnil( SongMenu      );
+  SongMenu      := TThemeSongMenu.Create;
+
+  freeandnil( SongJumpto      );
+  SongJumpto      := TThemeSongJumpto.Create;
+
+  //Party Screens
+  freeandnil( PartyNewRound       );
+  PartyNewRound       := TThemePartyNewRound.Create;
+
+  freeandnil( PartyWin      );
+  PartyWin      := TThemePartyWin.Create;
+
+  freeandnil( PartyScore      );
+  PartyScore      := TThemePartyScore.Create;
+
+  freeandnil( PartyOptions      );
+  PartyOptions      := TThemePartyOptions.Create;
+
+  freeandnil( PartyPlayer       );
+  PartyPlayer       := TThemePartyPlayer.Create;
+
+
+  //Stats Screens:
+  freeandnil( StatMain      );
+  StatMain :=        TThemeStatMain.Create;
+
+  freeandnil( StatDetail      );
+  StatDetail      := TThemeStatDetail.Create;
+
+ end;
 
 end.
