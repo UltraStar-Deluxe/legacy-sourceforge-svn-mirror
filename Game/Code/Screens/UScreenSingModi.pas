@@ -2,8 +2,8 @@ unit UScreenSingModi;
 
 interface
 
-uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, USmpeg, UTexture, ULyrics,
-  TextGL, OpenGL12, BASS, UThemes, ULCD, UScreenSing, ModiSDK;
+uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, ULyrics,
+  TextGL, OpenGL12, BASS, UThemes, ULCD, UScreenSing, ModiSDK, UVideo;
 
 type
   TScreenSingModi = class(TScreenSing)
@@ -944,7 +944,8 @@ end;
 
   // update and draw movie
   if ShowFinish and AktSong.VideoLoaded AND DllMan.Selected.LoadVideo then begin
-    UpdateSmpeg; // this only draws
+      FFmpegGetFrame(Czas.Teraz);
+      FFmpegDrawGL(ScreenAct); // this only draws
   end;
 
   // draw static menu (FG)
