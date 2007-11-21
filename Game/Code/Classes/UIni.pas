@@ -159,7 +159,7 @@ const
   IJoypad:        array[0..1] of string = ('Off', 'On');
   ILPT:           array[0..2] of string = ('Off', 'LCD', 'Lights');
 
-  IChannel:       array[0..6] of string = ('0', '1', '2', '3', '4', '5', '6');
+  IChannel:       array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
 
 implementation
 uses UFiles, SDL, ULanguage, USkins, URecord, UCommandLine;
@@ -275,7 +275,7 @@ begin
       SetLength(IResolution, I + 1);
       IResolution[I] := IntToStr((modes^)^.w) + 'x' + IntToStr((modes^)^.h);
       Inc(I);
-      Inc(modes)
+      Inc(modes);
     Until (modes^)=nil;
   end;
 
