@@ -156,7 +156,7 @@ begin
   //Programm already started
   if (hWnd <> 0) then
   begin
-    I := Messagebox(0, PChar('Another Instance of Ultrastar is already running. Contìnue ?'), PChar(WndTitle), MB_ICONWARNING or MB_YESNO);
+    I := Messagebox(0, PChar('Another Instance of Ultrastar is already running. Continue ?'), PChar(WndTitle), MB_ICONWARNING or MB_YESNO);
     if (I = IDYes) then
     begin
       I := 1;
