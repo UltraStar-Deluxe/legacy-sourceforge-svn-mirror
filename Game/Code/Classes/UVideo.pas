@@ -33,6 +33,7 @@ uses SDL,
      dialogs,
      {$endif}
      {$ENDIF}
+     dialogs,
      UIni;
 
 procedure Init;
@@ -241,18 +242,22 @@ begin
         ScaledVideoWidth:=600.0*VideoAspect;
       end;
       VideoTimeBase:=VideoCodecContext^.time_base.num/VideoCodecContext^.time_base.den;
-      // hack to get reasonable timebase for divx
 {$ifdef DebugDisplay}
       showmessage('framerate: '+inttostr(floor(1/videotimebase))+'fps');
 {$endif}
+      // hack to get reasonable timebase (for divx and others)
       if VideoTimeBase < 0.02 then // 0.02 <-> 50 fps
       begin
         VideoTimeBase:=VideoCodecContext^.time_base.den/VideoCodecContext^.time_base.num;
         while VideoTimeBase > 50 do VideoTimeBase:=VideoTimeBase/10;
         VideoTimeBase:=1/VideoTimeBase;
       end;
+      // hack for flv (i always get 1000 fps from the file...)
+      if VideoCodecContext^.codec_id=CODEC_ID_FLV1 then VideoTimeBase:=1/30;
+
 {$ifdef DebugDisplay}
       showmessage('corrected framerate: '+inttostr(floor(1/videotimebase))+'fps');
+
       if ((VideoAspect*VideoCodecContext^.width*VideoCodecContext^.height)>200000) then
         showmessage('you are trying to play a rather large video'+#13#10+
                     'be prepared to experience some timing problems');
