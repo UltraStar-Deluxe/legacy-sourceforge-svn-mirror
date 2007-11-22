@@ -253,7 +253,7 @@ begin
         VideoTimeBase:=1/VideoTimeBase;
       end;
       // hack for flv (i always get 1000 fps from the file...)
-      if VideoCodecContext^.codec_id=CODEC_ID_FLV1 then VideoTimeBase:=1/30;
+      if VideoCodecContext^.codec_id=CODEC_ID_FLV1 then VideoTimeBase:=1/29.970;
 
 {$ifdef DebugDisplay}
       showmessage('corrected framerate: '+inttostr(floor(1/videotimebase))+'fps');
