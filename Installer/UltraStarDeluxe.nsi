@@ -1,15 +1,15 @@
 ; --------------------------------------------------------------
-; UltraStar Deluxe - Installation Wizard with NSIS (USDXIWWNSIS) 
+; UltraStar Deluxe - Installation Wizard with NSIS (USDXIWWNSIS)
 ; --------------------------------------------------------------
 
-!include "MUI.nsh"	; Include the macros for the Modern User Interface
+!include "MUI.nsh"        ; Include the macros for the Modern User Interface
 !include "LogicLib.nsh"
 !include ".\settings\GameExplorer.nsh"
 !include ".\settings\functions.nsh"
 !include "WinVer.nsh"
 
-!define icon_inst ".\icons\ustar.ico"		; Icon for Installation
-!define icon_uninst ".\icons\uninstall.ico"	; Icon for Uninstallation
+!define icon_inst ".\icons\ustar.ico"                ; Icon for Installation
+!define icon_uninst ".\icons\uninstall.ico"        ; Icon for Uninstallation
 
 SetCompress Auto
 SetCompressor /SOLID lzma
@@ -32,7 +32,7 @@ SetDatablockOptimize On
 
 !define MUI_WELCOMEPAGE_TITLE "$(wp_title)"
 
-!define MUI_WELCOMEPAGE_TEXT "$(wp_text)" 
+!define MUI_WELCOMEPAGE_TEXT "$(wp_text)"
 ;!define MUI_FINISHPAGE_SHOWREADME_TEXT "$(fp_showreadme)"
 !define MUI_FINISHPAGE_LINK "$(fp_link)"
 !define MUI_UNCONFIRMPAGE_TEXT_TOP "UltraStar Deluxe - $(sm_uninstall)"
@@ -43,8 +43,8 @@ SetDatablockOptimize On
 !define MUI_FINISHPAGE_TITLE_3LINES
 
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${exe}.exe"
-!define MUI_FINISHPAGE_RUN_NOTCHECKED			
- 
+!define MUI_FINISHPAGE_RUN_NOTCHECKED
+
 ;!define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\ReadMe.txt"
 
 !define MUI_FINISHPAGE_LINK_LOCATION "${homepage}"
@@ -82,33 +82,33 @@ ShowUnInstDetails show
 
 ; Modern User Interface (MUI) Stuff
 
-!define MUI_ICON "${icon_inst}"		; Icon for Installation
-!define MUI_UNICON "${icon_uninst}"	; Icon for Uninstallation
+!define MUI_ICON "${icon_inst}"                ; Icon for Installation
+!define MUI_UNICON "${icon_uninst}"        ; Icon for Uninstallation
 
 !define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_BITMAP "${bmp_header}" 		 ; Header Bitmap of the installation (Size: 150x57 px)
-!define MUI_HEADERIMAGE_UNBITMAP "${bmp_header}"	 ; Header Bitmap of the uninstallation (Size: 150x57 px)
-!define MUI_WELCOMEFINISHPAGE_BITMAP "${bmp_side}"	 ; Left Side Bitmap of Welcome & Finish Page while Installation (Size: 164x314 px)
-!define MUI_UNWELCOMEFINISHPAGE_BITMAP "${bmp_side}"	 ; Left Side Bitmap of Welcome & Finish Page while Uninstallation (Size: 164x314 px)
-!define MUI_BGCOLOR "FFFFFF"				 ; RGB Background color (for header, welcome & finish page)
-!define MUI_WELCOMEFINISHPAGE_INI "${mui_ini}"		 ; Installation Options for Welcome & Finish Page (Installation)
-!define MUI_UNWELCOMEFINISHPAGE_INI "${mui_ini}"	 ; Installation Options for Welcome & Finish Page (Uninstallation)
-!define MUI_LICENSEPAGE_BGCOLOR "${license_bgcolor}"	 ; Background Color of Licence agreement
-!define MUI_COMPONENTSPAGE_CHECKBITMAP "${bmp_check}" 	 ; Bitmap of Checks at Components Selection Page
+!define MUI_HEADERIMAGE_BITMAP "${bmp_header}"                  ; Header Bitmap of the installation (Size: 150x57 px)
+!define MUI_HEADERIMAGE_UNBITMAP "${bmp_header}"         ; Header Bitmap of the uninstallation (Size: 150x57 px)
+!define MUI_WELCOMEFINISHPAGE_BITMAP "${bmp_side}"         ; Left Side Bitmap of Welcome & Finish Page while Installation (Size: 164x314 px)
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "${bmp_side}"         ; Left Side Bitmap of Welcome & Finish Page while Uninstallation (Size: 164x314 px)
+!define MUI_BGCOLOR "FFFFFF"                                 ; RGB Background color (for header, welcome & finish page)
+!define MUI_WELCOMEFINISHPAGE_INI "${mui_ini}"                 ; Installation Options for Welcome & Finish Page (Installation)
+!define MUI_UNWELCOMEFINISHPAGE_INI "${mui_ini}"         ; Installation Options for Welcome & Finish Page (Uninstallation)
+!define MUI_LICENSEPAGE_BGCOLOR "${license_bgcolor}"         ; Background Color of Licence agreement
+!define MUI_COMPONENTSPAGE_CHECKBITMAP "${bmp_check}"          ; Bitmap of Checks at Components Selection Page
 !define MUI_DIRECTORYPAGE_BGCOLOR "${directory_bgcolor}" ; RGB Background Color for Directory textbox
-!define MUI_STARTMENUPAGE_BGCOLOR "${smp_bgcolor}"	 ; RGB Background of Startmenu List and Textbox
-;!define MUI_INSTFILESPAGE_COLORS "${dets_bgcolor}"	 ; Background Color of Details Screen while files are being extracted
+!define MUI_STARTMENUPAGE_BGCOLOR "${smp_bgcolor}"         ; RGB Background of Startmenu List and Textbox
+;!define MUI_INSTFILESPAGE_COLORS "${dets_bgcolor}"         ; Background Color of Details Screen while files are being extracted
 
 
 !define MUI_LANGDLL_WINDOWTITLE "USdx In-/Uninstaller: Choose language"
 !define MUI_LANGDLL_ALWAYSSHOW
 
-!define MUI_FINISHPAGE_NOAUTOCLOSE			 ; Allows user to check the log file of installation (Comment out if unwanted)
-!define MUI_UNFINISHPAGE_NOAUTOCLOSE			 ; Allows user to check the log file of uninstallation (Comment out if unwanted)
+!define MUI_FINISHPAGE_NOAUTOCLOSE                         ; Allows user to check the log file of installation (Comment out if unwanted)
+!define MUI_UNFINISHPAGE_NOAUTOCLOSE                         ; Allows user to check the log file of uninstallation (Comment out if unwanted)
 
 !define MUI_ABORTWARNING
-!define MUI_ABORTWARNING_TEXT $(str_abort)		 ; Abort Warning message
-!define MUI_ABORTWARNING_CANCEL_DEFAULT			 ; Default: Cancel abort (Comment out if unwanted)
+!define MUI_ABORTWARNING_TEXT $(str_abort)                 ; Abort Warning message
+!define MUI_ABORTWARNING_CANCEL_DEFAULT                         ; Default: Cancel abort (Comment out if unwanted)
 
 !define MUI_FINISHPAGE_SHOWREADME
 !define MUI_FINISHPAGE_SHOWREADME_TEXT $(sc_desktop)
@@ -144,7 +144,7 @@ Page custom Settings
 Function Settings
 
 !insertmacro MUI_HEADER_TEXT "$(Settings_TITLE)" "$(Settings_SUBTITLE)"
-   
+
    !insertmacro MUI_INSTALLOPTIONS_DISPLAY "Settings-$LANGUAGE"
 
 ; Get all the variables:
@@ -230,14 +230,14 @@ FunctionEnd ;Custom page end
 ; Section1: Main components of UltraStar Deluxe
 ; ---------------------------------------------------------
 
-LangString DESC_Section1 ${LANG_ENGLISH} "${eng_sec1_desc}"	; Adds the description to section1
+LangString DESC_Section1 ${LANG_ENGLISH} "${eng_sec1_desc}"        ; Adds the description to section1
 LangString DESC_Section1 ${LANG_GERMAN} "${ger_sec1_desc}"
 
-LangString sec1 ${LANG_ENGLISH} "${eng_sec1}"			; Name of section1
+LangString sec1 ${LANG_ENGLISH} "${eng_sec1}"                        ; Name of section1
 LangString sec1 ${LANG_GERMAN} "${ger_sec1}"
 
 Section $(sec1) Section1
-  SectionIn RO			; readonly
+  SectionIn RO                        ; readonly
   SetOutPath $INSTDIR
   SetOverwrite try
 
@@ -254,14 +254,15 @@ Section $(sec1) Section1
 
   CreateDirectory "${p_name}"
   CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
-  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_website).lnk" "http://www.ultrastardeluxe.org/"
-  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_uninstall).lnk" "$INSTDIR\Uninstall.exe"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_shortcut).lnk" "$INSTDIR\${exe}.exe"
+  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_documentation).lnk" "$INSTDIR\documentation.pdf"
+  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_website).lnk" "http://www.ultrastardeluxe.org/"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_readme).lnk" "$INSTDIR\ReadMe.txt"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_license).lnk" "$INSTDIR\License.txt"
+  CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\$(sm_uninstall).lnk" "$INSTDIR\Uninstall.exe"
   !insertmacro MUI_STARTMENU_WRITE_END
 
-; WINDOWS VISTA GAME EXPLORER 
+; WINDOWS VISTA GAME EXPLORER
 
 ${If} ${AtLeastWinVista}
 
@@ -494,27 +495,27 @@ SectionEnd
 Function .onInit
 
    System::Call 'kernel32::CreateMutexA(i 0, i 0, t "USdx Installer.exe") ?e'
- 
+
   Pop $R0
- 
+
   StrCmp $R0 0 +3
     MessageBox MB_OK "The installer is already running."
     Abort
-  
+
   !insertmacro MUI_LANGDLL_DISPLAY
 
   ReadRegStr $R0 HKLM \
   "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" \
   "UninstallString"
   StrCmp $R0 "" done
- 
+
   MessageBox MB_YESNO|MB_ICONEXCLAMATION \
   "${PRODUCT_NAME} is already installed. $\n$\nAre you sure you want to \
   install it again?" \
   IDYES done
   Abort
 
-  
+
 done:
 
      !insertmacro MUI_INSTALLOPTIONS_EXTRACT_AS ".\settings\settings-1031.ini" "Settings-1031"
@@ -526,19 +527,19 @@ FunctionEnd
 
 Function un.onInit
 
-	${nsProcess::FindProcess} "USdx.exe" $R0
-	StrCmp $R0 0 0 +2
-	MessageBox MB_YESNO|MB_ICONEXCLAMATION 'UltraStar Deluxe cannot be uninstalled while its running! Do you want to close it?' IDYES closeit IDNO end
+        ${nsProcess::FindProcess} "USdx.exe" $R0
+        StrCmp $R0 0 0 +2
+        MessageBox MB_YESNO|MB_ICONEXCLAMATION 'UltraStar Deluxe cannot be uninstalled while its running! Do you want to close it?' IDYES closeit IDNO end
 
-	closeit:
-	${nsProcess::KillProcess} "USdx.exe" $R0
-	goto continue
+        closeit:
+        ${nsProcess::KillProcess} "USdx.exe" $R0
+        goto continue
 
-	end: 
-	${nsProcess::Unload}
-	Abort
+        end:
+        ${nsProcess::Unload}
+        Abort
 
-	continue:
-   	!insertmacro MUI_LANGDLL_DISPLAY
+        continue:
+           !insertmacro MUI_LANGDLL_DISPLAY
 
 FunctionEnd

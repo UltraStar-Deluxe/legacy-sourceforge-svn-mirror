@@ -30,19 +30,22 @@ LangString sm_shortcut ${LANG_ENGLISH} "Play UltraStar Deluxe"
 LangString sc_desktop ${LANG_GERMAN} "Verknüpfung auf dem Desktop erstellen?" ; Finish Page: Readme = Create Desktop Shortcut
 LangString sc_desktop ${LANG_ENGLISH} "Create Desktop Shortcut?"
 
-LangString sc_play ${LANG_GERMAN} "Spielen"  			  ; Shortcut name play or spielen (used for MCE)
+LangString sc_play ${LANG_GERMAN} "Spielen"                            ; Shortcut name play or spielen (used for MCE)
 LangString sc_play ${LANG_ENGLISH} "Play"
 
-LangString sm_uninstall ${LANG_GERMAN} "Deinstallieren"		  ; Name for uninstall icon in startmenu
+LangString sm_uninstall ${LANG_GERMAN} "Deinstallieren"                  ; Name for uninstall icon in startmenu
 LangString sm_uninstall ${LANG_ENGLISH} "Uninstall"
 
-LangString sm_website ${LANG_GERMAN} "Internetseite"		  ; Name for website icon in startmenu
+LangString sm_website ${LANG_GERMAN} "Webseite"                  ; Name for website icon in startmenu
 LangString sm_website ${LANG_ENGLISH} "Website"
 
-LangString sm_license ${LANG_GERMAN} "Lizenz"			  ; Name for license.txt icon in startmenu
+LangString sm_documentation ${LANG_GERMAN} "Dokumentation"                  ; Name for documentation icon in startmenu
+LangString sm_documentation ${LANG_ENGLISH} "Documentation"
+
+LangString sm_license ${LANG_GERMAN} "Lizenz"                          ; Name for license.txt icon in startmenu
 LangString sm_license ${LANG_ENGLISH} "License"
 
-LangString sm_readme ${LANG_GERMAN} "Lies mich"			  ; Name for readme.txt icon in startmenu
+LangString sm_readme ${LANG_GERMAN} "Lies mich"                          ; Name for readme.txt icon in startmenu
 LangString sm_readme ${LANG_ENGLISH} "Readme"
 
 LangString Settings_TITLE ${LANG_ENGLISH} " "
@@ -50,20 +53,20 @@ LangString Settings_TITLE ${LANG_GERMAN} " "
 LangString Settings_SUBTITLE ${LANG_ENGLISH} "Specify your favorite settings for UltraStar Deluxe"
 LangString Settings_SUBTITLE ${LANG_GERMAN} "Lege deine favorisierten Einstellungen für UltraStar Deluxe fest."
 
-LangString wp_title ${LANG_GERMAN} "Willkommen zur Installationsroutine von UltraStar Deluxe"	; Title String in Welcome Page
+LangString wp_title ${LANG_GERMAN} "Willkommen zur Installationsroutine von UltraStar Deluxe"        ; Title String in Welcome Page
 LangString wp_title ${LANG_ENGLISH} "Welcome to the UltraStar Deluxe Setup Wizard"
 
 LangString wp_text ${LANG_GERMAN} "Dieser Assistent wird Sie durch die Installation von UltraStar Deluxe begleiten. UltraStar Deluxe ist ein kostenloses quelloffenes Karaokespiel, welches Singstar ähnelt. Diese Installationsroutine enthält den Bonus Song 'Dead Smiling Pirates - I 18' aus der CreativeCommons Datenbank, der optional heruntergeladen werden kann (benötigt aktive Internetverbindung).\n\r\n\rDas UltraStar Deluxe Team wünscht viel Spaß.\n\rProjekthomepage: http://www.ultrastardeluxe.org\n\rSupport Forum: http://forum.ultrastardeluxe.org"
 LangString wp_text ${LANG_ENGLISH} "This wizard will guide you through the Installation of UltraStar Deluxe. UltraStar Deluxe is a free open source Karaoke game, which can be compared with Singstar. These Installation Wizard includes the bonus track 'Dead Smiling Pirates - I 18' from the CreativeCommons database and which can be downloaded seperatly (requires active internet connection).\n\r\n\rThe UltraStar Deluxe Team wishes you fun.\n\rProject website: http://www.ultrastardeluxe.org\n\rSupport Forum: http://forum.ultrastardeluxe.org"
 
-LangString fp_showreadme ${LANG_GERMAN} "Dokumentation ansehen (PDF)"	; "Show Readme" String in Finish Page
+LangString fp_showreadme ${LANG_GERMAN} "Dokumentation ansehen (PDF)"        ; "Show Readme" String in Finish Page
 LangString fp_showreadme ${LANG_ENGLISH} "See documentation (PDF)"
 
 LangString fp_text ${LANG_GERMAN}  "UltraStar wurde erfolgreich auf Ihrem System installiert.\n\rBesuchen Sie unsere Projektwebseite um die neusten Updates und News zu erhalten."
 LangString fp_text ${LANG_ENGLISH}  "UltraStar was installed successfully on you system.\n\rVisit out project website to get latest news and updates."
 
-LangString fp_link ${LANG_GERMAN} "Projektwebseite"	; Link to developers website - String in Finish Page
+LangString fp_link ${LANG_GERMAN} "Projektwebseite"        ; Link to developers website - String in Finish Page
 LangString fp_link ${LANG_ENGLISH} "Project website"
 
-LangString uncp_text ${LANG_GERMAN} "Willkommen beim Deinstallations-Assistent für UltraStar Deluxe" 
+LangString uncp_text ${LANG_GERMAN} "Willkommen beim Deinstallations-Assistent für UltraStar Deluxe"
 LangString uncp_text ${LANG_ENGLISH} "Welcome to the UltraStar Deluxe Uninstall Wizard"
