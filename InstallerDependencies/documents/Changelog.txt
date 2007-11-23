@@ -1,13 +1,29 @@
-UltraStar Deluxe 1.01 (by Ultrastar Deluxe Team)
+UltraStar Deluxe 1.01
 -----------------------------
-Upd: New language files added
-Upd: Upgraded SDL Libary
-Upd: Offer Installer Download
+Upd: SDL-Lib update
+Upd: Bass update
+Upd: New video support (FFMpeg instead of SMPeg) 
+     ->nearly all video formats are supported. Better synchronisation of most vids.
+Upd: On demand theme, skin and color changing
+Upd: Some speed improvements
+Upd: Backspace works now like ESC on most screens
+Upd: Editor: Singlenote-playback (SHIFT + Space / CTRL + SHIFT + Space)
+Upd: Editor: More characters work in text-edit-mode e.g. '~'
+Upd: Beautified Deluxe theme. 
+       - New textures for the bar
+       - New backgrounds for the Deluxe skins
+       - Color is changeable in Deluxe theme now \o/
+Upd: Executable name changed to USdx.exe
+Upd: New menusounds
 
-Fix: Girder support
-Fix: License file was mentioned in the error.log 
-     (There are no error reports for files named Readme.txt or License.txt)
-Fix: Resolution fix to support running in wine (e.g. on linux)
+Add: Installer available
+
+Fix: 4/6 Players: Scores are shown correctly on the scorescreen
+Fix: Double adding of Highscores if screens=2
+Fix: Overlapping of some artists names with songs should be fixed in most cases
+Fix: License and Readme files caused error messages in error.log
+Fix: Some sounds, (mainly the editors 'click' sound) were to quiet
+Fix: Should now work with Girder
 
 UltraStar Deluxe 1.00 (by Ultrastar Deluxe Team)
 -----------------------------
