@@ -232,15 +232,19 @@ begin
         VideoAspect:=VideoCodecContext^.width/VideoCodecContext^.height
       else
         VideoAspect:=VideoAspect*VideoCodecContext^.width/VideoCodecContext^.height;
-      if VideoAspect >= 4/3 then
+      VideoAspect:=0.5;
+      showmessage('Video Aspect: '+inttostr(integer(trunc(videoaspect*1000))));
+//    if VideoAspect >= 4/3 then
       begin
         ScaledVideoWidth:=800.0;
         ScaledVideoHeight:=800.0/VideoAspect;
-      end else
+      end;
+{    else
       begin
         ScaledVideoHeight:=600.0;
         ScaledVideoWidth:=600.0*VideoAspect;
       end;
+}
       VideoTimeBase:=VideoCodecContext^.time_base.num/VideoCodecContext^.time_base.den;
 {$ifdef DebugDisplay}
       showmessage('framerate: '+inttostr(floor(1/videotimebase))+'fps');
