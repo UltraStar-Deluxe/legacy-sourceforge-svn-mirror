@@ -60,7 +60,7 @@ var
   VideoTextureU, VideoTextureV: Real;
   VideoTimeBase, VideoTime, LastFrameTime, TimeDifference, NegativeSkipTime: Extended;
   VideoSkipTime: Single;
-  
+
 implementation
 
 {$ifdef DebugDisplay}
@@ -91,14 +91,16 @@ end;
 procedure FFmpegOpenFile(FileName: pAnsiChar);
 var errnum, i, x,y: Integer;
   lStreamsCount : Integer;
+  rTimeBase: Extended;
 begin
   VideoOpened    := False;
   VideoPaused    := False;
   VideoTimeBase  := 0;
+  rTimeBase:=0;
   VideoTime      := 0;
   LastFrameTime  := 0;
   TimeDifference := 0;
-  
+
   errnum         := av_open_input_file(VideoFormatContext, FileName, Nil, 0, Nil);
   
   if(errnum <> 0) then
@@ -173,7 +175,7 @@ begin
       av_close_input_file(VideoFormatContext);
       Exit;
     end;
-    
+
     if(VideoCodec<>Nil) then
     begin
       errnum:=avcodec_open(VideoCodecContext, VideoCodec);
@@ -192,7 +194,9 @@ begin
         'Width='+inttostr(VideoCodecContext^.width)+
         ', Height='+inttostr(VideoCodecContext^.height)+#13#10+
         'Aspect: '+inttostr(VideoCodecContext^.sample_aspect_ratio.num)+'/'+inttostr(VideoCodecContext^.sample_aspect_ratio.den)+#13#10+
-        'Framerate: '+inttostr(VideoCodecContext^.time_base.num)+'/'+inttostr(VideoCodecContext^.time_base.den));
+        'Framerate: '+inttostr(VideoCodecContext^.time_base.num)+'/'+inttostr(VideoCodecContext^.time_base.den)+#13#10+
+        'rFrameRate: '+inttostr(VideoFormatContext^.streams[VideoStreamIndex]^.r_frame_rate.num)+'/'+inttostr(VideoFormatContext^.streams[VideoStreamIndex]^.r_frame_rate.den)
+       );
 {$endif}
       // allocate space for decoded frame and rgb frame
       AVFrame:=avcodec_alloc_frame;
@@ -242,19 +246,21 @@ begin
         ScaledVideoWidth:=600.0*VideoAspect;  // video-full-width-hack
       end;                        // video-full-width-hack
 }                                 // video-full-width-hack
-      VideoTimeBase:=VideoCodecContext^.time_base.num/VideoCodecContext^.time_base.den;
+//      VideoTimeBase:=VideoCodecContext^.time_base.num/VideoCodecContext^.time_base.den;
+      VideoTimeBase:=VideoFormatContext^.streams[VideoStreamIndex]^.r_frame_rate.den/VideoFormatContext^.streams[VideoStreamIndex]^.r_frame_rate.num;
 {$ifdef DebugDisplay}
       showmessage('framerate: '+inttostr(floor(1/videotimebase))+'fps');
 {$endif}
       // hack to get reasonable timebase (for divx and others)
       if VideoTimeBase < 0.02 then // 0.02 <-> 50 fps
       begin
-        VideoTimeBase:=VideoCodecContext^.time_base.den/VideoCodecContext^.time_base.num;
+//        VideoTimeBase:=VideoCodecContext^.time_base.den/VideoCodecContext^.time_base.num;
+        VideoTimeBase:=VideoFormatContext^.streams[VideoStreamIndex]^.r_frame_rate.num/VideoFormatContext^.streams[VideoStreamIndex]^.r_frame_rate.den;
         while VideoTimeBase > 50 do VideoTimeBase:=VideoTimeBase/10;
         VideoTimeBase:=1/VideoTimeBase;
       end;
-      // hack for flv (i always get 1000 fps from the file...)
-      if VideoCodecContext^.codec_id=CODEC_ID_FLV1 then VideoTimeBase:=1/29.970;
+//      // hack for flv (i always get 1000 fps from the file...)
+//      if VideoCodecContext^.codec_id=CODEC_ID_FLV1 then VideoTimeBase:=1/29.970;
 
 {$ifdef DebugDisplay}
       showmessage('corrected framerate: '+inttostr(floor(1/videotimebase))+'fps');
