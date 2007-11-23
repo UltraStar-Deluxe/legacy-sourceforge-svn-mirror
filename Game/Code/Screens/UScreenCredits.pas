@@ -66,7 +66,7 @@ type
    end;
                                               
 const
-  Funky_Text: AnsiString =                                                                                                                   |
+  Funky_Text: AnsiString =   //                                                                                                              |
   'A small step in version number, a huge step for the community - USDX works with any video format now. Thanks and greetings fly out to Mota '+
   '(we miss you!), Skar (additional skins), Atlassian.com, Zanadoo.com and WhirlWind-Records.com. Massive thanks to the translators: Jonaspaulo, '+
   'Jacobo, Bres, W0nderboy, Dadone - and our betatesters: Theril, Tyris, Murmeltier and Lemon. Greetings to Tronic from NuubSing (you guys rule!) and Corvus5.';
