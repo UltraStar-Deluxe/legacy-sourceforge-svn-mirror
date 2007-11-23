@@ -232,19 +232,18 @@ begin
         VideoAspect:=VideoCodecContext^.width/VideoCodecContext^.height
       else
         VideoAspect:=VideoAspect*VideoCodecContext^.width/VideoCodecContext^.height;
-      VideoAspect:=0.5;
       showmessage('Video Aspect: '+inttostr(integer(trunc(videoaspect*1000))));
-//    if VideoAspect >= 4/3 then
+//    if VideoAspect >= 4/3 then  // video-full-width-hack
       begin
         ScaledVideoWidth:=800.0;
         ScaledVideoHeight:=800.0/VideoAspect;
       end;
-{    else
-      begin
-        ScaledVideoHeight:=600.0;
-        ScaledVideoWidth:=600.0*VideoAspect;
-      end;
-}
+{    else                         // video-full-width-hack
+      begin                       // video-full-width-hack
+        ScaledVideoHeight:=600.0; // video-full-width-hack
+        ScaledVideoWidth:=600.0*VideoAspect;  // video-full-width-hack
+      end;                        // video-full-width-hack
+}                                 // video-full-width-hack
       VideoTimeBase:=VideoCodecContext^.time_base.num/VideoCodecContext^.time_base.den;
 {$ifdef DebugDisplay}
       showmessage('framerate: '+inttostr(floor(1/videotimebase))+'fps');
