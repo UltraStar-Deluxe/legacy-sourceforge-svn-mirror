@@ -33,7 +33,6 @@ uses SDL,
      dialogs,
      {$endif}
      {$ENDIF}
-     dialogs,
      UIni;
 
 procedure Init;
@@ -232,7 +231,6 @@ begin
         VideoAspect:=VideoCodecContext^.width/VideoCodecContext^.height
       else
         VideoAspect:=VideoAspect*VideoCodecContext^.width/VideoCodecContext^.height;
-      showmessage('Video Aspect: '+inttostr(integer(trunc(videoaspect*1000))));
 //    if VideoAspect >= 4/3 then  // video-full-width-hack
       begin
         ScaledVideoWidth:=800.0;
