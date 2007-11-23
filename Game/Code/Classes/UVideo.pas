@@ -437,6 +437,44 @@ begin
   glDisable(GL_TEXTURE_2D);
   glDisable(GL_BLEND);
 
+//    showmessage('Ini.MovieSize = '+inttostr(Ini.MovieSize));
+    if (Ini.MovieSize < 1) then  //HalfSize BG
+    begin
+      // draw fading bars over top and bottom of background/video
+      glEnable(GL_BLEND);
+      glBegin(GL_QUADS);
+        (* black top *)
+        glColor4f(0,0,0,1);
+        glVertex2f(0, 0);
+        glVertex2f(800,0);
+        glVertex2f(800,110);
+        glVertex2f(0,110);
+        (* top gradient *)
+        glVertex2f(0, 110);
+        glVertex2f(800,110);
+        glColor4f(0,0,0,0);
+        glVertex2f(800,130);
+        glVertex2f(0,130);
+
+        (* bottom gradient *)
+        glColor4f(0,0,0,0);
+        glVertex2f(0, 600-130);
+        glVertex2f(800,600-130);
+        glColor4f(0,0,0,1);
+        glVertex2f(800,600-110);
+        glVertex2f(0,600-110);
+        (* black bottom *)
+        glVertex2f(0, 600-110);
+        glVertex2f(800,600-110);
+        glVertex2f(800,600);
+        glVertex2f(0,600);
+
+      glEnd;
+      glDisable(GL_BLEND);
+    end
+
+// info-stuff
+
 {$ifdef Info}
   if VideoSkipTime+VideoTime+VideoTimeBase < 0 then begin
     glColor4f(0.7, 1, 0.3, 1);
