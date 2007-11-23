@@ -1,7 +1,7 @@
 ; This list contains the files that will be installed
 
 ; Create required directories:
-
+  
   CreateDirectory "$INSTDIR\Covers"
   CreateDirectory "$INSTDIR\Languages"
   CreateDirectory "$INSTDIR\Plugins"
@@ -17,10 +17,10 @@
   SetOutPath "$INSTDIR"
   File "..\InstallerDependencies\dll\bass.dll"
   File "..\InstallerDependencies\dll\SDL.dll"
-  File "..\InstallerDependencies\dll\avutil-49.dll"
+  File "..\InstallerDependencies\dll\sqlite3.dll"
   File "..\InstallerDependencies\dll\avcodec-51.dll"
   File "..\InstallerDependencies\dll\avformat-50.dll"
-  File "..\InstallerDependencies\dll\sqlite3.dll"
+  File "..\InstallerDependencies\dll\avutil-49.dll"
 
   File "..\InstallerDependencies\documents\Changelog.german.txt"
   File "..\InstallerDependencies\documents\Changelog.txt"
@@ -62,8 +62,8 @@ ${EndIf}
   File "..\Plugins\Blind.dll"
   File "..\Plugins\Duell.dll"
   File "..\Plugins\Hold_The_Line.dll"
-  File "..\Plugins\Until5000.dll"
   File "..\Plugins\TeamDuell.dll"
+  File "..\Plugins\Until5000.dll"
 
   SetOutPath "$INSTDIR\Skins\Classic\"
   File "..\Skins\Classic\[button]13.jpg"
@@ -258,7 +258,7 @@ ${EndIf}
   File "..\Sounds\select music change music 50.mp3"
   File "..\Sounds\select music change music.mp3"
   File "..\Sounds\wome-credits-tune.mp3"
-
+  
   SetOutPath "$INSTDIR\Themes\"
   File "..\Themes\Classic.ini"
   File "..\Themes\Deluxe.ini"

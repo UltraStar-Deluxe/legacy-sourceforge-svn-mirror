@@ -64,7 +64,7 @@ SetDatablockOptimize On
 
 Name "${p_name} V.${version}"
 Brandingtext "${p_name} Installation"
-OutFile "ultrastardx-${version}-installer-lite.exe"
+OutFile "ultrastardx-${version}-installer-full.exe"
 !define ins_name "Install ${p_name} V.${version}.exe"
 
 InstallDir "$PROGRAMFILES\${p_name}"
@@ -309,23 +309,23 @@ SectionEnd
 ; Section2: Example Song "Dead Smiling Pirates"
 ; ---------------------------------------------------------
 
-; LangString DESC_g2Section1 ${LANG_ENGLISH} "${eng_g2Section1_desc}"
-; LangString DESC_g2Section1 ${LANG_GERMAN} "${ger_g2Section1_desc}"
+ LangString DESC_g2Section1 ${LANG_ENGLISH} "${eng_g2Section1_desc}"
+ LangString DESC_g2Section1 ${LANG_GERMAN} "${ger_g2Section1_desc}"
 
-; LangString DESC_g2Section2 ${LANG_ENGLISH} "${eng_g2Section2_desc}"
-; LangString DESC_g2Section2 ${LANG_GERMAN} "${ger_g2Section2_desc}"
+ LangString DESC_g2Section2 ${LANG_ENGLISH} "${eng_g2Section2_desc}"
+ LangString DESC_g2Section2 ${LANG_GERMAN} "${ger_g2Section2_desc}"
 
-; LangString sec2 ${LANG_ENGLISH} "${eng_sec2}"
-; LangString sec2 ${LANG_GERMAN} "${ger_sec2}"
+ LangString sec2 ${LANG_ENGLISH} "${eng_sec2}"
+ LangString sec2 ${LANG_GERMAN} "${ger_sec2}"
 
-; SectionGroup $(sec2) Section2
+SectionGroup $(sec2) Section2
 
-; Section /o "Dead Smiling Pirates - I 18" g2Section1
-;   AddSize 2816
-;   SetOverwrite try
-;   SetOutPath "$INSTDIR"
-;   CreateDirectory "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]"
-;   SetOutPath "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\"
+Section /o "Dead Smiling Pirates - I 18" g2Section1
+   AddSize 2816
+   SetOverwrite try
+   SetOutPath "$INSTDIR"
+   CreateDirectory "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]"
+   SetOutPath "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]\"
 
 ; Download song:
 ; NSISdl::download /TIMEOUT=30000 ${demosong} $TEMP\Song-I-18.zip
@@ -338,16 +338,21 @@ SectionEnd
 
 ; Delete "$TEMP\Song-I-18.zip"
 
-;   SetOutPath "$INSTDIR"
 
-; SectionEnd
+  SetOutPath "$INSTDIR"
 
-; Section /o "Steven Dunston - Northern Star" g2Section2
-;   AddSize 3769
-;   SetOverwrite try
-;   SetOutPath "$INSTDIR"
-;   CreateDirectory "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]"
-;   SetOutPath "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\"
+!include ".\settings\optional\in_song1.nsh"
+
+  SetOutPath "$INSTDIR"
+
+ SectionEnd
+
+Section /o "Steven Dunston - Northern Star" g2Section2
+   AddSize 3769
+   SetOverwrite try
+   SetOutPath "$INSTDIR"
+   CreateDirectory "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]"
+   SetOutPath "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\"
 
 ; Download song:
 ; NSISdl::download /TIMEOUT=30000 ${demosong2} $TEMP\Song-Northern-Star.zip
@@ -360,11 +365,15 @@ SectionEnd
 
 ; Delete "$TEMP\Song-Northern-Star.zip"
 
-;   SetOutPath "$INSTDIR"
+  SetOutPath "$INSTDIR"
 
-; SectionEnd
+!include ".\settings\optional\in_song2.nsh"
 
-; SectionGroupEnd
+  SetOutPath "$INSTDIR"
+
+ SectionEnd
+
+ SectionGroupEnd
 
 ; ---------------------------------------------------------
 ; Section3: Optional Themes
@@ -486,8 +495,8 @@ SectionEnd
   !insertmacro MUI_DESCRIPTION_TEXT ${g1Sec2} $(DESC_g1Sec2)
   !insertmacro MUI_DESCRIPTION_TEXT ${g1Sec3} $(DESC_g1Sec3)
 
-;  !insertmacro MUI_DESCRIPTION_TEXT ${g2Section1} $(DESC_g2Section1)
-;  !insertmacro MUI_DESCRIPTION_TEXT ${g2Section2} $(DESC_g2Section2)
+  !insertmacro MUI_DESCRIPTION_TEXT ${g2Section1} $(DESC_g2Section1)
+  !insertmacro MUI_DESCRIPTION_TEXT ${g2Section2} $(DESC_g2Section2)
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 

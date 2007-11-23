@@ -27,11 +27,11 @@
 !define eng_sec3_desc "You can choose which optional themes should also be installed."  ; English Description of "Optional Themes"-Section
 !define ger_sec3_desc "Hier können optionale Motive zum Installieren gewählt werden."   ; German Description of "Optional Themes"-Section
 
-!define eng_g2Section1_desc "Downloads the demo song 'Dead Smiling Pirates - I 18'. Requires: Active Internet connection!"	; English Description of the Example Song "I 18"
-!define ger_g2Section1_desc "Lädt das freie Beispiellied 'Dead Smiling Pirates - I 18' herunter. Benötigt: Aktive Internetverbindung!"   	; German Description of the Example Song "I 18"
+!define eng_g2Section1_desc "Install the demo song 'Dead Smiling Pirates - I 18'."	; English Description of the Example Song "I 18"
+!define ger_g2Section1_desc "Installiert das freie Beispiellied 'Dead Smiling Pirates - I 18'"   	; German Description of the Example Song "I 18"
 
-!define eng_g2Section2_desc "Downloads the demo song 'Steven Dunston - Northern Star'. Requires: Active Internet connection!"		; English Description of the Example Song "Northern Star"
-!define ger_g2Section2_desc "Lädt das freie Beispiellied 'Steven Dunston - Northern Star' herunter. Benötigt: Aktive Internetverbindung!"	; German Description of the Example Song "Northern Star"
+!define eng_g2Section2_desc "Install the demo song 'Steven Dunston - Northern Star'."		; English Description of the Example Song "Northern Star"
+!define ger_g2Section2_desc "Installiert das freie Beispiellied 'Steven Dunston - Northern Star'"	; German Description of the Example Song "Northern Star"
 
 !define eng_sec1 "Base components" 							; English Name of the component section1
 !define ger_sec1 "Basiskomponenten" 							; German Name of the component section1
@@ -44,14 +44,14 @@
 
 ; Group Section Descriptions:
 
-!define eng_g1Sec1_desc "This will download the optional theme 'Orange' by Skar."
-!define ger_g1Sec1_desc "Dies lädt das optionale Motiv 'Orange' von Skar herunter."
+!define eng_g1Sec1_desc "This will install the optional theme 'Orange' by Skar."
+!define ger_g1Sec1_desc "Dies installiert das optionale Motiv 'Orange' von Skar."
 
-!define eng_g1Sec2_desc "This will download the optional theme 'Streetlight' by Skar."
-!define ger_g1Sec2_desc "Dies lädt das optionale Motiv 'Streetlight' von Skar herunter."
+!define eng_g1Sec2_desc "This will install the optional theme 'Streetlight' by Skar."
+!define ger_g1Sec2_desc "Dies installiert das optionale Motiv 'Streetlight' von Skar."
 
-!define eng_g1Sec3_desc "This will download the optional theme 'Vistar' by Skar."
-!define ger_g1Sec3_desc "Dies lädt das optionale Motiv 'Vistar' von Skar herunter."
+!define eng_g1Sec3_desc "This will install the optional theme 'Vistar' by Skar."
+!define ger_g1Sec3_desc "Dies installiert das optionale Motiv 'Vistar' von Skar."
 
 ; Skin:
 
