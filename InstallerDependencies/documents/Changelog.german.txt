@@ -15,6 +15,8 @@ Upd: Deluxe-Theme verschönert.
        - Farbe ist nun im Deluxe-Theme änderbar \o/
 Upd: Executable Name zu USdx.exe geändert
 Upd: Neue Sounds für die Menüs
+Upd: 3 neue Skins von Skar/Alajasam hinzugefügt
+Upd: TeamDuell (ähnlich Gib das Mikro weiter) Modiplugin hinzugefügt
 
 Add: Installer verfügbar
 
