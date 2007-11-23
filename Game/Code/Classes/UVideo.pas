@@ -293,11 +293,13 @@ begin
 end;
 
 procedure FFmpegSkip(Time: Single);
+var seek_target: uint64;
 begin
   VideoSkiptime:=Time;
   NegativeSkipTime:=Time;
   if VideoSkipTime > 0 then begin
-    av_seek_frame(VideoFormatContext,-1,Floor((VideoSkipTime)*1000000),0);
+//    av_seek_frame(VideoFormatContext,-1,Floor((VideoSkipTime)*1000000),0);
+    av_seek_frame(VideoFormatContext,VideoStreamIndex,Floor(Time/VideoTimeBase),AVSEEK_FLAG_ANY);
     VideoTime:=VideoSkipTime;
   end;
 end;
