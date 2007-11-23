@@ -1,3 +1,30 @@
+UltraStar Deluxe 1.01
+-----------------------------
+Upd: Neue SDL-Lib
+Upd: Neue Bass.dll
+Upd: Video support neu geschrieben (FFMpeg anstatt SMPeg)
+     ->Fast alle Videoformate werden nun unterstützt. Bessere Synchronisation der meisten Videos.
+Upd: Theme, Skin und Farbe können ohne Neustart geändert werden
+Upd: Einige Geschwindigkeitsverbesserungen
+Upd: Backspace ist nun identisch mit ESC bei den meisten Screens
+Upd: Editor: Singlenote-playback (SHIFT + Leertaste / STRG + SHIFT + Leertaste)
+Upd: Editor: Mehr Buchstaben funktionieren nun im Texteditmodus z.B. '~'
+Upd: Deluxe-Theme verschönert. 
+       - Neue Texturen für die Leiste
+       - Neue Hintergründe für die Deluxe Skins
+       - Farbe ist nun im Deluxe-Theme änderbar \o/
+Upd: Executable Name zu USdx.exe geändert
+Upd: Neue Sounds für die Menüs
+
+Add: Installer verfügbar
+
+Fix: 4/6 Spieler: Richtige Punktzahlen werden auf dem Scorescreen angezeigt
+Fix: Doppeltes hinzufügen der Scores bei Screens=2
+Fix: Überlappen einiger Artistennamen mit den Songname sollte nun in den meisten Fällen gefixed sein.
+Fix: License- und Readme.txt Dateien tauchen nicht mehr in der error.log auf
+Fix: Einige Sounds, (hauptsächlich der Editor 'klick'-Sound) waren zu leise
+Fix: USdx sollte nun mit Girder funktionieren
+
 UltraStar Deluxe 1.00 (by Ultrastar Deluxe Team)
 -----------------------------
 
