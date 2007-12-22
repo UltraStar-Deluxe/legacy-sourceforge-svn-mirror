@@ -161,9 +161,11 @@ Begin
       SDL_KEYDOWN:
         begin
           //ScreenShot hack. If Print is pressed-> Make screenshot and Save to Screenshots Path
-          if (Event.key.keysym.sym = SDLK_SYSREQ) then
-            Display.ScreenShot
-
+          if (Event.key.keysym.sym = SDLK_SYSREQ) or (Event.key.keysym.sym = SDLK_PRINT) then
+          begin
+//            ScreenPopupError.ShowPopup('How dare you press the <Print> key'); //show error message
+            Display.ScreenShot;
+          end
           // popup hack... if there is a visible popup then let it handle input instead of underlying screen
           // shoud be done in a way to be sure the topmost popup has preference (maybe error, then check)
           else if (ScreenPopupError <> NIL) and (ScreenPopupError.Visible) then
