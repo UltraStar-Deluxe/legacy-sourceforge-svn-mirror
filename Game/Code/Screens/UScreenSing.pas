@@ -351,7 +351,7 @@ begin
   // set movie
   if (AktSong.Video <> '') and FileExists(AktSong.Path + AktSong.Video) then begin
     FFmpegOpenFile(PAnsiChar(AktSong.Path + AktSong.Video));
-    FFmpegSkip(AktSong.VideoGAP + AktSong.Start);
+    FFmpegSkip(AktSong.VideoGAP, AktSong.Start);
     if (UVideo.VideoOpened) then AktSong.VideoLoaded := true;
   end;
 

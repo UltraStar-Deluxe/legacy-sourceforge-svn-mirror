@@ -41,7 +41,7 @@ procedure FFmpegClose;
 procedure FFmpegGetFrame(Time: Extended);
 procedure FFmpegDrawGL(Screen: integer);
 procedure FFmpegTogglePause;
-procedure FFmpegSkip(Time: Single);
+procedure FFmpegSkip(Gap: Single; Start: Single);
 
 var
   VideoOpened, VideoPaused: Boolean;
@@ -205,11 +205,25 @@ begin
     myBuffer:=Nil;
     if(AVFrame <> Nil) and (AVFrameRGB <> Nil) then
     begin
-      myBuffer:=av_malloc(avpicture_get_size(PIX_FMT_RGB24, VideoCodecContext^.width,
-                            VideoCodecContext^.height));
+      TexX := VideoCodecContext^.width;
+      TexY := VideoCodecContext^.height;
+      dataX := Round(Power(2, Ceil(Log2(TexX))));
+      dataY := Round(Power(2, Ceil(Log2(TexY))));
+      if (dataX >1024) or (dataY>1024) then
+      begin
+{$ifdef DebugDisplay}
+        showmessage('video too large');
+{$endif}
+        av_free(AVFrameRGB);
+        av_free(AVFrame);
+        avcodec_close(VideoCodecContext);
+        av_close_input_file(VideoFormatContext);
+        Exit;
+      end;
+      myBuffer:=av_malloc(avpicture_get_size(PIX_FMT_RGB24, dataX, dataY));
     end;
     if myBuffer <> Nil then errnum:=avpicture_fill(PAVPicture(AVFrameRGB), myBuffer, PIX_FMT_RGB24,
-                VideoCodecContext^.width, VideoCodecContext^.height)
+                dataX, dataY)
     else begin
 {$ifdef DebugDisplay}
       showmessage('failed to allocate video buffer');
@@ -292,15 +306,15 @@ begin
   else VideoPaused:=True;
 end;
 
-procedure FFmpegSkip(Time: Single);
+procedure FFmpegSkip(Gap: Single; Start: Single);
 var seek_target: uint64;
+    str: string;
 begin
-  VideoSkiptime:=Time;
-  NegativeSkipTime:=Time;
-  if VideoSkipTime > 0 then begin
-//    av_seek_frame(VideoFormatContext,-1,Floor((VideoSkipTime)*1000000),0);
-    av_seek_frame(VideoFormatContext,VideoStreamIndex,Floor(Time/VideoTimeBase),AVSEEK_FLAG_ANY);
-    VideoTime:=VideoSkipTime;
+  VideoSkiptime:=Gap;
+  NegativeSkipTime:=Start+Gap;
+  if Start+Gap > 0 then begin
+    av_seek_frame(VideoFormatContext,VideoStreamIndex,Floor((Gap+Start)/(VideoFormatContext^.streams[VideoStreamIndex]^.time_base.num/VideoFormatContext^.streams[VideoStreamIndex]^.time_base.den)),AVSEEK_FLAG_ANY);
+    VideoTime:=Gap+Start;
   end;
 end;
 
@@ -388,7 +402,7 @@ begin
 
   // if we did not get an new frame, there's nothing more to do
   if Framefinished=0 then begin
-    GoldenRec.Spawn(220,15,1,16,0,-1,ColoredStar,$0000ff);
+//    GoldenRec.Spawn(220,15,1,16,0,-1,ColoredStar,$0000ff);
     Exit;
   end;
   // otherwise we convert the pixeldata from YUV to RGB
@@ -399,15 +413,15 @@ begin
   if errnum >=0 then begin
     // copy RGB pixeldata to our TextureBuffer
     // (line by line)
-    FrameDataPtr:=Pointer(AVFrameRGB^.data[0]);
+{    FrameDataPtr:=Pointer(AVFrameRGB^.data[0]);
     linesize:=AVFrameRGB^.linesize[0];
     for y:=0 to TexY-1 do begin
       System.Move(FrameDataPtr[y*linesize],TexData[3*y*dataX],linesize);
     end;
-
+}
     // generate opengl texture out of whatever we got
     glBindTexture(GL_TEXTURE_2D, VideoTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, dataX, dataY, 0, GL_RGB, GL_UNSIGNED_BYTE, TexData);
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, dataX, dataY, 0, GL_RGB, GL_UNSIGNED_BYTE, AVFrameRGB^.data[0]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 {$ifdef DebugFrames}
