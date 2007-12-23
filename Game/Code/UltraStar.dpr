@@ -112,7 +112,7 @@ uses
   avio in 'lib\ffmpeg\avio.pas';
 
 const
-  Version = 'UltraStar Deluxe V 1.0.1';
+  Version = 'UltraStar Deluxe V 1.0.1a';
 
 var
   WndTitle: string;

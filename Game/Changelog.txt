@@ -1,3 +1,8 @@
+UltraStar Deluxe 1.01a
+-----------------------------
+Fix: VideoGap works now again with mpeg videos 
+Fix: Video start is calculated correctly now if start tag is used
+
 UltraStar Deluxe 1.01
 -----------------------------
 Upd: SDL-Lib update

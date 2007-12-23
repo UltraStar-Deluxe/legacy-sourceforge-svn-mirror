@@ -1,4 +1,4 @@
-Ultrastar Deluxe 1.0 Readme.txt
+Ultrastar Deluxe 1.0.1a Readme.txt
 ----------------------------
 1. Authors
 2. Release Notes
