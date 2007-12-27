@@ -8,8 +8,8 @@
 !include ".\settings\functions.nsh"
 !include "WinVer.nsh"
 
-!define icon_inst ".\icons\ustar.ico"                ; Icon for Installation
-!define icon_uninst ".\icons\uninstall.ico"        ; Icon for Uninstallation
+!define icon_inst "ustar.ico"                ; Icon for Installation
+!define icon_uninst "uninstall.ico"        ; Icon for Uninstallation
 
 SetCompress Auto
 SetCompressor /SOLID lzma
@@ -315,13 +315,16 @@ SectionEnd
  LangString DESC_g2Section2 ${LANG_ENGLISH} "${eng_g2Section2_desc}"
  LangString DESC_g2Section2 ${LANG_GERMAN} "${ger_g2Section2_desc}"
 
+ LangString DESC_g2Section3 ${LANG_ENGLISH} "${eng_g2Section3_desc}"
+ LangString DESC_g2Section3 ${LANG_GERMAN} "${ger_g2Section3_desc}"
+
  LangString sec2 ${LANG_ENGLISH} "${eng_sec2}"
  LangString sec2 ${LANG_GERMAN} "${ger_sec2}"
 
 SectionGroup $(sec2) Section2
 
 Section /o "Dead Smiling Pirates - I 18" g2Section1
-   AddSize 2816
+;  AddSize 1400
    SetOverwrite try
    SetOutPath "$INSTDIR"
    CreateDirectory "$INSTDIR\Songs\Dead Smiling Pirates - I 18 [DEMO]"
@@ -348,7 +351,7 @@ Section /o "Dead Smiling Pirates - I 18" g2Section1
  SectionEnd
 
 Section /o "Steven Dunston - Northern Star" g2Section2
-   AddSize 3769
+;  AddSize 1500
    SetOverwrite try
    SetOutPath "$INSTDIR"
    CreateDirectory "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]"
@@ -368,6 +371,32 @@ Section /o "Steven Dunston - Northern Star" g2Section2
   SetOutPath "$INSTDIR"
 
 !include ".\settings\optional\in_song2.nsh"
+
+  SetOutPath "$INSTDIR"
+
+ SectionEnd
+
+Section /o "Joshua Morin - On the run" g2Section3
+;  AddSize 2200
+   SetOverwrite try
+   SetOutPath "$INSTDIR"
+   CreateDirectory "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]"
+   SetOutPath "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]\"
+
+; Download song:
+; NSISdl::download /TIMEOUT=30000 ${demosong3} $TEMP\Song-On-the-run.zip
+
+; Pop $R0 ;Get the return value
+;   StrCmp $R0 "success" dlok
+;     MessageBox MB_OK|MB_ICONEXCLAMATION "Download Error, click OK to Continue" /SD IDOK
+; dlok:
+; nsisunz::Unzip "$TEMP\Song-On-the-run.zip" "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]\"
+
+; Delete "$TEMP\Song-On-the-run.zip"
+
+  SetOutPath "$INSTDIR"
+
+!include ".\settings\optional\in_song3.nsh"
 
   SetOutPath "$INSTDIR"
 
@@ -397,6 +426,7 @@ LangString sec_group ${LANG_GERMAN} "${ger_sec3}"
 SectionGroup $(sec_group) Section3
 
  Section "Orange" g1Sec1
+;  AddSize 700
 
 ; Download theme orange:
 ; NSISdl::download /TIMEOUT=30000 ${dl_orange} $TEMP\Theme-Orange.zip
@@ -418,6 +448,7 @@ SectionGroup $(sec_group) Section3
 SectionEnd
 
  Section "Streetlight" g1Sec2
+;  AddSize 1000
 
 ; Download theme Streetlight:
 ; NSISdl::download /TIMEOUT=30000 ${dl_streetlight} $TEMP\Theme-Streetlight.zip
@@ -439,6 +470,7 @@ SectionEnd
 SectionEnd
 
  Section "Vistar" g1Sec3
+;   AddSize 1000
 
 ; Download theme Vistar:
 
@@ -497,6 +529,7 @@ SectionEnd
 
   !insertmacro MUI_DESCRIPTION_TEXT ${g2Section1} $(DESC_g2Section1)
   !insertmacro MUI_DESCRIPTION_TEXT ${g2Section2} $(DESC_g2Section2)
+  !insertmacro MUI_DESCRIPTION_TEXT ${g2Section3} $(DESC_g2Section3)
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 

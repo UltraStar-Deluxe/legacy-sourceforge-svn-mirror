@@ -1,13 +1,37 @@
-UltraStar Deluxe 1.01 (by Ultrastar Deluxe Team)
+UltraStar Deluxe 1.01a
 -----------------------------
-Upd: Neue Sprachen hinzugefügt
-Upd: SDL Libary aktualisiert
-Upd: UsDx Installer als Download
+Fix: VideoGap funktioniert wieder mit Mpeg Videos 
+Fix: Video Start wird nun richtig berechnet wenn der Start-Tag benutzt wird
+Fix: Screenshot Funktion funktioniert nun wie sie sollte
 
-Fix: Girder support
-Fix: Lizenz des Demosongs stand als Fehler in der Error.log
-     (Errors für Dateien mit den Namen Readme.txt oder License.txt werden ignoriert)
-Fix: Auflösungs Fix um Ultrastar in Wine laufen zu lassen. (z.B. auf Linux)
+UltraStar Deluxe 1.01
+-----------------------------
+Upd: Neue SDL-Lib
+Upd: Neue Bass.dll
+Upd: Video support neu geschrieben (FFMpeg anstatt SMPeg)
+     ->Fast alle Videoformate werden nun unterstützt. Bessere Synchronisation der meisten Videos.
+Upd: Theme, Skin und Farbe können ohne Neustart geändert werden
+Upd: Einige Geschwindigkeitsverbesserungen
+Upd: Backspace ist nun identisch mit ESC bei den meisten Screens
+Upd: Editor: Singlenote-playback (SHIFT + Leertaste / STRG + SHIFT + Leertaste)
+Upd: Editor: Mehr Buchstaben funktionieren nun im Texteditmodus z.B. '~'
+Upd: Deluxe-Theme verschönert. 
+       - Neue Texturen für die Leiste
+       - Neue Hintergründe für die Deluxe Skins
+       - Farbe ist nun im Deluxe-Theme änderbar \o/
+Upd: Executable Name zu USdx.exe geändert
+Upd: Neue Sounds für die Menüs
+Upd: 3 neue Skins von Skar/Alajasam hinzugefügt
+Upd: TeamDuell (ähnlich Gib das Mikro weiter) Modiplugin hinzugefügt
+
+Add: Installer verfügbar
+
+Fix: 4/6 Spieler: Richtige Punktzahlen werden auf dem Scorescreen angezeigt
+Fix: Doppeltes hinzufügen der Scores bei Screens=2
+Fix: Überlappen einiger Artistennamen mit den Songname sollte nun in den meisten Fällen gefixed sein.
+Fix: License- und Readme.txt Dateien tauchen nicht mehr in der error.log auf
+Fix: Einige Sounds, (hauptsächlich der Editor 'klick'-Sound) waren zu leise
+Fix: USdx sollte nun mit Girder funktionieren
 
 UltraStar Deluxe 1.00 (by Ultrastar Deluxe Team)
 -----------------------------

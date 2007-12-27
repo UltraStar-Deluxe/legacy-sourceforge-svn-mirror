@@ -1,4 +1,4 @@
-Ultrastar Deluxe 1.01 Readme.txt
+Ultrastar Deluxe 1.0.1a Readme.txt
 ----------------------------
 1. Authors
 2. Release Notes
@@ -110,4 +110,3 @@ Editor Controls are described in documentation.pdf
 ----------------------------
 Ultrastar Deluxe is licensed under the terms of the GNU General Public License 2.0
 See License.txt for more Information.
-

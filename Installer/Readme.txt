@@ -1,4 +1,4 @@
-SOURCE (23th of November 2007, 23:45 UTC+1 MESZ)
+SOURCE (23th of December 2007, 13:00 UTC+1 MESZ)
 
 Build using Nullsoft Install System
 (http://nsis.sourceforge.net/)

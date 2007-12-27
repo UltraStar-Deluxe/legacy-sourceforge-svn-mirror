@@ -8,8 +8,8 @@
 !include ".\settings\functions.nsh"
 !include "WinVer.nsh"
 
-!define icon_inst ".\icons\ustar.ico"                ; Icon for Installation
-!define icon_uninst ".\icons\uninstall.ico"        ; Icon for Uninstallation
+!define icon_inst "ustar.ico"                ; Icon for Installation
+!define icon_uninst "uninstall.ico"        ; Icon for Uninstallation
 
 SetCompress Auto
 SetCompressor /SOLID lzma

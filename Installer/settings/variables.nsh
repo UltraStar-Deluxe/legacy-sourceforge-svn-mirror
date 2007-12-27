@@ -1,7 +1,7 @@
 ; These are the common used variables
 ; for the USdx Installation Wizard
 
-!define version "1.01"						; Current version of UltraStar Deluxe
+!define version "1.0.1a"						; Current version of UltraStar Deluxe
 !define p_name "UltraStar Deluxe" 				; Just the name of the program
 !define publisher "USDX Team"					; Publisher
 !define homepage "http://www.ultrastardeluxe.org/"		; Project Homepage
@@ -28,10 +28,13 @@
 !define ger_sec3_desc "Hier können optionale Motive zum Installieren gewählt werden."   ; German Description of "Optional Themes"-Section
 
 !define eng_g2Section1_desc "Install the demo song 'Dead Smiling Pirates - I 18'."	; English Description of the Example Song "I 18"
-!define ger_g2Section1_desc "Installiert das freie Beispiellied 'Dead Smiling Pirates - I 18'"   	; German Description of the Example Song "I 18"
+!define ger_g2Section1_desc "Installiert das freie Beispiellied 'Dead Smiling Pirates - I 18'."   	; German Description of the Example Song "I 18"
 
 !define eng_g2Section2_desc "Install the demo song 'Steven Dunston - Northern Star'."		; English Description of the Example Song "Northern Star"
-!define ger_g2Section2_desc "Installiert das freie Beispiellied 'Steven Dunston - Northern Star'"	; German Description of the Example Song "Northern Star"
+!define ger_g2Section2_desc "Installiert das freie Beispiellied 'Steven Dunston - Northern Star'."	; German Description of the Example Song "Northern Star"
+
+!define eng_g2Section3_desc "Install the demo song 'Joshua Morin - On the run'." ; English Description of the Example Song "On the run"
+!define ger_g2Section3_desc "Installiert das freie Beispiellied 'Joshua Morin - On the run'."; German Description of the Example Song "On the run"
 
 !define eng_sec1 "Base components" 							; English Name of the component section1
 !define ger_sec1 "Basiskomponenten" 							; German Name of the component section1

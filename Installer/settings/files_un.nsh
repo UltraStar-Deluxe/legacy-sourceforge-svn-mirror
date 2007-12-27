@@ -12,7 +12,12 @@
  Delete "$INSTDIR\License.txt"
  Delete "$INSTDIR\ReadMe.txt"
  Delete "$INSTDIR\SDL.dll"
- Delete "$INSTDIR\smpeg.dll"
+
+ Delete "$INSTDIR\sqlite3.dll"
+ Delete "$INSTDIR\avcodec-51.dll"
+ Delete "$INSTDIR\avformat-50.dll"
+ Delete "$INSTDIR\avutil-49.dll"
+
  Delete "$INSTDIR\sqlite3.dll"
  Delete "$INSTDIR\config.ini"
  Delete "$INSTDIR\Error.log"
@@ -48,6 +53,7 @@ ${EndIf}
  Delete "$INSTDIR\Plugins\Blind.dll"
  Delete "$INSTDIR\Plugins\Duell.dll"
  Delete "$INSTDIR\Plugins\Hold_The_Line.dll"
+ Delete "$INSTDIR\Plugins\TeamDuell.dll"
  Delete "$INSTDIR\Plugins\Until5000.dll"
 
 ; Delete provided Classic Skin
@@ -257,9 +263,15 @@ ${EndIf}
 
  Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star [BG].jpg"
  Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star [CO].jpg"
- Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star.mp3"
- Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star v1.4.txt"
+ Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star.ogg"
+ Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\Steven Dunston - Northern Star.txt"
  Delete "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]\License.txt"
+
+ Delete "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]\License.txt"
+ Delete "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]\Joshua Morin - On the run.txt"
+ Delete "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]\Joshua Morin - On the run [BG].jpg"
+ Delete "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]\Joshua Morin - On the run [CO].jpg"
+ Delete "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]\Joshua Morin - On the run.ogg"
 
 ; Delete only empty directories:
 
@@ -287,6 +299,9 @@ Call un.DeleteIfEmpty
 StrCpy $0 "$INSTDIR\Songs\Steven Dunston - Northern Star [DEMO]"
 Call un.DeleteIfEmpty
 
+StrCpy $0 "$INSTDIR\Songs\Joshua Morin - On the run [DEMO]"
+Call un.DeleteIfEmpty
+
 StrCpy $0 "$INSTDIR\Songs"
 Call un.DeleteIfEmpty
 
@@ -304,7 +319,6 @@ Call un.DeleteIfEmpty
 
 StrCpy $0 "$INSTDIR"
 Call un.DeleteIfEmpty
-
 
 
 ; Delete created Icons in startmenu
