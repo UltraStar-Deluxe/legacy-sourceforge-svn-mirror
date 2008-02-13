@@ -1,0 +1,191 @@
+##
+# Makefile for @PACKAGE_NAME@ @PACKAGE_VERSION@ 
+# @configure_input@
+##
+
+# general definitions
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+libdir = @libdir@
+infodir = @infodir@
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+datarootdir = @datarootdir@
+VPATH = @srcdir@
+
+usdxrootdir = ../..
+
+# install tool
+INSTALL = @INSTALL@
+# calls "ln -s"
+LN_S = @LN_S@
+
+USDX_PREFIX = UltraStar
+USDX_TOOLS_DIR = $(usdxrootdir)/Tools
+
+EXE_SUFFIX = @EXEEXT@
+
+# Free Pascal compiler
+PPC = @PPC@
+PLIBS = @PLIBS@
+# FPC target platform and processor
+PPLATFORM = @FPC_PLATFORM@
+PPROCESSOR = @FPC_PROCESSOR@
+
+# lazarus defines
+LAZARUS_DIR = @LAZARUS_DIR@
+LCL_WIDGET_TYPE = @LCL_WIDGET_TYPE@
+PROJ_SUFFIX = .lpr
+
+# RC to LRS resource compiler
+RESCOMPILER_NAME = USDXResCompiler
+RESCOMPILER_BIN = $(USDX_TOOLS_DIR)/$(RESCOMPILER_NAME)$(EXE_SUFFIX)
+RESCOMPILER_SRC = $(USDX_TOOLS_DIR)/$(RESCOMPILER_NAME)$(PROJ_SUFFIX)
+RESCOMPILER_PFLAGS = -dRELEASE
+
+# Directories added to the unit path
+PUNIT_TOKEN = -Fu
+PUNIT_FLAGS = \
+    $(PUNIT_TOKEN)$(LAZARUS_DIR)/lcl/units/$(PPROCESSOR)-$(PPLATFORM) \
+    $(PUNIT_TOKEN)$(LAZARUS_DIR)/components/images/lib/$(PPROCESSOR)-$(PPLATFORM) \
+    $(PUNIT_TOKEN)$(LAZARUS_DIR)/components/jpeg \
+    $(PUNIT_TOKEN).
+#    $(PUNIT_TOKEN)$(LAZARUS_DIR)/lcl/units/$(PPROCESSOR)-$(PPLATFORM)/$(LCL_WIDGET_TYPE)
+
+# Directory where compiled units (.ppu and .o files) are stored
+PCUNIT_TOKEN = -FU
+PCUNIT_DIR = ./build/$(PPLATFORM)/lazarus
+PCUNIT_FLAGS = $(PCUNIT_TOKEN)$(PCUNIT_DIR)
+
+# Directories added to the includes path
+PINC_TOKEN = -Fi
+PINC_FLAGS = $(PINC_TOKEN)lib/JEDI-SDL/SDL/Pas
+
+# Defines
+PDEFINES  = -dLCL 
+# this is necessary to use lazjpeg instead of Ulazjpeg
+# but requires configure to detect if gtk/gkt2 or qt is used
+#-dLCL$(LCL_WIDGET_TYPE)
+
+# FPC flags
+
+# The user can overwrite the default flags with
+#   make PFLAGS="myflags"
+PFLAGS = -S2dgi
+# the user's flags (specified with configure) must be the last in
+# the list to overwrite the defaults (e.g.with the - option: -Xs-).
+PFLAGS += @PFLAGS@
+
+PFLAGS_DEBUG   = @PFLAGS_DEBUG@
+PFLAGS_RELEASE = @PFLAGS_RELEASE@
+
+# The user can specify additional flags with
+#   make PFLAGS_EXTRA="myflags"
+PFLAGS_EXTRA =
+PFLAGS += $(PFLAGS_EXTRA)
+
+# lpr project file used as input
+USDX_SRC = $(USDX_PREFIX)$(PROJ_SUFFIX)
+# name of executable
+USDX_BIN = $(usdxrootdir)/$(USDX_PREFIX)$(EXE_SUFFIX)
+
+.PHONY: all resources ultrastardx-app install install-dev install-release uninstall uninstall-dev uninstall-release clean distclean clean_obj clean_res fetch-sounds
+
+all: resources ultrastardx-app
+
+resources: $(USDX_PREFIX).lrs
+
+ultrastardx-app: $(USDX_BIN)
+
+# Clean and rebuild everything because FPC caches some old files
+# (it uses an .inc-files cache for example).
+# As a result FPC misses some changes if it is called without cleaning
+# up first (very annoying while debugging).
+$(USDX_BIN): clean_obj
+#	$(MAKE) clean_obj
+	mkdir -p $(PCUNIT_DIR)
+	$(PPC) $(PFLAGS) $(PDEFINES) $(PLIBS) $(PINC_FLAGS) $(PUNIT_FLAGS) $(PCUNIT_FLAGS) -o$@ $(USDX_SRC)
+
+install: install-@install_type@
+# all
+
+uninstall: uninstall-@install_type@
+
+
+# local development build
+
+install-dev:
+	@if [ ! -d "$(usdxrootdir)/Visuals" ]; then \
+	  echo "Copying visualizer data to $(usdxrootdir)/Visuals ..."; \
+	  cp -r "$(usdxrootdir)/InstallerDependencies/Visuals" "$(usdxrootdir)"; \
+	fi
+	@if [ ! -f "$(usdxrootdir)/Sounds/Common start.mp3" ]; then \
+	  echo ""; \
+	  echo "# The sound-files from Sound-directory of the 1.0.1-branch are required."; \
+	  echo "# Copy them yourself to \"$(usdxrootdir)/Sounds\""; \
+	  echo "# or if you are connected to the web try:"; \
+	  echo "#  make fetch-sounds"; \
+	fi
+
+fetch-sounds:
+	svn co https://ultrastardx.svn.sourceforge.net/svnroot/ultrastardx/branches/1.0.1/Sounds tmp-sounds
+	mv tmp-sounds/*.mp3 $(usdxrootdir)/Sounds
+	rm -rf tmp-sounds
+
+uninstall-dev:
+	rm -f $(USDX_BIN)
+
+# global release build
+
+install-release:
+# TODO: copy files to the appropriate places
+#	$()/mkinstalldirs $(bindir)
+#	$()/mkinstalldirs $(libdir)
+#	$()/mkinstalldirs $(infodir)
+#	$(INSTALL) $(USDX_BIN) $(bindir)/$(USDX_BIN)
+	@echo '"install-release" does not exist yet. Install USDX yourself or use "./configure --enable-dev-build" for a local installation.'
+
+uninstall-release:
+# TODO: remove installed files
+#	rm -f xyz
+	@echo '"install-release" does not exist yet.'
+
+
+clean: clean_obj
+
+distclean: clean clean_res
+	find . -name "*.o" -o -name "*.ppu" -o -name "*.rst" -o -name "*.compiled" | xargs rm -f
+	find . -name "*~" -name "*.bak" -o -name "*.orig" -o -name "*.dcu" | xargs rm -f
+	find . -name "__history" | xargs rm -r -f
+	rm -f $(USDX_PREFIX).res $(USDX_PREFIX).identcache
+	rm -f config.inc config.log config.status configure
+	rm -f Makefile
+	rm -f aclocal.m4 
+	rm -rf autom4te.cache
+
+clean_obj:
+	find "$(PCUNIT_DIR)" -name "*.o" -o -name "*.ppu" -o -name "*.rst" -o -name "*.compiled" | xargs rm -f
+	rm -f $(USDX_BIN)
+
+clean_res:
+	rm -f $(USDX_PREFIX).lrs
+
+$(USDX_PREFIX).lrs: $(RESCOMPILER_BIN) $(USDX_PREFIX).rc
+	$(RESCOMPILER_BIN) $(USDX_PREFIX).rc
+
+$(RESCOMPILER_BIN): $(RESCOMPILER_SRC)
+	mkdir -p $(PCUNIT_DIR)
+	$(PPC) $(RESCOMPILER_PFLAGS) $(PUNIT_FLAGS) $(PCUNIT_FLAGS) -o$@ $(RESCOMPILER_SRC)
+
+configure: configure.ac config.inc.in aclocal.m4
+	autoconf
+
+aclocal.m4: m4/*
+	aclocal -I m4
+
+Makefile: Makefile.in config.status
+	./config.status
+
+config.status: configure
+	./config.status --recheck
