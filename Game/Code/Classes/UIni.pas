@@ -273,6 +273,7 @@ begin
     I := 0;
     Repeat
       SetLength(IResolution, I + 1);
+      writeln( 'Found resolution : '+IntToStr((modes^)^.w) + 'x' + IntToStr((modes^)^.h); );
       IResolution[I] := IntToStr((modes^)^.w) + 'x' + IntToStr((modes^)^.h);
       Inc(I);
       Inc(modes);
