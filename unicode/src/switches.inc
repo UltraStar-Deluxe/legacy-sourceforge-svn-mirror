@@ -65,8 +65,6 @@
   {$DEFINE CONSOLE}
 {$IFEND}
 
-{.$DEFINE UseFreetype}
-
 // audio config
 {$IF Defined(HaveBASS)}
   {$DEFINE UseBASSPlayback}

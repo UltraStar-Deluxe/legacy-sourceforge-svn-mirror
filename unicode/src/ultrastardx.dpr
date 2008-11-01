@@ -76,12 +76,7 @@ uses
 
   zlib                   in 'lib\zlib\zlib.pas',
   png                    in 'lib\libpng\png.pas',
-
-  {$IFDEF UseFreetype}
   freetype               in 'lib\freetype\freetype.pas',
-  UFont                  in 'base\UFont.pas',
-  UTextEncoding          in 'base\UTextEncoding.pas',
-  {$ENDIF}
 
   {$IFDEF UseBass}
   bass                   in 'lib\bass\delphi\bass.pas',
@@ -137,7 +132,7 @@ uses
   {$IFDEF DARWIN}
   PseudoThread  in 'macosx\PseudoThread.pas',
   {$ENDIF}
-  
+
   SQLiteTable3  in 'lib\SQLite\SQLiteTable3.pas',
   SQLite3       in 'lib\SQLite\SQLite3.pas',
 
@@ -176,7 +171,6 @@ uses
   UDraw             in 'base\UDraw.pas',
   URecord           in 'base\URecord.pas',
   UTime             in 'base\UTime.pas',
-  TextGL            in 'base\TextGL.pas',
   USong             in 'base\USong.pas',
   UXMLSong          in 'base\UXMLSong.pas',
   USongs            in 'base\USongs.pas',
@@ -200,6 +194,10 @@ uses
   USingScores       in 'base\USingScores.pas',
   USingNotes        in 'base\USingNotes.pas',
 
+  TextGL            in 'base\TextGL.pas',
+  UFont             in 'base\UFont.pas',
+  UTextEncoding     in 'base\UTextEncoding.pas',
+  
   //------------------------------
   //Includes - Plugin Support
   //------------------------------

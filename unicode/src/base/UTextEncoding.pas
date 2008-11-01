@@ -115,7 +115,10 @@ begin
     if (Src[SrcPos] < #128) then
     begin
       // copy ASCII char
-      Result[DstPos] := Src[SrcPos];
+      // Important: the Ord() is necessary to prevent FPC from an automatic
+      // encoding conversion (using the local codepage). Delphi does not perform
+      // such a conversion.
+      Result[DstPos] := WideChar(Ord(Src[SrcPos]));
       Inc(DstPos);
     end
     else
