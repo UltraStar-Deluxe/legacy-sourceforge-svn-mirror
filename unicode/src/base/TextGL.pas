@@ -88,14 +88,12 @@ end;
 procedure BuildFont;
 var
   FontIni: TMemIniFile;
-  //BitmapFont: TBitmapFont;
   FontFile: string;
 begin
   ActFont := 0;
 
   SetLength(Fonts, 4);
-  FontIni := TMemIniFile.Create(FontPath + 'fontsTTF.ini');
-  //FontIni := TMemIniFile.Create(FontPath + 'fonts.ini');
+  FontIni := TMemIniFile.Create(FontPath + 'fonts.ini');
 
   try
 
@@ -104,14 +102,6 @@ begin
     Fonts[0].Font := TFTScalableFont.Create(FontFile, 64);
     //Fonts[0].Font.GlyphSpacing := 1.4;
     //Fonts[0].Font.Aspect := 1.2;
-
-    {
-    BitmapFont := TBitmapFont.Create(FontFile, 0, 19, 35, -10);
-    BitmapFont.CorrectWidths(2, 0);
-    Fonts[0].Font := TScalableFont.Create(BitmapFont, false);
-    }
-
-    //Fonts[0].Font.Aspect := 0.9;
 
     // Bold
     FontFile := FindFontFile(FontIni, 'Bold');
