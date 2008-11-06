@@ -78,7 +78,7 @@ type
       procedure SetText(Value: string);
       property  Text: string read TextString write SetText;
 
-      procedure DeleteLastL; //Procedure to Delete Last Letter
+      procedure DeleteLastLetter; //Procedure to Delete Last Letter
 
       procedure Draw;
       constructor Create; overload;
@@ -88,8 +88,10 @@ type
 
 implementation
 
-uses UGraphic,
-     StrUtils;
+uses
+  UGraphic,
+  UUnicodeUtils,
+  StrUtils;
 
 procedure TText.SetSelect(Value: boolean);
 begin
@@ -242,17 +244,17 @@ begin
   AddBreak(LastBreak, Length(Value)+1);
 end;
 
-procedure TText.DeleteLastL;
+procedure TText.DeleteLastLetter;
 var
-  S: string;
-  L: integer;
+  Str: UCS4String;
+  Len: integer;
 begin
-  S := TextString;
-  L := Length(S);
-  if (L > 0) then
-    SetLength(S, L-1);
+  Str := UTF8ToUCS4String(TextString);
+  Len := Length(Str);
+  if (Len > 0) then
+    SetLength(Str, Len-1);
 
-  SetText(S);
+  SetText(UCS4ToUTF8String(Str));
 end;
 
 procedure TText.Draw;

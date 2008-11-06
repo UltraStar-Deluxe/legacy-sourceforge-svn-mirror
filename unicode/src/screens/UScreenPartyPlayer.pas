@@ -221,7 +221,7 @@ begin
 
       SDLK_BACKSPACE:
         begin
-          Button[Interaction].Text[0].DeleteLastL;
+          Button[Interaction].Text[0].DeleteLastLetter;
         end;
 
       SDLK_ESCAPE:

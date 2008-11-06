@@ -109,7 +109,7 @@ begin
       case PressedKey of
         SDLK_BACKSPACE:
           begin
-            Button[Interaction].Text[0].DeleteLastL;
+            Button[Interaction].Text[0].DeleteLastLetter;
             exit;
           end;
       end;

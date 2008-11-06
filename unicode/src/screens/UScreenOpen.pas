@@ -82,7 +82,7 @@ begin
         begin
             if Interaction = 0 then
             begin
-              Text[TextN].DeleteLastL;
+              Text[TextN].DeleteLastLetter;
             end;
         end;
 

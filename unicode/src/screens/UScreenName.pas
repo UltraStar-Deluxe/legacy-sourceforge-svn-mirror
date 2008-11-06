@@ -34,7 +34,13 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
+  UMenu,
+  UDisplay,
+  UMusic,
+  UFiles,
+  SDL,
+  SysUtils,
+  UThemes;
 
 type
   TScreenName = class(TMenu)
@@ -48,7 +54,12 @@ type
 
 implementation
 
-uses UGraphic, UMain, UIni, UTexture, UCommon;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  UUnicodeUtils;
 
 
 function TScreenName.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
@@ -65,9 +76,10 @@ begin
 
     // check normal keys
     if (IsAlphaNumericChar(CharCode) or
-        {(CharCode in [' ','-','_','!',',','<','/','*','?','''','"']))} IsPunctuationChar(CharCode)) then
+        IsPunctuationChar(CharCode)) then
     begin
-      Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + CharCode;
+      Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
+                                          UTF8Encode(CharCode);
       Exit;
     end;
 
@@ -186,7 +198,7 @@ begin
 
       SDLK_BACKSPACE:
         begin
-          Button[Interaction].Text[0].DeleteLastL;
+          Button[Interaction].Text[0].DeleteLastLetter;
         end;
 
       SDLK_ESCAPE :

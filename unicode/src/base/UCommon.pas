@@ -66,26 +66,9 @@ procedure RestoreNumericLocale();
 {$IFNDEF MSWINDOWS}
   procedure ZeroMemory( Destination: Pointer; Length: DWORD );
   function MakeLong(a, b: Word): Longint;
-  (*
-  #define LOBYTE(a) (BYTE)(a)
-  #define HIBYTE(a) (BYTE)((a)>>8)
-  #define LOWORD(a) (WORD)(a)
-  #define HIWORD(a) (WORD)((a)>>16)
-  #define MAKEWORD(a,b) (WORD)(((a)&0xff)|((b)<<8))
-  *)
 {$ENDIF}
 
 function FileExistsInsensitive(var FileName: string): boolean;
-
-(*
- * Character classes
- *)
-
-function IsAlphaChar(ch: WideChar): boolean;
-function IsNumericChar(ch: WideChar): boolean;
-function IsAlphaNumericChar(ch: WideChar): boolean;
-function IsPunctuationChar(ch: WideChar): boolean;
-function IsControlChar(ch: WideChar): boolean;
 
 // A stable alternative to TList.Sort() (use TList.Sort() if applicable, see below)
 procedure MergeSort(List: TList; CompareFunc: TListSortCompare);
@@ -258,6 +241,7 @@ end;
 
 
 {$IFNDEF MSWINDOWS}
+
 procedure ZeroMemory( Destination: Pointer; Length: DWORD );
 begin
   FillChar( Destination^, Length, 0 );
@@ -268,28 +252,6 @@ begin
   Result := (LongInt(B) shl 16) + A;
 end;
 
-(*
-function QueryPerformanceCounter(lpPerformanceCount:TLARGEINTEGER):Bool;
-
-  // From http://en.wikipedia.org/wiki/RDTSC
-  function RDTSC: Int64; register;
-  asm
-    rdtsc
-  end;
-
-begin
-  // Use clock_gettime(CLOCK_REALTIME, ...) here (but not from the libc unit)
-  lpPerformanceCount := RDTSC();
-  result := true;
-end;
-
-function QueryPerformanceFrequency(lpFrequency:TLARGEINTEGER):Bool;
-begin
-  // clock_getres(CLOCK_REALTIME, ...)
-  lpFrequency := 0;
-  result := true;
-end;
-*)
 {$ENDIF}
 
 // Checks if a regular files or directory with the given name exists.
@@ -541,59 +503,6 @@ begin
 {$ELSE}
   ConsoleWriteln(msg);
 {$IFEND}
-end;
-
-function IsAlphaChar(ch: WideChar): boolean;
-begin
-  // TODO: add chars > 255 when unicode-fonts work?
-  case ch of
-    'A'..'Z',  // A-Z
-    'a'..'z',  // a-z
-    #170,#181,#186,
-    #192..#214,
-    #216..#246,
-    #248..#255:
-      Result := true;
-    else
-      Result := false;
-  end;
-end;
-
-function IsNumericChar(ch: WideChar): boolean;
-begin
-  case ch of
-    '0'..'9':
-      Result := true;
-    else
-      Result := false;
-  end;
-end;
-
-function IsAlphaNumericChar(ch: WideChar): boolean;
-begin
-  Result := (IsAlphaChar(ch) or IsNumericChar(ch));
-end;
-
-function IsPunctuationChar(ch: WideChar): boolean;
-begin
-  // TODO: add chars outside of Latin1 basic (0..127)?
-  case ch of
-    ' '..'/',':'..'@','['..'`','{'..'~':
-      Result := true;
-    else
-      Result := false;
-  end;
-end;
-
-function IsControlChar(ch: WideChar): boolean;
-begin
-  case ch of
-    #0..#31,
-    #127..#159:
-      Result := true;
-    else
-      Result := false;
-  end;
 end;
 
 (*

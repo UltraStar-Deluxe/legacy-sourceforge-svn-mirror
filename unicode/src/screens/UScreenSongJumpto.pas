@@ -92,7 +92,7 @@ begin
         begin
           if (Interaction = 0) AND (Length(Button[0].Text[0].Text) > 0) then
           begin
-            Button[0].Text[0].DeleteLastL;
+            Button[0].Text[0].DeleteLastLetter;
             SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
           end;
         end;

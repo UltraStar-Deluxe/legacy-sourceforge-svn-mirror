@@ -138,17 +138,17 @@ const
   OUTRO_EXD_FILE          = 'outro-exit-dark.png';
 
   Timings: array[0..21] of Cardinal=(
-     20,   //  0 Delay vor Start
+     20,   //  0 Delay before Start
 
-    149,   //  1 Ende erster Intro Zoom
-    155,   //  2 Start 2. Action im Intro
-    170,   //  3 Ende Separation im Intro
-    271,   //  4 Anfang Zoomout im Intro
+    149,   //  1 End first Intro Zoom
+    155,   //  2 Start 2. Action in Intro
+    170,   //  3 End Separation in Intro
+    271,   //  4 beginning Zoomout in Intro
       0,   //  5 unused
-    261,   //  6 Start fade-to-white im Intro
+    261,   //  6 Start fade-to-white in Intro
 
     271,   //  7 Start Main Part
-    280,   //  8 Start On-Beat-Sternchen Main Part
+    280,   //  8 Start On-Beat-Star Main Part
 
     396,   //  9 Start BlindGuard
     666,   // 10 Start blindy
@@ -162,7 +162,7 @@ const
    2826,   // 18 Ende Whiteshark
    3096,   // 19 Start FadeOut Mainscreen
    3366,   // 20 Ende Credits Tune
-     60);  // 21 start flare im intro
+     60);  // 21 start flare in intro
 
 implementation
 

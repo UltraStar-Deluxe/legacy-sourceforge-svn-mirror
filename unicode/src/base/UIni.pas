@@ -925,12 +925,12 @@ begin
     IniFile := TIniFile.Create(Filename);
 
     //Name Templates for Names Mod
-    for I := 1 to 12 do
-      IniFile.WriteString('Name', 'P' + IntToStr(I), Name[I-1]);
-    for I := 1 to 3 do
-      IniFile.WriteString('NameTeam', 'T' + IntToStr(I), NameTeam[I-1]);
-    for I := 1 to 12 do
-      IniFile.WriteString('NameTemplate', 'Name' + IntToStr(I), NameTemplate[I-1]);
+    for I := 0 to High(Name) do
+      IniFile.WriteString('Name', 'P' + IntToStr(I+1), Name[I]);
+    for I := 0 to High(NameTeam) do
+      IniFile.WriteString('NameTeam', 'T' + IntToStr(I+1), NameTeam[I]);
+    for I := 0 to High(NameTemplate) do
+      IniFile.WriteString('NameTemplate', 'Name' + IntToStr(I+1), NameTemplate[I]);
 
     IniFile.Free;
   end;

@@ -195,6 +195,7 @@ uses
   USingNotes        in 'base\USingNotes.pas',
 
   TextGL            in 'base\TextGL.pas',
+  UUnicodeUtils     in 'base\UUnicodeUtils.pas',
   UFont             in 'base\UFont.pas',
   UTextEncoding     in 'base\UTextEncoding.pas',
   
