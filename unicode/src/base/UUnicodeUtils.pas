@@ -34,9 +34,11 @@ interface
 {$I switches.inc}
 
 uses
-  SysUtils,
-  Windows;
-
+  SysUtils
+{$IFDEF MSWINDOWS}
+  , Windows
+{$ENDIF}
+  ;
 (*
  * Character classes
  *)
