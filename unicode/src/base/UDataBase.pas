@@ -58,29 +58,29 @@ type
 
   TStatResultBestScores = class(TStatResult)
     public
-      Singer:       WideString;
+      Singer:       UTF8String;
       Score:        Word;
       Difficulty:   Byte;
-      SongArtist:   WideString;
-      SongTitle:    WideString;
+      SongArtist:   UTF8String;
+      SongTitle:    UTF8String;
   end;
 
   TStatResultBestSingers = class(TStatResult)
     public
-      Player:       WideString;
+      Player:       UTF8String;
       AverageScore: Word;
   end;
 
   TStatResultMostSungSong = class(TStatResult)
     public
-      Artist:       WideString;
-      Title:        WideString;
+      Artist:       UTF8String;
+      Title:        UTF8String;
       TimesSung:    Word;
   end;
 
   TStatResultMostPopBand = class(TStatResult)
     public
-      ArtistName:   WideString;
+      ArtistName:   UTF8String;
       TimesSungTot: Word;
   end;
 
@@ -99,7 +99,7 @@ type
 
       procedure Init(const Filename: string);
       procedure ReadScore(Song: TSong);
-      procedure AddScore(Song: TSong; Level: integer; const Name: WideString; Score: integer);
+      procedure AddScore(Song: TSong; Level: integer; const Name: UTF8String; Score: integer);
       procedure WriteScore(Song: TSong);
 
       function GetStats(Typ: TStatType; Count: Byte; Page: Cardinal; Reversed: Boolean): TList;
@@ -237,7 +237,7 @@ begin
         'WHERE [Artist] = ? AND [Title] = ? ' +
         'LIMIT 1) ' +
       'ORDER BY [Score] DESC  LIMIT 15',
-      [UTF8Encode(Song.Artist), UTF8Encode(Song.Title)]);
+      [Song.Artist, Song.Title]);
 
     // Empty Old Scores
     SetLength(Song.Score[0], 0);
@@ -255,7 +255,7 @@ begin
         SetLength(Song.Score[Difficulty], Length(Song.Score[Difficulty]) + 1);
 
         Song.Score[Difficulty, High(Song.Score[Difficulty])].Name  :=
-            UTF8Decode(TableData.FieldByName['Player']);
+            TableData.FieldByName['Player'];
         Song.Score[Difficulty, High(Song.Score[Difficulty])].Score :=
             TableData.FieldAsInteger(TableData.FieldIndex['Score']);
       end;
@@ -277,7 +277,7 @@ end;
 (**
  * Adds one new score to DB
  *)
-procedure TDataBaseSystem.AddScore(Song: TSong; Level: integer; const Name: WideString; Score: integer);
+procedure TDataBaseSystem.AddScore(Song: TSong; Level: integer; const Name: UTF8String; Score: integer);
 var
   ID: Integer;
   TableData: TSQLiteTable;
@@ -296,7 +296,7 @@ begin
     ID := ScoreDB.GetTableValue(
         'SELECT [ID] FROM ['+cUS_Songs+'] ' +
         'WHERE [Artist] = ? AND [Title] = ?',
-        [UTF8Encode(Song.Artist), UTF8Encode(Song.Title)]);
+        [Song.Artist, Song.Title]);
     if (ID = 0) then
     begin
       // Create song if it does not exist
@@ -304,7 +304,7 @@ begin
           'INSERT INTO ['+cUS_Songs+'] ' +
           '([ID], [Artist], [Title], [TimesPlayed]) VALUES ' +
           '(NULL, ?, ?, 0);',
-          [UTF8Encode(Song.Artist), UTF8Encode(Song.Title)]);
+          [Song.Artist, Song.Title]);
       // Get song-ID
       ID := ScoreDB.GetLastInsertRowID();
     end;
@@ -313,7 +313,7 @@ begin
         'INSERT INTO ['+cUS_Scores+'] ' +
         '([SongID] ,[Difficulty], [Player], [Score]) VALUES ' +
         '(?, ?, ?, ?);',
-        [ID, Level, UTF8Encode(Name), Score]);
+        [ID, Level, Name, Score]);
 
     // Delete last position when there are more than 5 entrys.
     // Fixes crash when there are > 5 ScoreEntrys
@@ -364,7 +364,7 @@ begin
         'UPDATE ['+cUS_Songs+'] ' +
         'SET [TimesPlayed] = [TimesPlayed] + 1 ' +
         'WHERE [Title] = ? AND [Artist] = ?;',
-        [UTF8Encode(Song.Title), UTF8Encode(Song.Artist)]);
+        [Song.Title, Song.Artist]);
   except on E: Exception do
     Log.LogError(E.Message, 'TDataBaseSystem.WriteScore');
   end;
@@ -437,18 +437,18 @@ begin
         Stat := TStatResultBestScores.Create;
         with TStatResultBestScores(Stat) do
         begin
-          Singer := UTF8Decode(TableData.Fields[0]);
+          Singer := TableData.Fields[0];
           Difficulty := TableData.FieldAsInteger(1);
           Score := TableData.FieldAsInteger(2);
-          SongArtist := UTF8Decode(TableData.Fields[3]);
-          SongTitle := UTF8Decode(TableData.Fields[4]);
+          SongArtist := TableData.Fields[3];
+          SongTitle := TableData.Fields[4];
         end;
       end;
       stBestSingers: begin
         Stat := TStatResultBestSingers.Create;
         with TStatResultBestSingers(Stat) do
         begin
-          Player := UTF8Decode(TableData.Fields[0]);
+          Player := TableData.Fields[0];
           AverageScore := TableData.FieldAsInteger(1);
         end;
       end;
@@ -456,8 +456,8 @@ begin
         Stat := TStatResultMostSungSong.Create;
         with TStatResultMostSungSong(Stat) do
         begin
-          Artist := UTF8Decode(TableData.Fields[0]);
-          Title  := UTF8Decode(TableData.Fields[1]);
+          Artist := TableData.Fields[0];
+          Title  := TableData.Fields[1];
           TimesSung  := TableData.FieldAsInteger(2);
         end;
       end;
@@ -465,7 +465,7 @@ begin
         Stat := TStatResultMostPopBand.Create;
         with TStatResultMostPopBand(Stat) do
         begin
-          ArtistName := UTF8Decode(TableData.Fields[0]);
+          ArtistName := TableData.Fields[0];
           TimesSungTot := TableData.FieldAsInteger(1);
         end;
       end

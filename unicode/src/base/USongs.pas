@@ -156,7 +156,8 @@ uses StrUtils,
      UCovers,
      UFiles,
      UMain,
-     UIni;
+     UIni,
+     UUnicodeUtils;
 
 constructor TSongs.Create();
 begin
@@ -459,14 +460,14 @@ procedure TCatSongs.Refresh;
 var
   SongIndex:   integer;
   CurSong:     TSong;
-  CatIndex:    integer; // index of current song in Song
-  Letter:      char;    // current letter for sorting using letter
-  CurCategory: string;  // current edition for sorting using edition, genre etc.
-  Order:       integer; // number used for ordernum
-  LetterTmp:   char;
-  CatNumber:   integer; // Number of Song in Category
+  CatIndex:    integer;    // index of current song in Song
+  Letter:      UCS4Char;   // current letter for sorting using letter
+  CurCategory: UTF8String; // current edition for sorting using edition, genre etc.
+  Order:       integer;    // number used for ordernum
+  LetterTmp:   UCS4Char;
+  CatNumber:   integer;    // Number of Song in Category
 
-  procedure AddCategoryButton(const CategoryName: string);
+  procedure AddCategoryButton(const CategoryName: UTF8String);
   var
     PrevCatBtnIndex: integer;
   begin
@@ -501,7 +502,7 @@ begin
   // Note: do NOT set Letter to ' ', otherwise no category-button will be
   // created for songs beginning with ' ' if songs of this category exist.
   // TODO: trim song-properties so ' ' will not occur as first chararcter. 
-  Letter := #0;
+  Letter := 0;
 
   // clear song-list
   for SongIndex := 0 to Songs.SongList.Count-1 do
@@ -520,101 +521,120 @@ begin
     // if tabs are on, add section buttons for each new section
     if (Ini.Tabs = 1) then
     begin
-      if (Ini.Sorting = sEdition) and
-         (CompareText(CurCategory, CurSong.Edition) <> 0) then
-      begin
-        CurCategory := CurSong.Edition;
+      case (Ini.Sorting) of
+        sEdition: begin
+          if (CompareText(CurCategory, CurSong.Edition) <> 0) then
+          begin
+            CurCategory := CurSong.Edition;
 
-        // TODO: remove this block if it is not needed anymore
-        {
-        if CurSection = 'Singstar Part 2' then CoverName := 'Singstar';
-        if CurSection = 'Singstar German' then CoverName := 'Singstar';
-        if CurSection = 'Singstar Spanish' then CoverName := 'Singstar';
-        if CurSection = 'Singstar Italian' then CoverName := 'Singstar';
-        if CurSection = 'Singstar French' then CoverName := 'Singstar';
-        if CurSection = 'Singstar 80s Polish' then CoverName := 'Singstar 80s';
-        }
+            // TODO: remove this block if it is not needed anymore
+            {
+            if CurSection = 'Singstar Part 2' then CoverName := 'Singstar';
+            if CurSection = 'Singstar German' then CoverName := 'Singstar';
+            if CurSection = 'Singstar Spanish' then CoverName := 'Singstar';
+            if CurSection = 'Singstar Italian' then CoverName := 'Singstar';
+            if CurSection = 'Singstar French' then CoverName := 'Singstar';
+            if CurSection = 'Singstar 80s Polish' then CoverName := 'Singstar 80s';
+            }
 
-        // add Category Button
-        AddCategoryButton(CurCategory);
-      end
-
-      else if (Ini.Sorting = sGenre) and
-              (CompareText(CurCategory, CurSong.Genre) <> 0) then
-      begin
-        CurCategory := CurSong.Genre;
-        // add Genre Button
-        AddCategoryButton(CurCategory);
-      end
-
-      else if (Ini.Sorting = sLanguage) and
-              (CompareText(CurCategory, CurSong.Language) <> 0) then
-      begin
-        CurCategory := CurSong.Language;
-        // add Language Button
-        AddCategoryButton(CurCategory);
-      end
-
-      else if (Ini.Sorting = sTitle) and
-              (Length(CurSong.Title) >= 1) and
-              (Letter <> UpperCase(CurSong.Title)[1]) then
-      begin
-        Letter := Uppercase(CurSong.Title)[1];
-        // add a letter Category Button
-        AddCategoryButton(Letter);
-      end
-
-      else if (Ini.Sorting = sArtist) and
-              (Length(CurSong.Artist) >= 1) and
-              (Letter <> UpperCase(CurSong.Artist)[1]) then
-      begin
-        Letter := UpperCase(CurSong.Artist)[1];
-        // add a letter Category Button
-        AddCategoryButton(Letter);
-      end
-
-      else if (Ini.Sorting = sFolder) and
-              (CompareText(CurCategory, CurSong.Folder) <> 0) then
-      begin
-        CurCategory := CurSong.Folder;
-        // add folder tab
-        AddCategoryButton(CurCategory);
-      end
-
-      else if (Ini.Sorting = sTitle2) and
-              (Length(CurSong.Title) >= 1) then
-      begin
-        // pack all numbers into a category named '#'
-        if (CurSong.Title[1] >= '0') and (CurSong.Title[1] <= '9') then
-          LetterTmp := '#'
-        else
-          LetterTmp := UpperCase(CurSong.Title)[1];
-
-        if (Letter <> LetterTmp) then
-        begin
-          Letter := LetterTmp;
-          // add a letter Category Button
-          AddCategoryButton(Letter);
+            // add Category Button
+            AddCategoryButton(CurCategory);
+          end;
         end;
-      end
 
-      else if (Ini.Sorting = sArtist2) and
-              (Length(CurSong.Artist)>=1) then
-      begin
-        // pack all numbers into a category named '#'
-        if (CurSong.Artist[1] >= '0') and (CurSong.Artist[1] <= '9') then
-          LetterTmp := '#'
-        else
-          LetterTmp := UpperCase(CurSong.Artist)[1];
-
-        if (Letter <> LetterTmp) then
-        begin
-          Letter := LetterTmp;
-          // add a letter Category Button
-          AddCategoryButton(Letter);
+        sGenre: begin
+          if (CompareText(CurCategory, CurSong.Genre) <> 0) then
+          begin
+            CurCategory := CurSong.Genre;
+            // add Genre Button
+            AddCategoryButton(CurCategory);
+          end;
         end;
-      end;
-    end;
+
+        sLanguage: begin
+          if (CompareText(CurCategory, CurSong.Language) <> 0) then
+          begin
+            CurCategory := CurSong.Language;
+            // add Language Button
+            AddCategoryButton(CurCategory);
+          end
+        end;
+
+        sTitle: begin
+          if (Length(CurSong.Title) >= 1) then
+          begin
+            LetterTmp := UCS4UpperCase(UTF8ToUCS4String(CurSong.Title)[0]);
+            if (Letter <> LetterTmp) then
+            begin
+              Letter := LetterTmp;
+              // add a letter Category Button
+              AddCategoryButton(UCS4ToUTF8String(Letter));
+            end;
+          end;
+        end;
+
+        sArtist: begin
+          if (Length(CurSong.Artist) >= 1) then
+          begin
+            LetterTmp := UCS4UpperCase(UTF8ToUCS4String(CurSong.Artist)[0]);
+            if (Letter <> LetterTmp) then
+            begin
+              Letter := LetterTmp;
+              // add a letter Category Button
+              AddCategoryButton(UCS4ToUTF8String(Letter));
+            end;
+          end;
+        end;
+
+        sFolder: begin
+          if (CompareText(CurCategory, CurSong.Folder) <> 0) then
+          begin
+            CurCategory := CurSong.Folder;
+            // add folder tab
+            AddCategoryButton(CurCategory);
+          end;
+        end;
+
+        sTitle2: begin
+          if (Length(CurSong.Title) >= 1) then
+          begin
+            LetterTmp := UTF8ToUCS4String(CurSong.Title)[0];
+            // pack all numbers into a category named '#'
+            if (LetterTmp in [UCS4Char('0') .. UCS4Char('9')]) then
+              LetterTmp := UCS4Char('#')
+            else
+              LetterTmp := UCS4UpperCase(LetterTmp);
+
+            if (Letter <> LetterTmp) then
+            begin
+              Letter := LetterTmp;
+              // add a letter Category Button
+              AddCategoryButton(UCS4ToUTF8String(Letter));
+            end;
+          end;
+        end;
+
+        sArtist2: begin
+          if (Length(CurSong.Artist) >= 1) then
+          begin
+            LetterTmp := UTF8ToUCS4String(CurSong.Artist)[0];
+            // pack all numbers into a category named '#'
+            if (LetterTmp in [UCS4Char('0') .. UCS4Char('9')]) then
+              LetterTmp := UCS4Char('#')
+            else
+              LetterTmp := UCS4UpperCase(LetterTmp);
+
+            if (Letter <> LetterTmp) then
+            begin
+              Letter := LetterTmp;
+              // add a letter Category Button
+              AddCategoryButton(UCS4ToUTF8String(Letter));
+            end;
+          end;
+        end;
+        
+      end; // case (Ini.Sorting)
+    end; // if (Ini.Tabs = 1)
 
     CatIndex := Length(Song);
     SetLength(Song, CatIndex+1);

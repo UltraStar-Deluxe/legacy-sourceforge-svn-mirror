@@ -56,7 +56,8 @@ uses
     PseudoThread,
   {$ENDIF}
   UCatCovers,
-  UXMLSong;
+  UXMLSong,
+  UTextEncoding;
 
 type
 
@@ -68,15 +69,16 @@ type
   end;
 
   TScore = record
-    Name:       WideString;
+    Name:       UTF8String;
     Score:      integer;
-    Length:     string;
   end;
 
   TSong = class
     FileLineNo  : integer;  //Line which is readed at Last, for error reporting
 
-    procedure ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: string);
+    function EncodeFilename(Filename: string): string;
+    function Solmizate(Note: integer; Type_: integer): string;
+    procedure ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: UTF8String);
     procedure NewSentence(LineNumberP: integer; Param1, Param2: integer);
 
     function ReadTXTHeader( const aFileName : WideString ): boolean;
@@ -87,23 +89,24 @@ type
     fFileName,
     FileName:   WideString;
 
-    // sorting methods
-    Category:   array of WideString; // TODO: do we need this?
-    Genre:      WideString;
-    Edition:    WideString;
-    Language:   WideString;
-
-    Title:      WideString;
-    Artist:     WideString;
-
-    Text:       WideString;
-    Creator:    WideString;
-
+    // filenames
     Cover:      WideString;
-    CoverTex:   TTexture;
     Mp3:        WideString;
     Background: WideString;
     Video:      WideString;
+    
+    // sorting methods
+    Genre:      UTF8String;
+    Edition:    UTF8String;
+    Language:   UTF8String;
+
+    Title:      UTF8String;
+    Artist:     UTF8String;
+
+    Creator:    UTF8String;
+
+    CoverTex:   TTexture;
+    
     VideoGAP:   real;
     NotesGAP:   integer;
     Start:      real; // in seconds
@@ -112,6 +115,8 @@ type
     Resolution: integer;
     BPM:        array of TBPM;
     GAP:        real; // in miliseconds
+
+    Encoding:   TEncoding;
 
     Score:      array[0..2] of array of TScore;
 
@@ -129,13 +134,13 @@ type
     Mult    : integer;
     MultBPM : integer;
 
-    LastError: String;
+    LastError: AnsiString;
     Function  GetErrorLineNo: Integer;
     Property  ErrorLineNo: Integer read GetErrorLineNo;
 
 
-    constructor Create  (); overload;
-    constructor Create  ( const aFileName : WideString ); overload;
+    constructor Create(); overload;
+    constructor Create( const aFileName : WideString ); overload;
     function    LoadSong: boolean;
     function    LoadXMLSong: boolean;
     function    Analyse(): boolean;
@@ -185,21 +190,32 @@ begin
   end;
 end;
 
+function TSong.EncodeFilename(Filename: string): string;
+begin
+  {$IFDEF UTF8_FILENAMES}
+  Result := RecodeStringUTF8(Filename, Encoding);
+  {$ELSE}
+  // FIXME: just for compatibility, should be UTF-8 in general
+  if (Encoding = encUTF8) then
+    Result := UTF8ToAnsi(Filename)
+  else
+    Result := Filename;
+  {$ENDIF}
+end;
+
 //Load TXT Song
 function TSong.LoadSong(): boolean;
-
 var
   TempC:    char;
-  Text:     string;
+  Text:     UTF8String;
   CP:       integer; // Current Player (0 or 1)
   Count:    integer;
   Both:     boolean;
   Param1:   integer;
   Param2:   integer;
   Param3:   integer;
-  ParamS:   string;
+  ParamS:   UTF8String;
   I:        integer;
-
 begin
   Result := false;
   LastError := '';
@@ -242,7 +258,7 @@ begin
       ReadLn(SongFile, Text);
       Inc(FileLineNo);
 
-      if (EoF(SongFile)) then
+      if (Eof(SongFile)) then
       begin //Song File Corrupted - No Notes
         CloseFile(SongFile);
         Log.LogError('Could not load txt File, no Notes found: ' + FileName);
@@ -342,7 +358,7 @@ begin
       else
       begin
         for Count := 0 to High(Lines) do
-	      begin
+        begin
           Lines[Count].Line[Lines[Count].High].BaseNote := Base[Count];
           Lines[Count].Line[Lines[Count].High].LyricWidth := glTextWidth(Lines[Count].Line[Lines[Count].High].Lyric);
           //Total Notes Patch
@@ -361,7 +377,7 @@ begin
 
       Read(SongFile, TempC);
       Inc(FileLineNo);
-    end; // while}
+    end; // while
 
     CloseFile(SongFile);
 
@@ -408,7 +424,6 @@ end;
 
 //Load XML Song
 function TSong.LoadXMLSong(): boolean;
-
 var
   //TempC:     char;
   Text:      string;
@@ -425,7 +440,6 @@ var
   NoteType:  char;
   SentenceEnd, Rest, Time: integer;
   Parser: TParser;
-  
 begin
   Result := false;
   LastError := '';
@@ -581,13 +595,9 @@ begin
 end;
 
 function TSong.ReadXMLHeader(const aFileName : WideString): boolean;
-
 var
-  //Line, Identifier, Value: string;
-  //Temp        : word;
   Done        : byte;
   Parser      : TParser;
-
 begin
   Result := true;
   Done   := 0;
@@ -647,7 +657,7 @@ begin
     //    self.Video := Value
 
     // Video Gap
-    //  self.VideoGAP := song_StrtoFloat( Value )
+    //  self.VideoGAP := StrtoFloatI18n( Value )
 
     //Genre Sorting
     self.Genre := Parser.SongInfo.Header.Genre;
@@ -686,25 +696,26 @@ end;
 
 function TSong.ReadTXTHeader(const aFileName : WideString): boolean;
 
-  function song_StrtoFloat( aValue : string ) : Extended;
-
+  {**
+   * "International" StrToFloat variant. Uses either ',' or '.' as decimal
+   * separator. 
+   *}
+  function StrToFloatI18n(const Value: string): Extended;
   var
-    lValue : string;
-
+    TempValue : string;
   begin
-    lValue := aValue;
-
-    if (Pos(',', lValue) <> 0) then
-      lValue[Pos(',', lValue)] := '.';
-
-    Result := StrToFloatDef(lValue, 0);
+    TempValue := Value;
+    if (Pos(',', TempValue) <> 0) then
+      TempValue[Pos(',', TempValue)] := '.';
+    Result := StrToFloatDef(TempValue, 0);
   end;
 
 var
-  Line, Identifier, Value: string;
-  Temp        : word;
-  Done        : byte;
-
+  Line, Identifier: string;
+  Value: string;
+  SepPos: integer; // separator position
+  Done: byte;      // bit-vector of mandatory fields
+  EncFile: string; // encoded filename
 begin
   Result := true;
   Done   := 0;
@@ -719,153 +730,188 @@ begin
     Exit;
   end;
 
+  // check if file begins with a UTF-8 BOM, if so set encoding to UTF-8
+  if (CheckReplaceUTF8BOM(Line)) then
+    Encoding := encUTF8;
+
   //Read Lines while Line starts with # or its empty
   while (Length(Line) = 0) or
         (Line[1] = '#') do
   begin
     //Increase Line Number
     Inc (FileLineNo);
-    Temp := Pos(':', Line);
+    SepPos := Pos(':', Line);
 
-    //Line has a Seperator-> Headerline
-    if (Temp <> 0) then
+    //Line has no Seperator, ignore non header field
+    if (SepPos = 0) then
+      Continue;
+
+    //Read Identifier and Value
+    Identifier  := UpperCase(Trim(Copy(Line, 2, SepPos - 2))); //Uppercase is for Case Insensitive Checks
+    Value       := Trim(Copy(Line, SepPos + 1, Length(Line) - SepPos));
+
+    //Check the Identifier (If Value is given)
+    if (Length(Value) = 0) then
+      Continue;
+
+    //-----------
+    //Required Attributes
+    //-----------
+
+    if (Identifier = 'TITLE') then
     begin
-      //Read Identifier and Value
-      Identifier  := Uppercase(Trim(Copy(Line, 2, Temp - 2))); //Uppercase is for Case Insensitive Checks
-      Value       := Trim(Copy(Line, Temp + 1,Length(Line) - Temp));
+      self.Title := RecodeStringUTF8(Value, Encoding);
 
-      //Check the Identifier (If Value is given)
-      if (Length(Value) <> 0) then
+      //Add Title Flag to Done
+      Done := Done or 1;
+    end
+
+    else if (Identifier = 'ARTIST') then
+    begin
+      self.Artist := RecodeStringUTF8(Value, Encoding);
+
+      //Add Artist Flag to Done
+      Done := Done or 2;
+    end
+
+    //MP3 File
+    else if (Identifier = 'MP3') then
+    begin
+      EncFile := EncodeFilename(Value);
+      if (FileExists(self.Path + EncFile)) then
       begin
-        //-----------
-        //Required Attributes
-        //-----------
+        self.Mp3 := EncFile;
 
-        {$IFDEF UTF8_FILENAMES}
-        if ((Identifier = 'MP3') or (Identifier = 'BACKGROUND') or (Identifier = 'COVER') or (Identifier = 'VIDEO')) then
-          Value := Utf8Encode(Value);
-        {$ENDIF}
-
-        //Title
-        if (Identifier = 'TITLE') then
-        begin
-          self.Title := Value;
-
-          //Add Title Flag to Done
-          Done := Done or 1;
-        end
-
-        //Artist
-        else if (Identifier = 'ARTIST') then
-        begin
-          self.Artist := Value;
-
-          //Add Artist Flag to Done
-          Done := Done or 2;
-        end
-
-        //MP3 File //Test if Exists
-        else if (Identifier = 'MP3') AND
-            (FileExists(self.Path + Value)) then
-        begin
-          self.Mp3 := Value;
-
-          //Add Mp3 Flag to Done
-          Done := Done or 4;
-        end
-
-        //Beats per Minute
-        else if (Identifier = 'BPM') then
-        begin
-          SetLength(self.BPM, 1);
-          self.BPM[0].StartBeat := 0;
-
-          self.BPM[0].BPM := song_StrtoFloat( Value ) * Mult * MultBPM;
-
-          if self.BPM[0].BPM <> 0 then
-          begin
-            //Add BPM Flag to Done
-            Done := Done or 8;
-          end;
-        end
-
-        //---------
-        //Additional Header Information
-        //---------
-
-        // Gap
-        else if (Identifier = 'GAP') then
-          self.GAP := song_StrtoFloat( Value )
-
-        //Cover Picture
-        else if (Identifier = 'COVER') then
-          self.Cover := Value
-
-        //Background Picture
-        else if (Identifier = 'BACKGROUND') then
-          self.Background := Value
-
-        // Video File
-        else if (Identifier = 'VIDEO') then
-        begin
-          if (FileExists(self.Path + Value)) then
-            self.Video := Value
-          else
-            Log.LogError('Can''t find Video File in Song: ' + aFileName);
-        end
-
-        // Video Gap
-        else if (Identifier = 'VIDEOGAP') then
-          self.VideoGAP := song_StrtoFloat( Value )
-
-        //Genre Sorting
-        else if (Identifier = 'GENRE') then
-          self.Genre := Value
-
-        //Edition Sorting
-        else if (Identifier = 'EDITION') then
-          self.Edition := Value
-
-        //Creator Tag
-        else if (Identifier = 'CREATOR') then
-          self.Creator := Value
-
-        //Language Sorting
-        else if (Identifier = 'LANGUAGE') then
-          self.Language := Value
-
-        // Song Start
-        else if (Identifier = 'START') then
-          self.Start := song_StrtoFloat( Value )
-
-        // Song Ending
-        else if (Identifier = 'END') then
-          TryStrtoInt(Value, self.Finish)
-
-        // Resolution
-        else if (Identifier = 'RESOLUTION') then
-          TryStrtoInt(Value, self.Resolution)
-
-        // Notes Gap
-        else if (Identifier = 'NOTESGAP') then
-          TryStrtoInt(Value, self.NotesGAP)
-        // Relative Notes
-        else if (Identifier = 'RELATIVE') AND (uppercase(Value) = 'YES') then
-          self.Relative := True;
-
+        //Add Mp3 Flag to Done
+        Done := Done or 4;
       end;
+    end
+
+    //Beats per Minute
+    else if (Identifier = 'BPM') then
+    begin
+      SetLength(self.BPM, 1);
+      self.BPM[0].StartBeat := 0;
+
+      self.BPM[0].BPM := StrToFloatI18n( Value ) * Mult * MultBPM;
+
+      if self.BPM[0].BPM <> 0 then
+      begin
+        //Add BPM Flag to Done
+        Done := Done or 8;
+      end;
+    end
+
+    //---------
+    //Additional Header Information
+    //---------
+
+    // Gap
+    else if (Identifier = 'GAP') then
+    begin
+      self.GAP := StrToFloatI18n(Value);
+    end
+
+    //Cover Picture
+    else if (Identifier = 'COVER') then
+    begin
+      self.Cover := EncodeFilename(Value);
+    end
+
+    //Background Picture
+    else if (Identifier = 'BACKGROUND') then
+    begin
+      self.Background := EncodeFilename(Value);
+    end
+
+    // Video File
+    else if (Identifier = 'VIDEO') then
+    begin
+      EncFile := EncodeFilename(Value);
+      if (FileExists(self.Path + EncFile)) then
+        self.Video := EncFile
+      else
+        Log.LogError('Can''t find Video File in Song: ' + aFileName);
+    end
+
+    // Video Gap
+    else if (Identifier = 'VIDEOGAP') then
+    begin
+      self.VideoGAP := StrToFloatI18n( Value )
+    end
+
+    //Genre Sorting
+    else if (Identifier = 'GENRE') then
+    begin
+      self.Genre := RecodeStringUTF8(Value, Encoding)
+    end
+
+    //Edition Sorting
+    else if (Identifier = 'EDITION') then
+    begin
+      self.Edition := RecodeStringUTF8(Value, Encoding)
+    end
+
+    //Creator Tag
+    else if (Identifier = 'CREATOR') then
+    begin
+      self.Creator := RecodeStringUTF8(Value, Encoding)
+    end
+
+    //Language Sorting
+    else if (Identifier = 'LANGUAGE') then
+    begin
+      self.Language := RecodeStringUTF8(Value, Encoding)
+    end
+
+    // Song Start
+    else if (Identifier = 'START') then
+    begin
+      self.Start := StrToFloatI18n( Value )
+    end
+
+    // Song Ending
+    else if (Identifier = 'END') then
+    begin
+      TryStrtoInt(Value, self.Finish)
+    end
+
+    // Resolution
+    else if (Identifier = 'RESOLUTION') then
+    begin
+      TryStrtoInt(Value, self.Resolution)
+    end
+
+    // Notes Gap
+    else if (Identifier = 'NOTESGAP') then
+    begin
+      TryStrtoInt(Value, self.NotesGAP)
+    end
+
+    // Relative Notes
+    else if (Identifier = 'RELATIVE') then
+    begin
+      if (UpperCase(Value) = 'YES') then
+        self.Relative := True;
+    end
+
+    // File encoding
+    else if (Identifier = 'ENCODING') then
+    begin
+      self.Encoding := ParseEncoding(Value, Ini.EncodingDefault);
     end;
 
-    if not EOf(SongFile) then
-      ReadLn (SongFile, Line)
-    else
+    // check for end of file
+    if Eof(SongFile) then
     begin
       Result := False;
       Log.LogError('File Incomplete or not Ultrastar TxT (A): ' + aFileName);
-      break;
+      Break;
     end;
 
-  end;
+    // read next line
+    ReadLn(SongFile, Line)
+  end; // while
 
   if self.Cover = '' then
     self.Cover := platform.FindSongFile(Path, '*[CO].jpg');
@@ -896,47 +942,52 @@ begin
     Result := -1;
 end;
 
-procedure TSong.ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: string);
-
+function TSong.Solmizate(Note: integer; Type_: integer): string;
 begin
-  case Ini.Solmization of
+  case (Type_) of
     1:  // european
       begin
-        case (NoteP mod 12) of
-          0..1:   LyricS := ' do ';
-          2..3:   LyricS := ' re ';
-          4:      LyricS := ' mi ';
-          5..6:   LyricS := ' fa ';
-          7..8:   LyricS := ' sol ';
-          9..10:  LyricS := ' la ';
-          11:     LyricS := ' si ';
+        case (Note mod 12) of
+          0..1:   Result := ' do ';
+          2..3:   Result := ' re ';
+          4:      Result := ' mi ';
+          5..6:   Result := ' fa ';
+          7..8:   Result := ' sol ';
+          9..10:  Result := ' la ';
+          11:     Result := ' si ';
         end;
       end;
     2:  // japanese
       begin
-        case (NoteP mod 12) of
-          0..1:   LyricS := ' do ';
-          2..3:   LyricS := ' re ';
-          4:      LyricS := ' mi ';
-          5..6:   LyricS := ' fa ';
-          7..8:   LyricS := ' so ';
-          9..10:  LyricS := ' la ';
-          11:     LyricS := ' shi ';
+        case (Note mod 12) of
+          0..1:   Result := ' do ';
+          2..3:   Result := ' re ';
+          4:      Result := ' mi ';
+          5..6:   Result := ' fa ';
+          7..8:   Result := ' so ';
+          9..10:  Result := ' la ';
+          11:     Result := ' shi ';
         end;
       end;
     3:  // american
       begin
-        case (NoteP mod 12) of
-          0..1:   LyricS := ' do ';
-          2..3:   LyricS := ' re ';
-          4:      LyricS := ' mi ';
-          5..6:   LyricS := ' fa ';
-          7..8:   LyricS := ' sol ';
-          9..10:  LyricS := ' la ';
-          11:     LyricS := ' ti ';
+        case (Note mod 12) of
+          0..1:   Result := ' do ';
+          2..3:   Result := ' re ';
+          4:      Result := ' mi ';
+          5..6:   Result := ' fa ';
+          7..8:   Result := ' sol ';
+          9..10:  Result := ' la ';
+          11:     Result := ' ti ';
         end;
       end;
   end; // case
+end;
+
+procedure TSong.ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: UTF8String);
+begin
+  if (Ini.Solmization <> 0) then
+    LyricS := Solmizate(NoteP, Ini.Solmization);
 
   with Lines[LineNumber].Line[Lines[LineNumber].High] do
   begin
@@ -969,7 +1020,9 @@ begin
     Note[HighNote].Tone := NoteP;
     if Note[HighNote].Tone < Base[LineNumber] then Base[LineNumber] := Note[HighNote].Tone;
 
-    Note[HighNote].Text := Copy(LyricS, 2, 100);
+    Note[HighNote].Text := RecodeStringUTF8(
+      Copy(LyricS, 2, Length(LyricS)-1),
+      Encoding);
     Lyric := Lyric + Note[HighNote].Text;
 
     End_ := Note[HighNote].Start + Note[HighNote].Length;
@@ -977,10 +1030,8 @@ begin
 end;
 
 procedure TSong.NewSentence(LineNumberP: integer; Param1, Param2: integer);
-
 var
   I: integer;
-
 begin
 
   If (Lines[LineNumberP].Line[Lines[LineNumberP].High].HighNote  <> -1) then
@@ -1038,6 +1089,9 @@ begin
   Genre    := 'Unknown';
   Edition  := 'Unknown';
   Language := 'Unknown'; //Language Patch
+
+  // set to default encoding
+  Encoding := Ini.EncodingDefault;
 
   //Required Information
   Mp3    := '';

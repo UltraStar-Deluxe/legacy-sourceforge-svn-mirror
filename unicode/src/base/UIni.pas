@@ -37,6 +37,7 @@ uses
   Classes,
   IniFiles,
   ULog,
+  UTextEncoding,
   SysUtils;
 
 type
@@ -84,11 +85,11 @@ type
       procedure LoadScreenModes(IniFile: TCustomIniFile);
 
     public
-      Name:           array[0..11] of string;
+      Name:           array[0..11] of UTF8String;
 
       // Templates for Names Mod
-      NameTeam:       array[0..2] of string;
-      NameTemplate:   array[0..11] of string;
+      NameTeam:       array[0..2] of UTF8String;
+      NameTemplate:   array[0..11] of UTF8String;
 
       //Filename of the opened iniFile
       Filename:       string;
@@ -154,6 +155,9 @@ type
 
       // Controller
       Joypad:         integer;
+
+      // default encoding for texts (lyrics, song-name, ...)
+      EncodingDefault: TEncoding;
 
       procedure Load();
       procedure Save();
@@ -724,6 +728,10 @@ begin
   // NoteLines
   NoteLines := GetArrayIndex(INoteLines, IniFile.ReadString('Lyrics', 'NoteLines', INoteLines[1]));
 
+  //Encoding default
+  // CP1252 is the USDX <1.1 default encoding
+  EncodingDefault := ParseEncoding(IniFile.ReadString('Lyrics', 'Encoding', ''), encCP1252);
+
   LoadThemes(IniFile);
 
   // Color
@@ -871,6 +879,9 @@ begin
 
   // NoteLines
   IniFile.WriteString('Lyrics', 'NoteLines', INoteLines[NoteLines]);
+
+  //Encoding default
+  IniFile.WriteString('Lyrics', 'Encoding', EncodingNames[EncodingDefault]);
 
   // Theme
   IniFile.WriteString('Themes', 'Theme', ITheme[Theme]);
