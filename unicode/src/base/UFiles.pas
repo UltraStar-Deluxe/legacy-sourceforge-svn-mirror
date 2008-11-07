@@ -106,6 +106,7 @@ var
   NoteState: String;
 
 begin
+  // FIXME: UNICODE
 //  Relative := true; // override (idea - use shift+S to save with relative)
   AssignFile(SongFile, Name);
   Rewrite(SongFile);

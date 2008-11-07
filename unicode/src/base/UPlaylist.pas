@@ -38,15 +38,15 @@ uses
 
 type
   TPlaylistItem = record
-    Artist: String;
-    Title:  String;
+    Artist: UTF8String;
+    Title:  UTF8String;
     SongID: Integer;
   end;
 
   APlaylistItem = array of TPlaylistItem;
 
   TPlaylist = record
-    Name:     String;
+    Name:     string;
     Filename: String;
     Items:    APlaylistItem;
   end;
@@ -68,18 +68,18 @@ type
 
       constructor Create;
       Procedure   LoadPlayLists;
-      Function    LoadPlayList(Index: Cardinal; Filename: String): Boolean;
+      Function    LoadPlayList(Index: Cardinal; const Filename: String): Boolean;
       Procedure   SavePlayList(Index: Cardinal);
 
       Procedure   SetPlayList(Index: Cardinal);
 
-      Function    AddPlaylist(Name: String): Cardinal;
+      Function    AddPlaylist(const Name: string): Cardinal;
       Procedure   DelPlaylist(const Index: Cardinal);
 
       Procedure   AddItem(const SongID: Cardinal; const iPlaylist: Integer = -1);
       Procedure   DelItem(const iItem: Cardinal; const iPlaylist: Integer = -1);
 
-      Procedure   GetNames(var PLNames: array of String);
+      Procedure   GetNames(var PLNames: array of string);
       Function    GetIndexbySongID(const SongID: Cardinal; const iPlaylist: Integer = -1): Integer;
     end;
 
@@ -151,7 +151,7 @@ end;
 //----------
 //LoadPlayList - Load a Playlist in the Array
 //----------
-Function    TPlayListManager.LoadPlayList(Index: Cardinal; Filename: String): Boolean;
+Function    TPlayListManager.LoadPlayList(Index: Cardinal; const Filename: String): Boolean;
   var
     F: TextFile;
     Line: String;
@@ -159,7 +159,7 @@ Function    TPlayListManager.LoadPlayList(Index: Cardinal; Filename: String): Bo
     SongID: Integer;
     Len: Integer;
 
-  Function FindSong(Artist, Title: String): Integer;
+  Function FindSong(Artist, Title: UTF8String): Integer;
   var I: Integer;
   begin
     Result := -1;
@@ -323,7 +323,7 @@ end;
 //----------
 //AddPlaylist - Adds a Playlist and Returns the Index
 //----------
-Function    TPlayListManager.AddPlaylist(Name: String): Cardinal;
+Function    TPlayListManager.AddPlaylist(const Name: string): Cardinal;
 var
   I: Integer;
 begin

@@ -55,8 +55,8 @@ var
 
 procedure BuildFont;                          // build our bitmap font
 procedure KillFont;                           // delete the font
-function  glTextWidth(const text: string): real; // returns text width
-procedure glPrint(const text: string);        // custom GL "Print" routine
+function  glTextWidth(const text: UTF8String): real; // returns text width
+procedure glPrint(const text: UTF8String);    // custom GL "Print" routine
 procedure ResetFont();                        // reset font settings of active font
 procedure SetFontPos(X, Y: real);             // sets X and Y
 procedure SetFontZ(Z: real);                  // sets Z
@@ -132,7 +132,7 @@ begin
   //glDeleteLists(..., 256);
 end;
 
-function glTextWidth(const text: string): real;
+function glTextWidth(const text: UTF8String): real;
 var
   Bounds: TBoundsDbl;
 begin
@@ -141,7 +141,7 @@ begin
 end;
 
 // Custom GL "Print" Routine
-procedure glPrint(const Text: string);
+procedure glPrint(const Text: UTF8String);
 var
   GLFont: PGLFont;
 begin
@@ -155,7 +155,6 @@ begin
     // set font position
     glTranslatef(GLFont.X, GLFont.Y + GLFont.Font.Ascender, GLFont.Z);
     // draw string
-    //GLFont.Font.Print(RecodeString(Text, encCP1252));
     GLFont.Font.Print(Text);
   glPopMatrix();
 end;

@@ -190,7 +190,7 @@ type
        *}
       procedure Print(const Text: WideString); overload;
       {** UTF-8 version of @link(Print) }
-      procedure Print(const Text: string); overload;
+      procedure Print(const Text: UTF8String); overload;
 
       {**
        * Calculates the bounding box (width and height) around Text.
@@ -498,7 +498,7 @@ type
       procedure ResetIntern();
 
     protected
-      fFilename: string;            //**< filename of the font-file
+      fFilename: AnsiString;        //**< filename of the font-file
       fSize: integer;               //**< Font base size (in pixels)
       fOutset: single;              //**< size of outset extrusion (in pixels)
       fFace: FT_Face;               //**< Holds the height of the font
@@ -528,7 +528,7 @@ type
        * @param  LoadFlags  flags passed to FT_Load_Glyph()
        * @raises Exception  if the font-file could not be loaded
        *}
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: AnsiString;
                          Size: integer; Outset: single = 0.0;
                          LoadFlags: FT_Int32 = FT_LOAD_DEFAULT);
 
@@ -558,7 +558,7 @@ type
        * The extrusion in pixels is Size*OutsetAmount
        * (0.0 -> no extrusion, 0.1 -> 10%).
        *}
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: AnsiString;
                          Size: integer; OutsetAmount: single = 0.0;
                          UseMipmaps: boolean = true);
 
@@ -576,7 +576,7 @@ type
    *}
   TFTOutlineFont = class(TFont)
     private
-      fFilename: string;
+      fFilename: AnsiString;
       fSize: integer;
       fOutset: single;
       fInnerFont, fOutlineFont: TFTFont;
@@ -603,7 +603,7 @@ type
       procedure SetReflectionPass(Enable: boolean); override;
 
     public
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: AnsiString;
                          Size: integer; Outset: single;
                          LoadFlags: FT_Int32 = FT_LOAD_DEFAULT);
       destructor Destroy; override;
@@ -637,7 +637,7 @@ type
       function CreateMipmap(Level: integer; Scale: single): TFont; override;
 
     public
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: AnsiString;
                          Size: integer; OutsetAmount: single;
                          UseMipmaps: boolean = true);
 
@@ -679,7 +679,7 @@ type
        * @param  InfoFile  the name of the info (.dat) file
        * @raises Exception if the file is corrupted
        *}
-      procedure LoadFontInfo(const InfoFile: string);
+      procedure LoadFontInfo(const InfoFile: AnsiString);
 
     protected
       procedure Render(const Text: WideString); override;
@@ -699,7 +699,7 @@ type
        *        (y-axis up) and from the lower edge of the glyphs bounding box)
        * @param(Ascender  pixels from baseline to top of highest glyph)
        *}
-      constructor Create(const Filename: string; Outline: integer;
+      constructor Create(const Filename: AnsiString; Outline: integer;
                          Baseline, Ascender, Descender: integer);
       destructor Destroy(); override;
 
@@ -912,7 +912,7 @@ begin
   glPopAttrib();
 end;
 
-procedure TFont.Print(const Text: string);
+procedure TFont.Print(const Text: UTF8String);
 var
   LineArray: TWideStringArray;
 begin
@@ -1368,7 +1368,7 @@ end;
  *}
 
 constructor TFTFont.Create(
-    const Filename: string;
+    const Filename: AnsiString;
     Size: integer; Outset: single;
     LoadFlags: FT_Int32);
 var
@@ -1606,7 +1606,7 @@ end;
  * TFTScalableFont
  *}
 
-constructor TFTScalableFont.Create(const Filename: string;
+constructor TFTScalableFont.Create(const Filename: AnsiString;
                    Size: integer; OutsetAmount: single;
                    UseMipmaps: boolean);
 var
@@ -1662,7 +1662,7 @@ end;
  *}
 
 constructor TFTOutlineFont.Create(
-    const Filename: string;
+    const Filename: AnsiString;
     Size: integer; Outset: single;
     LoadFlags: FT_Int32);
 begin
@@ -1852,7 +1852,7 @@ end;
  *}
 
 constructor TFTScalableOutlineFont.Create(
-    const Filename: string;
+    const Filename: AnsiString;
     Size: integer; OutsetAmount: single;
     UseMipmaps: boolean);
 var
@@ -2482,7 +2482,7 @@ end;
  * TBitmapFont
  *}
 
-constructor TBitmapFont.Create(const Filename: string; Outline: integer;
+constructor TBitmapFont.Create(const Filename: AnsiString; Outline: integer;
     Baseline, Ascender, Descender: integer);
 begin
   inherited Create();
@@ -2524,7 +2524,7 @@ begin
     fWidths[Count] := Round(fWidths[Count] * WidthMult) + WidthAdd;
 end;
 
-procedure TBitmapFont.LoadFontInfo(const InfoFile: string);
+procedure TBitmapFont.LoadFontInfo(const InfoFile: AnsiString);
 var
   Stream:  TFileStream;
 begin

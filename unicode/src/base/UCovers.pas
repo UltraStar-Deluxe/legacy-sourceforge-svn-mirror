@@ -111,7 +111,7 @@ uses
   DateUtils;
 
 const
-  COVERDB_FILENAME = 'cover.db';
+  COVERDB_FILENAME: UTF8String = 'cover.db';
   COVERDB_VERSION = 01; // 0.1
   COVER_TBL = 'Cover';
   COVER_THUMBNAIL_TBL = 'CoverThumbnail';
@@ -210,9 +210,9 @@ end;
 procedure TCoverDatabase.Open();
 var
   Version: integer;
-  Filename: string;
+  Filename: UTF8String;
 begin
-  Filename := UTF8Encode(Platform.GetGameUserPath() + COVERDB_FILENAME);
+  Filename := Platform.GetGameUserPath() + COVERDB_FILENAME;
 
   DB := TSQLiteDatabase.Create(Filename);
   Version := GetVersion();

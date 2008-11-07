@@ -606,7 +606,7 @@ end;
 //----------
 Function  TPartySession.GetWinnerString(wParam: TwParam; lParam: TlParam): integer;
 var
-  Winners: Array of String;
+  Winners: array of UTF8String;
   I: Integer;
   ResultStr: String;
   S: ^String;
