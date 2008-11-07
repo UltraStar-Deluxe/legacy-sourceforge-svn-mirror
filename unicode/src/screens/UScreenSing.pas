@@ -34,10 +34,12 @@ interface
 {$I switches.inc}
 
 
-uses UMenu,
-  UMusic,
+uses
   SDL,
   SysUtils,
+  gl,
+  UMenu,
+  UMusic,
   UFiles,
   UTime,
   USongs,
@@ -46,7 +48,6 @@ uses UMenu,
   UTexture,
   ULyrics,
   TextGL,
-  gl,
   UThemes,
   UGraphicClasses,
   USingScores;
@@ -119,14 +120,16 @@ type
 
 implementation
 
-uses UGraphic,
+uses
+  Classes,
+  Math,
+  UGraphic,
   UDraw,
   UMain,
   USong,
-  Classes,
   URecord,
   ULanguage,
-  Math;
+  UUnicodeUtils;
 
  // Method for input parsing. If False is returned, GetNextWindow
  // should be checked to know the next window to load;
@@ -137,7 +140,7 @@ begin
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
       begin
         //When not ask before Exit then Finish now

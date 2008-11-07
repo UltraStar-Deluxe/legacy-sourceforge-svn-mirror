@@ -34,7 +34,13 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, SysUtils, UDisplay, UMusic, USongs, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UDisplay,
+  UMusic,
+  USongs,
+  UThemes;
 
 type
   TScreenTop5 = class(TMenu)
@@ -56,14 +62,19 @@ type
 
 implementation
 
-uses UGraphic, UDataBase, UMain, UIni;
+uses
+  UGraphic,
+  UDataBase,
+  UMain,
+  UIni,
+  UUnicodeUtils;
 
 function TScreenTop5.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then begin
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;
@@ -126,7 +137,8 @@ begin
   //ReadScore(CurrentSong);
 
   PMax := Ini.Players;
-  if PMax = 4 then PMax := 5;
+  if PMax = 4 then
+    PMax := 5;
   for I := 0 to PMax do
     DataBase.AddScore(CurrentSong, Ini.Difficulty, Ini.Name[I], Round(Player[I].ScoreTotalInt));
 

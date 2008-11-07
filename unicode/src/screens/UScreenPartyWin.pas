@@ -34,7 +34,12 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, SysUtils, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UThemes;
 
 type
   TScreenPartyWin = class(TMenu)
@@ -64,7 +69,13 @@ type
 
 implementation
 
-uses UGraphic, UMain, UParty, UScreenSingModi, ULanguage;
+uses
+  UGraphic,
+  UMain,
+  UParty,
+  UScreenSingModi,
+  ULanguage,
+  UUnicodeUtils;
 
 function TScreenPartyWin.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -72,7 +83,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

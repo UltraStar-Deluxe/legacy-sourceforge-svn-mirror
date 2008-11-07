@@ -47,10 +47,50 @@ function IsAlphaNumericChar(ch: WideChar): boolean;
 function IsPunctuationChar(ch: WideChar): boolean;
 function IsControlChar(ch: WideChar): boolean;
 
+{*
+ * String format conversion
+ *}
+
 function UTF8ToUCS4String(const str: UTF8String): UCS4String;
-function UCS4ToUTF8String(const str: UCS4String): UTF8String;
+function UCS4ToUTF8String(const str: UCS4String): UTF8String; overload;
+function UCS4ToUTF8String(ch: UCS4Char): UTF8String; overload;
+
+{**
+ * Returns the number of characters (not bytes) in string str.
+ *}
+function LengthUTF8(const str: UTF8String): integer;
+
+{**
+ * Converts a UCS-4 char ch to its upper-case representation.
+ *}
+function UCS4UpperCase(ch: UCS4Char): UCS4Char; overload;
+
+{**
+ * Converts a UCS-4 string str to its upper-case representation.
+ *}
+function UCS4UpperCase(const str: UCS4String): UCS4String; overload;
+
+{**
+ *
+ *}
+function UCS4CharToString(ch: UCS4Char): UCS4String;
+
+(*
+
+ * Converts a WideString to its upper-case representation.
+ * Wrapper for WideUpperCase. Needed because some plattforms have problems with
+ * unicode support.
+ *
+ * Note that characters in UTF-16 might consist of one or two WideChar valus
+ * (see surrogates). So instead of using WideStringUpperCase(ch)[1] for single
+ * character access, convert to UCS-4 where each character is represented by
+ * one UCS4Char. 
+ *)
+function WideStringUpperCase(const str: WideString) : WideString;
+
 
 implementation
+
 
 function IsAlphaChar(ch: WideChar): boolean;
 begin
@@ -119,6 +159,51 @@ end;
 function UCS4ToUTF8String(const str: UCS4String): UTF8String;
 begin
   Result := UTF8Encode(UCS4StringToWideString(str));
+end;
+
+function UCS4ToUTF8String(ch: UCS4Char): UTF8String;
+begin
+  Result := UCS4ToUTF8String(UCS4CharToString(ch));
+end;
+
+function LengthUTF8(const str: UTF8String): integer;
+begin
+  Result := Length(UTF8ToUCS4String(str));
+end;
+
+function UCS4UpperCase(ch: UCS4Char): UCS4Char;
+begin
+  Result := UCS4UpperCase(UCS4CharToString(ch))[0];
+end;
+
+function UCS4UpperCase(const str: UCS4String): UCS4String;
+begin
+  // convert to upper-case as WideString and convert result back to UCS-4
+  Result := WideStringToUCS4String(
+            WideStringUpperCase(
+            UCS4StringToWideString(str)));
+end;
+
+function UCS4CharToString(ch: UCS4Char): UCS4String;
+begin
+  SetLength(Result, 2);
+  Result[0] := ch;
+  Result[1] := 0;
+end;
+
+function WideStringUpperCase(const str: WideString): WideString;
+begin
+  // On Linux and MacOSX the cwstring unit is necessary for Unicode function-calls.
+  // Otherwise you will get an EIntOverflow exception (thrown by unimplementedwidestring()).
+  // The Unicode manager cwstring does not work with MacOSX at the moment because
+  // of missing references to iconv. So we have to use Ansi... for the moment.
+
+  {.$IFNDEF DARWIN}
+  {$IFDEF NOIGNORE}
+    Result := WideUpperCase(str)
+  {$ELSE}
+    Result := UTF8Decode(AnsiUpperCase(UTF8Encode(str)));
+  {$ENDIF}
 end;
 
 end.

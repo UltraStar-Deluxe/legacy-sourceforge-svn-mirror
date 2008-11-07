@@ -164,6 +164,7 @@ uses
   UParty,
   UPlaylist,
   UMenuButton,
+  UUnicodeUtils,
   UScreenSongMenu;
 
 // ***** Public methods ****** //
@@ -247,7 +248,8 @@ var
   I:      integer;
   I2:     integer;
   SDL_ModState:  Word;
-  Letter: WideChar;
+  UpperLetter: UCS4Char;
+  TempStr: UTF8String;
 begin
   Result := true;
 
@@ -272,9 +274,10 @@ begin
     //Jump to Artist/Titel
     if ((SDL_ModState and KMOD_LALT <> 0) and (Mode = smNormal)) then
     begin
-      if (WideCharUpperCase(CharCode)[1] in ([WideChar('A')..WideChar('Z'), WideChar('0') .. WideChar('9')]) ) then
+      UpperLetter := UCS4UpperCase(WideStringToUCS4String(CharCode)[0]);
+
+      if (UpperLetter in ([UCS4Char('A')..UCS4Char('Z'), UCS4Char('0') .. UCS4Char('9')]) ) then
       begin
-        Letter := WideCharUpperCase(CharCode)[1];
         I2 := Length(CatSongs.Song);
 
         //Jump To Titel
@@ -282,18 +285,21 @@ begin
         begin
           for I := 1 to high(CatSongs.Song) do
           begin
-            if (CatSongs.Song[(I + Interaction) mod I2].Visible) and
-               (Length(CatSongs.Song[(I + Interaction) mod I2].Title)>0) and
-               (WideStringUpperCase(CatSongs.Song[(I + Interaction) mod I2].Title)[1] = Letter) then
+            if (CatSongs.Song[(I + Interaction) mod I2].Visible) then
             begin
-              SkipTo(CatSongs.VisibleIndex((I + Interaction) mod I2));
+              TempStr := CatSongs.Song[(I + Interaction) mod I2].Title;
+              if (Length(TempStr) > 0) and
+                 (UCS4UpperCase(UTF8ToUCS4String(TempStr)[0]) = UpperLetter) then
+              begin
+                SkipTo(CatSongs.VisibleIndex((I + Interaction) mod I2));
 
-              AudioPlayback.PlaySound(SoundLib.Change);
+                AudioPlayback.PlaySound(SoundLib.Change);
 
-              ChangeMusic;
-              SetScroll4;
-              //Break and Exit
-              Exit;
+                ChangeMusic;
+                SetScroll4;
+                //Break and Exit
+                Exit;
+              end;
             end;
           end;
         end
@@ -302,19 +308,22 @@ begin
         begin
           for I := 1 to high(CatSongs.Song) do
           begin
-            if (CatSongs.Song[(I + Interaction) mod I2].Visible) and
-               (Length(CatSongs.Song[(I + Interaction) mod I2].Artist)>0) and
-               (WideStringUpperCase(CatSongs.Song[(I + Interaction) mod I2].Artist)[1] = Letter) then
+            if (CatSongs.Song[(I + Interaction) mod I2].Visible) then
             begin
-              SkipTo(CatSongs.VisibleIndex((I + Interaction) mod I2));
+              TempStr := CatSongs.Song[(I + Interaction) mod I2].Artist;
+              if (Length(TempStr) > 0) and
+                 (UCS4UpperCase(UTF8ToUCS4String(TempStr)[0]) = UpperLetter) then
+              begin
+                SkipTo(CatSongs.VisibleIndex((I + Interaction) mod I2));
 
-              AudioPlayback.PlaySound(SoundLib.Change);
+                AudioPlayback.PlaySound(SoundLib.Change);
 
-              ChangeMusic;
-              SetScroll4;
+                ChangeMusic;
+                SetScroll4;
 
-              //Break and Exit
-              Exit;
+                //Break and Exit
+                Exit;
+              end;
             end;
           end;
         end;
@@ -324,7 +333,7 @@ begin
     end;
 
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

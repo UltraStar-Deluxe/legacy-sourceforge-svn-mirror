@@ -33,11 +33,12 @@ interface
 
 {$I switches.inc}
 
-uses UMenu,
-     SDL,
-     USongs,
-     USong,
-     UThemes;
+uses
+  UMenu,
+  SDL,
+  USongs,
+  USong,
+  UThemes;
 
 type
   TScreenEditHeader = class(TMenu)
@@ -79,7 +80,14 @@ type
 
 implementation
 
-uses UGraphic, UMusic, SysUtils, UFiles, USkins, UTexture;
+uses
+  UGraphic,
+  UMusic,
+  SysUtils,
+  UFiles,
+  USkins,
+  UTexture,
+  UUnicodeUtils;
 
 function TScreenEditHeader.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 var
@@ -88,7 +96,7 @@ begin
   Result := true;
   If (PressedDown) Then begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

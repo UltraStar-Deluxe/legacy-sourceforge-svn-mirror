@@ -154,21 +154,23 @@ type
 implementation
 
 
-uses UGraphic,
-     UScreenSong,
-     UMenuStatic,
-     UTime,
-     UMain,
-     UIni,
-     ULog,
-     ULanguage;
+uses
+  UGraphic,
+  UScreenSong,
+  UMenuStatic,
+  UTime,
+  UMain,
+  UIni,
+  ULog,
+  ULanguage,
+  UUnicodeUtils;
 
 function TScreenScore.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then begin
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

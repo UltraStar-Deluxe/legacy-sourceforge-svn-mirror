@@ -33,25 +33,25 @@ interface
 {$I switches.inc}
 
 uses
-    UMenu,
-    UMusic,
-    SDL,
-    SysUtils,
-    UFiles,
-    UTime,
-    USongs,
-    USong,
-    UIni,
-    ULog,
-    UTexture,
-    UMenuText,
-    UEditorLyrics,
-    Math,
-    gl,
-    {$IFDEF UseMIDIPort}
-    MidiOut,
-    {$ENDIF}
-    UThemes;
+  UMenu,
+  UMusic,
+  SDL,
+  SysUtils,
+  UFiles,
+  UTime,
+  USongs,
+  USong,
+  UIni,
+  ULog,
+  UTexture,
+  UMenuText,
+  UEditorLyrics,
+  Math,
+  gl,
+  {$IFDEF UseMIDIPort}
+  MidiOut,
+  {$ENDIF}
+  UThemes;
 
 type
   TScreenEditSub = class(TMenu)
@@ -130,7 +130,8 @@ uses
   UDraw,
   UMain,
   USkins,
-  ULanguage;
+  ULanguage,
+  UUnicodeUtils;
 
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
@@ -150,7 +151,7 @@ begin
 
   If (PressedDown) then begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

@@ -34,7 +34,13 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UFiles,
+  UThemes;
 
 type
   TScreenPartyNewRound = class(TMenu)
@@ -101,15 +107,17 @@ type
 
 implementation
 
-uses UGraphic,
-     UMain,
-     UIni,
-     UTexture,
-     UParty,
-     UDLLManager,
-     ULanguage,
-     USong,
-     ULog;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  UParty,
+  UDLLManager,
+  ULanguage,
+  USong,
+  ULog,
+  UUnicodeUtils;
 
 function TScreenPartyNewRound.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -117,7 +125,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;
@@ -214,7 +222,7 @@ var
   I: Integer;
   function GetTeamPlayers(const Num: Byte): String;
   var
-    Players: Array of String;
+    Players: array of UTF8String;
     //J: Byte;
   begin            // to-do : Party
     if (Num-1 >= {PartySession.Teams.NumTeams}0) then

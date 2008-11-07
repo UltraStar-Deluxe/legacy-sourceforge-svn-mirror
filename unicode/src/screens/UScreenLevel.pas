@@ -51,7 +51,8 @@ uses UGraphic,
      UMain,
      UIni,
      USong,
-     UTexture;
+     UTexture,
+     UUnicodeUtils;
 
 function TScreenLevel.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -59,7 +60,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

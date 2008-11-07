@@ -33,17 +33,18 @@ interface
 
 {$I switches.inc}
 
-uses UMenu,
-     SDL,
-     {$IFDEF UseMIDIPort}
-     MidiFile,
-     MidiOut,
-     {$ENDIF}
-     ULog,
-     USongs,
-     USong,
-     UMusic,
-     UThemes;
+uses
+  UMenu,
+  SDL,
+  {$IFDEF UseMIDIPort}
+  MidiFile,
+  MidiOut,
+  {$ENDIF}
+  ULog,
+  USongs,
+  USong,
+  UMusic,
+  UThemes;
 
 type
   TNote = record
@@ -93,7 +94,7 @@ type
       MidiEvent:          pMidiEvent;
       MidiOut:            TMidiOutput;
       {$ENDIF}
-      
+
       Song:               TSong;
       Lines:              TLines;
       BPM:                real;
@@ -106,7 +107,7 @@ type
       {$IFDEF UseMIDIPort}
       procedure MidiFile1MidiEvent(event: PMidiEvent);
       {$ENDIF}
-      
+
       function SelectedNumber: integer;
       constructor Create; override;
       procedure onShow; override;
@@ -116,15 +117,18 @@ type
   end;
 
 implementation
-uses UGraphic,
-     SysUtils,
-     UDrawTexture,
-     TextGL,
-     UFiles,
-     UMain,
-     UIni,
-     gl,
-     USkins;
+
+uses
+  SysUtils,
+  gl,
+  UGraphic,
+  UDrawTexture,
+  TextGL,
+  UFiles,
+  UMain,
+  UIni,
+  USkins,
+  UUnicodeUtils;
 
 function TScreenEditConvert.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -132,7 +136,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

@@ -74,20 +74,22 @@ const
   SM_Party_Joker = 128 or 2;
 
 var
-  ISelections: Array of String;
+  ISelections: Array of string;
   SelectValue: Integer;
 
 
 implementation
 
-uses UGraphic,
-     UMain,
-     UIni,
-     UTexture,
-     ULanguage,
-     UParty,
-     UPlaylist,
-     USongs;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  ULanguage,
+  UParty,
+  UPlaylist,
+  USongs,
+  UUnicodeUtils;
 
 function TScreenSongMenu.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -97,7 +99,7 @@ begin
     if (CurMenu = SM_Playlist_New) AND (Interaction=0) then
     begin
       // check normal keys
-      case WideCharUpperCase(CharCode)[1] of
+      case WideStringUpperCase(CharCode)[1] of
         '0'..'9', 'A'..'Z', ' ', '-', '_', '!', ',', '<', '/', '*', '?', '''', '"':
           begin
             Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + CharCode;
@@ -116,7 +118,7 @@ begin
     end;
 
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

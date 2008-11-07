@@ -72,7 +72,8 @@ uses
   UParty,
   UDLLManager,
   UScreenCredits,
-  USkins;
+  USkins,
+  UUnicodeUtils;
 
 function TScreenMain.ParseInput(PressedKey: cardinal; CharCode: widechar;
   PressedDown: boolean): boolean;
@@ -87,7 +88,7 @@ begin
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
       begin
         Result := False;

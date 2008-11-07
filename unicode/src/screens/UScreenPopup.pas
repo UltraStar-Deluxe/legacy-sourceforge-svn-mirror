@@ -34,7 +34,12 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UMusic, UFiles, SysUtils, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UMusic,
+  UFiles,
+  UThemes;
 
 type
   TScreenPopupCheck = class(TMenu)
@@ -70,7 +75,16 @@ var
 
 implementation
 
-uses UGraphic, UMain, UIni, UTexture, ULanguage, UParty, UPlaylist, UDisplay;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  ULanguage,
+  UParty,
+  UPlaylist,
+  UDisplay,
+  UUnicodeUtils;
 
 function TScreenPopupCheck.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -78,7 +92,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

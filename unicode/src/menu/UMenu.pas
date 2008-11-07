@@ -79,8 +79,6 @@ type
       //constructor Create(Back: string; W, H: integer); overload; virtual; // W and H are the number of overlaps
 
       // interaction
-      function WideCharUpperCase(wchar: WideChar) : WideString;
-      function WideStringUpperCase(wstring: WideString) : WideString;
       procedure AddInteraction(Typ, Num: integer);
       procedure SetInteraction(Num: integer);
       property Interaction: integer read SelInteraction write SetInteraction;
@@ -106,9 +104,9 @@ type
 
       // text
       function AddText(ThemeText: TThemeText): integer; overload;
-      function AddText(X, Y: real; const Text_: string): integer; overload;
-      function AddText(X, Y: real; Style: integer; Size, ColR, ColG, ColB: real; const Text: string): integer; overload;
-      function AddText(X, Y, W: real; Style: integer; Size, ColR, ColG, ColB: real; Align: integer; const Text_: string; Reflection_: boolean; ReflectionSpacing_: real; Z : real): integer; overload;
+      function AddText(X, Y: real; const Text_: UTF8String): integer; overload;
+      function AddText(X, Y: real; Style: integer; Size, ColR, ColG, ColB: real; const Text: UTF8String): integer; overload;
+      function AddText(X, Y, W: real; Style: integer; Size, ColR, ColG, ColB: real; Align: integer; const Text_: UTF8String; Reflection_: boolean; ReflectionSpacing_: real; Z : real): integer; overload;
 
       // button
       Procedure SetButtonLength(Length: cardinal); //Function that Set Length of Button Array in one Step instead of register new Memory for every Button
@@ -117,22 +115,22 @@ type
       function AddButton(X, Y, W, H: real; const Name: string; Typ: TTextureType; Reflection: boolean): integer; overload;
       function AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real; const Name: string; Typ: TTextureType; Reflection: boolean; ReflectionSpacing, DeSelectReflectionSpacing: real): integer; overload;
       procedure ClearButtons;
-      procedure AddButtonText(AddX, AddY: real; const AddText: string); overload;
-      procedure AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; const AddText: string); overload;
-      procedure AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: string); overload;
-      procedure AddButtonText(CustomButton: TButton; AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: string); overload;
+      procedure AddButtonText(AddX, AddY: real; const AddText: UTF8String); overload;
+      procedure AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; const AddText: UTF8String); overload;
+      procedure AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: UTF8String); overload;
+      procedure AddButtonText(CustomButton: TButton; AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: UTF8String); overload;
 
       // select slide
-      function AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; Values: array of string): integer; overload;
+      function AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; const Values: array of string): integer; overload;
       function AddSelectSlide(X, Y, W, H, SkipX, SBGW, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt,
         TColR, TColG, TColB, TInt, TDColR, TDColG, TDColB, TDInt,
         SBGColR, SBGColG, SBGColB, SBGInt, SBGDColR, SBGDColG, SBGDColB, SBGDInt,
         STColR, STColG, STColB, STInt, STDColR, STDColG, STDColB, STDInt: real;
         const Name: string; Typ: TTextureType; const SBGName: string; SBGTyp: TTextureType;
-        const Caption: string; var Data: integer): integer; overload;
-      procedure AddSelectSlideOption(const AddText: string); overload;
-      procedure AddSelectSlideOption(SelectNo: cardinal; const AddText: string); overload;
-      procedure UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; Values: array of string; var Data: integer);
+        const Caption: UTF8String; var Data: integer): integer; overload;
+      procedure AddSelectSlideOption(const AddText: UTF8String); overload;
+      procedure AddSelectSlideOption(SelectNo: cardinal; const AddText: UTF8String); overload;
+      procedure UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; const Values: array of string; var Data: integer);
 
 //      function AddWidget(X, Y : UInt16; WidgetSrc : PSDL_Surface): Int16;
 //      procedure ClearWidgets(MinNumber : Int16);
@@ -683,7 +681,7 @@ begin
     ThemeText.ColR, ThemeText.ColG, ThemeText.ColB, ThemeText.Align, ThemeText.Text, ThemeText.Reflection, ThemeText.ReflectionSpacing, ThemeText.Z);
 end;
 
-function TMenu.AddText(X, Y: real; const Text_: string): integer;
+function TMenu.AddText(X, Y: real; const Text_: UTF8String): integer;
 var
   TextNum: integer;
 begin
@@ -694,12 +692,12 @@ begin
   Result := TextNum;
 end;
 
-function TMenu.AddText(X, Y: real; Style: integer; Size, ColR, ColG, ColB: real; const Text: string): integer;
+function TMenu.AddText(X, Y: real; Style: integer; Size, ColR, ColG, ColB: real; const Text: UTF8String): integer;
 begin
   Result := AddText(X, Y, 0, Style, Size, ColR, ColG, ColB, 0, Text, false, 0, 0);
 end;
 
-function TMenu.AddText(X, Y, W: real; Style: integer; Size, ColR, ColG, ColB: real; Align: integer; const Text_: string; Reflection_: boolean; ReflectionSpacing_: real; Z : real): integer;
+function TMenu.AddText(X, Y, W: real; Style: integer; Size, ColR, ColG, ColB: real; Align: integer; const Text_: UTF8String; Reflection_: boolean; ReflectionSpacing_: real; Z : real): integer;
 var
   TextNum: integer;
 begin
@@ -1127,12 +1125,12 @@ begin
   ScreenPopupCheck.ShowPopup(msg);
 end;
 
-procedure TMenu.AddButtonText(AddX, AddY: real; const AddText: string);
+procedure TMenu.AddButtonText(AddX, AddY: real; const AddText: UTF8String);
 begin
   AddButtonText(AddX, AddY, 1, 1, 1, AddText);
 end;
 
-procedure TMenu.AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; const AddText: string);
+procedure TMenu.AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; const AddText: UTF8String);
 var
   Il: integer;
 begin
@@ -1148,7 +1146,7 @@ begin
   end;
 end;
 
-procedure TMenu.AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: string);
+procedure TMenu.AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: UTF8String);
 var
   Il: integer;
 begin
@@ -1167,7 +1165,7 @@ begin
   end;
 end;
 
-procedure TMenu.AddButtonText(CustomButton: TButton; AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: string);
+procedure TMenu.AddButtonText(CustomButton: TButton; AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: UTF8String);
 var
   Il: integer;
 begin
@@ -1186,7 +1184,7 @@ begin
   end;
 end;
 
-function TMenu.AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; Values: array of string): integer;
+function TMenu.AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; const Values: array of string): integer;
 var
   SO: integer;
 begin
@@ -1221,7 +1219,7 @@ function TMenu.AddSelectSlide(X, Y, W, H, SkipX, SBGW, ColR, ColG, ColB, Int, DC
   SBGColR, SBGColG, SBGColB, SBGInt, SBGDColR, SBGDColG, SBGDColB, SBGDInt,
   STColR, STColG, STColB, STInt, STDColR, STDColG, STDColB, STDInt: real;
   const Name: string; Typ: TTextureType; const SBGName: string; SBGTyp: TTextureType;
-  const Caption: string; var Data: integer): integer;
+  const Caption: UTF8String; var Data: integer): integer;
 var
   S: integer;
   I: integer;
@@ -1339,12 +1337,12 @@ begin
   Result := S;
 end;
 
-procedure TMenu.AddSelectSlideOption(const AddText: string);
+procedure TMenu.AddSelectSlideOption(const AddText: UTF8String);
 begin
   AddSelectSlideOption(High(SelectsS), AddText);
 end;
 
-procedure TMenu.AddSelectSlideOption(SelectNo: cardinal; const AddText: string);
+procedure TMenu.AddSelectSlideOption(SelectNo: cardinal; const AddText: UTF8String);
 var
   SO: integer;
 begin
@@ -1358,7 +1356,7 @@ begin
   //if SO = Selects[S].PData^ then Selects[S].SelectedOption := SO;
 end;
 
-procedure TMenu.UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; Values: array of string; var Data: integer);
+procedure TMenu.UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; const Values: array of string; var Data: integer);
 var
   SO: integer;
 begin
@@ -1515,45 +1513,6 @@ end;
 procedure TMenu.onShowFinish;
 begin
   // nothing
-end;
-
-(*
- * Wrapper for WideUpperCase. Needed because some plattforms have problems with
- * unicode support.
- *)
-function TMenu.WideCharUpperCase(wchar: WideChar) : WideString;
-begin
-  // On Linux and MacOSX the cwstring unit is necessary for Unicode function-calls.
-  // Otherwise you will get an EIntOverflow exception (thrown by unimplementedwidestring()).
-  // The Unicode manager cwstring does not work with MacOSX at the moment because
-  // of missing references to iconv. So we have to use Ansi... for the moment.
-
-  // cwstring crashes in FPC 2.2.2 so do not use the cwstring stuff
-  {.$IFNDEF DARWIN}
-  {$IFDEF NOIGNORE}
-    // The FPC implementation of WideUpperCase returns nil if wchar is #0 (e.g. if an arrow key is pressed)
-    if (wchar <> #0) then
-      Result := WideUpperCase(wchar)
-    else
-      Result := #0;
-  {$ELSE}
-    Result := AnsiUpperCase(wchar)
-  {$ENDIF}
-end;
-
-(*
- * Wrapper for WideUpperCase. Needed because some plattforms have problems with
- * unicode support.
- *)
-function TMenu.WideStringUpperCase(wstring: WideString) : WideString;
-begin
-  // cwstring crashes in FPC 2.2.2 so do not use the cwstring stuff
-  {.$IFNDEF DARWIN}
-  {$IFDEF NOIGNORE}
-    Result := WideUpperCase(wstring)
-  {$ELSE}
-    Result := AnsiUpperCase(wstring);
-  {$ENDIF}
 end;
 
 procedure TMenu.onHide;

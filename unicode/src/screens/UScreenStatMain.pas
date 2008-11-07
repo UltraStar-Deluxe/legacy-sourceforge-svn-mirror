@@ -62,19 +62,16 @@ type
 
 implementation
 
-uses UGraphic,
-     UDataBase,
-     USongs,
-     USong,
-     ULanguage,
-     UCommon,
-     Classes,
-     {$IFDEF win32}
-     windows,
-     {$ELSE}
-     sysconst,
-     {$ENDIF}
-     ULog;
+uses
+  UGraphic,
+  UDataBase,
+  USongs,
+  USong,
+  ULanguage,
+  UCommon,
+  Classes,
+  ULog,
+  UUnicodeUtils;
 
 function TScreenStatMain.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -82,7 +79,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

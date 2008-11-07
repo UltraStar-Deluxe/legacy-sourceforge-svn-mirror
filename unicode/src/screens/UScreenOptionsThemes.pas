@@ -57,10 +57,12 @@ type
 
 implementation
 
-uses UMain,
-     UGraphic,
-     USkins,
-     SysUtils;
+uses
+  UMain,
+  UGraphic,
+  USkins,
+  UUnicodeUtils,
+  SysUtils;
 
 function TScreenOptionsThemes.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -68,7 +70,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;

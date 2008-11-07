@@ -34,7 +34,13 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, UIni, UThemes;
+  SDL,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UFiles,
+  UIni,
+  UThemes;
 
 type
   TScreenOptionsSound = class(TMenu)
@@ -47,7 +53,10 @@ type
 
 implementation
 
-uses UGraphic, SysUtils;
+uses
+  UGraphic,
+  UUnicodeUtils,
+  SysUtils;
 
 function TScreenOptionsSound.ParseInput(PressedKey: cardinal;
   CharCode: widechar; PressedDown: boolean): boolean;
@@ -56,7 +65,7 @@ begin
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
       begin
         Result := False;

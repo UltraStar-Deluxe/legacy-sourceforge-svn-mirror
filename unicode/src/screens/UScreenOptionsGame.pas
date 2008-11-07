@@ -34,7 +34,14 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, UIni, UThemes, USongs;
+  SDL,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UFiles,
+  UIni,
+  UThemes,
+  USongs;
 
 type
   TScreenOptionsGame = class(TMenu)
@@ -48,7 +55,10 @@ type
 
 implementation
 
-uses UGraphic, SysUtils;
+uses
+  UGraphic,
+  UUnicodeUtils,
+  SysUtils;
 
 function TScreenOptionsGame.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 begin
@@ -56,7 +66,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
+    case WideStringUpperCase(CharCode)[1] of
       'Q':
         begin
           Result := false;
