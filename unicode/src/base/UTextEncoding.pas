@@ -34,12 +34,53 @@ interface
 {$I switches.inc}
 
 uses
-  SysUtils;
+  SysUtils,
+  StrUtils;
 
 type
-  TEncoding = (encCP1250, encCP1252, encUTF8, encNative);
+  TEncoding = (
+    encCP1250,  // Windows-1250 Central/Eastern Europe (used by Ultrastar)
+    encCP1252,  // Windows-1252 Western Europe (used by UltraStar Deluxe < 1.1)
+    encUTF8,    // UTF-8
+    encLocale   // current locale (needs cwstring on linux)
+  );
 
-function RecodeString(const Src: string; SrcEncoding: TEncoding): WideString;
+const
+  EncodingNames: array[TEncoding] of AnsiString = (
+    'CP1250',
+    'CP1252',
+    'UTF8',
+    'LOCALE'
+  );
+
+const
+  UTF8_BOM: AnsiString = #$EF#$BB#$BF;
+
+{**
+ * Changes encoding of string Src with encoding SrcEncoding to UTF-16
+ * If SrcEncoding is encUnknown the result is undefined.
+ *}
+function RecodeStringWide(const Src: string; SrcEncoding: TEncoding): WideString;
+
+{**
+ * Changes encoding of string Src with encoding SrcEncoding to UTF-8.
+ * If SrcEncoding is encUnknown the result is undefined.
+ *}
+function RecodeStringUTF8(const Src: string; SrcEncoding: TEncoding): UTF8String;
+
+{**
+ * If Text starts with an UTF-8 BOM, the BOM is removed and true will
+ * be returned.
+ *}
+function CheckReplaceUTF8BOM(var Text: string): boolean;
+
+{**
+ * Parses an encoding string to its TEncoding equivalent.
+ * Surrounding whitespace and dashes ('-') are removed, the upper-cased
+ * resulting value is then compared with TEncodingNames.
+ * If the encoding was not found, the result is set to the Default encoding. 
+ *}
+function ParseEncoding(const EncodingStr: AnsiString; Default: TEncoding): TEncoding;
 
 implementation
 
@@ -103,7 +144,9 @@ const
     #$00F8, #$00F9, #$00FA, #$00FB, #$00FC, #$00FD, #$00FE, #$00FF
   );
 
-
+{**
+ * Internal conversion function
+ *}
 function Convert(const Src: string; const Table: TConversionTable): WideString;
 var
   SrcPos, DstPos: integer;
@@ -133,7 +176,7 @@ begin
   SetLength(Result, DstPos-1);
 end;
 
-function RecodeString(const Src: string; SrcEncoding: TEncoding): WideString;
+function RecodeStringWide(const Src: string; SrcEncoding: TEncoding): WideString;
 begin
   case SrcEncoding of
     encCP1250:
@@ -142,9 +185,56 @@ begin
       Result := Convert(Src, CP1252Table);
     encUTF8:
       Result := UTF8Decode(Src);
-    encNative:
+    encLocale:
       Result := UTF8Decode(AnsiToUtf8(Src));
+    else
+      Result := '';
   end;
+end;
+
+function RecodeStringUTF8(const Src: string; SrcEncoding: TEncoding): UTF8String;
+begin
+  case SrcEncoding of
+    encCP1250:
+      Result := UTF8Encode(Convert(Src, CP1250Table));
+    encCP1252:
+      Result := UTF8Encode(Convert(Src, CP1252Table));
+    encUTF8:
+      Result := Src;
+    encLocale:
+      Result := AnsiToUtf8(Src);
+    else
+      Result := '';
+  end;
+end;
+
+function CheckReplaceUTF8BOM(var Text: string): boolean;
+begin
+  if AnsiStartsStr(UTF8_BOM, Text) then
+  begin
+    Text := Copy(Text, Length(UTF8_BOM)+1, Length(Text)-Length(UTF8_BOM));
+    Result := true;
+    Exit;
+  end;
+  Result := false;
+end;
+
+function ParseEncoding(const EncodingStr: AnsiString; Default: TEncoding): TEncoding;
+var
+  PrepStr: string; // prepared encoding string
+  Encoding: TEncoding;
+begin
+  // remove surrounding whitespace, replace dashes, to upper case
+  PrepStr := UpperCase(AnsiReplaceStr(Trim(EncodingStr), '-', ''));
+  for Encoding := Low(EncodingNames) to High(EncodingNames) do
+  begin
+    if (EncodingNames[Encoding] = PrepStr) then
+    begin
+      Result := Encoding;
+      Exit;
+    end;
+  end;
+  Result := Default;
 end;
 
 end.
