@@ -88,7 +88,8 @@ function UCS4CharToString(ch: UCS4Char): UCS4String;
  * character access, convert to UCS-4 where each character is represented by
  * one UCS4Char. 
  *)
-function WideStringUpperCase(const str: WideString) : WideString;
+function WideStringUpperCase(const str: WideString) : WideString; overload;
+function WideStringUpperCase(ch: WideChar): WideString; overload;
 
 
 implementation
@@ -193,18 +194,35 @@ begin
   Result[1] := 0;
 end;
 
+function WideStringUpperCase(ch: WideChar): WideString;
+begin
+  // If WideChar #0 is converted to a WideString in Delphi, a string with
+  // length 1 and a single char #0 is returned. In FPC an empty (length=0)
+  // string will be returned. This will crash, if a non printable key was
+  // pressed, its char code (#0) is translated to upper-case and the the first
+  // character is accessed with Result[1].
+  // We cannot catch this error in the WideString parameter variant as the string
+  // has length 0 already.
+  
+  // Force min. string length of 1
+  if (ch = #0) then
+    Result := #0
+  else
+    Result := WideStringUpperCase(WideString(ch));
+end;
+
 function WideStringUpperCase(const str: WideString): WideString;
 begin
   // On Linux and MacOSX the cwstring unit is necessary for Unicode function-calls.
   // Otherwise you will get an EIntOverflow exception (thrown by unimplementedwidestring()).
   // The Unicode manager cwstring does not work with MacOSX at the moment because
-  // of missing references to iconv. So we have to use Ansi... for the moment.
+  // of missing references to iconv.
 
   {.$IFNDEF DARWIN}
   {$IFDEF NOIGNORE}
     Result := WideUpperCase(str)
   {$ELSE}
-    Result := UTF8Decode(AnsiUpperCase(UTF8Encode(str)));
+    Result := UTF8Decode(UpperCase(UTF8Encode(str)));
   {$ENDIF}
 end;
 
