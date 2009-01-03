@@ -9,6 +9,10 @@ unit ULua;
 
 interface
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$IFDEF UNIX}
 uses
   dl;
@@ -30,7 +34,8 @@ const
 {$ENDIF}
 {$IFDEF UNIX}
 {$IFDEF DARWIN}
-  LuaDLL = 'lua5.1.dylib';
+  LuaDLL = 'liblua.dylib';
+  {$linklib liblua}
 {$ELSE}
   LuaDLL = 'lua5.1.so';
 {$ENDIF}
