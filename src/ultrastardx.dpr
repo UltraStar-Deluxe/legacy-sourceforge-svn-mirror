@@ -140,6 +140,13 @@ uses
   SQLiteTable3  in 'lib\SQLite\SQLiteTable3.pas',
   SQLite3       in 'lib\SQLite\SQLite3.pas',
 
+  //------------------------------
+  //Includes - Lua Support
+  //------------------------------
+
+  ULua           in 'lib\Lua\ULua.pas',
+  ULuaLog        in 'lua\ULuaLog.pas',
+  ULuaGl         in 'lua\ULuaGl.pas',
 
   //------------------------------
   //Includes - Menu System

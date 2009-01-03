@@ -46,6 +46,7 @@ uses
   ULyrics,
   UScreenSing,
   USong,
+  ULua,
   gl;
 
 type
@@ -116,6 +117,7 @@ var
   PlayersPlay:  integer;
 
   CurrentSong : TSong;
+  Lua : Plua_State;
 
 const
   MAX_SONG_SCORE = 10000;     // max. achievable points per song
@@ -180,6 +182,8 @@ uses
   UGraphicClasses,
   UPluginDefs,
   UPlatform,
+  ULuaLog,
+  ULuaGl,
   UThemes;
 
 
@@ -379,6 +383,19 @@ begin
       Log.LogBenchmark('Initializing Joystick', 1);
     end;
 
+    // Lua
+    Log.BenchmarkStart(1);
+    Lua := luaL_newstate;
+    if Lua = nil then
+      Log.LogError('Lua init failed','Lua');
+    luaL_openlibs(Lua);
+
+    luaopen_Log(Lua);     // Log + Benchmark (Lua)
+    luaopen_gl(Lua);      // gl (Lua)
+
+    Log.BenchmarkEnd(1);
+    Log.LogBenchmark('Initializing Lua', 1);
+
     Log.BenchmarkEnd(0);
     Log.LogBenchmark('Loading Time', 0);
 
@@ -416,6 +433,8 @@ begin
     //TTF_Quit();
     SDL_Quit();
 
+    lua_close(Lua);
+
     if assigned(Log) then
     begin
       Log.LogStatus('Main Loop', 'Finished');
@@ -446,6 +465,16 @@ begin
 
     // display
     done := not Display.Draw;
+
+    // FIXME remove this when the Partymode works
+    if FileExists('main.lua') then
+    begin
+      if 0 <> luaL_dofile(Lua, 'main.lua') then
+      begin
+        Log.LogError(lua_tostring(Lua,-1));
+      end;
+    end;
+
     SwapBuffers;
 
     // delay
