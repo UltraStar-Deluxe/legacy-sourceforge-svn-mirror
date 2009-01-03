@@ -34,8 +34,8 @@ const
 {$ENDIF}
 {$IFDEF UNIX}
 {$IFDEF DARWIN}
-  LuaDLL = 'liblua.dylib';
-  {$linklib liblua}
+  LuaDLL = 'liblua.5.1.dylib';
+  {$linklib liblua.5.1}
 {$ELSE}
   LuaDLL = 'lua5.1.so';
 {$ENDIF}
