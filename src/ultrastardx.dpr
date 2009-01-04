@@ -145,8 +145,10 @@ uses
   //------------------------------
 
   ULua           in 'lib\Lua\ULua.pas',
-  ULuaLog        in 'lua\ULuaLog.pas',
   ULuaGl         in 'lua\ULuaGl.pas',
+  ULuaLog        in 'lua\ULuaLog.pas',
+  ULuaTextGL     in 'lua\ULuaTextGL.pas',
+  ULuaTexture    in 'lua\ULuaTexture.pas',
 
   //------------------------------
   //Includes - Menu System

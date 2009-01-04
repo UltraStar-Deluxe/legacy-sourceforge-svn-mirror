@@ -182,8 +182,10 @@ uses
   UGraphicClasses,
   UPluginDefs,
   UPlatform,
-  ULuaLog,
   ULuaGl,
+  ULuaLog,
+  ULuaTexture,
+  ULuaTextGL,
   UThemes;
 
 
@@ -390,8 +392,14 @@ begin
       Log.LogError('Lua init failed','Lua');
     luaL_openlibs(Lua);
 
-    luaopen_Log(Lua);     // Log + Benchmark (Lua)
     luaopen_gl(Lua);      // gl (Lua)
+    lua_pop(Lua, 1);      // remove table from stack
+    luaopen_Log(Lua);     // Log + Benchmark (Lua)
+    lua_pop(Lua, 1);      // remove table from stack
+    luaopen_TextGL(Lua);  // TextGL (Lua)
+    lua_pop(Lua, 1);      // remove table from stack
+    luaopen_Texture(Lua); // Texture (Lua)
+    lua_pop(Lua, 1);      // remove table from stack
 
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Initializing Lua', 1);

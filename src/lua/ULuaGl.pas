@@ -49,6 +49,7 @@ function ULuaGl_ClearColor(L: Plua_State): Integer; cdecl;
 function ULuaGl_Color(L: Plua_State): Integer; cdecl;
 function ULuaGl_CullFace(L: Plua_State): Integer; cdecl;
 function ULuaGl_DepthFunc(L: Plua_State): Integer; cdecl;
+function ULuaGl_DepthRange(L: Plua_State): Integer; cdecl;
 function ULuaGl_Disable(L: Plua_State): Integer; cdecl;
 function ULuaGl_DisableClientState(L: Plua_State): Integer; cdecl;
 function ULuaGl_DrawBuffer(L: Plua_State): Integer; cdecl;
@@ -63,6 +64,7 @@ function ULuaGl_InitNames(L: Plua_State): Integer; cdecl;
 function ULuaGl_LoadIdentity(L: Plua_State): Integer; cdecl;
 function ULuaGl_LogicOp(L: Plua_State): Integer; cdecl;
 function ULuaGl_MatrixMode(L: Plua_State): Integer; cdecl;
+function ULuaGl_Ortho(L: Plua_State): Integer; cdecl;
 function ULuaGl_PopAttrib(L: Plua_State): Integer; cdecl;
 function ULuaGl_PopClientAttrib(L: Plua_State): Integer; cdecl;
 function ULuaGl_PopMatrix(L: Plua_State): Integer; cdecl;
@@ -71,8 +73,11 @@ function ULuaGl_PushMatrix(L: Plua_State): Integer; cdecl;
 function ULuaGl_RasterPos(L: Plua_State): Integer; cdecl;
 function ULuaGl_ReadBuffer(L: Plua_State): Integer; cdecl;
 function ULuaGl_Rect(L: Plua_State): Integer; cdecl;
+function ULuaGl_Rotate(L: Plua_State): Integer; cdecl;
+function ULuaGl_Scale(L: Plua_State): Integer; cdecl;
 function ULuaGl_ShadeModel(L: Plua_State): Integer; cdecl;
 function ULuaGl_TexCoord(L: Plua_State): Integer; cdecl;
+function ULuaGl_Translate(L: Plua_State): Integer; cdecl;
 function ULuaGl_Vertex(L: Plua_State): Integer; cdecl;
 function ULuaGl_Viewport(L: Plua_State): Integer; cdecl;
 
@@ -217,6 +222,23 @@ begin
   result:=0; // number of results
 end;
 
+function ULuaGl_DepthRange(L: Plua_State): Integer; cdecl;
+var
+  i: Integer;
+begin
+  if lua_istable(L, 1) then
+    for i := 1 to lua_objlen(L,1) do
+      lua_rawgeti(L,1,i);
+
+  if  (lua_istable(L, 1) and (lua_objlen(L,1) = 2))
+  or  (lua_gettop(L) = 2) then
+    glDepthRange(lual_checkinteger(L,-2),
+                 lual_checkinteger(L,-1))
+  else
+    luaL_error(L, 'incorrect argument to function ''gl.DepthRange''');
+  result:=0; // number of results
+end;
+
 function ULuaGl_Disable(L: Plua_State): Integer; cdecl;
 var
   e : GLenum;
@@ -350,6 +372,34 @@ begin
   result:=0; // number of results
 end;
 
+function ULuaGl_MatrixMode(L: Plua_State): Integer; cdecl;
+var
+  e : GLenum;
+begin
+  e := ULuaGl_StringToEnum(lual_checkstring(L,1));
+
+  if (e = ULuaGl_EnumERROR) then
+    luaL_error(L, 'incorrect string argument to function ''gl.MatrixMode''');
+
+  glMatrixMode(e);
+
+  result:=0; // number of results
+end;
+
+function ULuaGl_Ortho(L: Plua_State): Integer; cdecl;
+begin
+  if  (lua_gettop(L) = 6) then
+    glOrtho(lual_checkinteger(L,-6),
+            lual_checkinteger(L,-5),
+            lual_checkinteger(L,-4),
+            lual_checkinteger(L,-3),
+            lual_checkinteger(L,-2),
+            lual_checkinteger(L,-1))
+  else
+    luaL_error(L, 'incorrect argument to function ''gl.Ortho''');
+  result:=0; // number of results
+end;
+
 function ULuaGl_PopAttrib(L: Plua_State): Integer; cdecl;
 begin
   glPopAttrib();
@@ -377,20 +427,6 @@ end;
 function ULuaGl_PushMatrix(L: Plua_State): Integer; cdecl;
 begin
   glPopName();
-  result:=0; // number of results
-end;
-
-function ULuaGl_MatrixMode(L: Plua_State): Integer; cdecl;
-var
-  e : GLenum;
-begin
-  e := ULuaGl_StringToEnum(lual_checkstring(L,1));
-
-  if (e = ULuaGl_EnumERROR) then
-    luaL_error(L, 'incorrect string argument to function ''gl.MatrixMode''');
-
-  glMatrixMode(e);
-
   result:=0; // number of results
 end;
 
@@ -457,6 +493,29 @@ begin
   result:=0; // number of results
 end;
 
+function ULuaGl_Rotate(L: Plua_State): Integer; cdecl;
+begin
+  if  (lua_gettop(L) = 3) then
+    glRotated(lual_checkinteger(L,-4),
+              lual_checkinteger(L,-3),
+              lual_checkinteger(L,-2),
+              lual_checkinteger(L,-1))
+  else
+    luaL_error(L, 'incorrect argument to function ''gl.Rotate''');
+  result:=0; // number of results
+end;
+
+function ULuaGl_Scale(L: Plua_State): Integer; cdecl;
+begin
+  if  (lua_gettop(L) = 3) then
+    glScaled(lual_checkinteger(L,-3),
+             lual_checkinteger(L,-2),
+             lual_checkinteger(L,-1))
+  else
+    luaL_error(L, 'incorrect argument to function ''gl.Scale''');
+  result:=0; // number of results
+end;
+
 function ULuaGl_ShadeModel(L: Plua_State): Integer; cdecl;
 var
   e : GLenum;
@@ -495,6 +554,17 @@ begin
                  GLdouble(lual_checknumber(L,-1)))
   else
     luaL_error(L, 'incorrect argument to function ''gl.TexCoord''');
+  result:=0; // number of results
+end;
+
+function ULuaGl_Translate(L: Plua_State): Integer; cdecl;
+begin
+  if  (lua_gettop(L) = 3) then
+    glTranslated(lual_checkinteger(L,-3),
+                 lual_checkinteger(L,-2),
+                 lual_checkinteger(L,-1))
+  else
+    luaL_error(L, 'incorrect argument to function ''gl.Translate''');
   result:=0; // number of results
 end;
 
@@ -553,7 +623,7 @@ begin
 end;
 
 const
-  ULuaGl_Lib_f: array [0..34] of lual_reg = (
+  ULuaGl_Lib_f: array [0..39] of lual_reg = (
    (name:'Begin';func:ULuaGl_Begin),
    (name:'BindTexture';func:ULuaGl_BindTexture),
    (name:'BlendFunc';func:ULuaGl_BlendFunc),
@@ -562,6 +632,7 @@ const
    (name:'Color';func:ULuaGl_Color),
    (name:'CullFace';func:ULuaGl_CullFace),
    (name:'DepthFunc';func:ULuaGl_DepthFunc),
+   (name:'DepthRange';func:ULuaGl_DepthRange),
    (name:'Disable';func:ULuaGl_Disable),
    (name:'DisableClientState';func:ULuaGl_DisableClientState),
    (name:'DrawBuffer';func:ULuaGl_DrawBuffer),
@@ -576,6 +647,7 @@ const
    (name:'LoadIdentity';func:ULuaGl_LoadIdentity),
    (name:'LogicOp';func:ULuaGl_LogicOp),
    (name:'MatrixMode';func:ULuaGl_MatrixMode),
+   (name:'Ortho';func:ULuaGl_Ortho),
    (name:'PopAttrib';func:ULuaGl_PopAttrib),
    (name:'PopClientAttrib';func:ULuaGl_PopClientAttrib),
    (name:'PopMatrix';func:ULuaGl_PopMatrix),
@@ -583,9 +655,12 @@ const
    (name:'PushMatrix';func:ULuaGl_PushMatrix),
    (name:'RasterPos';func:ULuaGl_RasterPos),
    (name:'ReadBuffer';func:ULuaGl_ReadBuffer),
+   (name:'Rotate';func:ULuaGl_Rotate),
    (name:'Rect';func:ULuaGl_Rect),
+   (name:'Scale';func:ULuaGl_Scale),
    (name:'ShadeModel';func:ULuaGl_ShadeModel),
    (name:'TexCoord';func:ULuaGl_TexCoord),
+   (name:'Translate';func:ULuaGl_Translate),
    (name:'Vertex';func:ULuaGl_Vertex),
    (name:'Viewport';func:ULuaGl_Viewport),
    (name:nil;func:nil)
@@ -622,7 +697,6 @@ end;
   glDeleteLists: procedure(list: GLuint; range: GLsizei); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glDeleteTextures: procedure(n: GLsizei; const textures: PGLuint); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glDepthMask: procedure(flag: GLboolean); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glDepthRange: procedure(zNear, zFar: GLclampd); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glDrawArrays: procedure(mode: GLenum; first: GLint; count: GLsizei); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glDrawElements: procedure(mode: GLenum; count: GLsizei; atype: GLenum; const indices: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glDrawPixels: procedure(width, height: GLsizei; format, atype: GLenum; const pixels: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
@@ -739,7 +813,6 @@ end;
   glNormal3s: procedure(nx, ny, nz: GLshort); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glNormal3sv: procedure(const v: PGLshort); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glNormalPointer: procedure(atype: GLenum; stride: GLsizei; const pointer: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glOrtho: procedure(left, right, bottom, top, zNear, zFar: GLdouble); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glPassThrough: procedure(token: GLfloat); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glPixelMapfv: procedure(map: GLenum; mapsize: GLsizei; const values: PGLfloat); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glPixelMapuiv: procedure(map: GLenum; mapsize: GLsizei; const values: PGLuint); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
@@ -760,10 +833,6 @@ end;
   glReadPixels: procedure(x, y: GLint; width, height: GLsizei; format, atype: GLenum; pixels: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
 
   glRenderMode: function(mode: GLint): GLint; {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glRotated: procedure(angle, x, y, z: GLdouble); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glRotatef: procedure(angle, x, y, z: GLfloat); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glScaled: procedure(x, y, z: GLdouble); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glScalef: procedure(x, y, z: GLfloat); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glScissor: procedure(x, y: GLint; width, height: GLsizei); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glSelectBuffer: procedure(size: GLsizei; buffer: PGLuint); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glStencilFunc: procedure(func: GLenum; ref: GLint; mask: GLuint); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
@@ -789,8 +858,6 @@ end;
   glTexParameteriv: procedure(target: GLenum; pname: GLenum; const params: PGLint); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glTexSubImage1D: procedure(target: GLenum; level, xoffset: GLint; width: GLsizei; format, atype: GLenum; const pixels: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glTexSubImage2D: procedure(target: GLenum; level, xoffset, yoffset: GLint; width, height: GLsizei; format, atype: GLenum; const pixels: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glTranslated: procedure(x, y, z: GLdouble); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glTranslatef: procedure(x, y, z: GLfloat); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glVertexPointer: procedure(size: GLint; atype: GLenum; stride: GLsizei; const pointer: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   {$IFDEF WINDOWS}
   ChoosePixelFormat: function(DC: HDC; p2: PPixelFormatDescriptor): Integer; {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
