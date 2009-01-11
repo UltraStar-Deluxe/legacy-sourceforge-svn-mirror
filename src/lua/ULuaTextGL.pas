@@ -61,3 +61,18 @@ begin
     result:=1;
 end;
 end.
+
+{
+procedure BuildFont;                          // build our bitmap font
+procedure KillFont;                           // delete the font
+function  glTextWidth(const text: string): real; // returns text width
+procedure glPrint(const text: string);        // custom GL "Print" routine
+procedure ResetFont();                        // reset font settings of active font
+procedure SetFontPos(X, Y: real);             // sets X and Y
+procedure SetFontZ(Z: real);                  // sets Z
+procedure SetFontSize(Size: real);
+procedure SetFontStyle(Style: integer);       // sets active font style (normal, bold, etc)
+procedure SetFontItalic(Enable: boolean);     // sets italic type letter (works for all fonts)
+procedure SetFontAspectW(Aspect: real);
+procedure SetFontReflection(Enable:boolean;Spacing: real); // enables/disables text reflection
+}

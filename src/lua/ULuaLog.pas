@@ -40,20 +40,6 @@ uses
 
 function luaopen_Log (L: Plua_State): Integer; cdecl;
 
-function ULuaLog_LogError(L: Plua_State): Integer; cdecl;
-function ULuaLog_LogMsg(L: Plua_State): Integer; cdecl;
-function ULuaLog_BenchmarkStart(L: Plua_State): Integer; cdecl;
-function ULuaLog_BenchmarkEnd(L: Plua_State): Integer; cdecl;
-function ULuaLog_LogBenchmark(L: Plua_State): Integer; cdecl;
-function ULuaLog_LogDebug(L: Plua_State): Integer; cdecl;
-function ULuaLog_LogInfo(L: Plua_State): Integer; cdecl;
-function ULuaLog_LogStatus(L: Plua_State): Integer; cdecl;
-function ULuaLog_LogWarn(L: Plua_State): Integer; cdecl;
-function ULuaLog_LogCritical(L: Plua_State): Integer; cdecl;
-function ULuaLog_CriticalError(L: Plua_State): Integer; cdecl;
-function ULuaLog_GetLogLevel(L: Plua_State): Integer; cdecl;
-function ULuaLog_SetLogLevel(L: Plua_State): Integer; cdecl;
-
 implementation
 
 function ULuaLog_LogError(L: Plua_State): Integer; cdecl;

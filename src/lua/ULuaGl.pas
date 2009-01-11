@@ -41,48 +41,6 @@ uses
 function luaopen_gl (L: Plua_State): Integer; cdecl;
 function ULuaGl_StringToEnum(Str: String): GLenum;
 
-function ULuaGl_Begin(L: Plua_State): Integer; cdecl;
-function ULuaGl_BindTexture(L: Plua_State): Integer; cdecl;
-function ULuaGl_BlendFunc(L: Plua_State): Integer; cdecl;
-function ULuaGl_Clear(L: Plua_State): Integer; cdecl;
-function ULuaGl_ClearColor(L: Plua_State): Integer; cdecl;
-function ULuaGl_Color(L: Plua_State): Integer; cdecl;
-function ULuaGl_CullFace(L: Plua_State): Integer; cdecl;
-function ULuaGl_DepthFunc(L: Plua_State): Integer; cdecl;
-function ULuaGl_DepthRange(L: Plua_State): Integer; cdecl;
-function ULuaGl_Disable(L: Plua_State): Integer; cdecl;
-function ULuaGl_DisableClientState(L: Plua_State): Integer; cdecl;
-function ULuaGl_DrawBuffer(L: Plua_State): Integer; cdecl;
-function ULuaGl_Enable(L: Plua_State): Integer; cdecl;
-function ULuaGl_EnableClientState(L: Plua_State): Integer; cdecl;
-function ULuaGl_End(L: Plua_State): Integer; cdecl;
-function ULuaGl_EndList(L: Plua_State): Integer; cdecl;
-function ULuaGl_Finish(L: Plua_State): Integer; cdecl;
-function ULuaGl_Flush(L: Plua_State): Integer; cdecl;
-function ULuaGl_FrontFace(L: Plua_State): Integer; cdecl;
-function ULuaGl_InitNames(L: Plua_State): Integer; cdecl;
-function ULuaGl_LoadIdentity(L: Plua_State): Integer; cdecl;
-function ULuaGl_LogicOp(L: Plua_State): Integer; cdecl;
-function ULuaGl_MatrixMode(L: Plua_State): Integer; cdecl;
-function ULuaGl_Ortho(L: Plua_State): Integer; cdecl;
-function ULuaGl_PopAttrib(L: Plua_State): Integer; cdecl;
-function ULuaGl_PopClientAttrib(L: Plua_State): Integer; cdecl;
-function ULuaGl_PopMatrix(L: Plua_State): Integer; cdecl;
-function ULuaGl_PopName(L: Plua_State): Integer; cdecl;
-function ULuaGl_PushMatrix(L: Plua_State): Integer; cdecl;
-function ULuaGl_RasterPos(L: Plua_State): Integer; cdecl;
-function ULuaGl_ReadBuffer(L: Plua_State): Integer; cdecl;
-function ULuaGl_Rect(L: Plua_State): Integer; cdecl;
-function ULuaGl_Rotate(L: Plua_State): Integer; cdecl;
-function ULuaGl_Scale(L: Plua_State): Integer; cdecl;
-function ULuaGl_ShadeModel(L: Plua_State): Integer; cdecl;
-function ULuaGl_TexCoord(L: Plua_State): Integer; cdecl;
-function ULuaGl_Translate(L: Plua_State): Integer; cdecl;
-function ULuaGl_Vertex(L: Plua_State): Integer; cdecl;
-function ULuaGl_Viewport(L: Plua_State): Integer; cdecl;
-
-function ULuaGl_Dummy(L: Plua_State): Integer; cdecl;
-
 implementation
 
 uses
@@ -151,6 +109,24 @@ begin
 
   glClear(e);
 
+  result:=0; // number of results
+end;
+
+function ULuaGl_ClearAccum(L: Plua_State): Integer; cdecl;
+var
+  i: Integer;
+begin
+  if lua_istable(L, 1) then
+    for i := 1 to lua_objlen(L,1) do
+      lua_rawgeti(L,1,i);
+
+  if (lua_istable(L, 1) and (lua_objlen(L,1) = 4)) or (lua_gettop(L) = 4) then
+    glClearAccum(lual_checknumber(L,-4),
+                 lual_checknumber(L,-3),
+                 lual_checknumber(L,-2),
+                 lual_checknumber(L,-1))
+  else
+    luaL_error(L, 'incorrect argument to function ''gl.ClearAccum''');
   result:=0; // number of results
 end;
 
@@ -623,11 +599,12 @@ begin
 end;
 
 const
-  ULuaGl_Lib_f: array [0..39] of lual_reg = (
+  ULuaGl_Lib_f: array [0..40] of lual_reg = (
    (name:'Begin';func:ULuaGl_Begin),
    (name:'BindTexture';func:ULuaGl_BindTexture),
    (name:'BlendFunc';func:ULuaGl_BlendFunc),
    (name:'Clear';func:ULuaGl_Clear),
+   (name:'ClearAccum';func:ULuaGl_ClearAccum),
    (name:'ClearColor';func:ULuaGl_ClearColor),
    (name:'Color';func:ULuaGl_Color),
    (name:'CullFace';func:ULuaGl_CullFace),
@@ -680,7 +657,6 @@ end;
   glBitmap: procedure (width, height: GLsizei; xorig, yorig: GLfloat; xmove, ymove: GLfloat; const bitmap: PGLubyte); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glCallList: procedure(list: GLuint); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glCallLists: procedure(n: GLsizei; atype: GLenum; const lists: Pointer); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
-  glClearAccum: procedure(red, green, blue, alpha: GLfloat); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glClearDepth: procedure(depth: GLclampd); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glClearIndex: procedure(c: GLfloat); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
   glClearStencil: procedure(s: GLint); {$IFDEF WINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
