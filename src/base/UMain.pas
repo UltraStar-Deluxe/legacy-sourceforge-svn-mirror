@@ -106,6 +106,7 @@ var
   FontPath:         string;
   ResourcesPath:    string;
   PlayListPath:     string;
+  ScriptPath:       string;
 
   Done:     Boolean;
   // FIXME: ConversionFileName should not be global
@@ -475,9 +476,9 @@ begin
     done := not Display.Draw;
 
     // FIXME remove this when the Partymode works
-    if FileExists('main.lua') then
+    if FileExists(ScriptPath + 'main.lua') then
     begin
-      if 0 <> luaL_dofile(Lua, 'main.lua') then
+      if 0 <> luaL_dofile(Lua, PAnsiChar(ScriptPath + 'main.lua')) then
       begin
         Log.LogError(lua_tostring(Lua,-1));
       end;
@@ -1190,6 +1191,7 @@ begin
   FindPath(VisualsPath,      Platform.GetGameSharedPath + 'visuals', false);
   FindPath(FontPath,         Platform.GetGameSharedPath + 'fonts', false);
   FindPath(ResourcesPath,    Platform.GetGameSharedPath + 'resources', false);
+  FindPath(ScriptPath,       Platform.GetGameSharedPath + 'scripts', false);
 
   // Playlists are not shared as we need one directory to write too
   FindPath(PlaylistPath, Platform.GetGameUserPath + 'playlists', true);
