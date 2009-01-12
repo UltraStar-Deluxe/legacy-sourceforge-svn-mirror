@@ -46,28 +46,26 @@ uses
 type
   TMessageType = ( mtInfo, mtError );
 
-procedure ShowMessage( const msg : String; msgType: TMessageType = mtInfo );
+procedure ShowMessage(const msg : String; msgType: TMessageType = mtInfo);
 
 procedure ConsoleWriteLn(const msg: string);
 
 function RWopsFromStream(Stream: TStream): PSDL_RWops;
 
 {$IFDEF FPC}
-function RandomRange(aMin: Integer; aMax: Integer) : Integer;
+function RandomRange(aMin: Integer; aMax: Integer): Integer;
 {$ENDIF}
-
-function StringReplaceW(text : WideString; search, rep: WideChar):WideString;
-function AdaptFilePaths( const aPath : widestring ): widestring;
 
 procedure DisableFloatingPointExceptions();
 procedure SetDefaultNumericLocale();
 procedure RestoreNumericLocale();
 
 {$IFNDEF MSWINDOWS}
-  procedure ZeroMemory( Destination: Pointer; Length: DWORD );
+  procedure ZeroMemory(Destination: Pointer; Length: DWORD);
   function MakeLong(a, b: Word): Longint;
 {$ENDIF}
 
+function AdaptFilePaths(const aPath: widestring): widestring;
 function FileExistsInsensitive(var FileName: string): boolean;
 
 // A stable alternative to TList.Sort() (use TList.Sort() if applicable, see below)
@@ -84,7 +82,8 @@ uses
   {$IFDEF Delphi}
   Dialogs,
   {$ENDIF}
-  UMain;
+  UMain,
+  UUnicodeUtils;
 
 
 // data used by the ...Locale() functions
@@ -205,33 +204,6 @@ begin
   // other libs which rely on the standard FPU behaviour (no div-by-zero FPE anymore).
   SetExceptionMask([exInvalidOp, exDenormalized, exZeroDivide,
                     exOverflow, exUnderflow, exPrecision]);
-end;
-
-function StringReplaceW(text : WideString; search, rep: WideChar) : WideString;
-var
-  iPos  : integer;
-//  sTemp : WideString;
-begin
-(*
-  result := text;
-  iPos   := Pos(search, result);
-  while (iPos > 0) do
-  begin
-    sTemp  := copy(result, iPos + length(search), length(result));
-    result := copy(result, 1, iPos - 1) + rep + sTEmp;
-    iPos   := Pos(search, result);
-  end;
-*)
-  result := text;
-
-  if search = rep then
-    exit;
-
-  for iPos := 1 to length(result) do
-  begin
-    if result[iPos] = search then
-      result[iPos] := rep;
-  end;
 end;
 
 function AdaptFilePaths( const aPath : widestring ): widestring;

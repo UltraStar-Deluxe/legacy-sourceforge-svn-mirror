@@ -43,11 +43,20 @@ uses
  * Character classes
  *)
 
-function IsAlphaChar(ch: WideChar): boolean;
-function IsNumericChar(ch: WideChar): boolean;
-function IsAlphaNumericChar(ch: WideChar): boolean;
-function IsPunctuationChar(ch: WideChar): boolean;
-function IsControlChar(ch: WideChar): boolean;
+function IsAlphaChar(ch: WideChar): boolean; overload;
+function IsAlphaChar(ch: UCS4Char): boolean; overload;
+
+function IsNumericChar(ch: WideChar): boolean; overload;
+function IsNumericChar(ch: UCS4Char): boolean; overload;
+
+function IsAlphaNumericChar(ch: WideChar): boolean; overload;
+function IsAlphaNumericChar(ch: UCS4Char): boolean; overload;
+
+function IsPunctuationChar(ch: WideChar): boolean; overload;
+function IsPunctuationChar(ch: UCS4Char): boolean; overload;
+
+function IsControlChar(ch: WideChar): boolean; overload;
+function IsControlChar(ch: UCS4Char): boolean; overload;
 
 {*
  * String format conversion
@@ -61,6 +70,17 @@ function UCS4ToUTF8String(ch: UCS4Char): UTF8String; overload;
  * Returns the number of characters (not bytes) in string str.
  *}
 function LengthUTF8(const str: UTF8String): integer;
+
+function UTF8CompareStr(const S1, S2: UTF8String): integer;
+function UTF8CompareText(const S1, S2: UTF8String): integer;
+
+function UTF8StartsText(const SubText, Text: UTF8String): boolean;
+
+function UTF8ContainsStr(const Text, SubText: UTF8String): boolean;
+function UTF8ContainsText(const Text, SubText: UTF8String): boolean;
+
+function UTF8UpperCase(const str: UTF8String): UTF8String;
+function UTF8LowerCase(const str: UTF8String): UTF8String;
 
 {**
  * Converts a UCS-4 char ch to its upper-case representation.
@@ -91,9 +111,9 @@ function UCS4CharToString(ch: UCS4Char): UCS4String;
 function WideStringUpperCase(const str: WideString) : WideString; overload;
 function WideStringUpperCase(ch: WideChar): WideString; overload;
 
+function StringReplaceW(const text : WideString; search, rep: WideChar): WideString;
 
 implementation
-
 
 function IsAlphaChar(ch: WideChar): boolean;
 begin
@@ -115,6 +135,11 @@ begin
   {$ENDIF}
 end;
 
+function IsAlphaChar(ch: UCS4Char): boolean;
+begin
+  Result := IsAlphaChar(WideChar(Ord(ch)));
+end;
+
 function IsNumericChar(ch: WideChar): boolean;
 begin
   // ignore non-arabic numerals as we do not want to handle them
@@ -126,7 +151,17 @@ begin
   end;
 end;
 
+function IsNumericChar(ch: UCS4Char): boolean;
+begin
+  Result := IsNumericChar(WideChar(Ord(ch)));
+end;
+
 function IsAlphaNumericChar(ch: WideChar): boolean;
+begin
+  Result := (IsAlphaChar(ch) or IsNumericChar(ch));
+end;
+
+function IsAlphaNumericChar(ch: UCS4Char): boolean;
 begin
   Result := (IsAlphaChar(ch) or IsNumericChar(ch));
 end;
@@ -143,6 +178,11 @@ begin
   end;
 end;
 
+function IsPunctuationChar(ch: UCS4Char): boolean;
+begin
+  Result := IsPunctuationChar(WideChar(Ord(ch)));
+end;
+
 function IsControlChar(ch: WideChar): boolean;
 begin
   case ch of
@@ -152,6 +192,11 @@ begin
     else
       Result := false;
   end;
+end;
+
+function IsControlChar(ch: UCS4Char): boolean;
+begin
+  Result := IsControlChar(WideChar(Ord(ch)));
 end;
 
 function UTF8ToUCS4String(const str: UTF8String): UCS4String;
@@ -172,6 +217,51 @@ end;
 function LengthUTF8(const str: UTF8String): integer;
 begin
   Result := Length(UTF8ToUCS4String(str));
+end;
+
+function UTF8CompareStr(const S1, S2: UTF8String): integer;
+begin
+  // FIXME
+  Result := WideCompareStr(UTF8Decode(S1), UTF8Decode(S2));
+end;
+
+function UTF8CompareText(const S1, S2: UTF8String): integer;
+begin
+  // FIXME
+  Result := WideCompareText(UTF8Decode(S1), UTF8Decode(S2));
+end;
+
+function UTF8StartsStr(const SubText, Text: UTF8String): boolean;
+begin
+  // TODO: use WideSameStr ()?
+  Result := (Pos(SubText, Text) = 1);
+end;
+
+function UTF8StartsText(const SubText, Text: UTF8String): boolean;
+begin
+  // TODO: use WideSameText?
+  Result := (Pos(UTF8UpperCase(SubText), UTF8UpperCase(Text)) = 1);
+end;
+
+function UTF8ContainsStr(const Text, SubText: UTF8String): boolean;
+begin
+  Result := Pos(SubText, Text) > 0;
+end;
+
+function UTF8ContainsText(const Text, SubText: UTF8String): boolean;
+begin
+  Result := Pos(UTF8UpperCase(SubText), UTF8UpperCase(Text)) > 0;
+end;
+
+function UTF8UpperCase(const str: UTF8String): UTF8String;
+begin
+  Result := UTF8Encode(WideStringUpperCase(UTF8Decode(str)));
+end;
+
+function UTF8LowerCase(const str: UTF8String): UTF8String;
+begin
+  // FIXME
+  Result := UTF8Encode(WideLowerCase(UTF8Decode(str)));
 end;
 
 function UCS4UpperCase(ch: UCS4Char): UCS4Char;
@@ -224,6 +314,33 @@ begin
   {$ELSE}
     Result := UTF8Decode(UpperCase(UTF8Encode(str)));
   {$ENDIF}
+end;
+
+function StringReplaceW(const text : WideString; search, rep: WideChar) : WideString;
+var
+  iPos  : integer;
+//  sTemp : WideString;
+begin
+(*
+  result := text;
+  iPos   := Pos(search, result);
+  while (iPos > 0) do
+  begin
+    sTemp  := copy(result, iPos + length(search), length(result));
+    result := copy(result, 1, iPos - 1) + rep + sTEmp;
+    iPos   := Pos(search, result);
+  end;
+*)
+  result := text;
+
+  if search = rep then
+    exit;
+
+  for iPos := 1 to length(result) do
+  begin
+    if result[iPos] = search then
+      result[iPos] := rep;
+  end;
 end;
 
 end.
