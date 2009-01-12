@@ -725,7 +725,8 @@ begin
 
   if (Length(Line) <= 0) then
   begin
-    Log.LogError('File Starts with Empty Line: ' + aFileName);
+    Log.LogError('File Starts with Empty Line: ' + Path + PathDelim + aFileName,
+                 'TSong.ReadTXTHeader');
     Result := False;
     Exit;
   end;
@@ -752,154 +753,161 @@ begin
 
     //Check the Identifier (If Value is given)
     if (Length(Value) = 0) then
-      Continue;
-
-    //-----------
-    //Required Attributes
-    //-----------
-
-    if (Identifier = 'TITLE') then
     begin
-      self.Title := RecodeStringUTF8(Value, Encoding);
-
-      //Add Title Flag to Done
-      Done := Done or 1;
+      Log.LogError('Empty field "'+Identifier+'" in file ' + Path + PathDelim + aFileName,
+                   'TSong.ReadTXTHeader');
     end
-
-    else if (Identifier = 'ARTIST') then
+    else
     begin
-      self.Artist := RecodeStringUTF8(Value, Encoding);
+    
+      //-----------
+      //Required Attributes
+      //-----------
 
-      //Add Artist Flag to Done
-      Done := Done or 2;
-    end
-
-    //MP3 File
-    else if (Identifier = 'MP3') then
-    begin
-      EncFile := EncodeFilename(Value);
-      if (FileExists(self.Path + EncFile)) then
+      if (Identifier = 'TITLE') then
       begin
-        self.Mp3 := EncFile;
+        self.Title := RecodeStringUTF8(Value, Encoding);
 
-        //Add Mp3 Flag to Done
-        Done := Done or 4;
-      end;
-    end
+        //Add Title Flag to Done
+        Done := Done or 1;
+      end
 
-    //Beats per Minute
-    else if (Identifier = 'BPM') then
-    begin
-      SetLength(self.BPM, 1);
-      self.BPM[0].StartBeat := 0;
-
-      self.BPM[0].BPM := StrToFloatI18n( Value ) * Mult * MultBPM;
-
-      if self.BPM[0].BPM <> 0 then
+      else if (Identifier = 'ARTIST') then
       begin
-        //Add BPM Flag to Done
-        Done := Done or 8;
+        self.Artist := RecodeStringUTF8(Value, Encoding);
+
+        //Add Artist Flag to Done
+        Done := Done or 2;
+      end
+
+      //MP3 File
+      else if (Identifier = 'MP3') then
+      begin
+        EncFile := EncodeFilename(Value);
+        if (FileExists(self.Path + EncFile)) then
+        begin
+          self.Mp3 := EncFile;
+
+          //Add Mp3 Flag to Done
+          Done := Done or 4;
+        end;
+      end
+
+      //Beats per Minute
+      else if (Identifier = 'BPM') then
+      begin
+        SetLength(self.BPM, 1);
+        self.BPM[0].StartBeat := 0;
+
+        self.BPM[0].BPM := StrToFloatI18n( Value ) * Mult * MultBPM;
+
+        if self.BPM[0].BPM <> 0 then
+        begin
+          //Add BPM Flag to Done
+          Done := Done or 8;
+        end;
+      end
+
+      //---------
+      //Additional Header Information
+      //---------
+
+      // Gap
+      else if (Identifier = 'GAP') then
+      begin
+        self.GAP := StrToFloatI18n(Value);
+      end
+
+      //Cover Picture
+      else if (Identifier = 'COVER') then
+      begin
+        self.Cover := EncodeFilename(Value);
+      end
+
+      //Background Picture
+      else if (Identifier = 'BACKGROUND') then
+      begin
+        self.Background := EncodeFilename(Value);
+      end
+
+      // Video File
+      else if (Identifier = 'VIDEO') then
+      begin
+        EncFile := EncodeFilename(Value);
+        if (FileExists(self.Path + EncFile)) then
+          self.Video := EncFile
+        else
+          Log.LogError('Can''t find Video File in Song: ' + aFileName);
+      end
+
+      // Video Gap
+      else if (Identifier = 'VIDEOGAP') then
+      begin
+        self.VideoGAP := StrToFloatI18n( Value )
+      end
+
+      //Genre Sorting
+      else if (Identifier = 'GENRE') then
+      begin
+        self.Genre := RecodeStringUTF8(Value, Encoding)
+      end
+
+      //Edition Sorting
+      else if (Identifier = 'EDITION') then
+      begin
+        self.Edition := RecodeStringUTF8(Value, Encoding)
+      end
+
+      //Creator Tag
+      else if (Identifier = 'CREATOR') then
+      begin
+        self.Creator := RecodeStringUTF8(Value, Encoding)
+      end
+
+      //Language Sorting
+      else if (Identifier = 'LANGUAGE') then
+      begin
+        self.Language := RecodeStringUTF8(Value, Encoding)
+      end
+
+      // Song Start
+      else if (Identifier = 'START') then
+      begin
+        self.Start := StrToFloatI18n( Value )
+      end
+
+      // Song Ending
+      else if (Identifier = 'END') then
+      begin
+        TryStrtoInt(Value, self.Finish)
+      end
+
+      // Resolution
+      else if (Identifier = 'RESOLUTION') then
+      begin
+        TryStrtoInt(Value, self.Resolution)
+      end
+
+      // Notes Gap
+      else if (Identifier = 'NOTESGAP') then
+      begin
+        TryStrtoInt(Value, self.NotesGAP)
+      end
+
+      // Relative Notes
+      else if (Identifier = 'RELATIVE') then
+      begin
+        if (UpperCase(Value) = 'YES') then
+          self.Relative := True;
+      end
+
+      // File encoding
+      else if (Identifier = 'ENCODING') then
+      begin
+        self.Encoding := ParseEncoding(Value, Ini.EncodingDefault);
       end;
-    end
-
-    //---------
-    //Additional Header Information
-    //---------
-
-    // Gap
-    else if (Identifier = 'GAP') then
-    begin
-      self.GAP := StrToFloatI18n(Value);
-    end
-
-    //Cover Picture
-    else if (Identifier = 'COVER') then
-    begin
-      self.Cover := EncodeFilename(Value);
-    end
-
-    //Background Picture
-    else if (Identifier = 'BACKGROUND') then
-    begin
-      self.Background := EncodeFilename(Value);
-    end
-
-    // Video File
-    else if (Identifier = 'VIDEO') then
-    begin
-      EncFile := EncodeFilename(Value);
-      if (FileExists(self.Path + EncFile)) then
-        self.Video := EncFile
-      else
-        Log.LogError('Can''t find Video File in Song: ' + aFileName);
-    end
-
-    // Video Gap
-    else if (Identifier = 'VIDEOGAP') then
-    begin
-      self.VideoGAP := StrToFloatI18n( Value )
-    end
-
-    //Genre Sorting
-    else if (Identifier = 'GENRE') then
-    begin
-      self.Genre := RecodeStringUTF8(Value, Encoding)
-    end
-
-    //Edition Sorting
-    else if (Identifier = 'EDITION') then
-    begin
-      self.Edition := RecodeStringUTF8(Value, Encoding)
-    end
-
-    //Creator Tag
-    else if (Identifier = 'CREATOR') then
-    begin
-      self.Creator := RecodeStringUTF8(Value, Encoding)
-    end
-
-    //Language Sorting
-    else if (Identifier = 'LANGUAGE') then
-    begin
-      self.Language := RecodeStringUTF8(Value, Encoding)
-    end
-
-    // Song Start
-    else if (Identifier = 'START') then
-    begin
-      self.Start := StrToFloatI18n( Value )
-    end
-
-    // Song Ending
-    else if (Identifier = 'END') then
-    begin
-      TryStrtoInt(Value, self.Finish)
-    end
-
-    // Resolution
-    else if (Identifier = 'RESOLUTION') then
-    begin
-      TryStrtoInt(Value, self.Resolution)
-    end
-
-    // Notes Gap
-    else if (Identifier = 'NOTESGAP') then
-    begin
-      TryStrtoInt(Value, self.NotesGAP)
-    end
-
-    // Relative Notes
-    else if (Identifier = 'RELATIVE') then
-    begin
-      if (UpperCase(Value) = 'YES') then
-        self.Relative := True;
-    end
-
-    // File encoding
-    else if (Identifier = 'ENCODING') then
-    begin
-      self.Encoding := ParseEncoding(Value, Ini.EncodingDefault);
-    end;
+      
+    end; // End check for non-empty Value
 
     // check for end of file
     if Eof(SongFile) then
