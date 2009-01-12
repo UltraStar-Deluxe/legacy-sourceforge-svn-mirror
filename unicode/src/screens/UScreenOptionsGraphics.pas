@@ -46,7 +46,7 @@ type
   TScreenOptionsGraphics = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
   end;
 
@@ -58,14 +58,14 @@ uses
   UUnicodeUtils,
   SysUtils;
 
-function TScreenOptionsGraphics.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenOptionsGraphics.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;

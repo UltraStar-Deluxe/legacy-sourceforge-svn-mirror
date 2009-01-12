@@ -142,7 +142,7 @@ type
       function DrawBG: boolean; virtual;
       function DrawFG: boolean; virtual;
       function Draw: boolean; virtual;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown : boolean): boolean; virtual;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown : boolean): boolean; virtual;
       // FIXME: ParseMouse is not implemented in any subclass and not even used anywhere in the code
       //   -> do this before activation of this method
       //function ParseMouse(Typ: integer; X: integer; Y: integer): boolean; virtual; abstract;
@@ -1521,7 +1521,7 @@ begin
   Background.OnFinish;
 end;
 
-function TMenu.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TMenu.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   // nothing
   Result := true;

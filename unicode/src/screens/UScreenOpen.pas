@@ -33,8 +33,22 @@ interface
 
 {$I switches.inc}
 
-uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, UMenuText,
-  ULyrics, Math, gl, UThemes;
+uses
+  SDL,
+  SysUtils,
+  Math,
+  gl,
+  UMenu,
+  UMusic,
+  UFiles,
+  UTime,
+  USongs,
+  UIni,
+  ULog,
+  UTexture,
+  UMenuText,
+  ULyrics,
+  UThemes;
 
 type
   TScreenOpen = class(TMenu)
@@ -49,25 +63,34 @@ type
       procedure AddBox(X, Y, W, H: real);
       constructor Create; override;
       procedure onShow; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
 //      function Draw: boolean; override;
 //      procedure Finish;
   end;
 
 implementation
-uses UGraphic, UDraw, UMain, USkins;
 
-function TScreenOpen.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+uses
+  UGraphic,
+  UDraw,
+  UMain,
+  USkins,
+  UUnicodeUtils;
+
+function TScreenOpen.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
 
   if (PressedDown) then begin // Key Down
     // check normal keys
     case CharCode of
-      '0'..'9', 'a'..'z', 'A'..'Z', ' ', '-', '.', ':', '\':
+      Ord('0')..Ord('9'),
+      Ord('a')..Ord('z'),
+      Ord('A')..Ord('Z'),
+      Ord(' '), Ord('-'), Ord('.'), Ord(':'), Ord('\'):
         begin
           if Interaction = 0 then begin
-            Text[TextN].Text := Text[TextN].Text + CharCode;
+            Text[TextN].Text := Text[TextN].Text + UCS4ToUTF8String(CharCode);
           end;
         end;
     end;

@@ -61,7 +61,7 @@ type
       NumPlayer1, NumPlayer2, NumPlayer3: Integer;
       
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
       procedure SetPlaylist2;
@@ -90,7 +90,7 @@ uses
   USongs,
   UUnicodeUtils;
 
-function TScreenPartyOptions.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenPartyOptions.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
   var
     I, J: Integer;
     OnlyMultiPlayer: boolean;
@@ -99,8 +99,8 @@ begin
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;

@@ -107,7 +107,7 @@ type
     procedure onShowFinish; override;
     procedure onHide; override;
     
-    function ParseInput(PressedKey: cardinal; CharCode: widechar;
+    function ParseInput(PressedKey: cardinal; CharCode: UCS4Char;
       PressedDown: boolean): boolean; override;
     function Draw: boolean; override;
 
@@ -133,15 +133,15 @@ uses
 
  // Method for input parsing. If False is returned, GetNextWindow
  // should be checked to know the next window to load;
-function TScreenSing.ParseInput(PressedKey: cardinal; CharCode: widechar;
+function TScreenSing.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
   PressedDown: boolean): boolean;
 begin
   Result := True;
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
       begin
         //When not ask before Exit then Finish now
         if (Ini.AskbeforeDel <> 1) then
@@ -153,7 +153,7 @@ begin
         Result := False;
         Exit;
       end;
-      'V': //Show Visualization
+      Ord('V'): //Show Visualization
       begin
         fShowVisualization := not fShowVisualization;
 
@@ -167,7 +167,7 @@ begin
 
         Exit;
       end;
-      'P':
+      Ord('P'):
       begin
         Pause;
         Exit;

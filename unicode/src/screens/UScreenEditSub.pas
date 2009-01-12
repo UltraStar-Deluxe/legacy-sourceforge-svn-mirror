@@ -117,8 +117,8 @@ type
       FadeOut:            boolean;
       constructor Create; override;
       procedure onShow; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      function ParseInputEditText(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function ParseInputEditText(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
       function Draw: boolean; override;
       procedure onHide; override;
   end;
@@ -135,7 +135,7 @@ uses
 
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
-function TScreenEditSub.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenEditSub.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 var
   SDL_ModState:  Word;
   R:    real;
@@ -151,13 +151,13 @@ begin
 
   If (PressedDown) then begin // Key Down
     // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
         end;
-      'S':
+      Ord('S'):
         begin
           // Save Song
           if SDL_ModState = KMOD_LSHIFT then
@@ -171,19 +171,19 @@ begin
 
           Exit;
         end;
-      'D':
+      Ord('D'):
         begin
           // Divide lengths by 2
           DivideBPM;
           Exit;
         end;
-      'M':
+      Ord('M'):
         begin
           // Multiply lengths by 2
           MultiplyBPM;
           Exit;
         end;
-      'C':
+      Ord('C'):
         begin
           // Capitalize letter at the beginning of line
           if SDL_ModState = 0 then
@@ -199,7 +199,7 @@ begin
 
           Exit;
         end;
-      'V':
+      Ord('V'):
         begin
           // Paste text
           if SDL_ModState = KMOD_LCTRL then begin
@@ -213,13 +213,13 @@ begin
             CopySentence(CopySrc, Lines[0].Current);
           end;
         end;
-      'T':
+      Ord('T'):
         begin
           // Fixes timings between sentences
           FixTimings;
           Exit;
         end;
-      'P':
+      Ord('P'):
         begin
           if SDL_ModState = 0 then
           begin
@@ -266,7 +266,7 @@ begin
         end;
       
       // Golden Note Patch
-      'G':
+      Ord('G'):
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntGolden) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
@@ -277,7 +277,7 @@ begin
         end;
       
       // Freestyle Note Patch
-      'F':
+      Ord('F'):
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntFreestyle) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
@@ -610,7 +610,7 @@ begin
   end; // if
 end;
 
-function TScreenEditSub.ParseInputEditText(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenEditSub.ParseInputEditText(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 var
   SDL_ModState:  Word;
 begin
@@ -633,10 +633,12 @@ begin
           // Exit Text Edit Mode
           TextEditMode := false;
         end;
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
+      SDLK_0..SDLK_9,
+      SDLK_A..SDLK_Z,
+      SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
         begin
           Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text :=
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + CharCode;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + UCS4ToUTF8String(CharCode);
         end;
       SDLK_BACKSPACE:
         begin
@@ -720,7 +722,7 @@ begin
   // temporary
 {  for C := 0 to Lines[0].High do
     for N := 0 to Lines[0].Line[C].HighNut do
-      Lines[0].Line[C].Note[N].Text := AnsiLowerCase(Lines[0].Line[C].Note[N].Text);}
+      Lines[0].Line[C].Note[N].Text := UTF8LowerCase(Lines[0].Line[C].Note[N].Text);}
 
   for C := 0 to Lines[0].High do begin
     S := AnsiUpperCase(Copy(Lines[0].Line[C].Note[0].Text, 1, 1));

@@ -49,7 +49,7 @@ type
     TextDescriptionLong: integer;
 
     constructor Create; override;
-    function ParseInput(PressedKey: cardinal; CharCode: widechar;
+    function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
       PressedDown: boolean): boolean; override;
     procedure onShow; override;
     procedure InteractNext; override;
@@ -75,7 +75,7 @@ uses
   USkins,
   UUnicodeUtils;
 
-function TScreenMain.ParseInput(PressedKey: cardinal; CharCode: widechar;
+function TScreenMain.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
   PressedDown: boolean): boolean;
 var
   SDL_ModState: word;
@@ -88,22 +88,19 @@ begin
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
-      begin
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'): begin
         Result := False;
         Exit;
       end;
-      'C':
-      begin
+      Ord('C'): begin
         if (SDL_ModState = KMOD_LALT) then
         begin
           FadeTo(@ScreenCredits, SoundLib.Start);
           Exit;
         end;
       end;
-      'M':
-      begin
+      Ord('M'): begin
         if (Ini.Players >= 1) and (Length(DLLMan.Plugins) >= 1) then
         begin
           FadeTo(@ScreenPartyOptions, SoundLib.Start);
@@ -111,14 +108,12 @@ begin
         end;
       end;
 
-      'S':
-      begin
+      Ord('S'): begin
         FadeTo(@ScreenStatMain, SoundLib.Start);
         Exit;
       end;
 
-      'E':
-      begin
+      Ord('E'): begin
         FadeTo(@ScreenEdit, SoundLib.Start);
         Exit;
       end;

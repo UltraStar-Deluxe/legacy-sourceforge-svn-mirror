@@ -95,7 +95,7 @@ type
     public
       constructor Create; override;
       function    Draw: boolean; override;
-      function    ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function    ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure   onShow; override;
       procedure   onHide; override;
   end;
@@ -129,31 +129,31 @@ uses
   UUnicodeUtils,
   ULog;
 
-function TScreenOptionsRecord.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenOptionsRecord.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
         end;
-      '+':
+      Ord('+'):
         begin
           // FIXME: add a nice volume-slider instead
           // or at least provide visualization and acceleration if the user holds the key pressed.
           ChangeVolume(0.02);
         end;
-      '-':
+      Ord('-'):
         begin
           // FIXME: add a nice volume-slider instead
           // or at least provide visualization and acceleration if the user holds the key pressed.
           ChangeVolume(-0.02);
         end;
-      'T':
+      Ord('T'):
         begin
           if ((SDL_GetModState() and KMOD_SHIFT) <> 0) then
             Ini.ThresholdIndex := (Ini.ThresholdIndex + Length(IThresholdVals) - 1) mod Length(IThresholdVals)

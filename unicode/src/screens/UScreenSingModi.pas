@@ -92,7 +92,7 @@ type
       constructor Create; override;
       procedure onShow; override;
       //procedure onShowFinish; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       function Draw: boolean; override;
       procedure Finish; override;
       //procedure Pause; //Pause Mod(Toggles Pause)
@@ -123,7 +123,7 @@ uses UGraphic, UDraw, UMain, Classes, URecord, ULanguage, math, UDLLManager, USk
 
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
-function TScreenSingModi.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenSingModi.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then

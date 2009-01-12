@@ -98,7 +98,7 @@ type
 
       Fadeout:      boolean;
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       function Draw: boolean; override;
       procedure onShow; override;
       procedure onHide; override;
@@ -178,7 +178,7 @@ uses
      Math;
 
 
-function TScreenCredits.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenCredits.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then

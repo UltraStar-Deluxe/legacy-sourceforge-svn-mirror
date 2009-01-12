@@ -73,7 +73,7 @@ type
 
       constructor Create; override;
       procedure onShow; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
 {      function Draw: boolean; override;
       procedure Finish;}
   end;
@@ -89,15 +89,15 @@ uses
   UTexture,
   UUnicodeUtils;
 
-function TScreenEditHeader.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenEditHeader.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 var
   T:    integer;
 begin
   Result := true;
   If (PressedDown) Then begin // Key Down
     // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -165,11 +165,11 @@ begin
 
     end;
     case CharCode of
-      #32..#255:
+      32..255:
         begin
           if (Interaction >= 2) and (Interaction <= 13) then begin
             Text[Interaction - 2 + TextTitle].Text :=
-              Text[Interaction - 2 + TextTitle].Text + CharCode;
+              Text[Interaction - 2 + TextTitle].Text + UCS4ToUTF8String(CharCode);
             SetRoundButtons;
           end;
         end;

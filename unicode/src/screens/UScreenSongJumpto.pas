@@ -34,56 +34,66 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UFiles,
+  USongs,
+  UThemes;
 
 type
   TScreenSongJumpto = class(TMenu)
     private
       //For ChangeMusic
-      LastPlayed: Integer;
-      VisibleBool: Boolean;
-    public
-      VisSongs: Integer;
+      fLastPlayed: Integer;
+      fVisible: Boolean;
+      fSelectType: TSongFilter;
+      fVisSongs: Integer;
 
-      constructor Create; override;
+      procedure SetTextFound(Count: Cardinal);
 
       //Visible //Whether the Menu should be Drawn
       //Whether the Menu should be Drawn
       procedure SetVisible(Value: Boolean);
-      property Visible: Boolean read VisibleBool write SetVisible;
+    public
+      constructor Create; override;
 
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       function Draw: boolean; override;
 
-      procedure SetTextFound(const Count: Cardinal);
+      property Visible: Boolean read fVisible write SetVisible;
   end;
-
-var
-  IType: Array [0..2] of String;
-  SelectType: Integer;
-
 
 implementation
 
-uses UGraphic, UMain, UIni, UTexture, ULanguage, UParty, USongs, UScreenSong, ULog;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  ULanguage,
+  UParty,
+  UScreenSong,
+  ULog,
+  UUnicodeUtils;
 
-function TScreenSongJumpto.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenSongJumpto.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then
   begin // Key Down
     // check normal keys
-    case CharCode of
-      '0'..'9', 'a'..'z', 'A'..'Z', ' ', '-', '_', '!', ',', '<', '/', '*', '?', '''', '"',
-      '[', '{', ';', ':':
-        begin
-          if Interaction = 0 then
-          begin
-            Button[0].Text[0].Text := Button[0].Text[0].Text + CharCode;
-            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
-          end;
-        end;
+    if (IsAlphaNumericChar(CharCode) or
+        IsPunctuationChar(CharCode)) then
+    begin
+      if (Interaction = 0) then
+      begin
+        Button[0].Text[0].Text := Button[0].Text[0].Text + UCS4ToUTF8String(CharCode);
+        SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, fSelectType));
+      end;
     end;
 
     // check special keys
@@ -92,8 +102,8 @@ begin
         begin
           if (Interaction = 0) AND (Length(Button[0].Text[0].Text) > 0) then
           begin
-            Button[0].Text[0].DeleteLastLetter;
-            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+            Button[0].Text[0].DeleteLastLetter();
+            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, fSelectType));
           end;
         end;
 
@@ -102,18 +112,15 @@ begin
         begin
           Visible := False;
           AudioPlayback.PlaySound(SoundLib.Back);
-          if (VisSongs = 0) AND (Length(Button[0].Text[0].Text) > 0) then
+          if (fVisSongs = 0) AND (Length(Button[0].Text[0].Text) > 0) then
           begin
             ScreenSong.UnLoadDetailedCover;
             Button[0].Text[0].Text := '';
-            CatSongs.SetFilter('', 0);
+            CatSongs.SetFilter('', fltAll);
             SetTextFound(0);
           end;
         end;
 
-      // Up and Down could be done at the same time,
-      // but I don't want to declare variables inside
-      // functions like this one, called so many times
       SDLK_DOWN:
         begin
           {SelectNext;
@@ -131,7 +138,7 @@ begin
           Interaction := 1;
           InteractInc;
           if (Length(Button[0].Text[0].Text) > 0) then
-            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, fSelectType));
           Interaction := 0;
         end;
       SDLK_LEFT:
@@ -139,7 +146,7 @@ begin
           Interaction := 1;
           InteractDec;
           if (Length(Button[0].Text[0].Text) > 0) then
-            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, fSelectType));
           Interaction := 0;
         end;
     end;
@@ -147,8 +154,6 @@ begin
 end;
 
 constructor TScreenSongJumpto.Create;
-//var
-// I:    integer; // Auto Removed, Unused Variable
 begin
   inherited Create;
 
@@ -160,21 +165,21 @@ begin
   if (Length(Button[0].Text) = 0) then
     AddButtonText(14, 20, '');
 
-  SelectType := 0;
-  AddSelectSlide(Theme.SongJumpto.SelectSlideType, SelectType, Theme.SongJumpto.IType);
+  fSelectType := fltAll;
+  AddSelectSlide(Theme.SongJumpto.SelectSlideType, PInteger(@fSelectType)^, Theme.SongJumpto.IType);
 
 
   Interaction := 0;
-  LastPlayed  := 0;
+  fLastPlayed  := 0;
 end;
 
 procedure TScreenSongJumpto.SetVisible(Value: Boolean);
 begin
-//If change from unvisible to Visible then OnShow
-  if (VisibleBool = False) AND (Value = True) then
+//If change from invisible to Visible then OnShow
+  if (fVisible = False) AND (Value = True) then
     OnShow;
 
-  VisibleBool := Value;
+  fVisible := Value;
 end;
 
 procedure TScreenSongJumpto.onShow;
@@ -194,7 +199,7 @@ begin
   Interaction := 0;
   Button[0].Text[0].Selected := True;
 
-  LastPlayed := ScreenSong.Interaction;
+  fLastPlayed := ScreenSong.Interaction;
 end;
 
 function TScreenSongJumpto.Draw: boolean;
@@ -202,7 +207,7 @@ begin
   Result := inherited Draw;
 end;
 
-procedure TScreenSongJumpto.SetTextFound(const Count: Cardinal);
+procedure TScreenSongJumpto.SetTextFound(Count: Cardinal);
 begin
   if (Count = 0) then
   begin
@@ -222,7 +227,7 @@ begin
 
 
   //Set visSongs
-  VisSongs := Count;
+  fVisSongs := Count;
 
   //Fix SongSelection
   ScreenSong.Interaction := high(CatSongs.Song);
@@ -230,9 +235,9 @@ begin
   ScreenSong.FixSelected;
 
   //Play Correct Music
-  if (ScreenSong.Interaction <> LastPlayed) then
+  if (ScreenSong.Interaction <> fLastPlayed) then
   begin
-    LastPlayed := ScreenSong.Interaction;
+    fLastPlayed := ScreenSong.Interaction;
 
     ScreenSong.ChangeMusic;
   end;

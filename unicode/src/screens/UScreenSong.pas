@@ -120,7 +120,7 @@ type
       procedure SetScroll4;
       procedure SetScroll5;
       procedure SetScroll6;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       function Draw: boolean; override;
       procedure GenerateThumbnails();
       procedure onShow; override;
@@ -243,7 +243,7 @@ end;
 
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
-function TScreenSong.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenSong.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 var
   I:      integer;
   I2:     integer;
@@ -274,9 +274,9 @@ begin
     //Jump to Artist/Titel
     if ((SDL_ModState and KMOD_LALT <> 0) and (Mode = smNormal)) then
     begin
-      UpperLetter := UCS4UpperCase(WideStringToUCS4String(CharCode)[0]);
+      UpperLetter := UCS4UpperCase(CharCode);
 
-      if (UpperLetter in ([UCS4Char('A')..UCS4Char('Z'), UCS4Char('0') .. UCS4Char('9')]) ) then
+      if (UpperLetter in ([Ord('A')..Ord('Z'), Ord('0') .. Ord('9')]) ) then
       begin
         I2 := Length(CatSongs.Song);
 
@@ -333,14 +333,14 @@ begin
     end;
 
     // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
         end;
 
-      'M': //Show SongMenu
+      Ord('M'): //Show SongMenu
         begin
           if (Songs.SongList.Count > 0) then
           begin
@@ -374,7 +374,7 @@ begin
           Exit;
         end;
 
-      'P': //Show Playlist Menu
+      Ord('P'): //Show Playlist Menu
         begin
           if (Songs.SongList.Count > 0) and (Mode = smNormal) then
           begin
@@ -384,7 +384,7 @@ begin
           Exit;
         end;
 
-      'J': //Show Jumpto Menu
+      Ord('J'): //Show Jumpto Menu
         begin
           if (Songs.SongList.Count > 0) and (Mode = smNormal) then
           begin
@@ -393,13 +393,13 @@ begin
           Exit;
         end;
 
-      'E':
+      Ord('E'):
         begin
           OpenEditor;
           Exit;
         end;
 
-      'R':
+      Ord('R'):
         begin
           if (Songs.SongList.Count > 0) and (Mode = smNormal) then
           begin
@@ -522,7 +522,7 @@ begin
               if (CatSongs.CatNumShow < -1) then
               begin
                 //Atm: Set Empty Filter
-                CatSongs.SetFilter('', 0);
+                CatSongs.SetFilter('', fltAll);
 
                 //Show Cat in Top Left Mod
                 HideCatTL;

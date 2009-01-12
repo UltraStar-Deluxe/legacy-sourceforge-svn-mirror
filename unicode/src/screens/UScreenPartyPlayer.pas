@@ -64,16 +64,22 @@ type
       Player12Name: Cardinal;
 
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
 
-uses UGraphic, UMain, UIni, UTexture, UParty;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  UParty,
+  UUnicodeUtils;
 
-function TScreenPartyPlayer.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenPartyPlayer.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 var
   SDL_ModState:  Word;
   procedure IntNext;
@@ -100,9 +106,14 @@ begin
   begin // Key Down
     // check normal keys
     case CharCode of
-      '0'..'9', 'a'..'z', 'A'..'Z', ' ', '-', '_', '!', ',', '<', '/', '*', '?', '''', '"':
+      Ord('0')..Ord('9'),
+      Ord('a')..Ord('z'),
+      Ord('A')..Ord('Z'),
+      Ord(' '), Ord('-'), Ord('_'), Ord('!'), Ord(','), Ord('<'), Ord('/'),
+      Ord('*'), Ord('?'), Ord(''''), Ord('"'):
         begin
-          Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + CharCode;
+          Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
+                                              UCS4ToUTF8String(CharCode);
           Exit;
         end;
     end;

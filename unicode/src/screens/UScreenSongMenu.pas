@@ -50,7 +50,7 @@ type
       Visible: Boolean; //Whether the Menu should be Drawn
 
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       function Draw: boolean; override;
       procedure MenuShow(sMenu: Byte);
@@ -91,7 +91,7 @@ uses
   USongs,
   UUnicodeUtils;
 
-function TScreenSongMenu.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenSongMenu.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   if (PressedDown) then
@@ -99,12 +99,14 @@ begin
     if (CurMenu = SM_Playlist_New) AND (Interaction=0) then
     begin
       // check normal keys
-      case WideStringUpperCase(CharCode)[1] of
-        '0'..'9', 'A'..'Z', ' ', '-', '_', '!', ',', '<', '/', '*', '?', '''', '"':
-          begin
-            Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + CharCode;
-            exit;
-          end;
+      if IsAlphaNumericChar(CharCode) or
+         (CharCode in [Ord(' '), Ord('-'), Ord('_'), Ord('!'),
+                       Ord(','), Ord('<'), Ord('/'), Ord('*'),
+                       Ord('?'), Ord(''''), Ord('"')]) then
+      begin
+        Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
+                                            UCS4ToUTF8String(CharCode);
+        exit;
       end;
 
       // check special keys
@@ -118,8 +120,8 @@ begin
     end;
 
     // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;

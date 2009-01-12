@@ -47,7 +47,7 @@ type
     public
       Goto_SingScreen: Boolean; //If True then next Screen in SingScreen
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
@@ -62,7 +62,7 @@ uses
   UUnicodeUtils;
 
 
-function TScreenName.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenName.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 var
   I:    integer;
 SDL_ModState:  Word;
@@ -79,7 +79,7 @@ begin
         IsPunctuationChar(CharCode)) then
     begin
       Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
-                                          UTF8Encode(CharCode);
+                                          UCS4ToUTF8String(CharCode);
       Exit;
     end;
 

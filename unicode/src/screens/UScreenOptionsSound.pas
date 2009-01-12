@@ -46,7 +46,7 @@ type
   TScreenOptionsSound = class(TMenu)
   public
     constructor Create; override;
-    function ParseInput(PressedKey: cardinal; CharCode: widechar;
+    function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
       PressedDown: boolean): boolean; override;
     procedure onShow; override;
   end;
@@ -59,14 +59,14 @@ uses
   SysUtils;
 
 function TScreenOptionsSound.ParseInput(PressedKey: cardinal;
-  CharCode: widechar; PressedDown: boolean): boolean;
+  CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := True;
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideStringUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
       begin
         Result := False;
         Exit;

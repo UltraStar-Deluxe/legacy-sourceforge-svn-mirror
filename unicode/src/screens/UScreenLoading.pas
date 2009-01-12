@@ -46,7 +46,7 @@ type
       Fadeout:      boolean;
       constructor Create; override;
       procedure   onShow; override;
-      function    ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
+      function    ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
   end;
 
 implementation
@@ -54,7 +54,7 @@ implementation
 uses UGraphic,
      UTime;
 
-function TScreenLoading.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenLoading.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
 end;
