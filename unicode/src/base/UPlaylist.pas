@@ -389,7 +389,7 @@ begin
   begin
     ScreenSong.UnLoadDetailedCover;
     ScreenSong.HideCatTL;
-    CatSongs.SetFilter('', 0);
+    CatSongs.SetFilter('', fltAll);
     ScreenSong.Interaction := 0;
     ScreenSong.FixSelected;
     ScreenSong.ChangeMusic;
