@@ -54,7 +54,7 @@ const
   );
 
 const
-  UTF8_BOM: AnsiString = #$EF#$BB#$BF;
+  UTF8_BOM: UTF8String = #$EF#$BB#$BF;
 
 {**
  * Changes encoding of string Src with encoding SrcEncoding to UTF-16

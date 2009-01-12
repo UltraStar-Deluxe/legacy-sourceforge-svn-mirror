@@ -66,6 +66,11 @@ uses
   UCatCovers;
 
 type
+  TSongFilter = (
+    fltAll,
+    fltTitle,
+    fltArtist
+  );
 
   TBPM = record
     BPM:        real;
@@ -128,7 +133,7 @@ type
     function VisibleSongs: integer; // returns number of visible songs (for tabs)
     function VisibleIndex(Index: integer): integer; // returns visible song index (skips invisible)
 
-    function SetFilter(FilterStr: string; const fType: Byte): Cardinal;
+    function SetFilter(FilterStr: UTF8String; Filter: TSongFilter): Cardinal;
   end;
 
 var
@@ -151,13 +156,14 @@ const
 
 implementation
 
-uses StrUtils,
-     UGraphic,
-     UCovers,
-     UFiles,
-     UMain,
-     UIni,
-     UUnicodeUtils;
+uses
+  StrUtils,
+  UGraphic,
+  UCovers,
+  UFiles,
+  UMain,
+  UIni,
+  UUnicodeUtils;
 
 constructor TSongs.Create();
 begin
@@ -322,11 +328,11 @@ begin
       lSong := TSong.create( Dir + Files[i].Name );
 
       if lSong.AnalyseXML then
-	SongList.add( lSong )
+        SongList.add( lSong )
       else
       begin
-	Log.LogError('AnalyseFile failed for "' + Files[i].Name + '".');
-	freeandnil( lSong );
+        Log.LogError('AnalyseFile failed for "' + Files[i].Name + '".');
+        freeandnil( lSong );
       end;
 
     end;
@@ -600,8 +606,8 @@ begin
           begin
             LetterTmp := UTF8ToUCS4String(CurSong.Title)[0];
             // pack all numbers into a category named '#'
-            if (LetterTmp in [UCS4Char('0') .. UCS4Char('9')]) then
-              LetterTmp := UCS4Char('#')
+            if (LetterTmp in [Ord('0') .. Ord('9')]) then
+              LetterTmp := Ord('#')
             else
               LetterTmp := UCS4UpperCase(LetterTmp);
 
@@ -619,8 +625,8 @@ begin
           begin
             LetterTmp := UTF8ToUCS4String(CurSong.Artist)[0];
             // pack all numbers into a category named '#'
-            if (LetterTmp in [UCS4Char('0') .. UCS4Char('9')]) then
-              LetterTmp := UCS4Char('#')
+            if (LetterTmp in [Ord('0') .. Ord('9')]) then
+              LetterTmp := Ord('#')
             else
               LetterTmp := UCS4UpperCase(LetterTmp);
 
@@ -782,64 +788,66 @@ begin
   end;
 end;
 
-function TCatSongs.SetFilter(FilterStr: string; const fType: Byte): Cardinal;
+function TCatSongs.SetFilter(FilterStr: UTF8String; Filter: TSongFilter): Cardinal;
 var
   I, J: integer;
-  cString: string;
-  SearchStr: array of string;
+  TmpString: UTF8String;
+  WordArray: array of UTF8String;
 begin
-  {fType: 0: All
-          1: Title
-          2: Artist}
   FilterStr := Trim(FilterStr);
-  if FilterStr<>'' then
+  if (FilterStr <> '') then
   begin
     Result := 0;
-    //Create Search Array
-    SetLength(SearchStr, 1);
-    I := Pos (' ', FilterStr);
+
+    // initialize word array
+    SetLength(WordArray, 1);
+
+    // Copy words to SearchStr
+    I := Pos(' ', FilterStr);
     while (I <> 0) do
     begin
-      SetLength (SearchStr, Length(SearchStr) + 1);
-      cString := Copy(FilterStr, 1, I-1);
-      if (cString <> ' ') and (cString <> '') then
-        SearchStr[High(SearchStr)-1] := cString;
-      Delete (FilterStr, 1, I);
+      WordArray[High(WordArray)] := Copy(FilterStr, 1, I-1);
+      SetLength(WordArray, Length(WordArray) + 1);
 
-      I := Pos (' ', FilterStr);
+      FilterStr := TrimLeft(Copy(FilterStr, I+1, Length(FilterStr)-I));
+      I := Pos(' ', FilterStr);
     end;
-    //Copy last Word
-    if (FilterStr <> ' ') and (FilterStr <> '') then
-      SearchStr[High(SearchStr)] := FilterStr;
 
-    for I:=0 to High(Song) do
+    // Copy last word
+    WordArray[High(WordArray)] := FilterStr;
+
+    for I := 0 to High(Song) do
     begin
       if not Song[i].Main then
       begin
-        case fType of
-          0: cString := Song[I].Artist + ' ' + Song[i].Title + ' ' + Song[i].Folder;
-          1: cString := Song[I].Title;
-          2: cString := Song[I].Artist;
+        case Filter of
+          fltAll:
+            TmpString := Song[I].Artist + ' ' + Song[i].Title + ' ' + UTF8Encode(Song[i].Folder);
+          fltTitle:
+            TmpString := Song[I].Title;
+          fltArtist:
+            TmpString := Song[I].Artist;
         end;
         Song[i].Visible:=True;
-        //Look for every Searched Word
-        for J := 0 to High(SearchStr) do
+        // Look for every Searched Word
+        for J := 0 to High(WordArray) do
         begin
-          Song[i].Visible := Song[i].Visible and AnsiContainsText(cString, SearchStr[J])
+          Song[i].Visible := Song[i].Visible and
+                             UTF8ContainsText(TmpString, WordArray[J])
         end;
         if Song[i].Visible then
           Inc(Result);
       end
       else
-        Song[i].Visible:=False;
+        Song[i].Visible := False;
     end;
     CatNumShow := -2;
   end
   else
   begin
-    for i:=0 to High(Song) do
+    for i := 0 to High(Song) do
     begin
-      Song[i].Visible := (Ini.Tabs=1) = Song[i].Main;
+      Song[i].Visible := (Ini.Tabs = 1) = Song[i].Main;
       CatNumShow := -1;
     end;
     Result := 0;
