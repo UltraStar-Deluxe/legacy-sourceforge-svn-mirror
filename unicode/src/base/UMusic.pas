@@ -51,7 +51,7 @@ type
     Start:      integer;    // beat the fragment starts at
     Length:     integer;    // length in beats
     Tone:       integer;    // full range tone
-    Text:       string;     // text assigned to this fragment (a syllable, word, etc.)
+    Text:       UTF8String; // text assigned to this fragment (a syllable, word, etc.)
     NoteType:   TNoteType;  // note-type: golden-note/freestyle etc.
   end;
 
@@ -62,7 +62,7 @@ type
   PLine = ^TLine;
   TLine = record
     Start:      integer; // the start beat of this line (<> start beat of the first note of this line)
-    Lyric:      string;
+    Lyric:      UTF8String;
     LyricWidth: real;    // @deprecated: width of the line in pixels.
                          // Do not use this as the width is not correct.
                          // Use TLyricsEngine.GetUpperLine().Width instead. 
