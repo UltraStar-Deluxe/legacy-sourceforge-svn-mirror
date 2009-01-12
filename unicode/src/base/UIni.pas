@@ -269,7 +269,8 @@ uses
   UPlatform,
   USkins,
   URecord,
-  UCommandLine;
+  UCommandLine,
+  UUnicodeUtils;
 
 (**
  * Returns the filename without its fileextension
@@ -462,7 +463,7 @@ begin
   // Load song-paths
   for I := 0 to PathStrings.Count-1 do
   begin
-    if (AnsiStartsText('SongDir', PathStrings[I])) then
+    if (Pos('SONGDIR', UpperCase(PathStrings[I])) = 1) then
     begin
       AddSongPath(IniFile.ReadString('Directories', PathStrings[I], ''));
     end;
