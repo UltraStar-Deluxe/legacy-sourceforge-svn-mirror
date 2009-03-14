@@ -35,11 +35,21 @@ interface
 
 uses
   UTime,
+  SysUtils,
   Classes;
 
 type
   TNoteType = (ntFreestyle, ntNormal, ntGolden);
 
+const
+  // ScoreFactor defines how a notehit of a specified notetype is
+  // measured in comparison to the other types
+  // 0 means this notetype is not rated at all
+  // 2 means a hit of this notetype will be rated w/ twice as much
+  // points as a hit of a notetype w/ ScoreFactor 1
+  ScoreFactor:         array[TNoteType] of integer = (0, 1, 2);
+
+type
   (**
    * TLineFragment represents a fragment of a lyrics line.
    * This is a text-fragment (e.g. a syllable) assigned to a note pitch,
@@ -63,7 +73,7 @@ type
   TLine = record
     Start:      integer; // the start beat of this line (<> start beat of the first note of this line)
     Lyric:      UTF8String;
-    LyricWidth: real;    // @deprecated: width of the line in pixels.
+    //LyricWidth: real;    // @deprecated: width of the line in pixels.
                          // Do not use this as the width is not correct.
                          // Use TLyricsEngine.GetUpperLine().Width instead. 
     End_:       integer;
@@ -81,7 +91,7 @@ type
    *)
   TLines = record
     Current:    integer;  // for drawing of current line
-    High:       integer;  // (= High(Line)?)
+    High:       integer;  // = High(Line)!
     Number:     integer;
     Resolution: integer;
     NotesGAP:   integer;
@@ -212,12 +222,12 @@ type
   TSoundEffect = class
     public
       EngineData: Pointer; // can be used for engine-specific data
-      procedure Callback(Buffer: PChar; BufSize: integer); virtual; abstract;
+      procedure Callback(Buffer: PByteArray; BufSize: integer); virtual; abstract;
   end;
 
   TVoiceRemoval = class(TSoundEffect)
     public
-      procedure Callback(Buffer: PChar; BufSize: integer); override;
+      procedure Callback(Buffer: PByteArray; BufSize: integer); override;
   end;
 
 type
@@ -262,7 +272,7 @@ type
       function IsEOF(): boolean;            virtual; abstract;
       function IsError(): boolean;          virtual; abstract;
     public
-      function ReadData(Buffer: PChar; BufferSize: integer): integer; virtual; abstract;
+      function ReadData(Buffer: PByteArray; BufferSize: integer): integer; virtual; abstract;
 
       property EOF: boolean read IsEOF;
       property Error: boolean read IsError;
@@ -292,7 +302,7 @@ type
       function GetVolume(): single;         virtual; abstract;
       procedure SetVolume(Volume: single);  virtual; abstract;
       function Synchronize(BufferSize: integer; FormatInfo: TAudioFormatInfo): integer;
-      procedure FillBufferWithFrame(Buffer: PChar; BufferSize: integer; Frame: PChar; FrameSize: integer);
+      procedure FillBufferWithFrame(Buffer: PByteArray; BufferSize: integer; Frame: PByteArray; FrameSize: integer);
    public
       (**
        * Opens a SourceStream for playback.
@@ -335,7 +345,7 @@ type
       function Open(ChannelMap: integer; FormatInfo: TAudioFormatInfo): boolean; virtual;
       procedure Close(); override;
 
-      procedure WriteData(Buffer: PChar; BufferSize: integer); virtual; abstract;
+      procedure WriteData(Buffer: PByteArray; BufferSize: integer); virtual; abstract;
       function GetAudioFormatInfo(): TAudioFormatInfo; override;
 
       function GetLength(): real;           override;
@@ -468,7 +478,7 @@ type
        * input-buffer bytes used.
        * Returns the number of bytes written to the output-buffer or -1 if an error occured.
        *)
-      function Convert(InputBuffer: PChar; OutputBuffer: PChar; var InputSize: integer): integer; virtual; abstract;
+      function Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer; virtual; abstract;
 
       (**
        * Destination/Source size ratio
@@ -561,13 +571,13 @@ procedure DumpMediaInterfaces();
 implementation
 
 uses
-  sysutils,
   math,
   UIni,
-  UMain,
+  UNote,
   UCommandLine,
   URecord,
-  ULog;
+  ULog,
+  UPath;
 
 var
   DefaultVideoPlayback : IVideoPlayback;
@@ -942,7 +952,7 @@ end;
 
 { TVoiceRemoval }
 
-procedure TVoiceRemoval.Callback(Buffer: PChar; BufSize: integer);
+procedure TVoiceRemoval.Callback(Buffer: PByteArray; BufSize: integer);
 var
   FrameIndex, FrameSize: integer;
   Value: integer;
@@ -1180,7 +1190,7 @@ end;
 (*
  * Fills a buffer with copies of the given frame or with 0 if frame.
  *)
-procedure TAudioPlaybackStream.FillBufferWithFrame(Buffer: PChar; BufferSize: integer; Frame: PChar; FrameSize: integer);
+procedure TAudioPlaybackStream.FillBufferWithFrame(Buffer: PByteArray; BufferSize: integer; Frame: PByteArray; FrameSize: integer);
 var
   i: integer;
   FrameCopyCount: integer;

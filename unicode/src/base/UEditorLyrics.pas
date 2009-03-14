@@ -40,48 +40,50 @@ uses
   UTexture;
 
 type
+  alignment = (left, center, right);
+
   TWord = record
-      X:      real;
-      Y:      real;
-      Size:   real;
-      Width:  real;
-      Text:   string;
-      ColR:   real;
-      ColG:   real;
-      ColB:   real;
-      FontStyle:  integer;
-      Italic:     boolean;
-      Selected:   boolean;
+    X:         real;
+    Y:         real;
+    Size:      real;
+    Width:     real;
+    Text:      string;
+    ColR:      real;
+    ColG:      real;
+    ColB:      real;
+    FontStyle: integer;
+    Italic:    boolean;
+    Selected:  boolean;
   end;
 
   TEditorLyrics = class
     private
-      AlignI:         integer;
-      XR:             real;
-      YR:             real;
-      SizeR:          real;
-      SelectedI:      integer;
-      FontStyleI:     integer;          // font number
-      Word:           array of TWord;
+      AlignI:     alignment;
+      XR:         real;
+      YR:         real;
+      SizeR:      real;
+      SelectedI:  integer;
+      FontStyleI: integer;          // font number
+      Word:       array of TWord;
 
       procedure SetX(Value: real);
       procedure SetY(Value: real);
       function GetClientX: real;
-      procedure SetAlign(Value: integer);
+      procedure SetAlign(Value: alignment);
       function GetSize: real;
       procedure SetSize(Value: real);
       procedure SetSelected(Value: integer);
-      procedure SetFStyle(Value: integer);
+      procedure SetFontStyle(Value: integer);
       procedure AddWord(Text: string);
       procedure Refresh;
     public
-      ColR:     real;
-      ColG:     real;
-      ColB:     real;
-      ColSR:    real;
-      ColSG:    real;
-      ColSB:    real;
-      Italic:   boolean;
+      ColR:   real;
+      ColG:   real;
+      ColB:   real;
+      ColSR:  real;
+      ColSG:  real;
+      ColSB:  real;
+      Italic: boolean;
 
       constructor Create;
       destructor Destroy; override;
@@ -94,16 +96,20 @@ type
       property X: real write SetX;
       property Y: real write SetY;
       property ClientX: real read GetClientX;
-      property Align: integer write SetAlign;
+      property Align: alignment write SetAlign;
       property Size: real read GetSize write SetSize;
       property Selected: integer read SelectedI write SetSelected;
-      property FontStyle: integer write SetFStyle;
+      property FontStyle: integer write SetFontStyle;
   end;
 
 implementation
 
 uses
-  TextGL, UGraphic, UDrawTexture, Math, USkins;
+  TextGL,
+  UGraphic,
+  UDrawTexture,
+  Math,
+  USkins;
 
 constructor TEditorLyrics.Create;
 begin
@@ -131,7 +137,7 @@ begin
   Result := Word[0].X;
 end;
 
-procedure TEditorLyrics.SetAlign(Value: integer);
+procedure TEditorLyrics.SetAlign(Value: alignment);
 begin
   AlignI := Value;
 end;
@@ -148,7 +154,7 @@ end;
 
 procedure TEditorLyrics.SetSelected(Value: integer);
 begin
-  if (SelectedI > -1) and (SelectedI <= High(Word)) then
+  if (-1 < SelectedI) and (SelectedI <= High(Word)) then
   begin
     Word[SelectedI].Selected := false;
     Word[SelectedI].ColR := ColR;
@@ -157,7 +163,7 @@ begin
   end;
 
   SelectedI := Value;
-  if (Value > -1) and (Value <= High(Word)) then
+  if (-1 < Value) and (Value <= High(Word)) then
   begin
     Word[Value].Selected := true;
     Word[Value].ColR := ColSR;
@@ -168,22 +174,21 @@ begin
   Refresh;
 end;
 
-procedure TEditorLyrics.SetFStyle(Value: integer);
+procedure TEditorLyrics.SetFontStyle(Value: integer);
 begin
   FontStyleI := Value;
 end;
 
 procedure TEditorLyrics.AddWord(Text: string);
 var
-  WordNum:    integer;
+  WordNum: integer;
 begin
   WordNum := Length(Word);
   SetLength(Word, WordNum + 1);
-  if WordNum = 0 then begin
-    Word[WordNum].X := XR;
-  end else begin
+  if WordNum = 0 then
+    Word[WordNum].X := XR
+  else
     Word[WordNum].X := Word[WordNum - 1].X + Word[WordNum - 1].Width;
-  end;
 
   Word[WordNum].Y := YR;
   Word[WordNum].Size := SizeR;
@@ -202,12 +207,13 @@ end;
 
 procedure TEditorLyrics.AddLine(NrLine: integer);
 var
-  N:    integer;
+  NoteIndex: integer;
 begin
   Clear;
-  for N := 0 to Lines[0].Line[NrLine].HighNote do begin
-    Italic := Lines[0].Line[NrLine].Note[N].NoteType = ntFreestyle;
-    AddWord(Lines[0].Line[NrLine].Note[N].Text);
+  for NoteIndex := 0 to Lines[0].Line[NrLine].HighNote do
+  begin
+    Italic := Lines[0].Line[NrLine].Note[NoteIndex].NoteType = ntFreestyle;
+    AddWord(Lines[0].Line[NrLine].Note[NoteIndex].Text);
   end;
   Selected := -1;
 end;
@@ -220,32 +226,33 @@ end;
 
 procedure TEditorLyrics.Refresh;
 var
-  W:          integer;
-  TotWidth:   real;
+  WordIndex:  integer;
+  TotalWidth: real;
 begin
-  if AlignI = 1 then begin
-    TotWidth := 0;
-    for W := 0 to High(Word) do
-      TotWidth := TotWidth + Word[W].Width;
+  if AlignI = center then
+  begin
+    TotalWidth := 0;
+    for WordIndex := 0 to High(Word) do
+      TotalWidth := TotalWidth + Word[WordIndex].Width;
 
-    Word[0].X := XR - TotWidth / 2;
-    for W := 1 to High(Word) do
-      Word[W].X := Word[W - 1].X + Word[W - 1].Width;
+    Word[0].X := XR - TotalWidth / 2;
+    for WordIndex := 1 to High(Word) do
+      Word[WordIndex].X := Word[WordIndex - 1].X + Word[WordIndex - 1].Width;
   end;
 end;
 
 procedure TEditorLyrics.Draw;
 var
-  W:    integer;
+  WordIndex: integer;
 begin
-  for W := 0 to High(Word) do
+  for WordIndex := 0 to High(Word) do
   begin
-    SetFontStyle(Word[W].FontStyle);
-    SetFontPos(Word[W].X+ 10*ScreenX, Word[W].Y);
-    SetFontSize(Word[W].Size);
-    SetFontItalic(Word[W].Italic);
-    glColor3f(Word[W].ColR, Word[W].ColG, Word[W].ColB);
-    glPrint(Word[W].Text);
+    SetFontStyle(Word[WordIndex].FontStyle);
+    SetFontPos(Word[WordIndex].X + 10*ScreenX, Word[WordIndex].Y);
+    SetFontSize(Word[WordIndex].Size);
+    SetFontItalic(Word[WordIndex].Italic);
+    glColor3f(Word[WordIndex].ColR, Word[WordIndex].ColG, Word[WordIndex].ColB);
+    glPrint(Word[WordIndex].Text);
   end;
 end;
 

@@ -1,10 +1,15 @@
 library Hold_The_Line;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
-  ModiSDK in '..\SDK\ModiSDK.pas',
+  ModiSDK  in '..\SDK\ModiSDK.pas',
   StrUtils in '..\SDK\StrUtils.pas',
-  OpenGL12,
-  Windows;
+  sdl          in '..\..\src\lib\JEDI-SDL\SDL\Pas\sdl.pas',
+  moduleloader in '..\..\src\lib\JEDI-SDL\SDL\Pas\moduleloader.pas',
+  gl           in '..\..\src\lib\JEDI-SDL\OpenGL\Pas\gl.pas';
 
 var
   PointerTex: TSmallTexture;
@@ -84,8 +89,6 @@ begin
     PlayerTimes[I] := 0;
   end;
 
-  LoadOpenGL;
-
   Result := True;
 end;
 
@@ -102,7 +105,7 @@ begin
   //Aktivate Blink
   If (CurSentence = CountSentences div 5 * 2 - 1) OR (CurSentence = CountSentences div 3 * 2 - 1) then
   begin
-    Tick := Gettickcount div 400;
+    Tick := SDL_GetTicks() div 400;
     If (Tick <> LastTick) then
     begin
       LastTick := Tick;
@@ -172,7 +175,7 @@ begin
 
       glColor4f (0.8, 0.8, 0.8, 1);
 
-      MethodRec.Print (1, 6, PlayerInfo.Playerinfo[I].PosX, PlayerInfo.Playerinfo[I].PosY-8, Text);
+      MethodRec.Print (1, 18, PlayerInfo.Playerinfo[I].PosX, PlayerInfo.Playerinfo[I].PosY-8, Text);
       FreeStr(Text);
     end;
   end;

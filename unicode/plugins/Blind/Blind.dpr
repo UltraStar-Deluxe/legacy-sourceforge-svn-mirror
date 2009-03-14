@@ -1,5 +1,9 @@
 library Blind;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
   ModiSDK in '..\SDK\ModiSDK.pas';
 
@@ -95,7 +99,10 @@ begin
 end;
 
 exports
-PluginInfo, Init, Draw, Finish;
+  PluginInfo,
+  Init,
+  Draw,
+  Finish;
 
 begin
 

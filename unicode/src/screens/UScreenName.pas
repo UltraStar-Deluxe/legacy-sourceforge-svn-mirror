@@ -34,12 +34,12 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu,
-  UDisplay,
-  UMusic,
-  UFiles,
+  SysUtils, 
   SDL,
-  SysUtils,
+  UDisplay,
+  UFiles,
+  UMenu,
+  UMusic,
   UThemes;
 
 type
@@ -55,9 +55,10 @@ type
 implementation
 
 uses
-  UGraphic,
-  UMain,
+  UCommon,
+  UGraphic, 
   UIni,
+  UNote,
   UTexture,
   UUnicodeUtils;
 

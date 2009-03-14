@@ -35,7 +35,6 @@ program ultrastardx;
 
 {$I switches.inc}
 
-// TODO: check if this is needed for MacOSX too
 {$IFDEF MSWINDOWS}
   // Set global application-type (GUI/CONSOLE) switch for Windows.
   // CONSOLE is the default for FPC, GUI for Delphi, so we have
@@ -193,6 +192,8 @@ uses
   URingBuffer       in 'base\URingBuffer.pas',
   USingScores       in 'base\USingScores.pas',
   USingNotes        in 'base\USingNotes.pas',
+  UPath             in 'base\UPath.pas',
+  UNote             in 'base\UNote.pas',
 
   TextGL            in 'base\TextGL.pas',
   UUnicodeUtils     in 'base\UUnicodeUtils.pas',

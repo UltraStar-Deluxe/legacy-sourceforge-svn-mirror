@@ -68,11 +68,12 @@ procedure SetFontReflection(Enable:boolean;Spacing: real); // enables/disables t
 implementation
 
 uses
-  UMain,
-  UCommon,
   UTextEncoding,
   SysUtils,
-  IniFiles;
+  IniFiles,
+  UCommon,
+  UMain,
+  UPath;
 
 function FindFontFile(FontIni: TCustomIniFile; Font: string): string;
 var

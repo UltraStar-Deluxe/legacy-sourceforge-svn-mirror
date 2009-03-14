@@ -33,20 +33,24 @@ interface
 
 {$I switches.inc}
 
-uses UMenu, SDL, UThemes;
+uses
+  UMenu,
+  SDL,
+  UThemes;
 
 type
   TScreenEdit = class(TMenu)
     public
-{      Tex_Background:     TTexture;
-      FadeOut:            boolean;
-      Path:               string;
-      FileName:           string;}
+      TextDescription:     integer;
+      TextDescriptionLong: integer;
+
       constructor Create; override;
-      procedure onShow; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
-{      function Draw: boolean; override;
-      procedure Finish;}
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure InteractNext; override;
+      procedure InteractPrev; override;
+      procedure InteractInc; override;
+      procedure InteractDec; override;
+      procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
@@ -58,12 +62,18 @@ uses
   UUnicodeUtils,
   SysUtils;
 
-function TScreenEdit.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenEdit.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+var
+  SDL_ModState: word;
 begin
   Result := true;
-  If (PressedDown) Then
+
+  SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT +
+    KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT + KMOD_RALT);
+
+  if (PressedDown) then
   begin // Key Down
-    // check normal keys
+        // check normal keys
     case UCS4UpperCase(CharCode) of
       Ord('Q'):
         begin
@@ -79,7 +89,6 @@ begin
         begin
           AudioPlayback.PlaySound(SoundLib.Back);
           FadeTo(@ScreenMain);
-//          Result := false;
         end;
       SDLK_RETURN:
         begin
@@ -88,10 +97,6 @@ begin
             AudioPlayback.PlaySound(SoundLib.Start);
             FadeTo(@ScreenEditConvert);
           end;
-//          if Interaction = 1 then begin
-//            Music.PlayStart;
-//            FadeTo(@ScreenEditHeader);
-//          end;
 
           if Interaction = 1 then
           begin
@@ -100,14 +105,10 @@ begin
           end;
         end;
 
-      SDLK_DOWN:
-        begin
-          InteractNext;
-        end;
-      SDLK_UP:
-        begin
-          InteractPrev;
-        end;
+      SDLK_DOWN:  InteractInc;
+      SDLK_UP:    InteractDec;
+      SDLK_RIGHT: InteractNext;
+      SDLK_LEFT:  InteractPrev;
     end;
   end;
 end;
@@ -115,41 +116,49 @@ end;
 constructor TScreenEdit.Create;
 begin
   inherited Create;
-  AddButton(400-200, 100 + 0*70, 400, 40, Skin.GetTextureFileName('ButtonF'));
-  AddButtonText(10, 5, 0, 0, 0, 'Convert Midi to Txt');
-//  Button[High(Button)].Text[0].Size := 11;
 
-//  AddButton(400-200, 100 + 1*60, 400, 40, 'ButtonF');
-//  AddButtonText(10, 5, 0, 0, 0, 'Edit Headers');
+  TextDescription := AddText(Theme.Edit.TextDescription);
 
-//  AddButton(400-200, 100 + 2*60, 400, 40, 'ButtonF');
-//  AddButtonText(10, 5, 0, 0, 0, 'Set GAP');
+  LoadFromTheme(Theme.Edit);
 
-  AddButton(400-200, 100 + 3*60, 400, 40, Skin.GetTextureFileName('ButtonF'));
-  AddButtonText(10, 5, 0, 0, 0, 'Exit');
+  AddButton(Theme.Edit.ButtonConvert);
+{ Some ideas for more:
+  AddButton(Theme.Edit.ButtonEditHeaders);
+  AddButton(Theme.Edit.ButtonAdjustGap);
+}
+  AddButton(Theme.Edit.ButtonExit);
 
+  Interaction := 0;
 end;
 
-procedure TScreenEdit.onShow;
+procedure TScreenEdit.InteractNext;
 begin
-  inherited;
-
-//  Interaction := 0;
+  inherited InteractNext;
+  Text[TextDescription].Text := Theme.Edit.Description[Interaction];
 end;
 
-(*function TScreenEdit.Draw: boolean;
-var
-  Min:    integer;
-  Sec:    integer;
-  Tekst:  string;
-  Pet:    integer;
-  AktBeat:  integer;
+procedure TScreenEdit.InteractPrev;
 begin
+  inherited InteractPrev;
+  Text[TextDescription].Text := Theme.Edit.Description[Interaction];
 end;
 
-procedure TScreenEdit.Finish;
+procedure TScreenEdit.InteractDec;
 begin
-//
-end;*)
+  inherited InteractDec;
+  Text[TextDescription].Text := Theme.Edit.Description[Interaction];
+end;
+
+procedure TScreenEdit.InteractInc;
+begin
+  inherited InteractInc;
+  Text[TextDescription].Text := Theme.Edit.Description[Interaction];
+end;
+
+procedure TScreenEdit.SetAnimationProgress(Progress: real);
+begin
+  Static[0].Texture.ScaleW := Progress;
+  Static[0].Texture.ScaleH := Progress;
+end;
 
 end.

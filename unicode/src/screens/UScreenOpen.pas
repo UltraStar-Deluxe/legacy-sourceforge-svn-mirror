@@ -34,12 +34,10 @@ interface
 {$I switches.inc}
 
 uses
-  SDL,
-  SysUtils,
-  Math,
-  gl,
   UMenu,
   UMusic,
+  SDL,
+  SysUtils,
   UFiles,
   UTime,
   USongs,
@@ -48,22 +46,24 @@ uses
   UTexture,
   UMenuText,
   ULyrics,
+  Math,
+  gl,
   UThemes;
 
 type
   TScreenOpen = class(TMenu)
     private
-      TextF:    array[0..1] of integer;
-      TextN:    integer;
+      TextF:          array[0..1] of integer;
+      TextN:          integer;
     public
-      Tex_Background:     TTexture;
-      FadeOut:            boolean;
-      Path:               string;
-      BackScreen:         pointer;
+      Tex_Background: TTexture;
+      FadeOut:        boolean;
+      Path:           string;
+      BackScreen:     pointer;
       procedure AddBox(X, Y, W, H: real);
       constructor Create; override;
       procedure onShow; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
 //      function Draw: boolean; override;
 //      procedure Finish;
   end;
@@ -74,14 +74,16 @@ uses
   UGraphic,
   UDraw,
   UMain,
+  UScreenEditConvert,
   USkins,
   UUnicodeUtils;
 
-function TScreenOpen.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenOpen.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
 
-  if (PressedDown) then begin // Key Down
+  if (PressedDown) then  // Key Down
+  begin
     // check normal keys
     case CharCode of
       Ord('0')..Ord('9'),
@@ -89,7 +91,8 @@ begin
       Ord('A')..Ord('Z'),
       Ord(' '), Ord('-'), Ord('.'), Ord(':'), Ord('\'):
         begin
-          if Interaction = 0 then begin
+          if Interaction = 0 then
+	  begin
             Text[TextN].Text := Text[TextN].Text + UCS4ToUTF8String(CharCode);
           end;
         end;
@@ -103,24 +106,24 @@ begin
         end;
       8: // del
         begin
-            if Interaction = 0 then
-            begin
-              Text[TextN].DeleteLastLetter;
-            end;
+          if Interaction = 0 then
+          begin
+            Text[TextN].DeleteLastLetter;
+          end;
         end;
 
-
-      SDLK_ESCAPE :
+      SDLK_ESCAPE:
         begin
           //Empty Filename and go to last Screen
-            ConversionFileName := '';
-            AudioPlayback.PlaySound(SoundLib.Back);
-            FadeTo(BackScreen);
+          ConversionFileName := '';
+          AudioPlayback.PlaySound(SoundLib.Back);
+          FadeTo(BackScreen);
         end;
 
       SDLK_RETURN:
         begin
-          if (Interaction = 2) then begin
+          if (Interaction = 2) then
+	  begin
             //Update Filename and go to last Screen
             ConversionFileName := Text[TextN].Text;
             AudioPlayback.PlaySound(SoundLib.Back);
@@ -166,9 +169,9 @@ constructor TScreenOpen.Create;
 begin
   inherited Create;
 
-  // linijka
+  // line
 {  AddStatic(20, 10, 80, 30, 0, 0, 0, 'MainBar', 'JPG', TEXTURE_TYPE_COLORIZED);
-  AddText(35, 17, 1, 18, 1, 1, 1, 'Linijka');
+  AddText(35, 17, 1, 18, 1, 1, 1, 'line');
   TextSentence := AddText(120, 14, 1, 24, 0, 0, 0, '0 / 0');}
 
   // file list
@@ -195,7 +198,6 @@ begin
   AddButton(670, 540, 100, 40, Skin.GetTextureFileName('ButtonF'));
   AddButtonText(30, 5, 0, 0, 0, 'OK');
 
-
 end;
 
 procedure TScreenOpen.onShow;
@@ -207,11 +209,9 @@ end;
 
 (*function TScreenEditSub.Draw: boolean;
 var
-  Min:    integer;
-  Sec:    integer;
-  Tekst:  string;
-  Pet:    integer;
-  AktBeat:  integer;
+  Min:     integer;
+  Sec:     integer;
+  AktBeat: integer;
 begin
 
 end;
@@ -222,4 +222,3 @@ begin
 end;*)
 
 end.
-

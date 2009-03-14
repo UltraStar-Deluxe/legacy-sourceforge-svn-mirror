@@ -57,12 +57,13 @@ type
 
 implementation
 
-uses
-  UMain,
+uses 
+  SysUtils,
   UGraphic,
-  USkins,
+  UMain,
+  UPath,
   UUnicodeUtils,
-  SysUtils;
+  USkins;
 
 function TScreenOptionsThemes.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin

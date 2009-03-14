@@ -158,11 +158,13 @@ implementation
 
 uses
   StrUtils,
-  UGraphic,
   UCovers,
   UFiles,
+  UGraphic,
   UMain,
   UIni,
+  UPath,
+  UNote,
   UUnicodeUtils;
 
 constructor TSongs.Create();
@@ -282,7 +284,11 @@ var
   lSong   : TSong;
 begin
 
-  Files    := Platform.DirectoryFindFiles( Dir, '.txt', true);
+  try
+    Files := Platform.DirectoryFindFiles( Dir, '.txt', true)
+  except
+    Log.LogError('Couldn''t deal with directory/file: ' + Dir + ' in TSongs.BrowseTXTFiles')
+  end;
 
   for i := 0 to Length(Files)-1 do
   begin
@@ -315,7 +321,11 @@ var
   lSong   : TSong;
 begin
 
-  Files := Platform.DirectoryFindFiles( Dir, '.xml', true);
+  try
+    Files := Platform.DirectoryFindFiles( Dir, '.xml', true)
+  except
+    Log.LogError('Couldn''t deal with directory/file: ' + Dir + ' in TSongs.BrowseXMLFiles')
+  end;
 
   for i := 0 to Length(Files)-1 do
   begin
@@ -670,7 +680,7 @@ begin
   end;
 
   // set CatNumber of last category
-  if (Ini.Tabs_at_startup = 1) and (High(Song) >= 1) then
+  if (Ini.TabsAtStartup = 1) and (High(Song) >= 1) then
   begin
     // set number of songs in previous category
     SongIndex := CatIndex - CatNumber;

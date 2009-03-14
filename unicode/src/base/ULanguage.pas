@@ -78,7 +78,8 @@ uses
   IniFiles,
   Classes,
   SysUtils,
-  ULog;
+  ULog,
+  UPath;
 
 {**
  * LoadList, set default language, set standard implode glues

@@ -74,7 +74,7 @@ type
       function RemoveFileExt(FullName: string): string;
       function ExtractKeyIndex(const Key, Prefix, Suffix: string): integer;
       function GetMaxKeyIndex(Keys: TStringList; const Prefix, Suffix: string): integer;
-      function GetArrayIndex(const SearchArray: array of string; Value: string; CaseInsensitiv: Boolean = False): integer;
+      function GetArrayIndex(const SearchArray: array of string; Value: string; CaseInsensitiv: boolean = false): integer;
       function ReadArrayIndex(const SearchArray: array of string; IniFile: TCustomIniFile;
           IniSection: string; IniProperty: string; Default: integer): integer;
 
@@ -99,7 +99,7 @@ type
       Difficulty:     integer;
       Language:       integer;
       Tabs:           integer;
-      Tabs_at_startup:integer; //Tabs at Startup fix
+      TabsAtStartup:  integer; //Tabs at Startup fix
       Sorting:        integer;
       Debug:          integer;
 
@@ -107,7 +107,7 @@ type
       Screens:        integer;
       Resolution:     integer;
       Depth:          integer;
-      VisualizerOption:integer; 
+      VisualizerOption: integer;
       FullScreen:     integer;
       TextureSize:    integer;
       SingWindow:     integer;
@@ -122,8 +122,8 @@ type
       BeatClick:      integer;
       SavePlayback:   integer;
       ThresholdIndex: integer;
-      AudioOutputBufferSizeIndex:integer;
-      VoicePassthrough:integer;
+      AudioOutputBufferSizeIndex: integer;
+      VoicePassthrough: integer;
 
       //Song Preview
       PreviewVolume:  integer;
@@ -139,8 +139,8 @@ type
       Theme:          integer;
       SkinNo:         integer;
       Color:          integer;
-      BackgroundMusicOption:integer;
-      
+      BackgroundMusicOption: integer;
+
       // Record
       InputDeviceConfig: array of TInputDeviceConfig;
 
@@ -166,22 +166,20 @@ type
   end;
 
 var
-  Ini:            TIni;
-  IResolution:    array of string;
-  ILanguage:      array of string;
-  ITheme:         array of string;
-  ISkin:          array of string;
-
-
+  Ini:         TIni;
+  IResolution: array of string;
+  ILanguage:   array of string;
+  ITheme:      array of string;
+  ISkin:       array of string;
 
 const
-  IPlayers:       array[0..4] of string  = ('1', '2', '3', '4', '6');
-  IPlayersVals:   array[0..4] of integer = ( 1 ,  2 ,  3 ,  4 ,  6 );
+  IPlayers:     array[0..4] of string  = ('1', '2', '3', '4', '6');
+  IPlayersVals: array[0..4] of integer = ( 1 ,  2 ,  3 ,  4 ,  6 );
 
-  IDifficulty:    array[0..2] of string = ('Easy', 'Medium', 'Hard');
-  ITabs:          array[0..1] of string = ('Off', 'On');
+  IDifficulty:  array[0..2] of string  = ('Easy', 'Medium', 'Hard');
+  ITabs:        array[0..1] of string  = ('Off', 'On');
 
-  ISorting:       array[0..7] of string = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2');
+  ISorting:     array[0..7] of string  = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2');
   sEdition  = 0;
   sGenre    = 1;
   sLanguage = 2;
@@ -191,51 +189,49 @@ const
   sTitle2   = 6;
   sArtist2  = 7;
 
-  IDebug:         array[0..1] of string = ('Off', 'On');
+  IDebug:            array[0..1] of string  = ('Off', 'On');
 
-  IScreens:       array[0..1] of string = ('1', '2');
-  IFullScreen:    array[0..1] of string = ('Off', 'On');
-  IDepth:         array[0..1] of string = ('16 bit', '32 bit');
-  IVisualizer:    array[0..2] of string = ('Off', 'WhenNoVideo','On');
+  IScreens:          array[0..1] of string  = ('1', '2');
+  IFullScreen:       array[0..1] of string  = ('Off', 'On');
+  IDepth:            array[0..1] of string  = ('16 bit', '32 bit');
+  IVisualizer:       array[0..2] of string  = ('Off', 'WhenNoVideo','On');
 
-  IBackgroundMusic: array[0..1] of string = ('Off', 'On');
+  IBackgroundMusic:  array[0..1] of string  = ('Off', 'On');
 
+  ITextureSize:      array[0..2] of string  = ('128', '256', '512');
+  ITextureSizeVals:  array[0..2] of integer = ( 128,   256,   512);
 
-  ITextureSize:     array[0..2] of string  = ('128', '256', '512');
-  ITextureSizeVals: array[0..2] of integer = ( 128,   256,   512);
-
-  ISingWindow:    array[0..1] of string = ('Small', 'Big');
+  ISingWindow:       array[0..1] of string  = ('Small', 'Big');
 
   //SingBar Mod
-  IOscilloscope:  array[0..2] of string = ('Off', 'Osci', 'Bar');
-//IOscilloscope:  array[0..1] of string = ('Off', 'On');
+  IOscilloscope:     array[0..2] of string  = ('Off', 'Osci', 'Bar');
+//IOscilloscope:     array[0..1] of string  = ('Off', 'On');
 
-  ISpectrum:      array[0..1] of string = ('Off', 'On');
-  ISpectrograph:  array[0..1] of string = ('Off', 'On');
-  IMovieSize:     array[0..2] of string = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
+  ISpectrum:         array[0..1] of string  = ('Off', 'On');
+  ISpectrograph:     array[0..1] of string  = ('Off', 'On');
+  IMovieSize:        array[0..2] of string  = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
 
-  IClickAssist:   array[0..1] of string = ('Off', 'On');
-  IBeatClick:     array[0..1] of string = ('Off', 'On');
-  ISavePlayback:  array[0..1] of string = ('Off', 'On');
+  IClickAssist:      array[0..1] of string  = ('Off', 'On');
+  IBeatClick:        array[0..1] of string  = ('Off', 'On');
+  ISavePlayback:     array[0..1] of string  = ('Off', 'On');
 
-  IThreshold:     array[0..3] of string = ('5%', '10%', '15%', '20%');
-  IThresholdVals: array[0..3] of single = (0.05, 0.10,  0.15,  0.20);
+  IThreshold:        array[0..3] of string  = ('5%', '10%', '15%', '20%');
+  IThresholdVals:    array[0..3] of single  = (0.05, 0.10,  0.15,  0.20);
 
-  IVoicePassthrough:  array[0..1] of string = ('Off', 'On');
+  IVoicePassthrough: array[0..1] of string  = ('Off', 'On');
 
   IAudioOutputBufferSize:     array[0..9] of string  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
   IAudioOutputBufferSizeVals: array[0..9] of integer = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
 
-  IAudioInputBufferSize:     array[0..9] of string  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
-  IAudioInputBufferSizeVals: array[0..9] of integer = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
+  IAudioInputBufferSize:      array[0..9] of string  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
+  IAudioInputBufferSizeVals:  array[0..9] of integer = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
 
   //Song Preview
-  IPreviewVolume:     array[0..10] of string = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
-  IPreviewVolumeVals: array[0..10] of single = ( 0,   0.10,  0.20,  0.30,  0.40,  0.50,  0.60,  0.70,  0.80,  0.90,   1.00  );
+  IPreviewVolume:             array[0..10] of string = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
+  IPreviewVolumeVals:         array[0..10] of single = ( 0,   0.10,  0.20,  0.30,  0.40,  0.50,  0.60,  0.70,  0.80,  0.90,   1.00  );
 
-  IPreviewFading:     array[0..5] of string  = ('Off', '1 Sec', '2 Secs', '3 Secs', '4 Secs', '5 Secs');
-  IPreviewFadingVals: array[0..5] of integer = ( 0,     1,       2,        3,        4,        5      );
-
+  IPreviewFading:             array[0..5] of string  = ('Off', '1 Sec', '2 Secs', '3 Secs', '4 Secs', '5 Secs');
+  IPreviewFadingVals:         array[0..5] of integer = ( 0,     1,       2,        3,        4,        5      );
 
   ILyricsFont:    array[0..2] of string = ('Plain', 'OLine1', 'OLine2');
   ILyricsEffect:  array[0..4] of string = ('Simple', 'Zoom', 'Slide', 'Ball', 'Shift');
@@ -247,7 +243,7 @@ const
   // Advanced
   ILoadAnimation: array[0..1] of string = ('Off', 'On');
   IEffectSing:    array[0..1] of string = ('Off', 'On');
-  IScreenFade:    array[0..1] of string =('Off', 'On');
+  IScreenFade:    array[0..1] of string = ('Off', 'On');
   IAskbeforeDel:  array[0..1] of string = ('Off', 'On');
   IOnSongClick:   array[0..2] of string = ('Sing', 'Select Players', 'Open Menu');
   ILineBonus:     array[0..2] of string = ('Off', 'At Score', 'At Notes');
@@ -270,6 +266,7 @@ uses
   USkins,
   URecord,
   UCommandLine,
+  UPath,
   UUnicodeUtils;
 
 (**
@@ -288,17 +285,22 @@ function TIni.ExtractKeyIndex(const Key, Prefix, Suffix: string): integer;
 var
   Value: string;
   Start: integer;
+  PrefixPos, SuffixPos: integer;
 begin
   Result := -1;
 
-  if Pos(Prefix, Key) > -1 then
-  begin
-    Start  := Pos(Prefix, Key) + Length(Prefix);
+  PrefixPos := Pos(Prefix, Key);
+  if (PrefixPos <= 0) then
+    Exit;
+  SuffixPos := Pos(Suffix, Key);
+  if (SuffixPos <= 0) then
+    Exit;
 
-    // copy all between prefix and suffix
-    Value  := Copy(Key, Start, Pos(Suffix, Key)-1 - Start);
-    Result := StrToIntDef(Value, -1);
-  end;
+  Start := PrefixPos + Length(Prefix);
+
+  // copy all between prefix and suffix
+  Value  := Copy(Key, Start, SuffixPos - Start);
+  Result := StrToIntDef(Value, -1);
 end;
 
 (**
@@ -308,7 +310,7 @@ end;
  *)
 function TIni.GetMaxKeyIndex(Keys: TStringList; const Prefix, Suffix: string): integer;
 var
-  i: integer;
+  i:        integer;
   KeyIndex: integer;
 begin
   Result := -1;
@@ -326,7 +328,7 @@ end;
  * or -1 if Value is not in SearchArray.
  *)
 function TIni.GetArrayIndex(const SearchArray: array of string; Value: string;
-    CaseInsensitiv: Boolean = False): integer;
+    CaseInsensitiv: boolean = false): integer;
 var
   i: integer;
 begin
@@ -362,15 +364,14 @@ begin
   end;
 end;
 
-
 procedure TIni.LoadInputDeviceCfg(IniFile: TMemIniFile);
 var
-  DeviceCfg: PInputDeviceConfig;
-  DeviceIndex: integer;
+  DeviceCfg:    PInputDeviceConfig;
+  DeviceIndex:  integer;
   ChannelCount: integer;
   ChannelIndex: integer;
-  RecordKeys: TStringList;
-  i: integer;
+  RecordKeys:   TStringList;
+  i:            integer;
 begin
   RecordKeys := TStringList.Create();
 
@@ -419,15 +420,15 @@ begin
   RecordKeys.Free();
 
   // MicBoost
-  //MicBoost := GetArrayIndex(IMicBoost, IniFile.ReadString('Record', 'MicBoost', 'Off'));
+  MicBoost := GetArrayIndex(IMicBoost, IniFile.ReadString('Record', 'MicBoost', 'Off'));
   // Threshold
-  //  ThresholdIndex := GetArrayIndex(IThreshold, IniFile.ReadString('Record', 'Threshold', IThreshold[1]));
+  ThresholdIndex := GetArrayIndex(IThreshold, IniFile.ReadString('Record', 'Threshold', IThreshold[1]));
 end;
 
 procedure TIni.SaveInputDeviceCfg(IniFile: TIniFile);
 var
-  DeviceIndex:    integer;
-  ChannelIndex:   integer;
+  DeviceIndex:  integer;
+  ChannelIndex: integer;
 begin
   for DeviceIndex := 0 to High(InputDeviceConfig) do
   begin
@@ -436,7 +437,7 @@ begin
                         InputDeviceConfig[DeviceIndex].Name);
     IniFile.WriteInteger('Record', Format('Input[%d]', [DeviceIndex+1]),
                         InputDeviceConfig[DeviceIndex].Input);
-                        
+
     // Channel-to-Player Mapping
     for ChannelIndex := 0 to High(InputDeviceConfig[DeviceIndex].ChannelToPlayerMap) do
     begin
@@ -447,15 +448,15 @@ begin
   end;
 
   // MicBoost
-  //IniFile.WriteString('Record', 'MicBoost', IMicBoost[MicBoost]);
+  IniFile.WriteString('Record', 'MicBoost', IMicBoost[MicBoost]);
   // Threshold
-  //IniFile.WriteString('Record', 'Threshold', IThreshold[ThresholdIndex]);
+  IniFile.WriteString('Record', 'Threshold', IThreshold[ThresholdIndex]);
 end;
 
 procedure TIni.LoadPaths(IniFile: TCustomIniFile);
 var
   PathStrings: TStringList;
-  I: integer;
+  I:           integer;
 begin
   PathStrings := TStringList.Create;
   IniFile.ReadSection('Directories', PathStrings);
@@ -513,7 +514,7 @@ begin
 
   Theme := GetArrayIndex(ITheme, IniFile.ReadString('Themes', 'Theme', 'DELUXE'), true);
   if (Theme = -1) then
-       Theme := 0;
+    Theme := 0;
 
   // Skin
   Skin.onThemeChange;
@@ -535,25 +536,25 @@ procedure TIni.LoadScreenModes(IniFile: TCustomIniFile);
 
 var
   Modes: PPSDL_Rect;
-  I: integer;
+  I:     integer;
 begin
   // Screens
   Screens := GetArrayIndex(IScreens, IniFile.ReadString('Graphics', 'Screens', IScreens[0]));
-  
+
   // FullScreen
   FullScreen := GetArrayIndex(IFullScreen, IniFile.ReadString('Graphics', 'FullScreen', 'On'));
 
   // Resolution
   SetLength(IResolution, 0);
-  
+
   // Check if there are any modes available
   // TODO: we should seperate windowed and fullscreen modes. Otherwise it is not
   // possible to select a reasonable fullscreen mode when in windowed mode
   if IFullScreen[FullScreen] = 'On' then
     Modes  := SDL_ListModes(nil, SDL_OPENGL or SDL_FULLSCREEN)
-  else 
+  else
     Modes  := SDL_ListModes(nil, SDL_OPENGL or SDL_RESIZABLE) ;
-  
+
   if (Modes = nil) then
   begin
     Log.LogStatus( 'No resolutions Found' , 'Video');
@@ -572,7 +573,7 @@ begin
     IResolution[7] := '1440x900';
     IResolution[8] := '1600x1200';
     IResolution[9] := '1680x1050';
-      
+
     Resolution := GetArrayIndex(IResolution, IniFile.ReadString('Graphics', 'Resolution', '800x600'));
     if Resolution = -1 then
     begin
@@ -628,7 +629,7 @@ end;
 procedure TIni.Load();
 var
   IniFile: TMemIniFile;
-  I: integer;
+  I:       integer;
 begin
   GamePath := Platform.GetGameUserPath;
 
@@ -655,24 +656,24 @@ begin
     NameTeam[I] := IniFile.ReadString('NameTeam', 'T'+IntToStr(I+1), 'Team'+IntToStr(I+1));
   for I := 0 to 11 do
     NameTemplate[I] := IniFile.ReadString('NameTemplate', 'Name'+IntToStr(I+1), 'Template'+IntToStr(I+1));
-  
+
   // Players
   Players := GetArrayIndex(IPlayers, IniFile.ReadString('Game', 'Players', IPlayers[0]));
-  
+
   // Difficulty
   Difficulty := GetArrayIndex(IDifficulty, IniFile.ReadString('Game', 'Difficulty', 'Easy'));
-  
+
   // Language
   Language := GetArrayIndex(ILanguage, IniFile.ReadString('Game', 'Language', 'English'));
   //Language.ChangeLanguage(ILanguage[Language]);
-  
+
   // Tabs
   Tabs := GetArrayIndex(ITabs, IniFile.ReadString('Game', 'Tabs', ITabs[0]));
-  Tabs_at_startup := Tabs;	//Tabs at Startup fix
-  
+  TabsAtStartup := Tabs;	//Tabs at Startup fix
+
   // Song Sorting
   Sorting := GetArrayIndex(ISorting, IniFile.ReadString('Game', 'Sorting', ISorting[0]));
-  
+
   // Debug
   Debug := GetArrayIndex(IDebug, IniFile.ReadString('Game', 'Debug', IDebug[0]));
 
@@ -710,7 +711,7 @@ begin
 
   //Preview Volume
   PreviewVolume := GetArrayIndex(IPreviewVolume, IniFile.ReadString('Sound', 'PreviewVolume', IPreviewVolume[7]));
-  
+
   //Preview Fading
   PreviewFading := GetArrayIndex(IPreviewFading, IniFile.ReadString('Sound', 'PreviewFading', IPreviewFading[1]));
 
@@ -778,13 +779,13 @@ begin
   Joypad := GetArrayIndex(IJoypad, IniFile.ReadString('Controller',    'Joypad',   IJoypad[0]));
 
   LoadPaths(IniFile);
-  
+
   IniFile.Free;
 end;
 
 procedure TIni.Save;
 var
-  IniFile:    TIniFile;
+  IniFile: TIniFile;
 begin
   if (FileExists(Filename) and FileIsReadOnly(Filename)) then
   begin
@@ -859,7 +860,7 @@ begin
 
   // Song Preview
   IniFile.WriteString('Sound', 'PreviewVolume', IPreviewVolume[PreviewVolume]);
-    
+
   // PreviewFading
   IniFile.WriteString('Sound', 'PreviewFading', IPreviewFading[PreviewFading]);
 

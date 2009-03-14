@@ -47,19 +47,21 @@ type
    * (Note for non-Maccies: "folder" is the Mac name for directory.)
    *
    * Note on the resource folders:
-   *  1. Installation of an application on the mac works as follows: Extract and copy an application
-   *     and if you don't like or need the application anymore you move the folder
-   *     to the trash - and you're done.
-   *  2. The use folders in the user's home directory is against Apple's guidelines
-   *     and strange to an average user.
+   *  1. Installation of an application on the mac works as follows: Extract and
+   *     copy an application and if you don't like or need the application
+   *     anymore you move the folder to the trash - and you're done.
+   *  2. The use of folders in the user's home directory is against Apple's
+   *     guidelines and strange to an average user.
    *  3. Even worse is using /usr/local/... since all lowercase folders in / are
-   *     not visible to an average user in the Finder, at least not without some "tricks".
+   *     not visible to an average user in the Finder, at least not without some
+   *     "tricks".
    *
-   * The best way would be to store everything within the application bundle. However, this
-   * requires USDX to offer the handling of the resources. Until this is implemented, the
-   * second best solution is as follows:
+   * The best way would be to store everything within the application bundle.
+   * However, this requires USDX to offer the handling of the resources. Until
+   * this is implemented, the second best solution is as follows:
    *
-   * According to Aple guidelines handling of resources and folders should follow these lines:
+   * According to Aple guidelines handling of resources and folders should follow
+   * these lines:
    *
    * Acceptable places for files are folders named UltraStarDeluxe either in
    *   /Library/Application Support/
@@ -68,19 +70,19 @@ type
    *
    * So
    * GetGameSharedPath could return
-   *   /Library/Application Support/UltraStarDeluxe/Resources/.
+   *   /Library/Application Support/UltraStarDeluxe/.
    * GetGameUserPath could return
-   *   ~/Library/Application Support/UltraStarDeluxe/Resources/.
+   *   ~/Library/Application Support/UltraStarDeluxe/.
    *
-   * Right now, only $HOME/Library/Application Support/UltraStarDeluxe/Resources
+   * Right now, only $HOME/Library/Application Support/UltraStarDeluxe
    * is used. So every user needs the complete set of files and folders.
    * Future versions may also use shared resources in
-   * /Library/Application Support/UltraStarDeluxe/Resources. However, this is not
-   * treated yet in the code outside this unit.
+   * /Library/Application Support/UltraStarDeluxe. However, this is
+   * not treated yet in the code outside this unit.
    *
    * USDX checks, whether GetGameUserPath exists. If not, USDX creates it.
    * The existence of needed files is then checked and if a file is missing
-   * it is copied to there from within the Resources folder in the Application
+   * it is copied to there from within the folder Contents in the Application
    * bundle, which contains the default files. USDX should not delete files or
    * folders in Application Support/UltraStarDeluxe automatically or without
    * user confirmation.
@@ -88,13 +90,14 @@ type
   TPlatformMacOSX = class(TPlatform)
     private
       {**
-       * GetBundlePath returns the path to the application bundle UltraStarDeluxe.app.
+       * GetBundlePath returns the path to the application bundle
+       * UltraStarDeluxe.app.
        *}
       function GetBundlePath: WideString;
 
       {**
        * GetApplicationSupportPath returns the path to
-       * $HOME/Library/Application Support/UltraStarDeluxe/Resources.
+       * $HOME/Library/Application Support/UltraStarDeluxe.
        *}
       function GetApplicationSupportPath: WideString;
 
@@ -102,38 +105,38 @@ type
        * see the description of @link(Init).
        *}
       procedure CreateUserFolders();
-      
+
     public
       {**
-       * Init simply calls @link(CreateUserFolders), which in turn scans the folder
-       * UltraStarDeluxe.app/Contents/Resources for all files and folders.
-       * $HOME/Library/Application Support/UltraStarDeluxe/Resources is then checked
-       * for their presence and missing ones are copied.
+       * Init simply calls @link(CreateUserFolders), which in turn scans the
+       * folder UltraStarDeluxe.app/Contents for all files and
+       * folders. $HOME/Library/Application Support/UltraStarDeluxe
+       * is then checked for their presence and missing ones are copied.
        *}
       procedure Init; override;
 
       {**
-       * DirectoryFindFiles returns all entries of a folder with names and booleans
-       * about their type, i.e. file or directory.
+       * DirectoryFindFiles returns all entries of a folder with names and
+       * booleans about their type, i.e. file or directory.
        *}
       function  DirectoryFindFiles(Dir, Filter: WideString; ReturnAllSubDirs: boolean): TDirectoryEntryArray; override;
 
       {**
        * GetLogPath returns the path for log messages. Currently it is set to
-       * $HOME/Library/Application Support/UltraStarDeluxe/Resources/Log.
+       * $HOME/Library/Application Support/UltraStarDeluxe/Log.
        *}
       function  GetLogPath        : WideString; override;
 
       {**
-       * GetGameSharedPath returns the path for shared resources. Currently it is set to
-       * /Library/Application Support/UltraStarDeluxe/Resources.
+       * GetGameSharedPath returns the path for shared resources. Currently it
+       * is set to /Library/Application Support/UltraStarDeluxe.
        * However it is not used.
        *}
       function  GetGameSharedPath : WideString; override;
 
       {**
-       * GetGameUserPath returns the path for user resources. Currently it is set to
-       * $HOME/Library/Application Support/UltraStarDeluxe/Resources.
+       * GetGameUserPath returns the path for user resources. Currently it is
+       * set to $HOME/Library/Application Support/UltraStarDeluxe.
        * This is where a user can add songs, themes, ....
        *}
       function  GetGameUserPath   : WideString; override;
@@ -151,6 +154,9 @@ begin
 end;
 
 procedure TPlatformMacOSX.CreateUserFolders();
+const
+  // used to construct the @link(UserPathName)
+  PathName: string = '/Library/Application Support/UltraStarDeluxe';
 var
   RelativePath: string;
   // BaseDir contains the path to the folder, where a search is performed.
@@ -169,22 +175,23 @@ var
   // searched for additional files and folders.
   DirectoryIsFinished: longint;
   Counter: longint;
+  // These three are for creating directories, due to possible symlinks
+  CreatedDirectory: boolean;
+  FileAttrs:        integer;
+  DirectoryPath:    string;
 
-  UserPathName: string;
-const
-  // used to construct the @link(UserPathName)
-  PathName: string = '/Library/Application Support/UltraStarDeluxe/Resources';
+  UserPathName:     string;
 begin
   // Get the current folder and save it in OldBaseDir for returning to it, when
   // finished.
   GetDir(0, OldBaseDir);
 
-  // UltraStarDeluxe.app/Contents/Resources contains all the default files and
+  // UltraStarDeluxe.app/Contents contains all the default files and
   // folders.
-  BaseDir := OldBaseDir + '/UltraStarDeluxe.app/Contents/Resources';
+  BaseDir := OldBaseDir + '/UltraStarDeluxe.app/Contents';
   ChDir(BaseDir);
 
-  // Right now, only $HOME/Library/Application Support/UltraStarDeluxe/Resources
+  // Right now, only $HOME/Library/Application Support/UltraStarDeluxe
   // is used.
   UserPathName := GetEnvironmentVariable('HOME') + PathName;
 
@@ -192,7 +199,7 @@ begin
   DirectoryList := TStringList.Create();
   FileList := TStringList.Create();
   DirectoryList.Add('.');
-  
+
   // create the folder and file lists
   repeat
 
@@ -203,7 +210,7 @@ begin
       repeat
         if DirectoryExists(SearchInfo.Name) then
         begin
-          if (SearchInfo.Name <> '.') and (SearchInfo.Name <> '..')  then
+          if (SearchInfo.Name <> '.') and (SearchInfo.Name <> '..') then
             DirectoryList.Add(RelativePath + '/' + SearchInfo.Name);
         end
         else
@@ -218,7 +225,12 @@ begin
   ForceDirectories(UserPathName);        // should not be necessary since (UserPathName+'/.') is created.
   for Counter := 0 to DirectoryList.Count-1 do
   begin
-    if not ForceDirectories(UserPathName + '/' + DirectoryList[Counter]) then
+    DirectoryPath    := UserPathName + '/' + DirectoryList[Counter];
+    CreatedDirectory := ForceDirectories(DirectoryPath);
+    FileAttrs        := FileGetAttr(DirectoryPath);
+    // Don't know how to analyse the target of the link.
+    // Let's assume the symlink is pointing to an existing directory.
+    if (not CreatedDirectory) and (FileAttrs and faSymLink > 0) then
       Log.LogError('Failed to create the folder "'+ UserPathName + '/' + DirectoryList[Counter] +'"',
                    'TPlatformMacOSX.CreateUserFolders');
   end;
@@ -241,8 +253,7 @@ var
   i, pos : integer;
 begin
   // Mac applications are packaged in folders.
-  // We have to cut the last two folders
-  // to get the application folder.
+  // Cutting the last two folders yields the application folder.
 
   Result := GetExecutionDir();
   for i := 1 to 2 do
@@ -257,7 +268,7 @@ end;
 
 function TPlatformMacOSX.GetApplicationSupportPath: WideString;
 const
-  PathName : string = '/Library/Application Support/UltraStarDeluxe/Resources';
+  PathName : string = '/Library/Application Support/UltraStarDeluxe';
 begin
   Result := GetEnvironmentVariable('HOME') + PathName + '/';
 end;
@@ -287,7 +298,7 @@ begin
   i := 0;
   Filter := LowerCase(Filter);
 
-  TheDir := FPOpenDir(Dir);     
+  TheDir := FPOpenDir(Dir);
   if Assigned(TheDir) then
     repeat
       ADirent := FPReadDir(TheDir);

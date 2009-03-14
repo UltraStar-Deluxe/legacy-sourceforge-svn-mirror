@@ -280,11 +280,12 @@ function LoadingThreadFunction: integer;
 implementation
 
 uses
+  Classes,
   UMain,
   UIni,
   UDisplay,
   UCommandLine,
-  Classes;
+  UPath;
 
 procedure LoadFontTextures;
 begin
@@ -294,17 +295,19 @@ end;
 
 procedure LoadTextures;
 
-
 var
-  P:        integer;
-  R, G, B:  real;
-  Col:      integer;
+  P:       integer;
+  R, G, B: real;
+  Col:     integer;
 begin
   Log.LogStatus('Loading Textures', 'LoadTextures');
-  
-  Tex_Left[0]  := Texture.LoadTexture(Skin.GetTextureFileName('GrayLeft'),  TEXTURE_TYPE_TRANSPARENT, 0);     //brauch man die noch?
-  Tex_Mid[0]   := Texture.LoadTexture(Skin.GetTextureFileName('GrayMid'),   TEXTURE_TYPE_PLAIN, 0);           //brauch man die noch?
-  Tex_Right[0] := Texture.LoadTexture(Skin.GetTextureFileName('GrayRight'), TEXTURE_TYPE_TRANSPARENT, 0);     //brauch man die noch?
+
+  // FIXME: do we need this? (REMOVE otherwise)
+  Tex_Left[0]  := Texture.LoadTexture(Skin.GetTextureFileName('GrayLeft'),  TEXTURE_TYPE_TRANSPARENT, 0);
+  // FIXME: do we need this? (REMOVE otherwise)
+  Tex_Mid[0]   := Texture.LoadTexture(Skin.GetTextureFileName('GrayMid'),   TEXTURE_TYPE_PLAIN, 0);
+  // FIXME: do we need this? (REMOVE otherwise)
+  Tex_Right[0] := Texture.LoadTexture(Skin.GetTextureFileName('GrayRight'), TEXTURE_TYPE_TRANSPARENT, 0);
 
   Log.LogStatus('Loading Textures - A', 'LoadTextures');
   

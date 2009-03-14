@@ -1,11 +1,16 @@
 library TeamDuell ;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
-  ModiSDK in '..\SDK\ModiSDK.pas',
-  StrUtils in '..\SDK\StrUtils.pas',
-  sysutils,
-  OpenGL12,
-  Windows;
+  ModiSDK      in '..\SDK\ModiSDK.pas',
+  StrUtils     in '..\SDK\StrUtils.pas',
+  sdl          in '..\..\src\lib\JEDI-SDL\SDL\Pas\sdl.pas',
+  moduleloader in '..\..\src\lib\JEDI-SDL\SDL\Pas\moduleloader.pas',
+  gl           in '..\..\src\lib\JEDI-SDL\OpenGL\Pas\gl.pas',
+  sysutils;
 
 var
  TeamPlayer: array of array of String;
@@ -80,12 +85,11 @@ begin
         until NOT(NextSinger[I] = CurSinger[I]) OR (SPT[I] = 1) ;
     end;
   ChangeOnSentence := 8;
-  starttick := GetTickCount;
+  starttick := SDL_GetTicks();
   firsttime := true;
   secondtime := true;
   bps := 1;
   MethodRec := Methods;
-  LoadOpenGL;
   Result := True;
 end;
 
@@ -100,23 +104,23 @@ begin
   If (CurSentence = ChangeOnSentence - 7) AND (firsttime) then
   begin
     firsttime := false;
-    starttick := GetTickCount;
+    starttick := SDL_GetTicks();
   end;
   start := false;
   // show first singers for 5sec
-  if  (CurSentence < 1) AND ((starttick + 5000) > GetTickCount) then begin start := true; end;
+  if  (CurSentence < 1) AND ((starttick + 5000) > SDL_GetTicks()) then begin start := true; end;
 
   // TickCount(thirdSentence)
   If (CurSentence = 3) AND (secondtime) then
   begin
     secondtime := false;
     firsttime := true;
-    endtick := GetTickCount;
+    endtick := SDL_GetTicks();
     bps :=  (Startpoints[3]-Startpoints[1]) * 1000 / (endtick-starttick); // BeatsPerSecond
   end;
 
   // Time to next Change
-  RTtoNextChange := ((Startpoints[ChangeOnSentence]-Startpoints[ChangeOnSentence - 7]) / bps) - ((GetTickCount - starttick) / 1000);
+  RTtoNextChange := ((Startpoints[ChangeOnSentence]-Startpoints[ChangeOnSentence - 7]) / bps) - ((SDL_GetTicks() - starttick) / 1000);
   TtoNextChange := Trunc(RTtoNextChange) +1;
 
   // Next Singer for Team I
@@ -176,11 +180,11 @@ begin
   // Names, Timer
   if (TtoNextChange <= 9) Then begin display := PChar(TeamPlayer[I,NextSinger[I]]);
     glColor4f (0.8, 0.1, 0.2, 1);
-    MethodRec.Print (1, 6, PlayerInfo.Playerinfo[I].PosX+85, PlayerInfo.Playerinfo[I].PosY+10, CreateStr(PChar(IntToStr(Trunc(TtoNextChange)))));
+    MethodRec.Print (1, 18, PlayerInfo.Playerinfo[I].PosX+85, PlayerInfo.Playerinfo[I].PosY+10, CreateStr(PChar(IntToStr(Trunc(TtoNextChange)))));
   end;
   glColor4f (0.8, 0.8, 0.8, 1);
   if (CurSentence = 0) then display := PChar(TeamPlayer[I,CurSinger[I]]);
-  if (TtoNextChange <= 11) OR (start) Then MethodRec.Print (1, 6, PlayerInfo.Playerinfo[I].PosX+5, PlayerInfo.Playerinfo[I].PosY+10, display);
+  if (TtoNextChange <= 11) OR (start) Then MethodRec.Print (1, 18, PlayerInfo.Playerinfo[I].PosX+5, PlayerInfo.Playerinfo[I].PosY+10, display);
   end;
   if (CurSentence = ChangeOnSentence) then  begin ChangeOnSentence := CurSentence + 7; firsttime := true; end;
 Result := True;
