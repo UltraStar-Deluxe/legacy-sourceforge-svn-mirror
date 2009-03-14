@@ -34,11 +34,11 @@ interface
 {$I switches.inc}
 
 uses
-  SysUtils
 {$IFDEF MSWINDOWS}
-  , Windows
+  Windows,
 {$ENDIF}
-  ;
+  SysUtils;
+  
 (*
  * Character classes
  *)
@@ -58,6 +58,19 @@ function IsPunctuationChar(ch: UCS4Char): boolean; overload;
 function IsControlChar(ch: WideChar): boolean; overload;
 function IsControlChar(ch: UCS4Char): boolean; overload;
 
+{**
+ * Checks if the given string is a valid UTF-8 string.
+ * If an ANSI encoded string (with char codes >= 128) is passed, the
+ * function will most probably return false, as most ANSI strings sequences
+ * are illegal in UTF-8.
+ *}
+function IsUTF8String(const str: AnsiString): boolean;
+
+{**
+ * Checks if the string is composed of ASCII characters.
+ *}
+function IsASCIIString(const str: AnsiString): boolean;
+
 {*
  * String format conversion
  *}
@@ -70,6 +83,12 @@ function UCS4ToUTF8String(ch: UCS4Char): UTF8String; overload;
  * Returns the number of characters (not bytes) in string str.
  *}
 function LengthUTF8(const str: UTF8String): integer;
+
+{**
+ * Returns the length of an UCS4String. Note that Length(UCS4String) returns
+ * the length+1 as UCS4Strings are zero-terminated.
+ *}
+function LengthUCS4(const str: UCS4String): integer;
 
 function UTF8CompareStr(const S1, S2: UTF8String): integer;
 function UTF8CompareText(const S1, S2: UTF8String): integer;
@@ -93,12 +112,19 @@ function UCS4UpperCase(ch: UCS4Char): UCS4Char; overload;
 function UCS4UpperCase(const str: UCS4String): UCS4String; overload;
 
 {**
- *
+ * Converts a UCS4Char to an UCS4String.
+ * Note that UCS4Strings are zero-terminated dynamic arrays.
  *}
 function UCS4CharToString(ch: UCS4Char): UCS4String;
 
-(*
+{**
+ * Copies a segment of str starting with Index with Count characters.
+ * Note: Do not use Copy() to copy UCS4Strings as the result will not contain
+ * a trailing #0 character and hence is invalid.  
+ *}
+function UCS4Copy(const str: UCS4String; Index: Integer = 0; Count: Integer = -1): UCS4String;
 
+(*
  * Converts a WideString to its upper-case representation.
  * Wrapper for WideUpperCase. Needed because some plattforms have problems with
  * unicode support.
@@ -199,6 +225,78 @@ begin
   Result := IsControlChar(WideChar(Ord(ch)));
 end;
 
+
+function IsUTF8String(const str: AnsiString): boolean;
+
+  // find the most significant zero bit (Result: [7..-1])
+  function FindZeroMSB(b: byte): integer;
+  var
+    Mask: byte;
+  begin
+    Mask := $80;
+    Result := 7;
+    while (b and Mask <> 0) do
+    begin
+      Mask := Mask shr 1;
+      Dec(Result);
+    end;
+  end;
+
+var
+  I: integer;
+  ZeroBit: integer;
+  SeqCount: integer; // number of trailing bytes to follow
+begin
+  Result := false;
+  SeqCount := 0;
+
+  for I := 1 to Length(str) do
+  begin
+    if (str[I] >= #128) then
+    begin
+      ZeroBit := FindZeroMSB(Ord(str[I]));
+      // trailing byte expected
+      if (SeqCount > 0) then
+      begin
+        // check if trailing byte has pattern 10xxxxxx
+        if (ZeroBit <> 6) then
+          Exit;
+        Dec(SeqCount);
+      end
+      else // leading byte expected
+      begin
+        // check if pattern is one of 110xxxxx/1110xxxx/11110xxx
+        if (ZeroBit > 5) or (ZeroBit < 3) then
+          Exit;
+        // calculate number of trailing bytes (1, 2 or 3)
+        SeqCount := 6 - ZeroBit;
+      end;
+    end;
+  end;
+
+  // trailing bytes missing?
+  if (SeqCount > 0) then
+    Exit;
+
+  Result := true;
+end;
+
+function IsASCIIString(const str: AnsiString): boolean;
+var
+  I: integer;
+begin
+  for I := 1 to Length(str) do
+  begin
+    if (str[I] >= #128) then
+    begin
+      Result := false;
+      Exit;
+    end;
+  end;    
+  Result := true;
+end;
+
+
 function UTF8ToUCS4String(const str: UTF8String): UCS4String;
 begin
   Result := WideStringToUCS4String(UTF8Decode(str));
@@ -217,6 +315,11 @@ end;
 function LengthUTF8(const str: UTF8String): integer;
 begin
   Result := Length(UTF8ToUCS4String(str));
+end;
+
+function LengthUCS4(const str: UCS4String): integer;
+begin
+  Result := High(str);
 end;
 
 function UTF8CompareStr(const S1, S2: UTF8String): integer;
@@ -282,6 +385,26 @@ begin
   SetLength(Result, 2);
   Result[0] := ch;
   Result[1] := 0;
+end;
+
+function UCS4Copy(const str: UCS4String; Index: Integer; Count: Integer): UCS4String;
+var
+  I: integer;
+  MaxCount: integer;
+begin
+  // calculate max. copy count
+  MaxCount := LengthUCS4(str)-Index;
+  if (MaxCount < 0) then
+    MaxCount := 0;
+  // adjust copy count
+  if (Count > MaxCount) or (Count < 0) then
+    Count := MaxCount;
+
+  // copy (and add zero terminator)
+  SetLength(Result, Count + 1);
+  for I := 0 to Count-1 do
+    Result[I] := str[Index+I];
+  Result[Count] := 0;
 end;
 
 function WideStringUpperCase(ch: WideChar): WideString;
