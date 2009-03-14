@@ -147,6 +147,10 @@
     {$define DELPHI_1}
   {$endif}
 
+  {$ifdef FPC}
+    {.$define DELPHI}
+  {$endif}
+    
   {$ifdef DELPHI_2}
     {$define DELPHI_2_UP}
   {$endif}
@@ -350,7 +354,25 @@
 {$ENDIF}
 
 {$IFDEF COMPILER_7_UP}
+{$IFDEF FPC}
+  {$DEFINE UNSAFE_WARNINGS_OFF}
+{$ENDIF}
+{$ENDIF}
+
+{$IFDEF UNSAFE_WARNINGS_OFF}
 {$WARN UNSAFE_CODE OFF} { We are not going to be "safe"! }
 {$WARN UNSAFE_TYPE OFF}
 {$WARN UNSAFE_CAST OFF}
 {$ENDIF}
+
+{$IFDEF FPC}
+{$HINTS OFF}
+{$ENDIF}
+
+{$IFNDEF FPC}
+  // Delphi system function overrides might (not tested) cause problems on
+  // CPUs with code protection (NX-bit). So disable by default. 
+  {.$DEFINE USE_SYSTEM_OVERRIDES}
+{$ENDIF}
+
+

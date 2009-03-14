@@ -11,6 +11,10 @@
 
 unit TntSystem;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$INCLUDE TntCompilers.inc}
 
 {*****************************************************************************}
@@ -38,8 +42,10 @@ uses
 {TNT-WARN CP_ACP} // <-- use DefaultSystemCodePage
 function DefaultSystemCodePage: Cardinal; // implicitly used when converting AnsiString <--> WideString.
 
+{$IFNDEF FPC}
 var
   WideCustomLoadResString: function(ResStringRec: PResStringRec; var Value: WideString): Boolean;
+{$ENDIF}
 
 {TNT-WARN LoadResString}
 function WideLoadResString(ResStringRec: PResStringRec): WideString;
@@ -76,6 +82,8 @@ function KeyUnicode(CharCode: Word): WideChar;
 
 procedure StrSwapByteOrder(Str: PWideChar);
 
+{$IFDEF USE_SYSTEM_OVERRIDES}
+
 type
   TTntSystemUpdate =
     (tsWideResourceStrings
@@ -87,6 +95,8 @@ const
   AllTntSystemUpdates = [Low(TTntSystemUpdate)..High(TTntSystemUpdate)];
 
 procedure InstallTntSystemUpdates(Updates: TTntSystemUpdateSet = AllTntSystemUpdates);
+
+{$ENDIF USE_SYSTEM_OVERRIDES}
 
 implementation
 
@@ -101,15 +111,33 @@ begin
   Result := GDefaultSystemCodePage;
 end;
 
+{$IFDEF USE_SYSTEM_OVERRIDES}
 var
   IsDebugging: Boolean;
+{$ENDIF USE_SYSTEM_OVERRIDES}
+
+function WideLoadResStringDetect(ResStringRec: PResStringRec): WideString;
+var
+  PCustom: PAnsiChar;
+begin
+  // custom string pointer
+  PCustom := PAnsiChar(ResStringRec); { I would like to use PWideChar, but this would break legacy code. }
+  if  (StrLen{TNT-ALLOW StrLen}(PCustom) > Cardinal(Length(UTF8_BOM)))
+  and CompareMem(PCustom, PAnsiChar(UTF8_BOM), Length(UTF8_BOM)) then
+    // detected UTF8
+    Result := UTF8ToWideString(PAnsiChar(PCustom + Length(UTF8_BOM)))
+  else
+    // normal
+    Result := PCustom;
+end;
+
+{$IFNDEF FPC}
 
 function WideLoadResString(ResStringRec: PResStringRec): WideString;
 const
   MAX_RES_STRING_SIZE = 4097; { MSDN documents this as the maximum size of a string in table. }
 var
   Buffer: array [0..MAX_RES_STRING_SIZE] of WideChar; { Buffer leaves room for null terminator. }
-  PCustom: PAnsiChar;
 begin
   if Assigned(WideCustomLoadResString) and WideCustomLoadResString(ResStringRec, Result) then
     exit; { a custom resourcestring has been loaded. }
@@ -121,17 +149,18 @@ begin
       Tnt_LoadStringW(FindResourceHInstance(ResStringRec.Module^),
         ResStringRec.Identifier, Buffer, MAX_RES_STRING_SIZE))
   else begin
-    // custom string pointer
-    PCustom := PAnsiChar(ResStringRec.Identifier); { I would like to use PWideChar, but this would break legacy code. }
-    if  (StrLen{TNT-ALLOW StrLen}(PCustom) > Cardinal(Length(UTF8_BOM)))
-    and CompareMem(PCustom, PAnsiChar(UTF8_BOM), Length(UTF8_BOM)) then
-      // detected UTF8
-      Result := UTF8ToWideString(PAnsiChar(PCustom + Length(UTF8_BOM)))
-    else
-      // normal
-      Result := PCustom;
+    Result := WideLoadResStringDetect(ResStringRec);
   end;
 end;
+
+{$ELSE}
+
+function WideLoadResString(ResStringRec: PResStringRec): WideString;
+begin
+  Result := WideLoadResStringDetect(ResStringRec);
+end;
+
+{$ENDIF}
 
 function WideGetParamStr(P: PWideChar; var Param: WideString): PWideChar;
 var
@@ -806,6 +835,8 @@ begin
   end;
 end;
 
+{$IFDEF USE_SYSTEM_OVERRIDES}
+
 //--------------------------------------------------------------------
 //                LoadResString()
 //
@@ -1359,8 +1390,16 @@ begin
   {$ENDIF}
 end;
 
+{$ENDIF USE_SYSTEM_OVERRIDES}
+
 initialization
   {$IFDEF COMPILER_9_UP}
+    {$DEFINE USE_GETACP}
+  {$ENDIF}
+  {$IFDEF FPC}
+    {$DEFINE USE_GETACP}
+  {$ENDIF}
+  {$IFDEF USE_GETACP}
   GDefaultSystemCodePage := GetACP;
   {$ELSE}
     {$IFDEF COMPILER_7_UP}
@@ -1372,13 +1411,17 @@ initialization
     GDefaultSystemCodePage := CP_ACP{TNT-ALLOW CP_ACP};
     {$ENDIF}
   {$ENDIF}
+  {$IFDEF USE_SYSTEM_OVERRIDES}
   {$IFNDEF COMPILER_9_UP}
   StartupDefaultUserCodePage := DefaultSystemCodePage;
   {$ENDIF}
   IsDebugging := DebugHook > 0;
+  {$ENDIF USE_SYSTEM_OVERRIDES}
 
 finalization
+  {$IFDEF USE_SYSTEM_OVERRIDES}
   UninstallSystemOverrides;
   FreeTntSystemThreadVars; { Make MemorySleuth happy. }
+  {$ENDIF USE_SYSTEM_OVERRIDES}
 
 end.

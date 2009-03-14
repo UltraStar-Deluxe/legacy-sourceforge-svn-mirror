@@ -11,6 +11,10 @@
 
 unit TntWideStrings;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$INCLUDE TntCompilers.inc}
 
 interface
@@ -54,6 +58,17 @@ type
     property Current: WideString read GetCurrent;
   end;
 
+{$IFDEF FPC}
+  TStringsDefined = set of (
+    sdDelimiter, sdQuoteChar, sdNameValueSeparator, sdLineBreak,
+    sdStrictDelimiter);
+{$ENDIF}
+
+{$DEFINE NAMEVALUESEPARATOR_RW}
+{$IFNDEF COMPILER_7_UP}
+  {$UNDEF NAMEVALUESEPARATOR_RW}
+{$ENDIF}
+
 { TWideStrings class }
 
   TWideStrings = class(TPersistent)
@@ -61,7 +76,7 @@ type
     FDefined: TStringsDefined;
     FDelimiter: WideChar;
     FQuoteChar: WideChar;
-    {$IFDEF COMPILER_7_UP}
+    {$IFDEF NAMEVALUESEPARATOR_RW}
     FNameValueSeparator: WideChar;
     {$ENDIF}
     FUpdateCount: Integer;
@@ -81,7 +96,7 @@ type
     function GetQuoteChar: WideChar;
     procedure SetQuoteChar(const Value: WideChar);
     function GetNameValueSeparator: WideChar;
-    {$IFDEF COMPILER_7_UP}
+    {$IFDEF NAMEVALUESEPARATOR_RW}
     procedure SetNameValueSeparator(const Value: WideChar);
     {$ENDIF}
     function GetValueFromIndex(Index: Integer): WideString;
@@ -142,7 +157,7 @@ type
     property QuoteChar: WideChar read GetQuoteChar write SetQuoteChar;
     property Values[const Name: WideString]: WideString read GetValue write SetValue;
     property ValueFromIndex[Index: Integer]: WideString read GetValueFromIndex write SetValueFromIndex;
-    property NameValueSeparator: WideChar read GetNameValueSeparator {$IFDEF COMPILER_7_UP} write SetNameValueSeparator {$ENDIF};
+    property NameValueSeparator: WideChar read GetNameValueSeparator {$IFDEF NAMEVALUESEPARATOR_RW} write SetNameValueSeparator {$ENDIF};
     property Strings[Index: Integer]: WideString read Get write Put; default;
     property Text: WideString read GetTextStr write SetTextStr;
     property StringsAdapter: IWideStringsAdapter read FAdapter write SetStringsAdapter;
@@ -243,7 +258,7 @@ begin
     try
       Clear;
       FDefined := TWideStrings(Source).FDefined;
-      {$IFDEF COMPILER_7_UP}
+      {$IFDEF NAMEVALUESEPARATOR_RW}
       FNameValueSeparator := TWideStrings(Source).FNameValueSeparator;
       {$ENDIF}
       FQuoteChar := TWideStrings(Source).FQuoteChar;
@@ -258,7 +273,7 @@ begin
     BeginUpdate;
     try
       Clear;
-      {$IFDEF COMPILER_7_UP}
+      {$IFDEF NAMEVALUESEPARATOR_RW}
       FNameValueSeparator := WideChar(TStrings{TNT-ALLOW TStrings}(Source).NameValueSeparator);
       {$ENDIF}
       FQuoteChar := WideChar(TStrings{TNT-ALLOW TStrings}(Source).QuoteChar);
@@ -282,7 +297,7 @@ begin
     TStrings{TNT-ALLOW TStrings}(Dest).BeginUpdate;
     try
       TStrings{TNT-ALLOW TStrings}(Dest).Clear;
-      {$IFDEF COMPILER_7_UP}
+      {$IFDEF NAMEVALUESEPARATOR_RW}
       TStrings{TNT-ALLOW TStrings}(Dest).NameValueSeparator := AnsiChar(NameValueSeparator);
       {$ENDIF}
       TStrings{TNT-ALLOW TStrings}(Dest).QuoteChar := AnsiChar(QuoteChar);
@@ -790,7 +805,7 @@ end;
 
 function TWideStrings.GetNameValueSeparator: WideChar;
 begin
-  {$IFDEF COMPILER_7_UP}
+  {$IFDEF NAMEVALUESEPARATOR_RW}
   if not (sdNameValueSeparator in FDefined) then
     NameValueSeparator := '=';
   Result := FNameValueSeparator;
@@ -799,7 +814,7 @@ begin
   {$ENDIF}
 end;
 
-{$IFDEF COMPILER_7_UP}
+{$IFDEF NAMEVALUESEPARATOR_RW}
 procedure TWideStrings.SetNameValueSeparator(const Value: WideChar);
 begin
   if (FNameValueSeparator <> Value) or not (sdNameValueSeparator in FDefined) then

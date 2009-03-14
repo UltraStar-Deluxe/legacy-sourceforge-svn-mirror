@@ -11,6 +11,10 @@
 
 unit TntClasses;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$INCLUDE TntCompilers.inc}
 
 interface
@@ -502,7 +506,11 @@ var
 begin
   Temp := WideChar(GetOrdProp(FInstance, FPropInfo));
 
+  {$IFNDEF FPC}
   TAccessWriter(Writer).WriteValue(vaWString);
+  {$ELSE}
+  TAccessWriter(Writer).Write(vaWString, SizeOf(vaWString));
+  {$ENDIF}
   L := Length(Temp);
   Writer.Write(L, SizeOf(Integer));
   Writer.Write(Pointer(@Temp[1])^, L * 2);
@@ -592,10 +600,17 @@ end;
 
 { TTntFileStream }
 
+{$IFDEF FPC}
+  {$DEFINE HAS_SFCREATEERROREX}
+{$ENDIF}
+{$IFDEF DELPHI_7_UP}
+  {$DEFINE HAS_SFCREATEERROREX}
+{$ENDIF}
+
 constructor TTntFileStream.Create(const FileName: WideString; Mode: Word);
 var
   CreateHandle: Integer;
-  {$IFDEF DELPHI_7_UP}
+  {$IFDEF HAS_SFCREATEERROREX}
   ErrorMessage: WideString;
   {$ENDIF}
 begin
@@ -603,7 +618,7 @@ begin
   begin
     CreateHandle := WideFileCreate(FileName);
     if CreateHandle < 0 then begin
-      {$IFDEF DELPHI_7_UP}
+      {$IFDEF HAS_SFCREATEERROREX}
       ErrorMessage := WideSysErrorMessage(GetLastError);
       raise EFCreateError.CreateFmt(SFCreateErrorEx, [WideExpandFileName(FileName), ErrorMessage]);
       {$ELSE}
@@ -614,7 +629,7 @@ begin
   begin
     CreateHandle := WideFileOpen(FileName, Mode);
     if CreateHandle < 0 then begin
-      {$IFDEF DELPHI_7_UP}
+      {$IFDEF HAS_SFCREATEERROREX}
       ErrorMessage := WideSysErrorMessage(GetLastError);
       raise EFOpenError.CreateFmt(SFOpenErrorEx, [WideExpandFileName(FileName), ErrorMessage]);
       {$ELSE}
@@ -752,11 +767,15 @@ end;
 procedure TAnsiStrings{TNT-ALLOW TAnsiStrings}.SaveToFileEx(const FileName: WideString; CodePage: Cardinal);
 var
   Stream: TStream;
+  Utf8BomPtr: PAnsiChar;
 begin
   Stream := TTntFileStream.Create(FileName, fmCreate);
   try
     if (CodePage = CP_UTF8) then
-      Stream.WriteBuffer(PAnsiChar(UTF8_BOM)^, Length(UTF8_BOM));
+    begin
+      Utf8BomPtr := PAnsiChar(UTF8_BOM);
+      Stream.WriteBuffer(Utf8BomPtr^, Length(UTF8_BOM));
+    end;
     SaveToStreamEx(Stream, CodePage);
   finally
     Stream.Free;
@@ -1721,9 +1740,9 @@ end;
 
 function CompareComponentHelperToTarget(Item, Target: Pointer): Integer;
 begin
-  if Integer(TWideComponentHelper(Item).FComponent) < Integer(Target) then
+  if PtrUInt(TWideComponentHelper(Item).FComponent) < PtrUInt(Target) then
     Result := -1
-  else if Integer(TWideComponentHelper(Item).FComponent) > Integer(Target) then
+  else if PtrUInt(TWideComponentHelper(Item).FComponent) > PtrUInt(Target) then
     Result := 1
   else
     Result := 0;

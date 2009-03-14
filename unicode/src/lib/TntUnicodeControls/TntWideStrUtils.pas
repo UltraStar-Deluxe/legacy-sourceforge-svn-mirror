@@ -11,6 +11,10 @@
 
 unit TntWideStrUtils;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$INCLUDE TntCompilers.inc}
 
 interface

@@ -11,6 +11,10 @@
 
 unit TntWindows;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$INCLUDE TntCompilers.inc}
 
 interface
@@ -107,6 +111,10 @@ const
 //------------------------------------------------------------------------------------------
 {$IFNDEF COMPILER_9_UP}
 type
+  {$IFDEF FPC}
+  TStartupInfoA = STARTUPINFO;
+  TStartupInfoW = STARTUPINFO;
+  {$ELSE}
   TStartupInfoA = _STARTUPINFOA;
   TStartupInfoW = record
     cb: DWORD;
@@ -128,6 +136,7 @@ type
     hStdOutput: THandle;
     hStdError: THandle;
   end;
+  {$ENDIF}
 
 function CreateProcessW{TNT-ALLOW CreateProcessW}(lpApplicationName: PWideChar; lpCommandLine: PWideChar;
   lpProcessAttributes, lpThreadAttributes: PSecurityAttributes;
@@ -136,6 +145,15 @@ function CreateProcessW{TNT-ALLOW CreateProcessW}(lpApplicationName: PWideChar; 
   var lpProcessInformation: TProcessInformation): BOOL; stdcall; external kernel32 name 'CreateProcessW';
 
 {$ENDIF}
+
+{$IFDEF FPC}
+type
+  TCurrencyFmtA = CURRENCYFMT;
+  TCurrencyFmtW = CURRENCYFMT;
+  PCurrencyFmtA = ^TCurrencyFmtA;
+  PCurrencyFmtW = ^TCurrencyFmtW;
+{$ENDIF}
+
 //------------------------------------------------------------------------------------------
 
 {TNT-WARN SetWindowText}
@@ -342,6 +360,12 @@ function Tnt_GetStringTypeExW(Locale: LCID; dwInfoType: DWORD;
 {TNT-WARN LoadStringW}
 function Tnt_LoadStringW(hInstance: HINST; uID: UINT; lpBuffer: PWideChar; nBufferMax: Integer): Integer;
 
+{$IFDEF FPC}
+type
+  TMenuItemInfoW   = TMENUITEMINFO;
+  tagMenuItemINFOW = tagMENUITEMINFO;
+{$ENDIF}
+
 {TNT-WARN InsertMenuItem}
 {TNT-WARN InsertMenuItemA}
 {TNT-WARN InsertMenuItemW}
@@ -395,6 +419,24 @@ function Tnt_VerQueryValueW(pBlock: Pointer; lpSubBlock: PWideChar;
   var lplpBuffer: Pointer; var puLen: UINT): BOOL;
 
 type
+{$IFDEF FPC}
+  PSHNAMEMAPPINGA = ^SHNAMEMAPPINGA;
+  SHNAMEMAPPINGA = record
+    pszOldPath : LPSTR;
+    pszNewPath : LPSTR;
+    cchOldPath : longint;
+    cchNewPath : longint;
+  end;
+
+  PSHNAMEMAPPINGW = ^SHNAMEMAPPINGW;
+  SHNAMEMAPPINGW = record
+    pszOldPath : LPWSTR;
+    pszNewPath : LPWSTR;
+    cchOldPath : longint;
+    cchNewPath : longint;
+  end;
+{$ENDIF}
+
   TSHNameMappingHeaderA = record
    cNumOfMappings: Cardinal;
    lpNM: PSHNAMEMAPPINGA;
@@ -474,7 +516,7 @@ end;
 procedure _MakeWideWin32FindData(var WideFindData: TWIN32FindDataW; AnsiFindData: TWIN32FindDataA);
 begin
   CopyMemory(@WideFindData, @AnsiFindData,
-    Integer(@WideFindData.cFileName) - Integer(@WideFindData));
+    PtrUInt(@WideFindData.cFileName) - PtrUInt(@WideFindData));
   WStrPCopy(WideFindData.cFileName, AnsiFindData.cFileName);
   WStrPCopy(WideFindData.cAlternateFileName, AnsiFindData.cAlternateFileName);
 end;
@@ -966,7 +1008,9 @@ var
   AnsiBuff: AnsiString;
 begin
   if Win32PlatformIsUnicode then
-    Result := GetCurrencyFormatW{TNT-ALLOW GetCurrencyFormatW}(Locale, dwFlags, lpValue, lpFormat, lpCurrencyStr, cchCurrency)
+    Result := GetCurrencyFormatW{TNT-ALLOW GetCurrencyFormatW}(Locale, dwFlags, lpValue,
+        {$IFNDEF FPC} lpFormat {$ELSE} PCurrencyFmt(lpFormat) {$ENDIF},
+        lpCurrencyStr, cchCurrency)
   else begin
     if lpFormat = nil then
       PAnsiFormat := nil
@@ -1175,10 +1219,12 @@ end;
 function Tnt_InsertMenuItemW(hMenu: HMENU; uItem: DWORD; fByPosition: BOOL; lpmii: TMenuItemInfoW): BOOL;
 begin
   if Win32PlatformIsUnicode then
-    Result := InsertMenuItemW{TNT-ALLOW InsertMenuItemW}(hMenu, uItem, fByPosition, lpmii)
+    Result := InsertMenuItemW{TNT-ALLOW InsertMenuItemW}(hMenu, uItem, fByPosition,
+        {$IFDEF FPC}@{$ENDIF}lpmii)
   else begin
     TMenuItemInfoA(lpmii).dwTypeData := PAnsiChar(AnsiString(lpmii.dwTypeData));
-    Result := InsertMenuItemA{TNT-ALLOW InsertMenuItemA}(hMenu, uItem, fByPosition, TMenuItemInfoA(lpmii));
+    Result := InsertMenuItemA{TNT-ALLOW InsertMenuItemA}(hMenu, uItem, fByPosition,
+        {$IFDEF FPC}@{$ENDIF}TMenuItemInfoA(lpmii));
   end;
 end;
 
@@ -1197,10 +1243,11 @@ function Tnt_ExtractAssociatedIconW(hInst: HINST; lpIconPath: PWideChar;
   var lpiIcon: Word): HICON;
 begin
   if Win32PlatformIsUnicode then
-    Result := ExtractAssociatedIconW{TNT-ALLOW ExtractAssociatedIconW}(hInst, lpIconPath, lpiIcon)
+    Result := ExtractAssociatedIconW{TNT-ALLOW ExtractAssociatedIconW}(hInst,
+      lpIconPath, {$IFDEF FPC}@{$ENDIF}lpiIcon)
   else
     Result := ExtractAssociatedIconA{TNT-ALLOW ExtractAssociatedIconA}(hInst,
-      PAnsiChar(AnsiString(lpIconPath)), lpiIcon)
+      PAnsiChar(AnsiString(lpIconPath)), {$IFDEF FPC}@{$ENDIF}lpiIcon)
 end;
 
 function Tnt_GetFileVersionInfoSizeW(lptstrFilename: PWideChar; var lpdwHandle: DWORD): DWORD;
@@ -1298,7 +1345,8 @@ begin
     else
       AnsiFileOp.pTo := PAnsiChar(AnsiString(ExtractStringArrayStr(lpFileOp.pTo)));
     AnsiFileOp.lpszProgressTitle := PAnsiChar(AnsiString(lpFileOp.lpszProgressTitle));
-    Result := SHFileOperationA{TNT-ALLOW SHFileOperationA}(AnsiFileOp);
+    Result := SHFileOperationA{TNT-ALLOW SHFileOperationA}(
+        {$IFDEF FPC}@{$ENDIF}AnsiFileOp);
     // return struct results
     lpFileOp.fAnyOperationsAborted := AnsiFileOp.fAnyOperationsAborted;
     lpFileOp.hNameMappings := nil;
@@ -1364,7 +1412,8 @@ begin
     AnsiInfo.lpszTitle := PAnsiChar(AnsiString(lpbi.lpszTitle));
     if lpbi.pszDisplayName <> nil then
       AnsiInfo.pszDisplayName := AnsiBuffer;
-    Result := SHBrowseForFolderA{TNT-ALLOW SHBrowseForFolderA}(AnsiInfo);
+    Result := SHBrowseForFolderA{TNT-ALLOW SHBrowseForFolderA}(
+        {$IFDEF FPC}@{$ENDIF}AnsiInfo);
     if lpbi.pszDisplayName <> nil then
       WStrPCopy(lpbi.pszDisplayName, AnsiInfo.pszDisplayName);
     lpbi.iImage := AnsiInfo.iImage;

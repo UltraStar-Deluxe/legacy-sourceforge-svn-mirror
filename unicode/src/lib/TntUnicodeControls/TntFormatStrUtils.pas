@@ -11,6 +11,10 @@
 
 unit TntFormatStrUtils;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$INCLUDE TntCompilers.inc}
 
 interface
@@ -21,10 +25,13 @@ uses
   TntSysUtils;
 
 function GetCanonicalFormatStr(const _FormatString: WideString): WideString;
+
+{$IFNDEF FPC}
 {$IFNDEF COMPILER_9_UP}
 function ReplaceFloatingArgumentsInFormatString(const _FormatString: WideString;
   const Args: array of const
     {$IFDEF COMPILER_7_UP}; FormatSettings: PFormatSettings{$ENDIF}): WideString;
+{$ENDIF}
 {$ENDIF}
 procedure CompareFormatStrings(FormatStr1, FormatStr2: WideString);
 function FormatStringsAreCompatible(FormatStr1, FormatStr2: WideString): Boolean;
@@ -268,6 +275,7 @@ begin
   end;
 end;
 
+{$IFNDEF FPC}
 {$IFNDEF COMPILER_9_UP}
 function ReplaceFloatingArgumentsInFormatString(const _FormatString: WideString;
   const Args: array of const
@@ -317,6 +325,7 @@ begin
     Output.Free;
   end;
 end;
+{$ENDIF}
 {$ENDIF}
 
 procedure GetFormatArgs(const _FormatString: WideString; FormatArgs: TTntStrings);
@@ -376,6 +385,15 @@ begin
   end;
 end;
 
+function FormatSpecToObject(SpecType: TFormatSpecifierType): TObject;
+begin
+  {$IFNDEF FPC}
+  Result := TObject(SpecType);
+  {$ELSE}
+  Result := Pointer(SpecType);
+  {$ENDIF}
+end;
+
 procedure UpdateTypeList(FormatArgs, TypeList: TTntStrings);
 var
   i: integer;
@@ -406,13 +424,13 @@ begin
 
     if TypeList[RunningIndex] <> '' then begin
       // already exists in list, check for compatibility
-      if TypeList.Objects[RunningIndex] <> TObject(SpecType) then
+      if TypeList.Objects[RunningIndex] <> FormatSpecToObject(SpecType) then
         raise EFormatSpecError.CreateFmt(SMismatchedArgumentTypes,
           [RunningIndex, TypeList[RunningIndex], f]);
     end else begin
       // not in list so update it
       TypeList[RunningIndex] := f;
-      TypeList.Objects[RunningIndex] := TObject(SpecType);
+      TypeList.Objects[RunningIndex] := FormatSpecToObject(SpecType);
     end;
   end;
 end;

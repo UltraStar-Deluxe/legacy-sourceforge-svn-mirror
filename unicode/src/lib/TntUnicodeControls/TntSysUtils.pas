@@ -11,6 +11,10 @@
 
 unit TntSysUtils;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {$INCLUDE TntCompilers.inc}
 
 interface
@@ -19,7 +23,7 @@ interface
 { TODO: Consider: string functions from StrUtils. }
 
 uses
-  Types, SysUtils, Windows;
+  Types, SysUtils, Windows, TntWindows;
 
 //---------------------------------------------------------------------------------------------
 //                                 Tnt - Types
@@ -33,6 +37,12 @@ type
   ETntGeneralError = class(Exception);
   // Like Assert().  An error occured that should never have happened, send me a bug report now!
   ETntInternalError = class(Exception);
+
+{$IFNDEF FPC}
+type
+  PtrInt = LongInt;
+  PtrUInt = LongWord;
+{$ENDIF}
 
 //---------------------------------------------------------------------------------------------
 //                                 Tnt - SysUtils
@@ -106,6 +116,7 @@ type
 
 // ........ string functions .........
 
+{$IFNDEF FPC}
 {$IFNDEF COMPILER_9_UP}
   //
   // pre-Delphi 9 issues w/ WideFormatBuf, WideFmtStr and WideFormat
@@ -147,6 +158,7 @@ type
     const FormatSettings: TFormatSettings): WideString; overload;
   {$ENDIF}
 
+{$ENDIF}
 {$ENDIF}
 
 {TNT-WARN WideUpperCase} // SysUtils.WideUpperCase is broken on Win9x for D6, D7, D9.
@@ -241,7 +253,7 @@ function WideRenameFile(const OldName, NewName: WideString): Boolean;
 {TNT-WARN DeleteFile}
 function WideDeleteFile(const FileName: WideString): Boolean;
 {TNT-WARN CopyFile}
-function WideCopyFile(FromFile, ToFile: WideString; FailIfExists: Boolean): Boolean;
+function WideCopyFile(const FromFile, ToFile: WideString; FailIfExists: Boolean): Boolean;
 
 
 {TNT-WARN TFileName}
@@ -333,8 +345,10 @@ var
   Win32PlatformIs2003: Boolean;
   Win32PlatformIsVista: Boolean;
 
+{$IFNDEF FPC}
 {$IFNDEF COMPILER_7_UP}
 function CheckWin32Version(AMajor: Integer; AMinor: Integer = 0): Boolean;
+{$ENDIF}
 {$ENDIF}
 function WinCheckH(RetVal: Cardinal): Cardinal;
 function WinCheckFileH(RetVal: Cardinal): Cardinal;
@@ -343,7 +357,9 @@ function WinCheckP(RetVal: Pointer): Pointer;
 function WideGetModuleFileName(Instance: HModule): WideString;
 function WideSafeLoadLibrary(const Filename: Widestring;
   ErrorMode: UINT = SEM_NOOPENFILEERRORBOX): HMODULE;
+{$IFNDEF FPC}
 function WideLoadPackage(const Name: Widestring): HMODULE;
+{$ENDIF}
 
 function IsWideCharUpper(WC: WideChar): Boolean;
 function IsWideCharLower(WC: WideChar): Boolean;
@@ -385,12 +401,13 @@ implementation
 uses
   ActiveX, ComObj, SysConst,
   {$IFDEF COMPILER_9_UP} WideStrUtils, {$ENDIF} TntWideStrUtils,
-  TntSystem, TntWindows, TntFormatStrUtils;
+  TntSystem;//, TntFormatStrUtils;
 
 //---------------------------------------------------------------------------------------------
 //                                 Tnt - SysUtils
 //---------------------------------------------------------------------------------------------
 
+{$IFNDEF FPC}
 {$IFNDEF COMPILER_9_UP}
 
   function _Tnt_WideFormatBuf(var Buffer; BufLen: Cardinal; const FormatStr;
@@ -492,10 +509,16 @@ uses
   {$ENDIF}
 
 {$ENDIF}
+{$ENDIF FPC}
 
 function Tnt_WideUpperCase(const S: WideString): WideString;
 begin
+  {$IFNDEF FPC}
   {$IFNDEF COMPILER_10_UP}
+    {$DEFINE WIDEUPPERCASE_BROKEN}
+  {$ENDIF}
+  {$ENDIF}
+  {$IFDEF WIDEUPPERCASE_BROKEN}
   { SysUtils.WideUpperCase is broken for Win9x. }
   Result := S;
   if Length(Result) > 0 then
@@ -507,7 +530,12 @@ end;
 
 function Tnt_WideLowerCase(const S: WideString): WideString;
 begin
+  {$IFNDEF FPC}
   {$IFNDEF COMPILER_10_UP}
+    {$DEFINE WIDELOWERCASE_BROKEN}
+  {$ENDIF}
+  {$ENDIF}
+  {$IFDEF WIDELOWERCASE_BROKEN}
   { SysUtils.WideLowerCase is broken for Win9x. }
   Result := S;
   if Length(Result) > 0 then
@@ -1064,7 +1092,8 @@ function WideForceDirectories(Dir: WideString): Boolean;
 begin
   Result := True;
   if Length(Dir) = 0 then
-    raise ETntGeneralError.Create(SCannotCreateDir);
+    raise ETntGeneralError.Create(
+      {$IFNDEF FPC} SCannotCreateDir {$ELSE} SCannotCreateEmptyDir {$ENDIF});
   Dir := WideExcludeTrailingBackslash(Dir);
   if (Length(Dir) < 3) or WideDirectoryExists(Dir)
     or (WideExtractFilePath(Dir) = Dir) then Exit; // avoid 'xyz:\' problem.
@@ -1108,7 +1137,7 @@ begin
   Result := Tnt_DeleteFileW(PWideChar(FileName))
 end;
 
-function WideCopyFile(FromFile, ToFile: WideString; FailIfExists: Boolean): Boolean;
+function WideCopyFile(const FromFile, ToFile: WideString; FailIfExists: Boolean): Boolean;
 begin
   Result := Tnt_CopyFileW(PWideChar(FromFile), PWideChar(ToFile), FailIfExists)
 end;
@@ -1190,9 +1219,17 @@ end;
 //==  DATE/TIME STRING PARSING ================================================================
 //=============================================================================================
 
+{$IFDEF FPC}
+const
+  VAR_TIMEVALUEONLY = 1;
+  VAR_DATEVALUEONLY = 2;
+{$ENDIF}
+
 function _IntTryStrToDateTime(Str: WideString; Flags: Integer; out DateTime: TDateTime): HResult;
 begin
-  Result := VarDateFromStr(Str, GetThreadLocale, Flags, Double(DateTime));
+  Result := VarDateFromStr(
+      {$IFDEF FPC} POLECHAR(Str) {$ELSE} Str {$ENDIF},
+      GetThreadLocale, Flags, Double(DateTime));
   if (not Succeeded(Result)) then begin
     if (Flags = VAR_TIMEVALUEONLY)
     and SysUtils.TryStrToTime{TNT-ALLOW TryStrToTime}(Str, DateTime) then
@@ -1279,12 +1316,14 @@ end;
 
 function TntStrToDate(Str: WideString): TDateTime;
 begin
-  Result := _IntStrToDateTime(Str, VAR_DATEVALUEONLY, SInvalidDate);
+  Result := _IntStrToDateTime(Str, VAR_DATEVALUEONLY,
+      {$IFNDEF FPC} SInvalidDate {$ELSE} SInvalidDateTime {$ENDIF});
 end;
 
 function TntStrToTime(Str: WideString): TDateTime;
 begin
-  Result := _IntStrToDateTime(Str, VAR_TIMEVALUEONLY, SInvalidTime);
+  Result := _IntStrToDateTime(Str, VAR_TIMEVALUEONLY,
+      {$IFNDEF FPC} SInvalidTime {$ELSE} SInvalidDateTime {$ENDIF});
 end;
 
 //=============================================================================================
@@ -1312,7 +1351,9 @@ end;
 function TntStrToCurr(const S: WideString): Currency;
 begin
   try
-    OleCheck(VarCyFromStr(S, GetThreadLocale, 0, Result));
+    OleCheck(VarCyFromStr(
+        {$IFDEF FPC} POLECHAR(S) {$ELSE} S {$ENDIF},
+        GetThreadLocale, 0, Result));
   except
     on E: Exception do begin
       E.Message := E.Message + CRLF + WideFormat(SInvalidCurrency, [S]);
@@ -1325,12 +1366,16 @@ function ValidCurrencyStr(const S: WideString): Boolean;
 var
   Dummy: Currency;
 begin
-  Result := Succeeded(VarCyFromStr(S, GetThreadLocale, 0, Dummy));
+  Result := Succeeded(VarCyFromStr(
+      {$IFDEF FPC} POLECHAR(S) {$ELSE} S {$ENDIF},
+      GetThreadLocale, 0, Dummy));
 end;
 
 function TntStrToCurrDef(const S: WideString; const Default: Currency): Currency;
 begin
-  if not Succeeded(VarCyFromStr(S, GetThreadLocale, 0, Result)) then
+  if not Succeeded(VarCyFromStr(
+      {$IFDEF FPC} POLECHAR(S) {$ELSE} S {$ENDIF},
+      GetThreadLocale, 0, Result)) then
     Result := Default;
 end;
 
@@ -1346,16 +1391,30 @@ begin
   Result.LeadingZero := StrToIntDef(WideGetLocaleStr(GetThreadLocale, LOCALE_ILZERO, '1'), 1);
   Result.Grouping := StrToIntDef(Copy(WideGetLocaleStr(GetThreadLocale, LOCALE_SMONGROUPING, '3;0'), 1, 1), 3);
   Currency_DecimalSep := WideGetLocaleStr(GetThreadLocale, LOCALE_SMONDECIMALSEP, '.');
-  Result.lpDecimalSep := PWideChar(Currency_DecimalSep);
+  Result.lpDecimalSep := {$IFNDEF FPC} PWideChar(Currency_DecimalSep)
+                         {$ELSE}       LPTSTR(PWideChar(Currency_DecimalSep)) {$ENDIF};
   Currency_ThousandSep := WideGetLocaleStr(GetThreadLocale, LOCALE_SMONTHOUSANDSEP, ',');
-  Result.lpThousandSep := PWideChar(Currency_ThousandSep);
+  Result.lpThousandSep := {$IFNDEF FPC} PWideChar(Currency_ThousandSep)
+                          {$ELSE}       LPTSTR(PWideChar(Currency_ThousandSep)) {$ENDIF};
   Result.NegativeOrder := StrToIntDef(WideGetLocaleStr(GetThreadLocale, LOCALE_INEGCURR, '0'), 0);
   Result.PositiveOrder := StrToIntDef(WideGetLocaleStr(GetThreadLocale, LOCALE_ICURRENCY, '0'), 0);
   Currency_CurrencySymbol := WideGetLocaleStr(GetThreadLocale, LOCALE_SCURRENCY, '');
-  Result.lpCurrencySymbol := PWideChar(Currency_CurrencySymbol);
+  Result.lpCurrencySymbol := {$IFNDEF FPC} PWideChar(Currency_CurrencySymbol)
+                             {$ELSE}       LPTSTR(PWideChar(Currency_CurrencySymbol)) {$ENDIF};
 end;
 
 //=============================================================================================
+
+{$IFDEF FPC}
+function GetLocaleStr(Locale, LocaleType: Integer; const Default: string): string;
+var
+  L: Integer;
+  Buffer: array[0..255] of Char;
+begin
+  L := GetLocaleInfo(Locale, LocaleType, Buffer, SizeOf(Buffer));
+  if L > 0 then SetString(Result, Buffer, L - 1) else Result := Default;
+end;
+{$ENDIF}
 
 function WideGetLocaleStr(LocaleID: LCID; LocaleType: Integer; const Default: WideString): WideString;
 var
@@ -1458,6 +1517,7 @@ begin
   end;
 end;
 
+{$IFNDEF FPC}
 function WideLoadPackage(const Name: Widestring): HMODULE;
 begin
   Result := WideSafeLoadLibrary(Name);
@@ -1472,6 +1532,7 @@ begin
     raise;
   end;
 end;
+{$ENDIF}
 
 function _WideCharType(WC: WideChar; dwInfoType: Cardinal): Word;
 begin
