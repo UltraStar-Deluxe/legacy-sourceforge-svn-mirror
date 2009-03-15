@@ -135,6 +135,15 @@ uses
   SQLiteTable3  in 'lib\SQLite\SQLiteTable3.pas',
   SQLite3       in 'lib\SQLite\SQLite3.pas',
 
+  {$IFDEF MSWINDOWS}
+  // TntUnicodeControls
+  TntSystem         in 'lib\TntUnicodeControls\TntSystem.pas',
+  TntSysUtils       in 'lib\TntUnicodeControls\TntSysUtils.pas',
+  TntWindows        in 'lib\TntUnicodeControls\TntWindows.pas',
+  TntWideStrUtils   in 'lib\TntUnicodeControls\TntWideStrUtils.pas',
+  TntClasses        in 'lib\TntUnicodeControls\TntClasses.pas',
+  TntFormatStrUtils in 'lib\TntUnicodeControls\TntFormatStrUtils.pas',
+  {$ENDIF}
 
   //------------------------------
   //Includes - Menu System
@@ -199,7 +208,10 @@ uses
   UUnicodeUtils     in 'base\UUnicodeUtils.pas',
   UFont             in 'base\UFont.pas',
   UTextEncoding     in 'base\UTextEncoding.pas',
-  
+
+  //UFilename         in 'base\UFilename.pas',
+  //UFilesystem       in 'base\UFilesystem.pas',
+
   //------------------------------
   //Includes - Plugin Support
   //------------------------------

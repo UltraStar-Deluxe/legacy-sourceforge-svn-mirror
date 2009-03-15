@@ -29,6 +29,8 @@ unit UFilename;
   {$MODE Delphi}
 {$ENDIF}
 
+{$I switches.inc}
+
 interface
 
 uses

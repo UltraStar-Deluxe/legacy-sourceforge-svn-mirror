@@ -27,6 +27,12 @@ unit UFilesystem;
 
 interface
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
+{$I switches.inc}
+
 uses
   {$IFDEF MSWINDOWS}
   Windows,
@@ -306,8 +312,13 @@ begin
 end;
 
 function TFileSystemImpl.FileAge(const FileName: IPath; out FileDateTime: TDateTime): Boolean;
+var
+  FileDate: longint;
 begin
-  Result := SysUtils.FileAge(FileName.ToString(pencSystemANSI), FileDateTime);
+  FileDate := SysUtils.FileAge(FileName.ToString(pencSystemANSI));
+  if (FileDate > -1) then
+    FileDateTime := FileDateToDateTime(FileDate);
+  Result := (FileDate > -1);
 end;
 
 function TFileSystemImpl.DirectoryExists(const Name: IPath): Boolean;
@@ -337,7 +348,7 @@ end;
 
 function TFileSystemImpl.FileSetReadOnly(const FileName: IPath; ReadOnly: Boolean): Boolean;
 begin
-  Result := SysUtils.FileSetReadOnly(FileName.ToString(pencSystemANSI), ReadOnly);
+  Result := (SysUtils.FileSetAttr(FileName.ToString(pencSystemANSI), faReadOnly) = 0);
 end;
 
 function TFileSystemImpl.ForceDirectories(const Dir: IPath): Boolean;
@@ -479,7 +490,7 @@ begin
   {$IFDEF MSWINDOWS}
   Result.Name := Path(fSearchRec.Name);
   {$ELSE}
-  Result.Name := Path(fSearchRec.Name, pencSystem);
+  Result.Name := Path(fSearchRec.Name, pencSystemANSI);
   {$ENDIF}
   Result.ExcludeAttr := fSearchRec.ExcludeAttr;
 
