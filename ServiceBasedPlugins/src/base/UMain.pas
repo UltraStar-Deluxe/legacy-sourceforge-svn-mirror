@@ -66,6 +66,11 @@ implementation
 uses
   Math,
   gl,
+{
+  SDL_ttf,
+  UParty,
+  UCore,
+}
   UCatCovers,
   UCommandLine,
   UCommon,
@@ -87,7 +92,6 @@ uses
   USkins,
   USongs,
   UThemes,
-  UParty,
   UTime;
 
 procedure Main;
@@ -232,12 +236,14 @@ begin
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading PluginManager', 1);
 
+{
     // Party Mode Manager
     Log.BenchmarkStart(1);
     Log.LogStatus('PartySession Manager', 'Initialization');
     PartySession := TPartySession.Create;   //Load PartySession
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading PartySession Manager', 1);
+}
 
     // Graphics
     Log.BenchmarkStart(1);

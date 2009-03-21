@@ -706,36 +706,36 @@ begin
         end;
 
       SDLK_1:
-        begin //Joker
-          if (Mode = smPartyMode) and (PartySession.Teams.NumTeams >= 1) and (PartySession.Teams.Teaminfo[0].Joker > 0) then
+        begin //Joker // to-do : Party
+          {if (Mode = smPartyMode) and (PartySession.Teams.NumTeams >= 1) and (PartySession.Teams.Teaminfo[0].Joker > 0) then
           begin
             //Use Joker
             Dec(PartySession.Teams.Teaminfo[0].Joker);
             SelectRandomSong;
             SetJoker;
-          end;
+          end;  }
         end;
 
       SDLK_2:
         begin //Joker
-          if (Mode = smPartyMode) and (PartySession.Teams.NumTeams >= 2) and (PartySession.Teams.Teaminfo[1].Joker > 0) then
+          {if (Mode = smPartyMode) and (PartySession.Teams.NumTeams >= 2) and (PartySession.Teams.Teaminfo[1].Joker > 0) then
           begin
             //Use Joker
             Dec(PartySession.Teams.Teaminfo[1].Joker);
             SelectRandomSong;
             SetJoker;
-          end;
+          end;  }
         end;
 
       SDLK_3:
         begin //Joker
-          if (Mode = smPartyMode) and (PartySession.Teams.NumTeams >= 3) and (PartySession.Teams.Teaminfo[2].Joker > 0) then
+          {if (Mode = smPartyMode) and (PartySession.Teams.NumTeams >= 3) and (PartySession.Teams.Teaminfo[2].Joker > 0) then
           begin
             //Use Joker
             Dec(PartySession.Teams.Teaminfo[2].Joker);
             SelectRandomSong;
             SetJoker;
-          end;
+          end; }
         end;
     end;
   end; // if (PressedDown)
@@ -1775,8 +1775,10 @@ end;
 procedure TScreenSong.SetJoker;
 begin
   // If Party Mode
+  // to-do : Party
   if Mode = smPartyMode then //Show Joker that are available
   begin
+  (*
     if (PartySession.Teams.NumTeams >= 1) then
     begin
       Static[StaticTeam1Joker1].Visible := (PartySession.Teams.Teaminfo[0].Joker >= 1);
@@ -1827,6 +1829,7 @@ begin
       Static[StaticTeam3Joker4].Visible := false;
       Static[StaticTeam3Joker5].Visible := false;
     end;
+  *)
   end
   else
   begin //Hide all
@@ -1917,6 +1920,7 @@ end;
 //Team No of Team (0-5)
 procedure TScreenSong.DoJoker (Team: Byte);
 begin
+  {
   if (Mode = smPartyMode) and
      (PartySession.Teams.NumTeams >= Team + 1) and
      (PartySession.Teams.Teaminfo[Team].Joker > 0) then
@@ -1926,6 +1930,7 @@ begin
     SelectRandomSong;
     SetJoker;
   end;
+  }
 end;
 
 //Detailed Cover Unloading. Unloads the Detailed, uncached Cover of the cur. Song
