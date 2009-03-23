@@ -87,6 +87,9 @@ uses
   ULog,
   UPath,
   UPlaylist,
+  UPluginManager,
+  UPluginLoader_Dll,
+  UPluginLoader_Included,
   UMusic,
   UPlatform,
   USkins,
@@ -233,6 +236,14 @@ begin
     Log.BenchmarkStart(1);
     Log.LogStatus('PluginManager', 'Initialization');
     DLLMan := TDLLMan.Create;   // Load PluginList
+
+    PluginManager := TPluginManager.Create;
+
+    //TPluginLoader_Included.Create;
+    TPluginLoader_DLL.Create(PluginPath);
+
+    //PluginManager.Init;
+    
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading PluginManager', 1);
 

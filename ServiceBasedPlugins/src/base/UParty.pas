@@ -33,10 +33,9 @@ interface
 
 {$I switches.inc}
 
-uses
-  UPartyDefs,
-  UCoreModule,
-  UPluginDefs;
+//uses
+  //UPartyDefs,
+  //UPluginDefs;
 
 type
   ARounds = array [0..252] of integer; //0..252 needed for
@@ -54,13 +53,152 @@ type
 
   TeamOrderArray = array[0..5] of byte;
 
+  // some things copied from UPartyDefs, remove this later
+
+  //----------------
+  // TUS_Party_Proc_Init - Structure of the Party Init Proc
+  // This Function is called on SingScreen Init Everytime this Modi should be sung
+  // Return Non Zero to Abort Party Modi Loading... In this Case another Plugin will be loaded
+  //----------------
+  TUS_Party_Proc_Init     = Function (ID: Integer): integer; stdcall;
+
+  //----------------
+  // TUS_Party_Proc_Draw - Structure of the Party Draw Proc
+  // This Function is called on SingScreen Draw (Not when Paused). You should draw in this Proc
+  // Return Non Zero to Finish Song... In this Case Score Screen is loaded
+  //----------------
+  TUS_Party_Proc_Draw     = Function (ID: Integer): integer; stdcall;
+
+  //----------------
+  // TUS_Party_Proc_DeInit - Structure of the Party DeInit Proc
+  // This Function is called on SingScreen DeInit When Plugin abort Song or Song finishes
+  // Return Winner
+  //----------------
+  TUS_Party_Proc_DeInit   = Function (ID: Integer): integer; stdcall;
+
+  //----------------
+  // TUS_ModiInfo - Some Infos from Plugin to Partymode.
+  // Used to register party modi to Party manager
+  // ---
+  // Version Structure:
+  // First  Byte: Head Revison
+  // Second Byte: Sub Revison
+  // Third  Byte: Sub Revision 2
+  // Fourth Byte: Letter (For Bug Fix releases. 0 or 'a' .. 'z')
+  //----------------
+  TModiInfo_Name = Array [0..31] of Char;
+  TModiInfo_Desc = Array [0..63] of Char;
+
+  PUS_ModiInfo = ^TUS_ModiInfo;
+  TUS_ModiInfo = record
+    //Size of this record (usefull if record will be extended in the future)
+    cbSize:       Integer; //Don't forget to set this as Plugin!
+
+    //Infos about the Modi
+    Name       : TModiInfo_Name;   //Modiname to Register for the Plugin
+    Description: TModiInfo_Desc;   //Plugin Description
+
+    //------------
+    // Loading Settings
+    // ---
+    // Bit to Set | Triggered Option
+    // 1          | Song should be loaded
+    // 2          | Song has to be Non Duett
+    // 4          | Song has to be Duett  (If 2 and 4 is set, both will be ignored)
+    // 8          | Only Playable with 2 and more players
+    // 16         | Restrict Background Loading
+    // 32         | Restrict Video Loading
+    // 64         | Increase TimesPlayed for Cur. Player
+    // 128        | Not in Use, Don't set it!
+    LoadingSettings: Byte;
+
+    // SingScreen Settings
+    // ---
+    // Bit to Set | Triggered Option
+    // 1          | ShowNotes
+    // 2          | ShowScores
+    // 4          | ShowTime
+    // 8          | Start Audio Playback automaticaly
+    // 16         | Not in Use, Don't set it!
+    // 32         | Not in Use, Don't set it!
+    // 64         | Not in Use, Don't set it!
+    // 128        | Not in Use, Don't set it!
+    SingScreenSettings: Byte;
+
+    // With which count of players can this modi be played
+    // ---
+    //Set different Bits
+    //1 -> One Player
+    //2 -> Two Players
+    //4 -> Three Players
+    //8 -> Four Players
+    //16-> Six Players
+    //e.g. : 10 -> Playable with 2 and 4 Players
+    NumPlayers: Byte;
+
+    // ID that is given to the Party Procs when they are called
+    // If this Modi is running
+    // (e.g. to register Until 2000 and Until 5000 with the same Procs
+    //  ID is the Max Point Count in this example)
+    ID: Integer;
+
+    // Party Procs called on Party
+    // ---
+    // Set to nil(C: NULL) if u don't want to use this method
+    ModiInit:   TUS_Party_Proc_Init;
+    ModiDraw:   TUS_Party_Proc_Draw;
+    ModiDeInit: TUS_Party_Proc_DeInit;
+  end;
+
+  //--------------
+  // Team Info Record. Used by "Party/GetTeamInfo" and "Party/SetTeamInfo"
+  //--------------
+  TTeamInfo = record
+    NumTeams: Byte;
+    Teaminfo: array[0..5] of record
+      Name:  PChar;     //Teamname
+      Score: Word;      //TeamScore
+      Joker: Byte;      //Team Jokers available
+      CurPlayer: Byte;  //Id of Cur. Playing Player
+      NumPlayers: Byte;
+      Playerinfo: array[0..3] of record
+        Name: PChar;        //Playername
+        TimesPlayed: Byte;  //How often this Player has Sung
+      end;
+    end;
+  end;
+
+//----------------
+// Some Default Constants
+//----------------
+const
+  // to use for TUS_ModiInfo.LoadingSettings
+  MLS_LoadSong    = 1;  //Song should be loaded
+  MLS_NotDuett    = 2;  //Song has to be Non Duett
+  MLS_ForceDuett  = 4;  //Song has to be Duett  (If 2 and 4 is set, both will be ignored)
+  MLS_TeamOnly    = 8;  //Only Playable with 2 and more players
+  MLS_RestrictBG  = 16; //Restrict Background Loading
+  MLS_RestrictVid = 32; //Restrict Video Loading
+  MLS_IncTP       = 64; //Increase TimesPlayed for Cur. Player
+
+  // to use with TUS_ModiInfo.SingScreenSettings
+  MSS_ShowNotes   = 1;  //ShowNotes
+  MSS_ShowScores  = 2;  //ShowScores
+  MSS_ShowTime    = 4;  //ShowTime
+  MSS_AutoPlayback= 8;  //Start Audio Playback automaticaly
+
+  //Standard (Duell) for TUS_ModiInfo.LoadingSettings and TUS_ModiInfo.SingScreenSettings
+  MLS_Standard    = MLS_LoadSong or MLS_IncTP;
+  MSS_Standard    = MSS_ShowNotes or MSS_ShowScores or MSS_ShowTime or MSS_AutoPlayback;
+
+type
   TUS_ModiInfoEx = record
     Info:        TUS_ModiInfo;
     Owner:       integer;
     TimesPlayed: byte; //Helper for setting round plugins
   end;
 
-  TPartySession = class (TCoreModule)
+  TPartySession = class
   private
     bPartyMode: boolean; //Is this party or single player
     CurRound: byte;
@@ -77,14 +215,14 @@ type
     Rounds: array of TRoundInfo;
 
     //TCoreModule methods to inherit
-    constructor Create; override;
-    procedure Info(const pInfo: PModuleInfo); override;
-    function Load: boolean; override;
-    function Init: boolean; override;
-    procedure DeInit; override;
-    destructor Destroy; override;
+    constructor Create;
+    //procedure Info(const pInfo: PModuleInfo);
+    function Load: boolean;
+    function Init: boolean;
+    procedure DeInit;
+    destructor Destroy;
 
-    //Register modus service
+    {//Register modus service
     function RegisterModi(nothin: TwParam; pModiInfo: TlParam): integer; //Registers a new modus. wParam: Pointer to TUS_ModiInfo
 
     //Start new Party
@@ -100,7 +238,7 @@ type
     function SetTeamInfo(wParam: TwParam; pTeamInfo: TlParam): integer;    //Read TTeamInfo record from pointer at lParam. Returns zero on success
 
     function  GetTeamOrder(wParam: TwParam; lParam: TlParam): integer;     //Returns team order. Structure: Bits 1..3: Team at place1; Bits 4..6: Team at place2 ...
-    function  GetWinnerString(wParam: TwParam; lParam: TlParam): integer;  //wParam is roundnum. If (Pointer = nil) then return length of the string. Otherwise write the string to address at lParam
+    function  GetWinnerString(wParam: TwParam; lParam: TlParam): integer;  //wParam is roundnum. If (Pointer = nil) then return length of the string. Otherwise write the string to address at lParam}
   end;
 
 const
@@ -109,7 +247,6 @@ const
 implementation
 
 uses
-  UCore,
   UGraphic,
   ULanguage,
   ULog,
@@ -124,12 +261,12 @@ uses
 //-------------
 // function that gives some infos about the module to the core
 //-------------
-procedure TPartySession.Info(const pInfo: PModuleInfo);
+{rocedure TPartySession.Info(const pInfo: PModuleInfo);
 begin
   pInfo^.Name := 'TPartySession';
   pInfo^.Version := MakeVersion(1,0,0,chr(0));
   pInfo^.Description := 'Manages party modi and party game';
-end;
+end;     }
 
 //-------------
 // Just the constructor
@@ -151,9 +288,9 @@ function TPartySession.Load: boolean;
 begin
   //Add register party modus service
   Result := true;
-  Core.Services.AddService('Party/RegisterModi', nil, Self.RegisterModi);
+  {Core.Services.AddService('Party/RegisterModi', nil, Self.RegisterModi);
   Core.Services.AddService('Party/StartParty', nil, Self.StartParty);
-  Core.Services.AddService('Party/GetCurModi', nil, Self.GetCurModi);
+  Core.Services.AddService('Party/GetCurModi', nil, Self.GetCurModi);}
 end;
 
 //-------------
@@ -192,7 +329,7 @@ end;
 // Registers a new modus. wParam: Pointer to TUS_ModiInfo
 // Service for plugins
 //-------------
-function TPartySession.RegisterModi(nothin: TwParam; pModiInfo: TlParam): integer;
+{unction TPartySession.RegisterModi(nothin: TwParam; pModiInfo: TlParam): integer;
 var
   Len: integer;
   Info: PUS_ModiInfo;
@@ -205,13 +342,13 @@ begin
     SetLength(Modis, Len + 1);
 
     Modis[Len].Info := Info^;
-  end
-  else
-    Core.ReportError(integer(PChar('Plugins try to register modus with wrong pointer, or wrong TUS_ModiInfo record.')), PChar('TPartySession'));
+  end;
+  {else
+    Core.ReportError(integer(PChar('Plugins try to register modus with wrong pointer, or wrong TUS_ModiInfo record.')), PChar('TPartySession'));}
 
-  // FIXME: return a valid result
-  Result := 0;
-end;
+  // FIXME: return a valid result {
+  {esult := 0;
+end;  }
 
 //----------
 // Returns a number of a random plugin
@@ -265,7 +402,7 @@ end;
 //----------
 // Starts new party mode. Returns non zero on success
 //----------
-function TPartySession.StartParty(NumRounds: TwParam; PAofIRounds: TlParam): integer;
+{unction TPartySession.StartParty(NumRounds: TwParam; PAofIRounds: TlParam): integer;
 var
   I: integer;
   aiRounds: PARounds;
@@ -305,7 +442,7 @@ begin
       Result := 1;
 
     except
-      Core.ReportError(integer(PChar('Can''t start party mode.')), PChar('TPartySession'));
+      //Core.ReportError(integer(PChar('Can''t start party mode.')), PChar('TPartySession'));
     end;
   end;
 end;
@@ -340,7 +477,7 @@ begin
   end
   else
     Result := 0;
-end;
+end;           }
 
 //----------
 //GetRandomPlayer - gives back a random player to play next round
@@ -392,7 +529,7 @@ end;
 //----------
 // NextRound - Increases CurRound by 1; Returns num of round or -1 if last round is already played
 //----------
-function TPartySession.NextRound(wParam: TwParam; lParam: TlParam): integer;
+{function TPartySession.NextRound(wParam: TwParam; lParam: TlParam): integer;
 var
   I: integer;
 begin
@@ -409,7 +546,7 @@ begin
   end
   else
     Result := -1;
-end;
+end;}
 
 //----------
 //IsWinner - returns true if the players bit is set in the winner byte
@@ -440,7 +577,7 @@ end;
 //----------
 // CallModiInit - calls CurModis Init Proc. If an error occurs, returns nonzero. In this case a new plugin was selected. Please renew loading
 //----------
-function TPartySession.CallModiInit(wParam: TwParam; lParam: TlParam): integer;
+{function TPartySession.CallModiInit(wParam: TwParam; lParam: TlParam): integer;
 begin
   if (not bPartyMode) then
   begin //Set rounds if not in party mode
@@ -455,10 +592,10 @@ begin
   except
     on E : Exception do
     begin
-      Core.ReportError(integer(PChar('Error starting modus: ' + Modis[Rounds[CurRound].Modi].Info.Name + ' ErrorStr: ' + E.Message)), PChar('TPartySession'));
+      //Core.ReportError(integer(PChar('Error starting modus: ' + Modis[Rounds[CurRound].Modi].Info.Name + ' ErrorStr: ' + E.Message)), PChar('TPartySession'));
       if (Rounds[CurRound].Modi = StandardModus) then
       begin
-        Core.ReportError(integer(PChar('Can''t start standard modus, will exit now!')), PChar('TPartySession'));
+        //Core.ReportError(integer(PChar('Can''t start standard modus, will exit now!')), PChar('TPartySession'));
         Halt;
       end
       else //Select standard modus
@@ -660,6 +797,6 @@ begin
 
     end;
   end;
-end;
+end;   }
 
 end.
