@@ -72,7 +72,7 @@ uses
   {$ELSE}
   dynlibs,
   {$ENDIF}
-  SysUtils, Dialogs,
+  SysUtils,
   UPluginManager,
   UPlatform;
 
@@ -88,12 +88,10 @@ procedure TPluginLoader_DLL.Browse(Dir: WideString);
     Files: TDirectoryEntryArray;
     I: Integer;
 begin
-  Showmessage(Dir + ' - ' + DLLExt);
   Files := Platform.DirectoryFindFiles(Dir, DLLExt, True);
 
   for I := 0 to High(Files) do
   begin
-    ShowMessage(Dir + Files[I].Name);
     if (Files[I].IsDirectory) then
       Browse(Dir + Files[I].Name + PathDelim)
     else if (Files[I].IsFile) then
