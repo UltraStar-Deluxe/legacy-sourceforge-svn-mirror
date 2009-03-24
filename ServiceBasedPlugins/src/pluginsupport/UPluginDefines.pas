@@ -36,18 +36,31 @@ interface
 {$I switches.inc}
 
 const
-  SDK_Version = 0001000000000000; //< identifies the used SDK version (1.0.0.0)
+  US_VERSION_SHMAJOR = 20;
+  US_VERSION_SHMINOR = 10;
+  US_VERSION_SHFIX   = 0;
+
+  SDK_Version = 1 shl US_VERSION_SHMAJOR; //< identifies the used SDK version (1.0.0.0)
 
 type
-  { this type is used for all version ints in this SDK }
+  { this type is used for all version ints in this SDK
+    the versions are structured as follows
+    0 ... 11| 12 ... 21| 22 ... 31
+      major |   minor  | bugfix, etc.
+    e.g. 1  .     0    .     0        =  1 shl 20 }
+
   TUS_Version = LongInt;
 
   { this type is used for all plugin handles in this SDK }
   TUS_Handle = LongInt;
 
+  PInterface = ^IInterface;
+
 const
-  US_HANDLE_CORE = 137; //handle of core, also first defined handle
-  US_HANDLE_UNDEFINED = 0; //undefined handle, used to indicate errors
+  US_HANDLE_CORE = 137;     //< handle of core, also first defined handle
+  US_HANDLE_UNDEFINED = 0;  //< undefined handle, used to indicate errors
+  US_VERSION_UNDEFINED = 0; //< defines an unset version, used by core,
+                            //  should not be used by Plugins
 
   { this type is used for all id strings in this SDK }
 const
@@ -66,16 +79,18 @@ type
   PUS_PluginInfo = ^TUS_PluginInfo;
 
   { this function reads the plugins information from a TUS_PluginInfo record,
-    and saves it. Can be called onced per plugin.
+    and saves it. Can be called once per plugin.
     Version is the SDK_Version used by the plugin
     BufferLength is the size of buffer in bytes }
-  TUS_Func_Identify     = function (Handle: TUS_Handle; Version: TUS_Version; Buffer: PUS_PluginInfo; BufferLength: LongInt): LongInt; stdcall;
+  TUS_Func_Identify     = function (Handle: TUS_Handle; Version: TUS_Version; Buffer: PUS_PluginInfo; BufferLength: LongInt): LongInt; 
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
   { this plugin is used for selfshutdown by the plugin on an error
     case.
     Reason should be used to describe the reason for the shutdown
     OnChangeStatus(psDeInited) is called when old status was psInited }
-  TUS_Func_Error = function (Handle: TUS_Handle; Reason: PWideChar): LongInt; stdcall;
+  TUS_Func_Error = function (Handle: TUS_Handle; Reason: PWideChar): LongInt; 
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
   { this function writes the plugins filename including its path ,
     to buffer. A call with Buffer=nil or Len<=0 returns the actual
@@ -83,32 +98,37 @@ type
     BufferLength is the size of buffer in bytes
     Filename is used to identify duplicate load of one plugin
     so it should even set when plugin is not loaded from file}
-  TUS_Func_GetFilename  = function (Handle: TUS_Handle; Version: TUS_Version; Buffer: PWideChar; BufferLength: LongInt): LongInt; stdcall;
+  TUS_Func_GetFilename  = function (Handle: TUS_Handle; Buffer: PWideChar; BufferLength: LongInt): LongInt; 
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
   { this function writes an interface, identified by 'ID', to the
     buffer.
     Version is the version of the interface that is used
     BufferLength is the size of buffer in bytes}
-  TUS_Func_GetInterface = function (ID: TUS_Identifier; Version: TUS_Version; Buffer: Pointer; BufferLength: LongInt): LongInt; stdcall;
+  TUS_Func_GetInterface = function (IID: TGUID; Buffer: PInterface): LongInt; 
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
   { this function reads an interface, identified by 'ID', from the
     buffer, to offer it to calls of GetInterface.
     version is the version of the interface
     BufferLength is the size of buffer in bytes }
-  TUS_Func_SetInterface = function (ID: TUS_Identifier; Version: TUS_Version; Buffer: Pointer; BufferLength: LongInt): LongInt; stdcall;
+  TUS_Func_SetInterface = function (IID: TGUID; Buffer: PInterface): LongInt; 
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
   { this function writes a record or some other data,
     identified by 'ID', to the buffer.
     Version is the version of the data that is used
     BufferLength is the size of buffer in bytes}
-  TUS_Func_GetData = function (ID: TUS_Identifier; Version: TUS_Version; Buffer: Pointer; BufferLength: LongInt): LongInt; stdcall;
+  TUS_Func_GetData = function (ID: TUS_Identifier; Version: TUS_Version; Buffer: Pointer; BufferLength: LongInt): LongInt; 
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
   { this function reads a record or some other data,
     identified by 'ID', from the buffer, to offer it
     to calls of GetData.
     version is the version of the record
     BufferLength is the size of buffer in bytes }
-  TUS_Func_SetData = function (ID: TUS_Identifier; Version: TUS_Version; Buffer: Pointer; BufferLength: LongInt): LongInt; stdcall;
+  TUS_Func_SetData = function (ID: TUS_Identifier; Version: TUS_Version; Buffer: Pointer; BufferLength: LongInt): LongInt; 
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
   { a record w/ some useful methods for plugins }
   TUS_PluginInterface = packed record
@@ -140,7 +160,7 @@ type
   {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
 
 
-  TUS_PluginStatus = (psNone, psWaitingInit, psWaitingIdentify, psInited, psDeInited, psError);
+  TUS_PluginStatus = (psNone, psWaitingInit, psInited, psDeInited, psError);
 
   { this function is called everytime tbe plugins status changes
     status is the new status.
@@ -154,12 +174,18 @@ type
     plugin itself in the case of integrated plugins }
   IUS_Plugin = Interface
     ['{23F7B722-D979-4402-9953-C6B229A6E888}']
-    function GetStatus: TUS_PluginStatus;
-    procedure SetStatus(status: TUS_PluginStatus);
+    function GetLoader: LongInt; //< Returns id of this plugins loader
 
-    function GetHandle: TUS_Handle;
+    function GetStatus: TUS_PluginStatus; //< Returns current pluginstatus
+    procedure SetStatus(status: TUS_PluginStatus); //< set current pluginstatus, calls OnChangeStatus,
+                                                   //  status may not be updated in case of an error
+
+    function GetInfo: TUS_PluginInfo;                 //< Returns TUS_Plugininfo record for this plugin
+    function Identify(Info: TUS_PluginInfo): boolean; //< Sets TUS_Plugininfo record for this plugin, can only be called once
+
+    function GetHandle: TUS_Handle;   //< Returns plugins handle
     function GetUniqueID: TUS_Handle; //< This ID is unique for the given plugin it may be a hash of the plugins code or s/t like that. used to identify plugins laoded twice
-    function GetFilename: WideString;
+    function GetFilename: WideString; //< Returns plugins filename
 
     Procedure Init;
     Procedure DeInit;
@@ -175,9 +201,11 @@ type
     breakable is true if the hook chain can be interupted by
     returning US_HOOK_BREAK or US_HOOK_UNHOOKME_BREAK
     by returning US_HOOK_UNHOOKME the callback will immediately
-    be removed from the chain }
-  TUS_Func_OnEvent = function(data: pointer; breakable: boolean): integer;
-  TUS_cFunc_OnEvent = function(data: pointer; breakable: boolean): integer of object;
+    be removed from the chain
+    UserID is the value that the UserID had when hook was called.
+    can be used to store user defined data, e.g. to use one hook procedure for different hooks }
+  TUS_Func_OnEvent = function(data: pointer; breakable: boolean; UserID: LongInt): integer;
+  TUS_cFunc_OnEvent = function(data: pointer; breakable: boolean; UserID: LongInt): integer of object;
 
   { this interface represents an event that can be hooked by
     e.g. the core or other}
@@ -191,8 +219,8 @@ type
     //proc is the callback function
     //parent is the plugins handle, or US_HANDLE_CORE if called by core
     //returns hook-handle on succes or US_HANDLE_UNDEFINED on failure
-    function Hook(proc: TUS_Func_OnEvent; Parent: TUS_Handle): TUS_Handle;
-    function cHook(proc: TUS_cFunc_OnEvent; Parent: TUS_Handle): TUS_Handle;
+    function Hook(proc: TUS_Func_OnEvent; Parent: TUS_Handle; UserID: LongInt): TUS_Handle;
+    function cHook(proc: TUS_cFunc_OnEvent; Parent: TUS_Handle; UserID: LongInt): TUS_Handle;
 
     //removes a callback from the chain using the handle returned
     //by the hook function
@@ -220,8 +248,15 @@ const
   US_HOOK_UNHOOKME = High(integer) - 2;       //this will remove the callback from the hooks chain
   US_HOOK_UNHOOKME_BREAK = High(integer) - 1; //this will do both explained above
 
+  US_LOADER_UNDEFINED = 0;
+  US_LOADER_LIBRARY   = 100;
+  US_LOADER_INCLUDED  = 200;
+
 { this function converts an errorcode to its textual expression }
 function USErrortoString(Code: LongInt): String;
+
+{ this function converts a TUS_PluginStatus to its textual expression }
+function USPluginStatustoString(Status: TUS_PluginStatus): String;
 
 { this funtion creates a hash for an TUS_Identifier
   the hash is not guaranteed to be unique, it is just
@@ -242,6 +277,19 @@ begin
     US_Error_NameExists:      Result := 'another item with this name does already exist';
 
     Else Result := 'unknown error';
+  end;
+end;
+
+function USPluginStatustoString(Status: TUS_PluginStatus): String;
+begin
+  Case Status of
+    psNone:         Result := 'none';
+    psWaitingInit:  Result := 'waiting init';
+    psInited:       Result := 'inited';
+    psDeinited:     Result := 'deinited';
+    psError:        Result := 'error';
+
+    Else Result := 'unknown';
   end;
 end;
 

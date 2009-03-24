@@ -40,6 +40,8 @@ type
     protected
       PluginDir: WideString;
     public
+      PluginInterface: TUS_PluginInterface;
+
       constructor Create(PluginDir: WideString);
       procedure Browse(Dir: WideString);
   end;
@@ -53,6 +55,7 @@ type
       procedure OnChangeStatus(Status: TUS_PluginStatus); override;
     public
       constructor Create(Handle: TUS_Handle; Filename: WideString); override;
+      function GetLoader: LongInt; override;
       destructor Destroy; override;
   end;
 
@@ -65,6 +68,15 @@ const
     DLLExt  = '.so';
   {$IFEND}
 
+// procedures used in the PluginInterface record
+// see UPluginDefines for descriptions
+function DLL_Identify (Handle: TUS_Handle; Version: TUS_Version; Buffer: PUS_PluginInfo; BufferLength: LongInt): LongInt;
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
+function DLL_Error (Handle: TUS_Handle; Reason: PWideChar): LongInt;
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
+function DLL_GetFilename (Handle: TUS_Handle; Buffer: PWideChar; BufferLength: LongInt): LongInt;
+  {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
+
 implementation
 uses
   {$IFDEF MSWINDOWS}
@@ -74,11 +86,23 @@ uses
   {$ENDIF}
   SysUtils,
   UPluginManager,
-  UPlatform;
+  UPlatform,
+  ULog;
 
 { implementation of TPluginLoader_DLL }
 constructor TPluginLoader_DLL.Create(PluginDir: WideString);
 begin
+  //start to fill the plugininterface w/ default values
+  PluginInterface.Handle        := US_HANDLE_UNDEFINED;
+  PluginInterface.Version       := SDK_Version;
+  PluginInterface.Identify      := DLL_Identify;
+  PluginInterface.Error         := DLL_Error;
+  PluginInterface.GetFilename   := DLL_GetFilename;
+  PluginInterface.GetInterface  := nil;
+  PluginInterface.SetInterface  := nil;
+  PluginInterface.GetData       := nil;
+  PluginInterface.SetData       := nil;
+
   Self.PluginDir := PluginDir;
   Browse(PluginDir);
 end;
@@ -112,6 +136,11 @@ begin
   SetStatus(psWaitingInit);
 end;
 
+function TPlugin_DLL.GetLoader: LongInt;
+begin
+  Result := US_LOADER_LIBRARY;
+end;
+
 destructor TPlugin_DLL.Destroy;
 begin
 
@@ -128,7 +157,7 @@ begin
       begin
         @Lib_Proc_Init := GetProcAddress(hLib, PChar('Proc_Init'));
 
-        If (not Assigned(Lib_Proc_Init)) then
+        if (not Assigned(Lib_Proc_Init)) then
         begin
           FreeLibrary(hLib);
 
@@ -142,7 +171,7 @@ begin
 
         @Lib_OnChangeStatus := GetProcAddress(hLib, PChar('OnChangeStatus'));
 
-        If (not Assigned(Lib_OnChangeStatus)) then
+        if (not Assigned(Lib_OnChangeStatus)) then
         begin
           FreeLibrary(hLib);
 
@@ -165,15 +194,129 @@ begin
         Exit;
       end;
 
+      //library + procedure pointers are loaded
+      //now try to do the handshake
+      //call Proc_Init
+      Lib_Proc_Init(Self.Handle, SDK_Version, nil);
+
+      //check if plugin has identified itself
+      if (Self.Info.Version = US_VERSION_UNDEFINED) then
+      begin
+        SetError('library did not identify');
+        exit;
+      end;    
     end;
 
   end;
 
   //call plugins OnChangeStatus procedure
-  If assigned(Lib_OnChangeStatus) then
-    Lib_OnChangeStatus(Self.Handle, Status);
+  if assigned(Lib_OnChangeStatus) then
+    try
+      Lib_OnChangeStatus(Self.Handle, Status);
+    except
+      if (Status <> psError) then
+        SetError('exception in librarys OnChangeStatus (from: ' + USPluginStatustoString(Self.Status) + ' to: ' + USPluginStatustoString(Status) + ')');
+    end;
 
   Self.Status := Status;
+end;
+
+// procedures used in the PluginInterface record
+// see UPluginDefines for descriptions
+// --------
+function DLL_Identify (Handle: TUS_Handle; Version: TUS_Version; Buffer: PUS_PluginInfo; BufferLength: LongInt): LongInt;
+var
+  Plugin: IUS_Plugin;
+  Info: TUS_PluginInfo;
+begin
+  Result := US_ERROR_Unknown;
+  Plugin := PluginManager.GetPluginbyHandle(Handle);
+
+  if (Plugin <> nil) then
+  begin
+    if (Plugin.GetLoader = US_LOADER_LIBRARY) then
+    begin
+      If (Version = SDK_Version) then
+      begin
+        If (BufferLength = SizeOf(TUS_PluginInfo)) then
+        begin
+          try
+            move(Buffer^, Info, BufferLength);
+          except
+            Plugin.SetError('error copying plugininfo from buffer in DLL_Identify');
+          end;
+
+          If Plugin.Identify(Info) then
+          begin
+            Result := US_ERROR_None;
+          end;
+        end
+        else
+        begin
+          Result := US_ERROR_SizeMismatch;
+          Plugin.SetError('reported buffersize is wrong in DLL_Identify');
+        end;
+      end
+      else
+      begin
+        Result := US_ERROR_VersionMismatch;
+        Plugin.SetError('SDK version is not supported in DLL_Identify');
+      end;
+
+    end
+    else
+    begin
+      Result := US_ERROR_WrongHandle;
+      Log.LogError('called w/ handle of plugin from another loader', 'DLL_Identify');
+    end;
+  end
+  else
+  begin
+    Result := US_ERROR_WrongHandle;
+    Log.LogError('called w/ invalid handle', 'DLL_Identify');
+  end;
+end;
+
+function DLL_Error (Handle: TUS_Handle; Reason: PWideChar): LongInt;
+var
+  Plugin: IUS_Plugin;
+  S: WideString;
+begin
+  Result := US_ERROR_Unknown;
+  Plugin := PluginManager.GetPluginbyHandle(Handle);
+
+  if (Plugin <> nil) then
+  begin
+    if (Plugin.GetLoader = US_LOADER_LIBRARY) then
+    begin
+      Result := US_ERROR_None;
+
+      //try to copy the error reason
+      try
+        SetLength(S, Length(Reason^));
+        S := copy(Reason^, 1, Length(S)); //or has this to be len*2 ?
+      except
+        Reason := 'couldn''t copy error reason in DLL_Error';
+      end;
+
+      Plugin.SetError(Reason);
+    end
+    else
+    begin
+      Result := US_ERROR_WrongHandle;
+      Log.LogError('called w/ handle of plugin from another loader', 'DLL_Identify');
+    end;
+  end
+  else
+  begin
+    Result := US_ERROR_WrongHandle;
+    Log.LogError('called w/ invalid handle', 'DLL_Identify');
+  end;
+end;
+
+function DLL_GetFilename (Handle: TUS_Handle; Buffer: PWideChar; BufferLength: LongInt): LongInt;
+begin
+
 end;
 
 end.

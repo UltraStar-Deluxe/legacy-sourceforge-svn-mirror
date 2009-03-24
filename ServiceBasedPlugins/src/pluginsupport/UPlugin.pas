@@ -45,19 +45,26 @@ type
       Filename: WideString;
       ErrorReason: WideString;
 
+      Info: TUS_PluginInfo;
+
       procedure OnChangeStatus(Status: TUS_PluginStatus); virtual;
     public
       constructor Create(Handle: TUS_Handle; Filename: WideString); virtual;
-      
+
+      function GetLoader: LongInt; virtual;
+
       function GetStatus: TUS_PluginStatus; virtual;
       procedure SetStatus(Status: TUS_PluginStatus); virtual;
+
+      function GetInfo: TUS_PluginInfo; virtual;
+      function Identify(Info: TUS_PluginInfo): boolean; virtual;
 
       function GetHandle: TUS_Handle; virtual;
       function GetUniqueID: TUS_Handle; virtual;
       function GetFilename: WideString; virtual;
 
-      procedure Init; virtual;
-      procedure DeInit; virtual;
+      procedure Init; virtual; {$IFDEF HasInline}inline;{$ENDIF}
+      procedure DeInit; virtual; {$IFDEF HasInline}inline;{$ENDIF}
 
       procedure SetError(Reason: WideString); virtual;
       function GetErrorReason: WideString; virtual;
@@ -75,6 +82,13 @@ begin
   Self.Status   := psNone;
 
   Self.UniqueID := CalculateUSHash(Filename); //< this should be done another way ;) just for testing purposes
+
+  Self.Info.Version := US_VERSION_UNDEFINED;
+end;
+
+function TPlugin.GetLoader: LongInt;
+begin
+  Result := US_LOADER_UNDEFINED;
 end;
 
 function TPlugin.GetStatus: TUS_PluginStatus;
@@ -86,6 +100,29 @@ procedure TPlugin.SetStatus(Status: TUS_PluginStatus);
 begin
   // OnChangeStatus has to change the status attribut 
   OnChangeStatus(Status);
+end;
+
+function TPlugin.GetInfo: TUS_PluginInfo;
+begin
+  Result := Info;
+end;
+
+function TPlugin.Identify(Info: TUS_PluginInfo): boolean;
+begin
+  Result := false;
+  If (Self.Info.Version = US_VERSION_UNDEFINED) then
+  begin //first identify
+
+    If (Length(Info.Name) > 0) AND (Length(Info.Author) > 0) AND (Length(Info.PluginDesc) > 0) AND (Info.Version <> US_VERSION_UNDEFINED) then
+    begin
+      Self.Info := Info;
+      Result := true;
+    end
+    else
+      SetError('Identify called with incomplete info struct');
+  end
+  else
+    Log.LogWarn('Identify is called twice', Self.Info.Name);
 end;
 
 function TPlugin.GetHandle: TUS_Handle;
@@ -103,13 +140,13 @@ begin
   Result := Filename;
 end;
 
-procedure TPlugin.Init;
+procedure TPlugin.Init; {$IFDEF HasInline}inline;{$ENDIF}
 begin
   if (Status = psWaitingInit) then
     SetStatus(psInited);
 end;
 
-procedure TPlugin.DeInit;
+procedure TPlugin.DeInit; {$IFDEF HasInline}inline;{$ENDIF}
 begin
   if (Status = psInited) then
     SetStatus(psDeInited);
