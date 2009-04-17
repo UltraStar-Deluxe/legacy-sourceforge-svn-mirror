@@ -149,6 +149,8 @@ uses
   ULuaLog        in 'lua\ULuaLog.pas',
   ULuaTextGL     in 'lua\ULuaTextGL.pas',
   ULuaTexture    in 'lua\ULuaTexture.pas',
+  UHookableEvent in 'lua\UHookableEvent.pas',
+  ULuaCore       in 'lua\ULuaCore.pas',
 
   //------------------------------
   //Includes - Menu System

@@ -183,6 +183,8 @@ uses
   UGraphicClasses,
   UPluginDefs,
   UPlatform,
+  ULuaCore,
+  UHookableEvent,
   ULuaGl,
   ULuaLog,
   ULuaTexture,
@@ -417,8 +419,13 @@ begin
                   chr(0))
     );  }
 
-    Log.LogStatus('Running Core', 'Initialization');
-    //Core.Run;
+    LuaCore := TLuaCore.Create;
+
+
+    LuaCore.BrowseDir(PluginPath);
+    LuaCore.DumpPlugins;
+
+
 
     //------------------------------
     //Start- Mainloop
