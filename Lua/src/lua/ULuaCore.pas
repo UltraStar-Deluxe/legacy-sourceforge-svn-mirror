@@ -177,7 +177,7 @@ var
   LuaCore: TLuaCore;
 
 implementation
-uses ULog, UPlatform;
+uses ULog, UPlatform, ULuaUsdx;
 
 constructor TLuaCore.Create;
 begin
@@ -393,7 +393,7 @@ end;
 
 { prepares the given already opened Lua state with the
   basic usdx environment, e.g.: base and package Modules,
-  usdx moduleloaders and usdx table }
+  usdx moduleloader and usdx table }
 procedure TLuaCore.PrepareState(L: Plua_State);
 begin
   //load basic lib functionality
@@ -459,27 +459,34 @@ begin
   {**** Move C-Library and all-in-one module loader backwards,
         slot 3 is free now }
   // get package.loaders[4] function
-  lua_getfield (L, -1, '4');
+  lua_pushinteger(L, 5); //push new index
+  lua_pushinteger(L, 4); //push old index
+  lua_gettable (L, -3);
 
   // and move it to package.loaders[5]
-  lua_setfield (L, -2, '5');
+  lua_settable (L, -3);
 
   // get package.loaders[3] function
-  lua_getfield (L, -1, '3');
+  lua_pushinteger(L, 4); //push new index
+  lua_pushinteger(L, 3); //push old index
+  lua_gettable (L, -3);
 
   // and move it to package.loaders[4]
-  lua_setfield (L, -2, '4');
+  lua_settable (L, -3);
 
   {**** now we add the core module to package.loaders[3] }
+  lua_pushinteger(L, 3); //push new loaders index
   lua_pushcfunction(L, TLuaCore_ModuleLoader);
 
   // and move it to package.loaders[3]
-  lua_setfield (L, -2, '3');
-
+  lua_settable (L, -3);
 
   //pop both package and package.loaders tables from stack
   lua_pop(L, 2);
 
+  {**** now we create the usdx table }
+  //at first functions from ULuaUsdx
+  luaL_register(L, 'Usdx', @ULuaUsdx_Lib_f[0]);
 end;
 
 { returns id of given module, or -1 if module is not found }
@@ -522,7 +529,7 @@ begin
 
       //we need at least 6 letters
       //and first 5 letters have to be usdx.
-      if (Length(Name) > 5) and (copy(Name, 1, 5)='usdx.') then
+      if (Length(Name) > 5) and (copy(Name, 1, 5)='Usdx.') then
       begin
         ID := LuaCore.GetModuleIdByName(copy(Name, 6, Length(Name) - 5));
         If (ID >= 0) then
@@ -535,7 +542,7 @@ begin
           lua_pushString(L, PChar('usdx module "' + Name + '" couldn''t be found'));
       end
       else
-        lua_pushString(L, PChar('module doesn''t have "usdx." prefix'));
+        lua_pushString(L, PChar('module doesn''t have "Usdx." prefix'));
 
     end
     else
@@ -556,7 +563,7 @@ begin
   begin
     Id := lua_ToInteger(L, lua_upvalueindex(1));
 
-    luaL_register(L, PChar('usdx.' + LuaCore.Modules[Id].Name), @LuaCore.Modules[Id].Functions[0]);
+    luaL_register(L, PChar('Usdx.' + LuaCore.Modules[Id].Name), @LuaCore.Modules[Id].Functions[0]);
     
     Result := 1; //return table
   end
@@ -696,7 +703,7 @@ end;
 { returns true if plugin has called register }
 function TLuaPlugin.HasRegistred: Boolean;
 begin
-  Result := (Self.sName = 'not registred');
+  Result := (Self.sName <> 'not registred');
 end;
 
 procedure TLuaPlugin.PausePlugin(doPause: Boolean);

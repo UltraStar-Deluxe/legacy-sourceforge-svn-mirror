@@ -40,6 +40,39 @@ uses
 
 function luaopen_Log (L: Plua_State): Integer; cdecl;
 
+function ULuaLog_LogError(L: Plua_State): Integer; cdecl;
+function ULuaLog_LogMsg(L: Plua_State): Integer; cdecl;
+function ULuaLog_BenchmarkStart(L: Plua_State): Integer; cdecl;
+function ULuaLog_BenchmarkEnd(L: Plua_State): Integer; cdecl;
+function ULuaLog_LogBenchmark(L: Plua_State): Integer; cdecl;
+function ULuaLog_LogDebug(L: Plua_State): Integer; cdecl;
+function ULuaLog_LogInfo(L: Plua_State): Integer; cdecl;
+function ULuaLog_LogStatus(L: Plua_State): Integer; cdecl;
+function ULuaLog_LogWarn(L: Plua_State): Integer; cdecl;
+function ULuaLog_LogCritical(L: Plua_State): Integer; cdecl;
+function ULuaLog_CriticalError(L: Plua_State): Integer; cdecl;
+function ULuaLog_GetLogLevel(L: Plua_State): Integer; cdecl;
+function ULuaLog_SetLogLevel(L: Plua_State): Integer; cdecl;
+
+
+const
+  ULuaLog_Lib_f: array [0..13] of lual_reg = (
+   (name:'LogError';func:ULuaLog_LogError),
+   (name:'LogMsg';func:ULuaLog_LogMsg),
+   (name:'BenchmarkStart';func:ULuaLog_BenchmarkStart),
+   (name:'BenchmarkEnd';func:ULuaLog_BenchmarkEnd),
+   (name:'LogBenchmark';func:ULuaLog_LogBenchmark),
+   (name:'LogDebug';func:ULuaLog_LogDebug),
+   (name:'LogInfo';func:ULuaLog_LogInfo),
+   (name:'LogStatus';func:ULuaLog_LogStatus),
+   (name:'LogWarn';func:ULuaLog_LogWarn),
+   (name:'LogCritical';func:ULuaLog_LogCritical),
+   (name:'CriticalError';func:ULuaLog_CriticalError),
+   (name:'SetLogLevel';func:ULuaLog_GetLogLevel),
+   (name:'GetLogLevel';func:ULuaLog_SetLogLevel),
+   (name:nil;func:nil)
+   );
+
 implementation
 
 function ULuaLog_LogError(L: Plua_State): Integer; cdecl;
@@ -125,24 +158,6 @@ begin
   Log.SetLogLevel(luaL_checkinteger(L,-1));
   result:=0; // number of results
 end;
-
-const
-  ULuaLog_Lib_f: array [0..13] of lual_reg = (
-   (name:'LogError';func:ULuaLog_LogError),
-   (name:'LogMsg';func:ULuaLog_LogMsg),
-   (name:'BenchmarkStart';func:ULuaLog_BenchmarkStart),
-   (name:'BenchmarkEnd';func:ULuaLog_BenchmarkEnd),
-   (name:'LogBenchmark';func:ULuaLog_LogBenchmark),
-   (name:'LogDebug';func:ULuaLog_LogDebug),
-   (name:'LogInfo';func:ULuaLog_LogInfo),
-   (name:'LogStatus';func:ULuaLog_LogStatus),
-   (name:'LogWarn';func:ULuaLog_LogWarn),
-   (name:'LogCritical';func:ULuaLog_LogCritical),
-   (name:'CriticalError';func:ULuaLog_CriticalError),
-   (name:'SetLogLevel';func:ULuaLog_GetLogLevel),
-   (name:'GetLogLevel';func:ULuaLog_SetLogLevel),
-   (name:nil;func:nil)
-   );
 
 function luaopen_Log (L: Plua_State): Integer; cdecl;
 begin
