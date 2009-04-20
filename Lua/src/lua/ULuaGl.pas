@@ -41,6 +41,94 @@ uses
 function luaopen_gl (L: Plua_State): Integer; cdecl;
 function ULuaGl_StringToEnum(Str: String): GLenum;
 
+{ lua lib functions }
+function ULuaGl_Begin(L: Plua_State): Integer; cdecl;
+function ULuaGl_BindTexture(L: Plua_State): Integer; cdecl;
+function ULuaGl_BlendFunc(L: Plua_State): Integer; cdecl;
+function ULuaGl_Clear(L: Plua_State): Integer; cdecl;
+function ULuaGl_ClearAccum(L: Plua_State): Integer; cdecl;
+function ULuaGl_ClearColor(L: Plua_State): Integer; cdecl;
+function ULuaGl_Color(L: Plua_State): Integer; cdecl;
+function ULuaGl_CullFace(L: Plua_State): Integer; cdecl;
+function ULuaGl_DepthFunc(L: Plua_State): Integer; cdecl;
+function ULuaGl_DepthRange(L: Plua_State): Integer; cdecl;
+function ULuaGl_Disable(L: Plua_State): Integer; cdecl;
+function ULuaGl_DisableClientState(L: Plua_State): Integer; cdecl;
+function ULuaGl_DrawBuffer(L: Plua_State): Integer; cdecl;
+function ULuaGl_Enable(L: Plua_State): Integer; cdecl;
+function ULuaGl_EnableClientState(L: Plua_State): Integer; cdecl;
+function ULuaGl_End(L: Plua_State): Integer; cdecl;
+function ULuaGl_EndList(L: Plua_State): Integer; cdecl;
+function ULuaGl_Finish(L: Plua_State): Integer; cdecl;
+function ULuaGl_Flush(L: Plua_State): Integer; cdecl;
+function ULuaGl_FrontFace(L: Plua_State): Integer; cdecl;
+function ULuaGl_InitNames(L: Plua_State): Integer; cdecl;
+function ULuaGl_LoadIdentity(L: Plua_State): Integer; cdecl;
+function ULuaGl_LogicOp(L: Plua_State): Integer; cdecl;
+function ULuaGl_MatrixMode(L: Plua_State): Integer; cdecl;
+function ULuaGl_Ortho(L: Plua_State): Integer; cdecl;
+function ULuaGl_PopAttrib(L: Plua_State): Integer; cdecl;
+function ULuaGl_PopClientAttrib(L: Plua_State): Integer; cdecl;
+function ULuaGl_PopMatrix(L: Plua_State): Integer; cdecl;
+function ULuaGl_PopName(L: Plua_State): Integer; cdecl;
+function ULuaGl_PushMatrix(L: Plua_State): Integer; cdecl;
+function ULuaGl_RasterPos(L: Plua_State): Integer; cdecl;
+function ULuaGl_ReadBuffer(L: Plua_State): Integer; cdecl;
+function ULuaGl_Rect(L: Plua_State): Integer; cdecl;
+function ULuaGl_Rotate(L: Plua_State): Integer; cdecl;
+function ULuaGl_Scale(L: Plua_State): Integer; cdecl;
+function ULuaGl_ShadeModel(L: Plua_State): Integer; cdecl;
+function ULuaGl_TexCoord(L: Plua_State): Integer; cdecl;
+function ULuaGl_Translate(L: Plua_State): Integer; cdecl;
+function ULuaGl_Vertex(L: Plua_State): Integer; cdecl;
+function ULuaGl_Viewport(L: Plua_State): Integer; cdecl;
+function ULuaGl_Dummy(L: Plua_State): Integer; cdecl;
+
+const
+  ULuaGl_Lib_f: array [0..40] of lual_reg = (
+   (name:'Begin';func:ULuaGl_Begin),
+   (name:'BindTexture';func:ULuaGl_BindTexture),
+   (name:'BlendFunc';func:ULuaGl_BlendFunc),
+   (name:'Clear';func:ULuaGl_Clear),
+   (name:'ClearAccum';func:ULuaGl_ClearAccum),
+   (name:'ClearColor';func:ULuaGl_ClearColor),
+   (name:'Color';func:ULuaGl_Color),
+   (name:'CullFace';func:ULuaGl_CullFace),
+   (name:'DepthFunc';func:ULuaGl_DepthFunc),
+   (name:'DepthRange';func:ULuaGl_DepthRange),
+   (name:'Disable';func:ULuaGl_Disable),
+   (name:'DisableClientState';func:ULuaGl_DisableClientState),
+   (name:'DrawBuffer';func:ULuaGl_DrawBuffer),
+   (name:'Enable';func:ULuaGl_Enable),
+   (name:'EnableClientState';func:ULuaGl_EnableClientState),
+   (name:'End';func:ULuaGl_End),
+   (name:'EndList';func:ULuaGl_EndList),
+   (name:'Finish';func:ULuaGl_Finish),
+   (name:'Flush';func:ULuaGl_Flush),
+   (name:'FrontFace';func:ULuaGl_FrontFace),
+   (name:'InitNames';func:ULuaGl_InitNames),
+   (name:'LoadIdentity';func:ULuaGl_LoadIdentity),
+   (name:'LogicOp';func:ULuaGl_LogicOp),
+   (name:'MatrixMode';func:ULuaGl_MatrixMode),
+   (name:'Ortho';func:ULuaGl_Ortho),
+   (name:'PopAttrib';func:ULuaGl_PopAttrib),
+   (name:'PopClientAttrib';func:ULuaGl_PopClientAttrib),
+   (name:'PopMatrix';func:ULuaGl_PopMatrix),
+   (name:'PopName';func:ULuaGl_PopName),
+   (name:'PushMatrix';func:ULuaGl_PushMatrix),
+   (name:'RasterPos';func:ULuaGl_RasterPos),
+   (name:'ReadBuffer';func:ULuaGl_ReadBuffer),
+   (name:'Rotate';func:ULuaGl_Rotate),
+   (name:'Rect';func:ULuaGl_Rect),
+   (name:'Scale';func:ULuaGl_Scale),
+   (name:'ShadeModel';func:ULuaGl_ShadeModel),
+   (name:'TexCoord';func:ULuaGl_TexCoord),
+   (name:'Translate';func:ULuaGl_Translate),
+   (name:'Vertex';func:ULuaGl_Vertex),
+   (name:'Viewport';func:ULuaGl_Viewport),
+   (name:nil;func:nil)
+   );
+
 implementation
 
 uses
@@ -597,51 +685,6 @@ function ULuaGl_Dummy(L: Plua_State): Integer; cdecl;
 begin
   result:=0; // number of results
 end;
-
-const
-  ULuaGl_Lib_f: array [0..40] of lual_reg = (
-   (name:'Begin';func:ULuaGl_Begin),
-   (name:'BindTexture';func:ULuaGl_BindTexture),
-   (name:'BlendFunc';func:ULuaGl_BlendFunc),
-   (name:'Clear';func:ULuaGl_Clear),
-   (name:'ClearAccum';func:ULuaGl_ClearAccum),
-   (name:'ClearColor';func:ULuaGl_ClearColor),
-   (name:'Color';func:ULuaGl_Color),
-   (name:'CullFace';func:ULuaGl_CullFace),
-   (name:'DepthFunc';func:ULuaGl_DepthFunc),
-   (name:'DepthRange';func:ULuaGl_DepthRange),
-   (name:'Disable';func:ULuaGl_Disable),
-   (name:'DisableClientState';func:ULuaGl_DisableClientState),
-   (name:'DrawBuffer';func:ULuaGl_DrawBuffer),
-   (name:'Enable';func:ULuaGl_Enable),
-   (name:'EnableClientState';func:ULuaGl_EnableClientState),
-   (name:'End';func:ULuaGl_End),
-   (name:'EndList';func:ULuaGl_EndList),
-   (name:'Finish';func:ULuaGl_Finish),
-   (name:'Flush';func:ULuaGl_Flush),
-   (name:'FrontFace';func:ULuaGl_FrontFace),
-   (name:'InitNames';func:ULuaGl_InitNames),
-   (name:'LoadIdentity';func:ULuaGl_LoadIdentity),
-   (name:'LogicOp';func:ULuaGl_LogicOp),
-   (name:'MatrixMode';func:ULuaGl_MatrixMode),
-   (name:'Ortho';func:ULuaGl_Ortho),
-   (name:'PopAttrib';func:ULuaGl_PopAttrib),
-   (name:'PopClientAttrib';func:ULuaGl_PopClientAttrib),
-   (name:'PopMatrix';func:ULuaGl_PopMatrix),
-   (name:'PopName';func:ULuaGl_PopName),
-   (name:'PushMatrix';func:ULuaGl_PushMatrix),
-   (name:'RasterPos';func:ULuaGl_RasterPos),
-   (name:'ReadBuffer';func:ULuaGl_ReadBuffer),
-   (name:'Rotate';func:ULuaGl_Rotate),
-   (name:'Rect';func:ULuaGl_Rect),
-   (name:'Scale';func:ULuaGl_Scale),
-   (name:'ShadeModel';func:ULuaGl_ShadeModel),
-   (name:'TexCoord';func:ULuaGl_TexCoord),
-   (name:'Translate';func:ULuaGl_Translate),
-   (name:'Vertex';func:ULuaGl_Vertex),
-   (name:'Viewport';func:ULuaGl_Viewport),
-   (name:nil;func:nil)
-   );
 
 function luaopen_gl (L: Plua_State): Integer; cdecl;
 begin

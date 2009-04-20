@@ -422,6 +422,7 @@ begin
     LuaCore := TLuaCore.Create;
 
     LuaCore.RegisterModule('Log', ULuaLog_Lib_f);
+    LuaCore.RegisterModule('Gl', ULuaGl_Lib_f);
 
     LuaCore.BrowseDir(PluginPath);
     LuaCore.DumpPlugins; 
