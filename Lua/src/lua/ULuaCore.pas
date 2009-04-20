@@ -655,7 +655,12 @@ begin
       lua_checkstack(State, 2);
       lua_pushinteger(State, Id);
       lua_pushcclosure(State, TLuaPlugin_Register, 1); 
-      lua_setglobal(State, PChar('register'));  
+      lua_setglobal(State, PChar('register'));
+
+      // write plugin id to registry
+      lua_pushinteger(State, iId);
+      lua_setfield (State, LUA_REGISTRYINDEX, '_USDX_STATE_ID');
+      lua_pop(State, Lua_GetTop(State));
 
       // now run the plugin_init function
       // plugin_init() if false or nothing is returned plugin init is aborted

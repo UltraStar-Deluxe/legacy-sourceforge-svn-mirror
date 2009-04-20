@@ -37,19 +37,28 @@ uses ULua;
 
 { some basic lua c functions from usdx table }
 
-{ usdx.time - returns sdl_time to have time numbers comparable with
-              ultrastar delux ones. No Arguments }
+{ Usdx.Time - returns sdl_time to have time numbers comparable with
+              ultrastar delux ones. no arguments }
 function ULuaUsdx_Time(L: Plua_State): Integer; cdecl;
-function ULuaUsdx_(L: Plua_State): Integer; cdecl;
+
+{ Usdx.Version - returns Usdx version string (the same that US_Version
+  language-constant does). no arguments }
+function ULuaUsdx_Version(L: Plua_State): Integer; cdecl;
+
+{ Usdx.Hook - returns an hook table with name and Unhook function
+              arguments: event_name: string }
+function ULuaUsdx_Hook(L: Plua_State): Integer; cdecl;
 
 const
-  ULuaUsdx_Lib_f: array [0..1] of lual_reg = (
+  ULuaUsdx_Lib_f: array [0..3] of lual_reg = (
+    (name:'Version'; func:ULuaUsdx_Version),
     (name:'Time'; func:ULuaUsdx_Time),
+    (name:'Hook'; func:ULuaUsdx_Hook),
     (name:nil; func:nil)
   );
 
 implementation
-uses SDL;
+uses SDL, ULuaCore, UHookableEvent, UConfig;
 
 function ULuaUsdx_Time(L: Plua_State): Integer; cdecl;
   var top: Integer;
@@ -65,9 +74,53 @@ begin
   Result := 1; //one result
 end;
 
-function ULuaUsdx_(L: Plua_State): Integer; cdecl;
+{ Usdx.Version - returns Usdx version string (the same that US_Version
+  language-constant does). no arguments }
+function ULuaUsdx_Version(L: Plua_State): Integer; cdecl;
+  var top: Integer;
 begin
+  //remove arguments (if any)
+  top := lua_gettop(L);
 
+  If (top > 0) then
+    lua_pop(L, top);
+
+  //push result
+  lua_pushstring(L, PChar(USDXVersionStr()));
+  Result := 1; //one result
+end;
+
+{ Usdx.Hook - returns an hook table with name and Unhook function
+              arguments: event_name: string; function_name: string }
+function ULuaUsdx_Hook(L: Plua_State): Integer; cdecl;
+var
+  EventName: String;
+  FunctionName: String;
+  ParentId: Integer;
+  Event: THookableEvent;
+begin
+  EventName := luaL_checkstring(L, 1);
+  FunctionName := luaL_checkstring(L, 2);
+
+  lua_checkstack(L, 1);
+
+  lua_getfield (L, LUA_REGISTRYINDEX, '_USDX_STATE_ID');
+  if (not lua_isNumber(L, -1)) then
+    luaL_error(L, 'unable to get _USDX_STATE_ID in ULuaUsdx_Hook');
+
+  ParentId := lua_toInteger(L, -1);
+
+  lua_pop(L, lua_gettop(L)); //clear stack
+
+  Result := 1;
+
+  Event := LuaCore.GetEventByName(EventName);
+  if (Event <> nil) then
+  begin
+    Event.Hook(L, ParentId, FunctionName);
+  end
+  else
+    luaL_error(L, PChar('event does not exist: ' + EventName));
 end;
 
 end.

@@ -423,10 +423,8 @@ begin
 
     LuaCore.RegisterModule('Log', ULuaLog_Lib_f);
 
-
     LuaCore.BrowseDir(PluginPath);
-    LuaCore.DumpPlugins;
-
+    LuaCore.DumpPlugins; 
 
 
     //------------------------------
