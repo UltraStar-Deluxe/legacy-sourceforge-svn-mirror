@@ -37,7 +37,7 @@ uses
   ULua;
 
 type
-  { array holds ids of modis or Party_Round_Random
+  { array holds ids of modes or Party_Round_Random
     its length defines the number of rounds
     it is used as argument for TPartyGame.StartParty }
   ARounds = array of integer;
@@ -51,7 +51,7 @@ type
   { element of APartyTeamRanking returned by TPartyGame.GetTeamRanking }
   TParty_TeamRanking = record
     Team: Integer; //< id of team
-    Rank: Integer; //< 1 to Length(Teams) e.g. 1 is for first place
+    Rank: Integer; //< 1 to Length(Teams) e.g. 1 is for placed first
   end;
   AParty_TeamRanking = Array of TParty_TeamRanking; //< returned by TPartyGame.GetTeamRanking
 
@@ -167,8 +167,12 @@ type
     procedure CallOnSing;
     procedure CallAfterSing;
 
-    { returns an array[1..6] of integer. the index stands for the placing,
-      value is the team number (in the team array) }
+    { returns an array[1..6] of TParty_TeamRanking.
+      the index stands for the placing,
+      team is the team number (in the team array)
+      rank is correct rank if some teams have the
+      same score. 
+      }
     function GetTeamRanking: AParty_TeamRanking;
 
     { returns a string like "Team 1 (and Team 2) win" }
@@ -226,14 +230,20 @@ end;
 
 { clears all party specific data previously stored }
 procedure TPartyGame.Clear;
+  var
+    I: Integer;
 begin
   bPartyGame := false; // no party game
-  CurRound := -1;
+  CurRound := low(integer);
 
   bPartyStarted := false; //game not startet
 
   SetLength(Teams, 0); //remove team info
   SetLength(Rounds, 0); //remove round info
+
+  // clear times played
+  for I := 0 to High(TimesPlayed) do
+    TimesPlayed[I] := 0;
 end;
 
 { private: some intelligent randomnes for plugins }
@@ -503,6 +513,7 @@ end;
   returns the number of the current round or -1 if last round has already
   been played }
 function TPartyGame.NextRound: integer;
+  var I: Integer;
 begin
   // some lines concerning the previous round
   if (CurRound >= 0) then
@@ -521,7 +532,11 @@ begin
   // some lines concerning the next round
   if (CurRound >= 0) then
   begin
-   Rounds[CurRound].Winner := 0; //< reset winner
+    // select player
+    for I := 0 to High(Teams) do
+      Teams[I].NextPlayer := GetRandomPlayer(I);
+      
+    Rounds[CurRound].Winner := 0; //< reset winner
   end;
 end;
 
