@@ -34,226 +34,247 @@ interface
 {$I switches.inc}
 
 uses
-  UPartyDefs,
-  UCoreModule,
-  UPluginDefs;
+  ULua;
 
 type
-  ARounds = array [0..252] of integer; //0..252 needed for
-  PARounds = ^ARounds;
-  
-  TRoundInfo = record
-    Modi:   cardinal;
-    Winner: byte;
+  { array holds ids of modis or Party_Round_Random
+    its length defines the number of rounds
+    it is used as argument for TPartyGame.StartParty }
+  ARounds = array of integer;
+
+  { record used by TPartyGame to store round specific data }
+  TParty_Round = record
+    Mode:   Integer;
+    Winner: Integer;
   end;
 
-  TeamOrderEntry = record
-    Teamnum: byte;
-    Score: byte;
+  { element of APartyTeamRanking returned by TPartyGame.GetTeamRanking }
+  TParty_TeamRanking = record
+    Team: Integer; //< id of team
+    Rank: Integer; //< 1 to Length(Teams) e.g. 1 is for first place
+  end;
+  AParty_TeamRanking = Array of TParty_TeamRanking; //< returned by TPartyGame.GetTeamRanking
+
+  TParty_ModeInfo = record
+    Name: String; // name of this mode
+    Parent: Integer;   // Id of owning plugin
+
+    CanNonParty: Boolean; //< is playable when not in party mode
+    CanParty: Boolean;    //< is playable in party mode
+
+    // one bit in the following settings stands for
+    // a player or team count
+    // PlayerCount = 2 or 4 indicates that the mode is playable with 2 and 3 players per team
+    // TeamCount = 1 or 2 or 4 or 8 or 16 or 32 indicates that the mode is playable with 1 to 6 teams
+    PlayerCount: Integer;   //< playable with one, two, three etc. players per team
+    TeamCount: Integer;     //< playable with one, two, three etc. different teams
+
+
+    Functions: record // lua functions that will be called at specific events
+      BeforeSongSelect: String; // default actions are executed if functions = nil
+      AfterSongSelect: String;
+
+      BeforeSing: String;
+      OnSing: String;
+      AfterSing: String;
+    end;
   end;
 
-  TeamOrderArray = array[0..5] of byte;
-
-  TUS_ModiInfoEx = record
-    Info:        TUS_ModiInfo;
-    Owner:       integer;
-    TimesPlayed: byte; //Helper for setting round plugins
+  { used by TPartyGame to store player specific data }
+  TParty_PlayerInfo = record
+    Name: String;         //< Playername
+    TimesPlayed: Integer; //< How often this Player has Sung
   end;
 
-  TPartySession = class (TCoreModule)
+  { used by TPartyGame to store team specific data }
+  TParty_TeamInfo = record
+    Name:  String;        //< name of the Team
+    Score: Word;          //< current score
+    JokersLeft: Integer;  //< jokers this team has left
+
+    NextPlayer: Integer;  //Id of the player that plays the next (the current) song
+
+    Players: array of TParty_PlayerInfo;
+  end;
+
+  TPartyGame = class
   private
-    bPartyMode: boolean; //Is this party or single player
-    CurRound: byte;
+    bPartyGame: boolean; //< are we playing party or standard mode
+    CurRound: Integer;   //< indicates which of the elements of Rounds is played next (at the moment)
 
-    Modis: array of TUS_ModiInfoEx;
-    Teams: TTeamInfo;
+    bPartyStarted: Boolean;
 
-    function IsWinner(Player, Winner: byte): boolean;
+    Modes: array of TParty_ModeInfo;  //< holds info of registred party modes
+    Teams: array of TParty_TeamInfo;  //< holds info of teams playing in current round
+
+    TimesPlayed: array of Integer; //< times every mode was played in current party game (for random mode calculation)
+
+    function IsWinner(Player, Winner: integer): boolean;
     procedure GenScores;
-    function GetRandomPlugin(TeamMode: boolean): cardinal;
-    function GetRandomPlayer(Team: byte): byte;
+    function GetRandomMode: integer;
+    function GetRandomPlayer(Team: integer): integer;
+
+    function CallLua(Parent: Integer; Func: String):Boolean;
   public
     //Teams: TTeamInfo;
-    Rounds: array of TRoundInfo;
+    Rounds: array of TParty_Round;
 
-    //TCoreModule methods to inherit
-    constructor Create; override;
-    procedure Info(const pInfo: PModuleInfo); override;
-    function Load: boolean; override;
-    function Init: boolean; override;
-    procedure DeInit; override;
-    destructor Destroy; override;
+    constructor Create;
 
-    //Register modus service
-    function RegisterModi(nothin: TwParam; pModiInfo: TlParam): integer; //Registers a new modus. wParam: Pointer to TUS_ModiInfo
+    { set the attributes of Info to default values }
+    procedure DefaultModeInfo(var Info: TParty_ModeInfo);
 
-    //Start new Party
-    function StartParty(NumRounds: TwParam; PAofIRounds: TlParam): integer; //Starts new party mode. Returns non zero on success
-    function GetCurModi(wParam: TwParam; lParam: TlParam): integer; //Returns pointer to cur. Modis TUS_ModiInfo (to Use with Singscreen)
-    function StopParty(wParam: TwParam; lParam: TlParam): integer; //Stops party mode. Returns 1 if party mode was enabled before.
-    function NextRound(wParam: TwParam; lParam: TlParam): integer; //Increases curround by 1; Returns num of round or -1 if last round is already played
+    { registers a new mode, returns true on success
+      (mode name does not already exist) }
+    function RegisterMode(Info: TParty_ModeInfo): Boolean;
 
-    function CallModiInit(wParam: TwParam; lParam: TlParam): integer;    //Calls curmodis init proc. If an error occurs, returns nonzero. In this case a new plugin was selected. Please renew loading
-    function CallModiDeInit(wParam: TwParam; lParam: TlParam): integer;  //Calls DeInitProc and ends the round
+    { clears all party specific data previously stored }
+    procedure Clear;
 
-    function GetTeamInfo(wParam: TwParam; pTeamInfo: TlParam): integer;    //Writes TTeamInfo record to pointer at lParam. Returns zero on success
-    function SetTeamInfo(wParam: TwParam; pTeamInfo: TlParam): integer;    //Read TTeamInfo record from pointer at lParam. Returns zero on success
+    { adds a team to the team array, returning its id
+      can only be called when game is not already started }
+    function AddTeam(Name: String): Integer;
 
-    function  GetTeamOrder(wParam: TwParam; lParam: TlParam): integer;     //Returns team order. Structure: Bits 1..3: Team at place1; Bits 4..6: Team at place2 ...
-    function  GetWinnerString(wParam: TwParam; lParam: TlParam): integer;  //wParam is roundnum. If (Pointer = nil) then return length of the string. Otherwise write the string to address at lParam
+    { adds a player to the player array, returning its id
+      can only be called when game is not already started }
+    function AddPlayer(Team: Integer; Name: String): Integer;
+
+    { starts a new PartyGame, returns true on success
+      before a call of this function teams and players
+      has to be added by AddTeam and AddPlayer }
+
+    function StartGame(Rounds: ARounds): Boolean;
+
+    { increases round counter by 1 and clears all round specific information;
+      returns the number of the current round or -1 if last round has already
+      been played }
+    function NextRound: integer;
+
+    { true if in a Party Game (not in standard mode) }
+    property PartyGame: Boolean read BPartyGame;
+
+
+    { returns true if last round was already played }
+    function GameFinished: Boolean;
+
+    { call plugins defined function and/or default procedure
+      only default procedure is called when no function is defined by plugin
+      if plugins function returns true then default is called after plugins
+      function was executed}
+    procedure CallBeforeSongSelect;
+    procedure CallAfterSongSelect;
+    procedure CallBeforeSing;
+    procedure CallOnSing;
+    procedure CallAfterSing;
+
+    { returns an array[1..6] of integer. the index stands for the placing,
+      value is the team number (in the team array) }
+    function GetTeamRanking: AParty_TeamRanking;
+
+    { returns a string like "Team 1 (and Team 2) win" }
+    function GetWinnerString(Round: Integer): String;
+
+    destructor  Destroy;
   end;
 
 const
-  StandardModus = 0; //Modus ID that will be played in non-party mode
+  { minimal amount of teams for party mode }
+  Party_Teams_Min = 2;
+
+  { maximal amount of teams for party mode }
+  Party_Teams_Max = 3;
+
+  { minimal amount of players for party mode }
+  Party_Players_Min = 1;
+
+  { maximal amount of players for party mode }
+  Party_Players_Max = 4;
+
+  { amount of jokers each team gets at the beginning of the game }
+  Party_Count_Jokers = 5;
+
+  { to indicate that element (mode) should set randomly in ARounds array }
+  Party_Round_Random = -1;
+  
+  StandardModus = 0; //Modus Id that will be played in non-party mode
 
 implementation
 
 uses
-  UCore,
   UGraphic,
-  UMain,
   ULanguage,
   ULog,
+  ULuaCore,
+  UDisplay,
+  USong,
   SysUtils;
-
-{*********************
-  TPluginLoader
-  Implentation
-*********************}
-
-//-------------
-// function that gives some infos about the module to the core
-//-------------
-procedure TPartySession.Info(const pInfo: PModuleInfo);
-begin
-  pInfo^.Name := 'TPartySession';
-  pInfo^.Version := MakeVersion(1,0,0,chr(0));
-  pInfo^.Description := 'Manages party modi and party game';
-end;
 
 //-------------
 // Just the constructor
 //-------------
-constructor TPartySession.Create;
+constructor TPartyGame.Create;
 begin
   inherited;
-  //UnSet PartyMode
-  bPartyMode := false;
+
+  Clear;
 end;
 
-//-------------
-//Is called on loading.
-//In this method only events and services should be created
-//to offer them to other modules or plugins during the init process
-//If false is returned this will cause a forced exit
-//-------------
-function TPartySession.Load: boolean;
+destructor TPartyGame.Destroy;
 begin
-  //Add register party modus service
-  Result := true;
-  Core.Services.AddService('Party/RegisterModi', nil, Self.RegisterModi);
-  Core.Services.AddService('Party/StartParty', nil, Self.StartParty);
-  Core.Services.AddService('Party/GetCurModi', nil, Self.GetCurModi);
-end;
-
-//-------------
-//Is called on init process
-//In this method you can hook some events and create + init
-//your classes, variables etc.
-//If false is returned this will cause a forced exit
-//-------------
-function TPartySession.Init: boolean;
-begin
-  //Just set private var to true.
-  Result := true;
-end;
-
-//-------------
-//Is called if this module has been inited and there is an exit.
-//Deinit is in reverse initing order
-//-------------
-procedure TPartySession.DeInit;
-begin
-  //Force DeInit
-end;
-
-//-------------
-//Is called if this module will be unloaded and has been created
-//Should be used to free memory
-//-------------
-destructor TPartySession.Destroy;
-begin
-  //Just save some memory if it wasn't done now..
-  SetLength(Modis, 0);
   inherited;
 end;
 
-//-------------
-// Registers a new modus. wParam: Pointer to TUS_ModiInfo
-// Service for plugins
-//-------------
-function TPartySession.RegisterModi(nothin: TwParam; pModiInfo: TlParam): integer;
-var
-  Len: integer;
-  Info: PUS_ModiInfo;
+{ clears all party specific data previously stored }
+procedure TPartyGame.Clear;
 begin
-  Info := PModiInfo;
-  //Copy Info if cbSize is correct
-  if (Info.cbSize = SizeOf(TUS_ModiInfo)) then
-  begin
-    Len := Length(Modis);
-    SetLength(Modis, Len + 1);
+  bPartyGame := false; // no party game
+  CurRound := -1;
 
-    Modis[Len].Info := Info^;
-  end
-  else
-    Core.ReportError(integer(PChar('Plugins try to register modus with wrong pointer, or wrong TUS_ModiInfo record.')), PChar('TPartySession'));
+  bPartyStarted := false; //game not startet
 
-  // FIXME: return a valid result
-  Result := 0;
+  SetLength(Teams, 0); //remove team info
+  SetLength(Rounds, 0); //remove round info
 end;
 
-//----------
-// Returns a number of a random plugin
-//----------
-function TPartySession.GetRandomPlugin(TeamMode: boolean): cardinal;
+{ private: some intelligent randomnes for plugins }
+function TPartyGame.GetRandomMode: integer;
 var
-  LowestTP: byte;
-  NumPwithLTP: word;
+  LowestTP: integer;
+  NumPwithLTP: integer;
   I: integer;
-  R: word;
+  R: integer;
 begin
-  Result := StandardModus; //If there are no matching modi, play standard modus
-  LowestTP := high(byte);
+  Result := 0; //If there are no matching modes, play first modus
+  LowestTP := high(Integer);
   NumPwithLTP := 0;
 
-  //Search for Plugins not often played yet
-  for I := 0 to high(Modis) do
+  // search for the plugins less played yet
+  for I := 0 to high(Modes) do
   begin
-    if (Modis[I].TimesPlayed < lowestTP) and (((Modis[I].Info.LoadingSettings and MLS_TeamOnly) <> 0) = TeamMode) then
+    if (TimesPlayed[I] < lowestTP) then
     begin
-      lowestTP := Modis[I].TimesPlayed;
+      lowestTP := TimesPlayed[I];
       NumPwithLTP := 1;
     end
-    else if (Modis[I].TimesPlayed = lowestTP) and (((Modis[I].Info.LoadingSettings and MLS_TeamOnly) <> 0) = TeamMode) then
+    else if (TimesPlayed[I] = lowestTP) then
     begin
       Inc(NumPwithLTP);
     end;
   end;
 
-  //Create random no
+  // create random number
   R := Random(NumPwithLTP);
 
-  //Search for random plugin
-  for I := 0 to high(Modis) do
+  // select the random mode from the modes with less timesplayed
+  for I := 0 to high(Modes) do
   begin
-    if (Modis[I].TimesPlayed = lowestTP) and (((Modis[I].Info.LoadingSettings and MLS_TeamOnly) <> 0) = TeamMode) then
+    if (TimesPlayed[I] = lowestTP) { and (((Modis[I].Info.LoadingSettings and MLS_TeamOnly) <> 0) = TeamMode) }then
     begin
       //Plugin found
       if (R = 0) then
       begin
         Result := I;
-        Inc(Modis[I].TimesPlayed);
+        Inc(TimesPlayed[I]);
         Break;
       end;
 
@@ -262,90 +283,9 @@ begin
   end;
 end;
 
-//----------
-// Starts new party mode. Returns non zero on success
-//----------
-function TPartySession.StartParty(NumRounds: TwParam; PAofIRounds: TlParam): integer;
-var
-  I: integer;
-  aiRounds: PARounds;
-  TeamMode: boolean;
-begin
-  Result := 0;
-  if (Teams.NumTeams >= 1) and (NumRounds < High(byte)-1) then
-  begin
-    bPartyMode := false;
-    aiRounds := PAofIRounds;
-
-    try
-      //Is this team mode (More than one player per team) ?
-      TeamMode := true;
-      for I := 0 to Teams.NumTeams-1 do
-        TeamMode := TeamMode and (Teams.Teaminfo[I].NumPlayers > 1);
-
-      //Set Rounds
-      SetLength(Rounds, NumRounds);
-
-      for I := 0 to High(Rounds) do
-      begin //Set plugins
-        if (aiRounds[I] = -1) then
-          Rounds[I].Modi := GetRandomPlugin(TeamMode)
-        else if (aiRounds[I] >= 0) and (aiRounds[I] <= High(Modis)) and (TeamMode or ((Modis[aiRounds[I]].Info.LoadingSettings and MLS_TeamOnly) = 0))  then
-          Rounds[I].Modi := aiRounds[I]
-        else
-          Rounds[I].Modi := StandardModus;
-
-        Rounds[I].Winner := High(byte); //Set winner to not played
-      end;
-
-      CurRound := High(byte); //Set CurRound to not defined
-
-      //Return true and set party mode
-      bPartyMode := true;
-      Result := 1;
-
-    except
-      Core.ReportError(integer(PChar('Can''t start party mode.')), PChar('TPartySession'));
-    end;
-  end;
-end;
-
-//----------
-// Returns pointer to Cur. ModiInfoEx (to use with sing screen)
-//----------
-function TPartySession.GetCurModi(wParam: TwParam; lParam: TlParam): integer;
-begin
-  if (bPartyMode) and (CurRound <= High(Rounds)) then
-  begin //If PartyMode is enabled:
-    //Return the Plugin of the Cur Round
-    Result := integer(@Modis[Rounds[CurRound].Modi]);
-  end
-  else
-  begin //Return standard modus
-    Result := integer(@Modis[StandardModus]);
-  end;
-end;
-
-//----------
-// Stops party mode. Returns 1 if party mode was enabled before and -1 if change was not possible
-//----------
-function TPartySession.StopParty(wParam: TwParam; lParam: TlParam): integer;
-begin
-  Result := -1;
-  if (bPartyMode) then
-  begin
-    // to-do : Whitü: Check here if sing screen is not shown atm.
-    bPartyMode := false;
-    Result := 1;
-  end
-  else
-    Result := 0;
-end;
-
-//----------
-//GetRandomPlayer - gives back a random player to play next round
-//----------
-function TPartySession.GetRandomPlayer(Team: byte): byte;
+{ private: GetRandomPlayer - returns a random player
+                             that does not play to often ;) }
+function TPartyGame.GetRandomPlayer(Team: integer): integer;
 var
   I, R: integer;
   lowestTP: byte;
@@ -355,35 +295,34 @@ begin
   NumPwithLTP := 0;
   Result := 0;
 
-  //Search for players that have not often played yet
-  for I := 0 to Teams.Teaminfo[Team].NumPlayers-1 do
+  // search for players that have less played yet
+  for I := 0 to High(Teams[Team].Players) do
   begin
-    if (Teams.Teaminfo[Team].Playerinfo[I].TimesPlayed < lowestTP) then
+    if (Teams[Team].Players[I].TimesPlayed < lowestTP) then
     begin
-      lowestTP := Teams.Teaminfo[Team].Playerinfo[I].TimesPlayed;
+      lowestTP := Teams[Team].Players[I].TimesPlayed;
       NumPwithLTP := 1;
     end
-    else if (Teams.Teaminfo[Team].Playerinfo[I].TimesPlayed = lowestTP) then
+    else if (Teams[Team].Players[I].TimesPlayed = lowestTP) then
     begin
       Inc(NumPwithLTP);
     end;
   end;
 
-  //Create random no
+  // create random number
   R := Random(NumPwithLTP);
 
-  //Search for random player
-  for I := 0 to Teams.Teaminfo[Team].NumPlayers-1 do
+  // search for selected random player
+  for I := 0 to High(Teams[Team].Players) do
   begin
-    if Teams.Teaminfo[Team].Playerinfo[I].TimesPlayed = lowestTP then
+    if Teams[Team].Players[I].TimesPlayed = lowestTP then
     begin
-      //Player found
       if (R = 0) then
-      begin
+      begin // found selected player
         Result := I;
         Break;
       end;
-      
+
       Dec(R);
     end;
   end;
@@ -392,7 +331,7 @@ end;
 //----------
 // NextRound - Increases CurRound by 1; Returns num of round or -1 if last round is already played
 //----------
-function TPartySession.NextRound(wParam: TwParam; lParam: TlParam): integer;
+{function TPartyGame.NextRound(wParam: TwParam; lParam: TlParam): integer;
 var
   I: integer;
 begin
@@ -403,76 +342,384 @@ begin
     //Set Players to play this Round
     for I := 0 to Teams.NumTeams-1 do
       Teams.Teaminfo[I].CurPlayer := GetRandomPlayer(I);
-      
+
     // FIXME: return a valid result
     Result := 0;
   end
   else
     Result := -1;
-end;
+end;    }
 
-//----------
-//IsWinner - returns true if the players bit is set in the winner byte
-//----------
-function TPartySession.IsWinner(Player, Winner: byte): boolean;
+
+{ private: returns true if the players bit is set in the winner int }
+function TPartyGame.IsWinner(Player, Winner: Integer): boolean;
 var
   Bit: byte;
 begin
-  Bit := 1 shl Player;
+  if (Player < 31) then
+  begin
+    Bit := 1 shl Player;
 
-  Result := ((Winner and Bit) = Bit);
+    Result := ((Winner and Bit) = Bit);
+  end
+  else
+    Result := False;
 end;
 
 //----------
 //GenScores - inc scores for cur. round
 //----------
-procedure TPartySession.GenScores;
+procedure TPartyGame.GenScores;
 var
   I: byte;
 begin
-  for I := 0 to Teams.NumTeams-1 do
+  for I := 0 to High(Teams) do
   begin
     if isWinner(I, Rounds[CurRound].Winner) then
-      Inc(Teams.Teaminfo[I].Score);
+      Inc(Teams[I].Score);
   end;
 end;
 
-//----------
-// CallModiInit - calls CurModis Init Proc. If an error occurs, returns nonzero. In this case a new plugin was selected. Please renew loading
-//----------
-function TPartySession.CallModiInit(wParam: TwParam; lParam: TlParam): integer;
+{ set the attributes of Info to default values }
+procedure TPartyGame.DefaultModeInfo(var Info: TParty_ModeInfo);    
 begin
-  if (not bPartyMode) then
-  begin //Set rounds if not in party mode
-    SetLength(Rounds, 1);
-    Rounds[0].Modi := StandardModus;
-    Rounds[0].Winner := High(byte);
-    CurRound := 0;
+  Info.Name := 'undefined';
+  Info.Parent := -1; //< not loaded by plugin (e.g. core modes)
+  Info.CanNonParty := false;
+  Info.CanParty := false;
+  Info.PlayerCount := High(Integer); //< no restrictions either on player count
+  Info.TeamCount := High(Integer);   //< nor on team count
+  Info.Functions.BeforeSongSelect := ''; //< use default functions
+  Info.Functions.AfterSongSelect  := '';
+  Info.Functions.BeforeSing       := '';
+  Info.Functions.OnSing           := '';
+  Info.Functions.AfterSing        := '';
+end;
+
+{ registers a new mode, returns true on success
+  (mode name does not already exist) }
+function TPartyGame.RegisterMode(Info: TParty_ModeInfo): Boolean;
+  var
+    Len: integer;
+    LowerName: String;
+    I: integer;
+begin
+  Result := false;
+
+  if (Info.Name <> 'undefined') then
+  begin
+    // search for a plugin w/ same name
+    LowerName := lowercase(Info.Name); // case sensitive search
+    for I := 0 to high(Modes) do
+      if (LowerName = lowercase(Modes[I].Name)) then
+        exit; //< no success (name already exist)
+
+    // add new mode to array and append and clear a new TimesPlayed element
+    Len := Length(Modes);
+    SetLength(Modes, Len + 1);
+    SetLength(TimesPlayed, Len + 1);
+
+    Modes[Len] := Info;
+    TimesPlayed[Len] := 0;
+  end;
+end;
+
+{ adds a team to the team array, returning its id
+  can only be called when game is not already started }
+function TPartyGame.AddTeam(Name: String): Integer;
+begin
+  Result := -1;
+  if (not bPartyStarted) and (Length(Name) > 0) and (Length(Teams) < Party_Teams_Max) then
+  begin
+    Result := Length(Teams);
+    SetLength(Teams, Result + 1);
+
+    Teams[Result].Name := Name;
+    Teams[Result].Score := 0;
+    Teams[Result].JokersLeft := Party_Count_Jokers;
+    Teams[Result].NextPlayer := -1;
+  end;
+end;
+
+{ adds a player to the player array, returning its id
+  can only be called when game is not already started }
+function TPartyGame.AddPlayer(Team: Integer; Name: String): Integer;
+begin
+  Result := -1;
+
+  if (not bPartyStarted) and (Team >= 0) and (Team <= High(Teams)) and (Length(Teams[Team].Players) < Party_Players_Max) and (Length(Name) > 0) then
+  begin
+    // append element to players array
+    Result := Length(Teams[Team].Players);
+    SetLength(Teams[Team].Players, Result + 1);
+
+    // fill w/ data
+    Teams[Team].Players[Result].Name := Name;
+    Teams[Team].Players[Result].TimesPlayed := 0;
+  end;
+end;
+
+{ starts a new PartyGame, returns true on success
+  before a call of this function teams and players
+  has to be added by AddTeam and AddPlayer }
+function TPartyGame.StartGame(Rounds: ARounds): Boolean;
+  var
+    I: integer;
+begin
+  Result := false;
+
+  if (not bPartyStarted) and (Length(Rounds) > 0) and (Length(Teams) >= Party_Teams_Min) then
+  begin
+    // check teams for minimal player count
+    for I := 0 to High(Teams) do
+      if (Length(Teams[I].Players) < Party_Players_Min) then
+        exit;
+
+    // create rounds array
+    SetLength(Self.Rounds, Length(Rounds));
+
+    for I := 0 to High(Rounds) do
+    begin
+      // copy round or select a random round
+      if (Rounds[I] <> Party_Round_Random) and (Rounds[I] >= 0) and (Rounds[I] <= High(Modes)) then
+        Self.Rounds[I].Mode := Rounds[I]
+      else
+        Self.Rounds[I].Mode := GetRandomMode;
+
+      Self.Rounds[I].Winner := -1; // -1 indicates not played yet
+    end;
+
+    // get the party started!11
+    bPartyStarted := true;
+    bPartyGame := true;
+    CurRound := low(integer); //< set not to -1 to indicate that party game is not finished
+
+    // first round
+    NextRound;
+  end;
+end;
+
+{ increases round counter by 1 and clears all round specific information;
+  returns the number of the current round or -1 if last round has already
+  been played }
+function TPartyGame.NextRound: integer;
+begin
+  // some lines concerning the previous round
+  if (CurRound >= 0) then
+  begin
+    GenScores;
   end;
 
-  try
-    //Core.
-  except
-    on E : Exception do
+  // increase round counter
+  Inc(CurRound);
+
+  if (CurRound > High(Rounds)) then
+    CurRound := -1; //< last round played
+
+  Result := CurRound;
+
+  // some lines concerning the next round
+  if (CurRound >= 0) then
+  begin
+   Rounds[CurRound].Winner := 0; //< reset winner
+  end;
+end;
+
+{ returns true if last round was already played }
+function TPartyGame.GameFinished: Boolean;
+begin
+  Result := (bPartyStarted and (CurRound = -1));
+end;
+
+{ private: calls the specified function Func from lua plugin Parent
+           if both exist.
+           return true if default function should be called
+           (function or plugin does not exist, or function returns
+           true) }
+function TPartyGame.CallLua(Parent: Integer; Func: String):Boolean;
+  var
+    P: TLuaPlugin;
+begin
+  // call default function by default
+  Result := true;
+
+  // check for core plugin and empty function name
+  if (Parent >= 0) and (Length(Func) > 0) then
+  begin
+    // get plugin that registred the mode
+    P := LuaCore.GetPluginById(Parent);
+
+    if (P <> nil) then
     begin
-      Core.ReportError(integer(PChar('Error starting modus: ' + Modis[Rounds[CurRound].Modi].Info.Name + ' ErrorStr: ' + E.Message)), PChar('TPartySession'));
-      if (Rounds[CurRound].Modi = StandardModus) then
+      if (P.CallFunctionByName(Func, 0, 1)) then
+        // check result
+        Result := (lua_toboolean(P.LuaState, 1));
+    end;
+  end;
+end;
+
+{ call plugins defined function and/or default procedure
+  only default procedure is called when no function is defined by plugin
+  if plugins function returns true then default is called after plugins
+  function was executed}
+procedure TPartyGame.CallBeforeSongSelect;
+begin
+  if (CurRound >= 0) then
+  begin
+    // we set screen song to party mode
+    // plugin should not have to do this if it
+    // don't want default procedure to be executed
+    ScreenSong.Mode := smPartyMode;
+    with Modes[Rounds[CurRound].Mode] do
+      if (CallLua(Parent, Functions.BeforeSongSelect)) then
+      begin // execute default function:
+
+        // display song select screen
+        Display.FadeTo(@ScreenSong);
+      end;
+  end;
+end;
+
+procedure TPartyGame.CallAfterSongSelect;   
+begin
+  if (CurRound >= 0) then
+  begin
+    with Modes[Rounds[CurRound].Mode] do
+      if (CallLua(Parent, Functions.AfterSongSelect)) then
+      begin // execute default function:
+
+        // display sing screen
+        ScreenSong.StartSong;
+      end;
+  end;
+end;
+
+procedure TPartyGame.CallBeforeSing; 
+begin
+  if (CurRound >= 0) then
+  begin
+    with Modes[Rounds[CurRound].Mode] do
+      if (CallLua(Parent, Functions.BeforeSing)) then
+      begin // execute default function:
+
+        //nothing atm
+        { to-do : compartmentalize TSingScreen.OnShow into
+                  functions for init of a specific part of
+                  sing screen.
+                  these functions should be called here before
+                  sing screen is shown, or it should be called
+                  by plugin if it wants to define a custom
+                  singscreen start up. } 
+      end;
+  end;
+end;
+
+procedure TPartyGame.CallOnSing;
+begin
+  if (CurRound >= 0) then
+  begin
+    with Modes[Rounds[CurRound].Mode] do
+      if (CallLua(Parent, Functions.OnSing)) then
+      begin // execute default function:
+
+        //nothing atm
+      end;
+  end;
+end;
+
+procedure TPartyGame.CallAfterSing;
+begin
+  if (CurRound >= 0) then
+  begin
+    with Modes[Rounds[CurRound].Mode] do
+      if (CallLua(Parent, Functions.AfterSing)) then
+      begin // execute default function:
+
+        // display party score screen
+        Display.FadeTo(@ScreenPartyScore);
+      end;
+  end;
+end;
+
+{ returns an array[1..6] of integer. the index stands for the placing,
+  value is the team number (in the team array) }
+function TPartyGame.GetTeamRanking: AParty_TeamRanking;
+  var
+    I, J: Integer;
+    Temp: TParty_TeamRanking;
+    Rank: Integer;
+begin
+  SetLength(Result, Length(Teams));
+
+  // fill ranking array
+  for I := 0 to High(Result) do
+  begin
+    Result[I].Team := I;
+    Result[I].Rank := 0;
+  end;
+
+  // bubble sort by score
+  J := High(Result);
+  repeat
+    for I := 0 to J - 1 do
+      if (Teams[Result[I].Team].Score > Teams[Result[I+1].Team].Score) then
       begin
-        Core.ReportError(integer(PChar('Can''t start standard modus, will exit now!')), PChar('TPartySession'));
-        Halt;
+        Temp := Result[I];
+        Result[I] := Result[I+1];
+        Result[I+1] := Temp;
+      end;
+    Dec(J);
+  until J <= 0;
+
+  // set rank field
+  Rank := 1; //first rank has id 1
+  for I := 0 to High(Result) do
+  begin
+    Result[I].Rank := Rank;
+
+    if (I < High(Result)) and (Teams[Result[I].Team].Score <> Teams[Result[I+1].Team].Score) then
+      Inc(Rank); // next rank if next team has different score 
+  end; 
+end;
+
+{ returns a string like "Team 1 (and Team 2) win" }
+function TPartyGame.GetWinnerString(Round: Integer): String;
+var
+  Winners: array of String;
+  I: integer;
+begin
+  Result := '';
+
+  if (Round >= 0) and (Round <= High(Rounds)) then
+  begin
+    if (Rounds[Round].Winner <> 0) then
+    begin
+      if (Rounds[Round].Winner = -1) then
+      begin
+        Result := Language.Translate('PARTY_NOTPLAYEDYET');
       end
-      else //Select standard modus
+      else
       begin
-        Rounds[CurRound].Modi := StandardModus
+        SetLength(Winners, 0);
+        for I := 0 to High(Teams) do
+        begin
+          if isWinner(I, Rounds[Round].Winner) then
+          begin
+            SetLength(Winners, Length(Winners) + 1);
+            Winners[high(Winners)] := Teams[I].Name;
+          end;
+        end;
+        Result := Language.Implode(Winners);
       end;
     end;
   end;
 
-  // FIXME: return a valid result
-  Result := 0;
+
+  if (Length(Result) = 0) then
+    Result := Language.Translate('PARTY_NOBODY');
 end;
 
-//----------
+{ //----------
 // CallModiDeInit - calls DeInitProc and ends the round
 //----------
 function TPartySession.CallModiDeInit(wParam: TwParam; lParam: TlParam): integer;
@@ -529,53 +776,6 @@ begin
 end;
 
 //----------
-// GetTeamInfo - writes TTeamInfo record to pointer at lParam. Returns zero on success
-//----------
-function TPartySession.GetTeamInfo(wParam: TwParam; pTeamInfo: TlParam): integer;
-var
-  Info: ^TTeamInfo;
-begin
-  Result := -1;
-  Info := pTeamInfo;
-  if (Info <> nil) then
-  begin
-    try
-      // to - do : Check Delphi memory management in this case
-      //Not sure if i had to copy PChars to a new address or if delphi manages this o0
-      Info^  := Teams;
-      Result := 0;
-    except
-      Result := -2;
-    end;
-  end;
-end;
-
-//----------
-// SetTeamInfo - read TTeamInfo record from pointer at lParam. Returns zero on success
-//----------
-function TPartySession.SetTeamInfo(wParam: TwParam; pTeamInfo: TlParam): integer;
-var
-  TeamInfobackup: TTeamInfo;
-  Info: ^TTeamInfo;
-begin
-  Result := -1;
-  Info := pTeamInfo;
-  if (Info <> nil) then
-  begin
-    try
-      TeamInfoBackup := Teams;
-      // to - do : Check Delphi memory management in this case
-      //Not sure if i had to copy PChars to a new address or if delphi manages this o0
-      Teams := Info^;
-      Result := 0;
-    except
-      Teams := TeamInfoBackup;
-      Result := -2;
-    end;
-  end;
-end;
-
-//----------
 // GetTeamOrder - returns team order. Structure: Bits 1..3: Team at place1; Bits 4..6: Team at place2 ...
 //----------
 function  TPartySession.GetTeamOrder(wParam: TwParam; lParam: TlParam): integer;
@@ -606,60 +806,6 @@ begin
   Result := 0;
   for I := 0 to Teams.NumTeams-1 do
     Result := Result or (ATeams[I].TeamNum Shl I*3);
-end;
-
-//----------
-// GetWinnerString - wParam is Roundnum. If (pointer = nil) then return length of the string. Otherwise write the string to address at lParam
-//----------
-function  TPartySession.GetWinnerString(wParam: TwParam; lParam: TlParam): integer;
-var
-  Winners: array of String;
-  I: integer;
-  ResultStr: String;
-  S: ^String;
-begin
-  ResultStr := Language.Translate('PARTY_NOBODY');
-
-  if (wParam <= High(Rounds)) then
-  begin
-    if (Rounds[wParam].Winner <> 0) then
-    begin
-      if (Rounds[wParam].Winner = 255) then
-      begin
-        ResultStr := Language.Translate('PARTY_NOTPLAYEDYET');
-      end
-      else
-      begin
-        SetLength(Winners, 0);
-        for I := 0 to Teams.NumTeams-1 do
-        begin
-          if isWinner(I, Rounds[wParam].Winner) then
-          begin
-            SetLength(Winners, Length(Winners) + 1);
-            Winners[high(Winners)] := Teams.TeamInfo[I].Name;
-          end;
-        end;
-        ResultStr := Language.Implode(Winners);
-      end;
-    end;
-  end;
-
-  //Now return what we have got
-  if (lParam = nil) then
-  begin //Return string length
-    Result := Length(ResultStr);
-  end
-  else
-  begin //Return string
-    try
-      S := lParam;
-      S^ := ResultStr;
-      Result := 0;
-    except
-      Result := -1;
-
-    end;
-  end;
-end;
+end; }
 
 end.

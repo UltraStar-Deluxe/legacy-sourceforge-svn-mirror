@@ -39,7 +39,8 @@ uses
   UMenu,
   gl,
   glu,
-  SysUtils;
+  SysUtils,
+  UMusic;
 
 type
   TDisplay = class
@@ -76,6 +77,9 @@ type
       destructor  Destroy; override;
 
       procedure SaveScreenShot;
+
+      { fades to specific screen (playing specified sound) }
+      function FadeTo(Screen: PMenu; const aSound: TAudioPlaybackStream = nil): PMenu;
 
       function  Draw: Boolean;
   end;
@@ -305,6 +309,20 @@ begin
     if ((Ini.Debug = 1) or (Params.Debug)) and (S = 1) then
       DrawDebugInformation;      
   end; // for
+end;
+
+{ fades to specific screen (playing specified sound)
+  returns old screen }
+function TDisplay.FadeTo(Screen: PMenu; const aSound: TAudioPlaybackStream = nil): PMenu;
+begin
+  Result := CurrentScreen;
+  if (Result <> nil) then
+  begin
+    if (aSound <> nil) then
+      Result.FadeTo(Screen, aSound)
+    else
+      Result.FadeTo(Screen);
+  end;
 end;
 
 procedure TDisplay.SaveScreenShot;
