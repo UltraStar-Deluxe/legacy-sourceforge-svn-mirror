@@ -189,6 +189,7 @@ uses
   ULuaLog,
   ULuaTexture,
   ULuaTextGL,
+  ULuaParty,
   UThemes;
 
 
@@ -419,10 +420,13 @@ begin
                   chr(0))
     );  }
 
+    Party := TPartyGame.Create;
+
     LuaCore := TLuaCore.Create;
 
     LuaCore.RegisterModule('Log', ULuaLog_Lib_f);
     LuaCore.RegisterModule('Gl', ULuaGl_Lib_f);
+    LuaCore.RegisterModule('Party', ULuaParty_Lib_f);
 
     LuaCore.BrowseDir(PluginPath);
     LuaCore.DumpPlugins; 

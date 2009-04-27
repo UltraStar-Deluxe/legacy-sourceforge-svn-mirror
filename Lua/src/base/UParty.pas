@@ -105,7 +105,6 @@ type
     bPartyStarted: Boolean;
 
     Modes: array of TParty_ModeInfo;  //< holds info of registred party modes
-    Teams: array of TParty_TeamInfo;  //< holds info of teams playing in current round
 
     TimesPlayed: array of Integer; //< times every mode was played in current party game (for random mode calculation)
 
@@ -117,7 +116,8 @@ type
     function CallLua(Parent: Integer; Func: String):Boolean;
   public
     //Teams: TTeamInfo;
-    Rounds: array of TParty_Round;
+    Rounds: array of TParty_Round;    //< holds info which modes are played in this party game (if started)
+    Teams: array of TParty_TeamInfo;  //< holds info of teams playing in current round (private for easy manipulation of lua functions)
 
     constructor Create;
 
@@ -201,6 +201,9 @@ const
   Party_Round_Random = -1;
   
   StandardModus = 0; //Modus Id that will be played in non-party mode
+
+var
+  Party: TPartyGame;
 
 implementation
 
@@ -337,29 +340,6 @@ begin
     end;
   end;
 end;
-
-//----------
-// NextRound - Increases CurRound by 1; Returns num of round or -1 if last round is already played
-//----------
-{function TPartyGame.NextRound(wParam: TwParam; lParam: TlParam): integer;
-var
-  I: integer;
-begin
-  if ((CurRound < high(Rounds)) or (CurRound = high(CurRound))) then
-  begin //everythings OK! -> Start the Round, maaaaan
-    Inc(CurRound);
-
-    //Set Players to play this Round
-    for I := 0 to Teams.NumTeams-1 do
-      Teams.Teaminfo[I].CurPlayer := GetRandomPlayer(I);
-
-    // FIXME: return a valid result
-    Result := 0;
-  end
-  else
-    Result := -1;
-end;    }
-
 
 { private: returns true if the players bit is set in the winner int }
 function TPartyGame.IsWinner(Player, Winner: Integer): boolean;

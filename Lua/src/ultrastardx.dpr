@@ -151,7 +151,8 @@ uses
   ULuaTexture    in 'lua\ULuaTexture.pas',
   UHookableEvent in 'lua\UHookableEvent.pas',
   ULuaCore       in 'lua\ULuaCore.pas',
-  ULuaUsdx       in 'lua\ULuaUsdx.pas', 
+  ULuaUsdx       in 'lua\ULuaUsdx.pas',
+  ULuaParty      in 'lua\ULuaParty.pas',  
 
   //------------------------------
   //Includes - Menu System
