@@ -289,10 +289,10 @@ begin
     Text[TextTeam3Players].Visible := False;
     Static[StaticTeam3].Visible := False;
     Static[StaticNextPlayer3].Visible := False;
-  end; }
+  end;  }
 
   //nextRound Texts
-  {Text[TextNextRound].Text := Language.Translate('PLUGIN_' + uppercase(Party.Modes[Party.Rounds[Party.CurrentRound].Mode].Name) + '_DESC');
+  Text[TextNextRound].Text := Language.Translate('PLUGIN_' + uppercase(Party.Modes[Party.Rounds[Party.CurrentRound].Mode].Name) + '_DESC');
   Text[TextNextRoundNo].Text := InttoStr(Party.CurrentRound + 1);
   if (Length(Party.Teams) >= 1) then
   begin
