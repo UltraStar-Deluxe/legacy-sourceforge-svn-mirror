@@ -66,12 +66,11 @@ function ULuaParty_GetTeams(L: Plua_State): Integer; cdecl;
 function ULuaParty_SetTeams(L: Plua_State): Integer; cdecl;
 
 const
-  ULuaParty_Lib_f: array [0..4] of lual_reg = (
+  ULuaParty_Lib_f: array [0..3] of lual_reg = (
     (name:'Register'; func:ULuaParty_Register),
     (name:'GameFinished'; func:ULuaParty_GameFinished),
     (name:'GetTeams'; func:ULuaParty_GetTeams),
-    (name:'SetTeams'; func:ULuaParty_SetTeams),
-    (name:nil; func:nil)
+    (name:'SetTeams'; func:ULuaParty_SetTeams)
   );
 
 implementation
@@ -107,8 +106,6 @@ begin
     // pop value, so key is on top
     lua_pop(L, 1);
   end;
-
-
 end;
 
 { Party.Register - register party mode at party manager
@@ -160,9 +157,9 @@ begin
     else if (Key = 'canparty') and lua_isBoolean(L, -1) then
       Info.CanParty := lua_toBoolean(L, -1)
     else if (Key = 'playercount') and lua_isTable(L, -1) then
-      Info.playercount := lua_toBinInt(L, -1)
+      Info.PlayerCount := lua_toBinInt(L, -1)
     else if (Key = 'teamcount') and lua_isTable(L, -1) then
-      Info.teamcount := lua_toBinInt(L, -1)
+      Info.TeamCount := lua_toBinInt(L, -1)
     else if (Key = 'beforesongselect') and lua_isString(L, -1) then
       Info.Functions.BeforeSongSelect := lua_toString(L, -1)
     else if (Key = 'aftersongselect') and lua_isString(L, -1) then
@@ -182,7 +179,7 @@ begin
   lua_pop(L, lua_gettop(L));
 
   if not Party.RegisterMode(Info) then
-    luaL_error(L, PChar('can''t register party mode at party manager in Party.Register'));
+    luaL_error(L, PChar('can''t register party mode at party manager in Party.Register. Is Info.Name defined or is there another mode with this name?'));
 end;
 
 { Party.GameFinished - returns true if no party game is running or all rounds

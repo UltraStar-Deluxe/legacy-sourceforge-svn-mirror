@@ -81,6 +81,9 @@ type
       { fades to specific screen (playing specified sound) }
       function FadeTo(Screen: PMenu; const aSound: TAudioPlaybackStream = nil): PMenu;
 
+      { abort fading to the current screen, may be used in OnShow, or during fade process }
+      procedure AbortScreenChange;
+
       function  Draw: Boolean;
   end;
 
@@ -309,6 +312,31 @@ begin
     if ((Ini.Debug = 1) or (Params.Debug)) and (S = 1) then
       DrawDebugInformation;      
   end; // for
+end;
+
+{ abort fading to the next screen, may be used in OnShow, or during fade process }
+procedure TDisplay.AbortScreenChange;
+  var
+    Temp: PMenu;
+begin
+  // this is some kind of "hack" it is based on the
+  // code that is used to change the screens in TDisplay.Draw
+  // we should rewrite this whole behaviour, as it is not well
+  // structured and not well extendable. Also we should offer
+  // a possibility to change screens to plugins
+  // change this code when restructuring is done
+  if (assigned(NextScreen)) then
+  begin
+    // we have to swap the screens
+    Temp := CurrentScreen;
+    CurrentScreen := NextScreen;
+    NextScreen := Temp;
+
+    // and call the OnShow procedure of the previous screen
+    // because it was already called by default fade procedure
+    NextScreen.OnShow;
+    
+  end;
 end;
 
 { fades to specific screen (playing specified sound)

@@ -121,17 +121,7 @@ begin
           //Don'T start when Playlist is Selected and there are no Playlists
           if (Playlist = 2) and (Length(PlaylistMan.Playlists) = 0) then
             Exit;
-          // Don't start when SinglePlayer Teams but only Multiplayer Plugins available
-          OnlyMultiPlayer := true;
-          for I := 0 to High(DLLMan.Plugins) do
-	  begin
-            OnlyMultiPlayer := (OnlyMultiPlayer and DLLMan.Plugins[I].TeamModeOnly);
-          end;
-          if (OnlyMultiPlayer) and ((NumPlayer1 = 0) or (NumPlayer2 = 0) or ((NumPlayer3 = 0) and (NumTeams = 1))) then
-	  begin
-            ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_PLUGINS'));
-            Exit;
-          end;
+
           //Save Difficulty
           Ini.Difficulty := SelectsS[SelectLevel].SelectedOption;
           Ini.SaveLevel;
@@ -306,7 +296,19 @@ procedure TScreenPartyOptions.onShow;
 begin
   inherited;
 
-  Randomize;
+  Party.Clear;
+
+  // check if there are loaded modes
+  if Party.ModesAvailable then
+  begin
+    // modes are loaded
+    Randomize;
+  end
+  else
+  begin // no modes found
+    ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_PLUGINS'));
+    Display.AbortScreenChange;
+  end;
 end;
 
 procedure TScreenPartyOptions.SetAnimationProgress(Progress: real);

@@ -155,12 +155,7 @@ begin
         begin
           if (Songs.SongList.Count >= 1) then
           begin
-            if (Length(DLLMan.Plugins) >= 1) then
-            begin
-              FadeTo(@ScreenPartyOptions, SoundLib.Start);
-            end
-            else //show error message, No Plugins Loaded
-              ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_PLUGINS'));
+            FadeTo(@ScreenPartyOptions, SoundLib.Start);
           end
           else //show error message, No Songs Loaded
             ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));

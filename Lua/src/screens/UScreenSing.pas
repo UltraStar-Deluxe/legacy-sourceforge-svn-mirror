@@ -101,6 +101,14 @@ type
     fShowVisualization: boolean;
     fCurrentVideoPlaybackEngine: IVideoPlayback;
 
+    // some settings to be set by plugins
+    settings: record
+      
+
+
+    end;
+    procedure ClearSettings;
+
     constructor Create; override;
     procedure onShow; override;
     procedure onShowFinish; override;
@@ -126,6 +134,7 @@ uses UGraphic,
   Classes,
   URecord,
   ULanguage,
+  UDisplay,
   Math;
 
  // Method for input parsing. If False is returned, GetNextWindow
@@ -433,8 +442,8 @@ begin
 
   if (not success) then
   begin
-    // error loading song -> go back to song screen and show some error message
-    FadeTo(@ScreenSong);
+    // error loading song -> go back to previous screen and show some error message
+    Display.AbortScreenChange;
     // select new song in party mode
     if ScreenSong.Mode = smPartyMode then
       ScreenSong.SelectRandomSong();
@@ -619,6 +628,11 @@ begin
 
   // start timer
   CountSkipTimeSet;
+end;
+
+procedure TScreenSing.ClearSettings;
+begin
+
 end;
 
 procedure TScreenSing.onHide;
@@ -821,7 +835,7 @@ begin
 
   //Kill all Stars and Effects
   GoldenRec.KillAll;
-  
+
   if (Ini.SavePlayback = 1) then
   begin
     Log.BenchmarkStart(0);

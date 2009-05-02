@@ -104,8 +104,6 @@ type
 
     bPartyStarted: Boolean;
 
-    Modes: array of TParty_ModeInfo;  //< holds info of registred party modes
-
     TimesPlayed: array of Integer; //< times every mode was played in current party game (for random mode calculation)
 
     function IsWinner(Player, Winner: integer): boolean;
@@ -119,6 +117,10 @@ type
     Rounds: array of TParty_Round;    //< holds info which modes are played in this party game (if started)
     Teams: array of TParty_TeamInfo;  //< holds info of teams playing in current round (private for easy manipulation of lua functions)
 
+    Modes: array of TParty_ModeInfo;  //< holds info of registred party modes
+
+    property CurrentRound: Integer read CurRound;
+
     constructor Create;
 
     { set the attributes of Info to default values }
@@ -127,6 +129,12 @@ type
     { registers a new mode, returns true on success
       (mode name does not already exist) }
     function RegisterMode(Info: TParty_ModeInfo): Boolean;
+
+    { returns true if modes are available for
+      players and teams that are currently set
+      up. if there are no teams set up it returns
+      if there are any party modes available }
+    function ModesAvailable: Boolean;
 
     { clears all party specific data previously stored }
     procedure Clear;
@@ -301,10 +309,10 @@ end;
 function TPartyGame.GetRandomPlayer(Team: integer): integer;
 var
   I, R: integer;
-  lowestTP: byte;
-  NumPwithLTP: byte;
+  lowestTP: Integer;
+  NumPwithLTP: Integer;
 begin
-  LowestTP := high(byte);
+  LowestTP := high(Integer);
   NumPwithLTP := 0;
   Result := 0;
 
@@ -374,7 +382,7 @@ end;
 procedure TPartyGame.DefaultModeInfo(var Info: TParty_ModeInfo);    
 begin
   Info.Name := 'undefined';
-  Info.Parent := -1; //< not loaded by plugin (e.g. core modes)
+  Info.Parent := -1; //< not loaded by plugin (e.g. Duell)
   Info.CanNonParty := false;
   Info.CanParty := false;
   Info.PlayerCount := High(Integer); //< no restrictions either on player count
@@ -411,6 +419,38 @@ begin
 
     Modes[Len] := Info;
     TimesPlayed[Len] := 0;
+
+    Result := True;
+  end;
+end;
+
+{ returns true if modes are available for
+  players and teams that are currently set
+  up. if there are no teams set up it returns
+  if there are any party modes available }
+function TPartyGame.ModesAvailable: Boolean;
+  var
+    I, J: Integer;
+    CountTeams: Integer;
+begin
+  CountTeams := Length(Teams);
+  if CountTeams = 0 then
+  begin
+    Result := (Length(Modes) > 0);
+  end
+  else
+  begin
+    for I := 0 to High(Modes) do
+      if (Modes[I].TeamCount and (1 shl (CountTeams - 1)) <> 0) then
+      begin
+        Result := True;
+
+        for J := 0 to High(Teams) do
+          Result := Result and (Modes[I].PlayerCount and (1 shl (Length(Teams[J].Players) - 1)) <> 0);
+
+        if Result then
+          Exit;
+      end;
   end;
 end;
 
@@ -486,6 +526,8 @@ begin
 
     // first round
     NextRound;
+
+    Result := True;
   end;
 end;
 
@@ -503,6 +545,8 @@ begin
 
   // increase round counter
   Inc(CurRound);
+  if (CurRound < -1) then // we start first round
+    CurRound := 0;
 
   if (CurRound > High(Rounds)) then
     CurRound := -1; //< last round played
@@ -565,10 +609,10 @@ begin
     // plugin should not have to do this if it
     // don't want default procedure to be executed
     ScreenSong.Mode := smPartyMode;
+
     with Modes[Rounds[CurRound].Mode] do
       if (CallLua(Parent, Functions.BeforeSongSelect)) then
       begin // execute default function:
-
         // display song select screen
         Display.FadeTo(@ScreenSong);
       end;

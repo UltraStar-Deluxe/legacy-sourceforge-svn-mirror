@@ -71,11 +71,14 @@ type
 
 implementation
 
-uses UGraphic, UMain, UIni, UTexture, UParty;
+uses UGraphic, UMain, UIni, UTexture, UParty, UScreenPartyOptions, ULanguage;
 
 function TScreenPartyPlayer.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
 var
   SDL_ModState:  Word;
+  I, J: Integer;
+  HighPlayer: Integer;
+  Rounds: ARounds;
   procedure IntNext;
   begin
     repeat
@@ -243,10 +246,57 @@ begin
               PartySession.Teams.Teaminfo[I].Playerinfo[J].Name := PChar(Button[I*5 + J+1].Text[0].Text);
               PartySession.Teams.Teaminfo[I].Playerinfo[J].TimesPlayed := 0;
             end;
+          end; }
+
+          // add teams to party
+
+          for I := 0 to ScreenPartyOptions.NumTeams + 1 do
+          begin
+            Party.AddTeam(Button[I * 5].Text[0].Text);
+
+            case I of
+              0: HighPlayer := ScreenPartyOptions.NumPlayer1;
+              1: HighPlayer := ScreenPartyOptions.NumPlayer2;
+              2: HighPlayer := ScreenPartyOptions.NumPlayer3;
+            end;
+
+            for J := 0 to HighPlayer do
+              Party.AddPlayer(I, Button[I * 5 + 1 + J].Text[0].Text);
           end;
 
-          AudioPlayback.PlayStart;
-          FadeTo(@ScreenPartyNewRound);}
+          if (Party.ModesAvailable) then
+          begin //mode for current playersetup available
+            // to - do : add round select screen
+            // atm just add random rounds to the rounds array
+            SetLength(Rounds, ScreenPartyOptions.Rounds + 2);
+
+            for I := 0 to High(Rounds) do
+              Rounds[I] := Party_Round_Random;
+
+            // start party game
+            if (Party.StartGame(Rounds)) then
+            begin
+              FadeTo(@ScreenPartyNewRound, SoundLib.Start);
+            end
+            else
+            begin
+              //error starting party game
+              ScreenPopupError.ShowPopup(Language.Translate('ERROR_CAN_NOT_START_PARTY'));
+
+              Party.Clear;
+            end;
+
+          end
+          else
+          begin
+            // no mode available for current player setup
+            ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_MODES_FOR_CURRENT_SETUP'));
+
+            Party.Clear;
+          end;
+
+
+
         end;
 
       // Up and Down could be done at the same time,
@@ -310,13 +360,13 @@ begin
     Button[10].Text[0].Text := Ini.NameTeam[2];
     // Templates for Names Mod end
   
-  {If (PartySession.Teams.NumTeams>=1) then
+  If (ScreenPartyOptions.NumTeams + 2 >= 1) then
   begin
-    Button[0].Visible := True;
-    Button[1].Visible := (PartySession.Teams.Teaminfo[0].NumPlayers >=1);
-    Button[2].Visible := (PartySession.Teams.Teaminfo[0].NumPlayers >=2);
-    Button[3].Visible := (PartySession.Teams.Teaminfo[0].NumPlayers >=3);
-    Button[4].Visible := (PartySession.Teams.Teaminfo[0].NumPlayers >=4);
+    Button[0].Visible := true;
+    Button[1].Visible := (ScreenPartyOptions.NumPlayer1 + 1 >= 1);
+    Button[2].Visible := (ScreenPartyOptions.NumPlayer1 + 1 >= 2);
+    Button[3].Visible := (ScreenPartyOptions.NumPlayer1 + 1 >= 3);
+    Button[4].Visible := (ScreenPartyOptions.NumPlayer1 + 1 >= 4);
   end
   else
   begin
@@ -327,13 +377,13 @@ begin
     Button[4].Visible := False;
   end;
 
-  If (PartySession.Teams.NumTeams>=2) then
+  If (ScreenPartyOptions.NumTeams + 2 >= 2) then
   begin
-    Button[5].Visible := True;
-    Button[6].Visible := (PartySession.Teams.Teaminfo[1].NumPlayers >=1);
-    Button[7].Visible := (PartySession.Teams.Teaminfo[1].NumPlayers >=2);
-    Button[8].Visible := (PartySession.Teams.Teaminfo[1].NumPlayers >=3);
-    Button[9].Visible := (PartySession.Teams.Teaminfo[1].NumPlayers >=4);
+    Button[5].Visible := true;
+    Button[6].Visible := (ScreenPartyOptions.NumPlayer2 + 1 >= 1);
+    Button[7].Visible := (ScreenPartyOptions.NumPlayer2 + 1 >= 2);
+    Button[8].Visible := (ScreenPartyOptions.NumPlayer2 + 1 >= 3);
+    Button[9].Visible := (ScreenPartyOptions.NumPlayer2 + 1 >= 4);
   end
   else
   begin
@@ -344,13 +394,13 @@ begin
     Button[9].Visible := False;
   end;
 
-  If (PartySession.Teams.NumTeams>=3) then
+  If (ScreenPartyOptions.NumTeams + 2 >= 3) then
   begin
-    Button[10].Visible := True;
-    Button[11].Visible := (PartySession.Teams.Teaminfo[2].NumPlayers >=1);
-    Button[12].Visible := (PartySession.Teams.Teaminfo[2].NumPlayers >=2);
-    Button[13].Visible := (PartySession.Teams.Teaminfo[2].NumPlayers >=3);
-    Button[14].Visible := (PartySession.Teams.Teaminfo[2].NumPlayers >=4);
+    Button[10].Visible := true;
+    Button[11].Visible := (ScreenPartyOptions.NumPlayer3 + 1 >= 1);
+    Button[12].Visible := (ScreenPartyOptions.NumPlayer3 + 1 >= 2);
+    Button[13].Visible := (ScreenPartyOptions.NumPlayer3 + 1 >= 3);
+    Button[14].Visible := (ScreenPartyOptions.NumPlayer3 + 1 >= 4);
   end
   else
   begin
@@ -359,7 +409,7 @@ begin
     Button[12].Visible := False;
     Button[13].Visible := False;
     Button[14].Visible := False;
-  end;   }
+  end;
 
 end;
 
@@ -367,8 +417,8 @@ procedure TScreenPartyPlayer.SetAnimationProgress(Progress: real);
 var
   I:    integer;
 begin
-  for I := 0 to high(Button) do
-    Button[I].Texture.ScaleW := Progress;
+  {for I := 0 to high(Button) do
+    Button[I].Texture.ScaleW := Progress;   }
 end;
 
 end.

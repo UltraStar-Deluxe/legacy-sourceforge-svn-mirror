@@ -40,21 +40,9 @@ type
   TScreenPartyNewRound = class(TMenu)
     public
       //Texts:
-      TextRound1: Cardinal;
-      TextRound2: Cardinal;
-      TextRound3: Cardinal;
-      TextRound4: Cardinal;
-      TextRound5: Cardinal;
-      TextRound6: Cardinal;
-      TextRound7: Cardinal;
+      TextRound: array [0..6] of Cardinal;
 
-      TextWinner1: Cardinal;
-      TextWinner2: Cardinal;
-      TextWinner3: Cardinal;
-      TextWinner4: Cardinal;
-      TextWinner5: Cardinal;
-      TextWinner6: Cardinal;
-      TextWinner7: Cardinal;
+      TextWinner: array [0..6] of Cardinal;
 
       TextNextRound: Cardinal;
       TextNextRoundNo: Cardinal;
@@ -63,13 +51,7 @@ type
       TextNextPlayer3: Cardinal;
 
       //Statics
-      StaticRound1: Cardinal;
-      StaticRound2: Cardinal;
-      StaticRound3: Cardinal;
-      StaticRound4: Cardinal;
-      StaticRound5: Cardinal;
-      StaticRound6: Cardinal;
-      StaticRound7: Cardinal;
+      StaticRound: array [0..6] of Cardinal;
 
       //Scores
       TextScoreTeam1: Cardinal;
@@ -88,9 +70,7 @@ type
       StaticTeam3: Cardinal;
       StaticNextPlayer1: Cardinal;
       StaticNextPlayer2: Cardinal;
-      StaticNextPlayer3: Cardinal;
-
-
+      StaticNextPlayer3: Cardinal;   
 
 
       constructor Create; override;
@@ -137,16 +117,7 @@ begin
       SDLK_RETURN:
         begin
           AudioPlayback.PlaySound(SoundLib.Start);
-          if DLLMan.Selected.LoadSong then
-          begin
-            //Select PartyMode ScreenSong
-            ScreenSong.Mode := smPartyMode;
-            FadeTo(@ScreenSong);
-          end
-          else
-          begin
-            FadeTo(@ScreenSingModi);
-          end;
+          Party.CallBeforeSongSelect;
         end;
     end;
   end;
@@ -156,21 +127,21 @@ constructor TScreenPartyNewRound.Create;
 begin
   inherited Create;
 
-  TextRound1 := AddText (Theme.PartyNewRound.TextRound1);
-  TextRound2 := AddText (Theme.PartyNewRound.TextRound2);
-  TextRound3 := AddText (Theme.PartyNewRound.TextRound3);
-  TextRound4 := AddText (Theme.PartyNewRound.TextRound4);
-  TextRound5 := AddText (Theme.PartyNewRound.TextRound5);
-  TextRound6 := AddText (Theme.PartyNewRound.TextRound6);
-  TextRound7 := AddText (Theme.PartyNewRound.TextRound7);
+  TextRound[0] := AddText (Theme.PartyNewRound.TextRound1);
+  TextRound[1] := AddText (Theme.PartyNewRound.TextRound2);
+  TextRound[2] := AddText (Theme.PartyNewRound.TextRound3);
+  TextRound[3] := AddText (Theme.PartyNewRound.TextRound4);
+  TextRound[4] := AddText (Theme.PartyNewRound.TextRound5);
+  TextRound[5] := AddText (Theme.PartyNewRound.TextRound6);
+  TextRound[6] := AddText (Theme.PartyNewRound.TextRound7);
 
-  TextWinner1 := AddText (Theme.PartyNewRound.TextWinner1);
-  TextWinner2 := AddText (Theme.PartyNewRound.TextWinner2);
-  TextWinner3 := AddText (Theme.PartyNewRound.TextWinner3);
-  TextWinner4 := AddText (Theme.PartyNewRound.TextWinner4);
-  TextWinner5 := AddText (Theme.PartyNewRound.TextWinner5);
-  TextWinner6 := AddText (Theme.PartyNewRound.TextWinner6);
-  TextWinner7 := AddText (Theme.PartyNewRound.TextWinner7);
+  TextWinner[0] := AddText (Theme.PartyNewRound.TextWinner1);
+  TextWinner[1] := AddText (Theme.PartyNewRound.TextWinner2);
+  TextWinner[2] := AddText (Theme.PartyNewRound.TextWinner3);
+  TextWinner[3] := AddText (Theme.PartyNewRound.TextWinner4);
+  TextWinner[4] := AddText (Theme.PartyNewRound.TextWinner5);
+  TextWinner[5] := AddText (Theme.PartyNewRound.TextWinner6);
+  TextWinner[6] := AddText (Theme.PartyNewRound.TextWinner7);
 
   TextNextRound := AddText (Theme.PartyNewRound.TextNextRound);
   TextNextRoundNo := AddText (Theme.PartyNewRound.TextNextRoundNo);
@@ -178,13 +149,13 @@ begin
   TextNextPlayer2 := AddText (Theme.PartyNewRound.TextNextPlayer2);
   TextNextPlayer3 := AddText (Theme.PartyNewRound.TextNextPlayer3);
 
-  StaticRound1 := AddStatic (Theme.PartyNewRound.StaticRound1);
-  StaticRound2 := AddStatic (Theme.PartyNewRound.StaticRound2);
-  StaticRound3 := AddStatic (Theme.PartyNewRound.StaticRound3);
-  StaticRound4 := AddStatic (Theme.PartyNewRound.StaticRound4);
-  StaticRound5 := AddStatic (Theme.PartyNewRound.StaticRound5);
-  StaticRound6 := AddStatic (Theme.PartyNewRound.StaticRound6);
-  StaticRound7 := AddStatic (Theme.PartyNewRound.StaticRound7);
+  StaticRound[0] := AddStatic (Theme.PartyNewRound.StaticRound1);
+  StaticRound[1] := AddStatic (Theme.PartyNewRound.StaticRound2);
+  StaticRound[2] := AddStatic (Theme.PartyNewRound.StaticRound3);
+  StaticRound[3] := AddStatic (Theme.PartyNewRound.StaticRound4);
+  StaticRound[4] := AddStatic (Theme.PartyNewRound.StaticRound5);
+  StaticRound[5] := AddStatic (Theme.PartyNewRound.StaticRound6);
+  StaticRound[6] := AddStatic (Theme.PartyNewRound.StaticRound7);
 
   //Scores
   TextScoreTeam1 := AddText (Theme.PartyNewRound.TextScoreTeam1);
@@ -215,15 +186,15 @@ var
   function GetTeamPlayers(const Num: Byte): String;
   var
     Players: Array of String;
-    //J: Byte;
-  begin            // to-do : Party
-    if (Num-1 >= {PartySession.Teams.NumTeams}0) then
+    J: Integer;
+  begin          
+    if (Num >= Length(Party.Teams)) then
       exit;
 
-    {//Create Players Array
-    SetLength(Players, PartySession.Teams.TeamInfo[Num-1].NumPlayers);
-    For J := 0 to PartySession.Teams.TeamInfo[Num-1].NumPlayers-1 do
-      Players[J] := String(PartySession.Teams.TeamInfo[Num-1].PlayerInfo[J].Name);}
+    //Create Players Array
+    SetLength(Players, Length(Party.Teams[Num-1].Players));
+    For J := 0 to High(Party.Teams[Num-1].Players) do
+      Players[J] := Party.Teams[Num-1].Players[J].Name;
 
     //Implode and Return
     Result := Language.Implode(Players);
@@ -235,126 +206,26 @@ begin
   //PartySession.StartRound;
 
   //Set Visibility of Round Infos
-  // to-do : Party
-  I := {Length(PartySession.Rounds)}0;
-  if (I >= 1) then
+  for I := 0 to 6 do
   begin
-    Static[StaticRound1].Visible := True;
-    Text[TextRound1].Visible := True;
-    Text[TextWinner1].Visible := True;
+    if (I <= High(Party.Rounds)) then
+    begin
+      Static[StaticRound[I]].Visible := True;
+      Text[TextRound[I]].Visible := True;
+      Text[TextWinner[I]].Visible := True;
 
-    //Texts:
-    //Text[TextRound1].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[0].Plugin].Name);
-    //Text[TextWinner1].Text := PartySession.GetWinnerString(0);
-  end
-  else
-  begin
-    Static[StaticRound1].Visible := False;
-    Text[TextRound1].Visible := False;
-    Text[TextWinner1].Visible := False;
+      // update texts:
+      Text[TextRound[I]].Text := Language.Translate('PLUGIN_' + uppercase(Party.Modes[Party.Rounds[I].Mode].Name) + '_NAME');
+      Text[TextWinner[I]].Text := Party.GetWinnerString(I);
+    end
+    else
+    begin
+      Static[StaticRound[I]].Visible := False;
+      Text[TextRound[I]].Visible := False;
+      Text[TextWinner[I]].Visible := False;
+    end;
   end;
 
-  if (I >= 2) then
-  begin
-    Static[StaticRound2].Visible := True;
-    Text[TextRound2].Visible := True;
-    Text[TextWinner2].Visible := True;
-
-    //Texts:
-    //Text[TextRound2].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[1].Plugin].Name);
-    //Text[TextWinner2].Text := PartySession.GetWinnerString(1);
-  end
-  else
-  begin
-    Static[StaticRound2].Visible := False;
-    Text[TextRound2].Visible := False;
-    Text[TextWinner2].Visible := False;
-  end;
-
-  if (I >= 3) then
-  begin
-    Static[StaticRound3].Visible := True;
-    Text[TextRound3].Visible := True;
-    Text[TextWinner3].Visible := True;
-
-    //Texts:
-    //Text[TextRound3].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[2].Plugin].Name);
-    //Text[TextWinner3].Text := PartySession.GetWinnerString(2);
-  end
-  else
-  begin
-    Static[StaticRound3].Visible := False;
-    Text[TextRound3].Visible := False;
-    Text[TextWinner3].Visible := False;
-  end;
-
-  if (I >= 4) then
-  begin
-    Static[StaticRound4].Visible := True;
-    Text[TextRound4].Visible := True;
-    Text[TextWinner4].Visible := True;
-
-    //Texts:
-    //Text[TextRound4].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[3].Plugin].Name);
-    //Text[TextWinner4].Text := PartySession.GetWinnerString(3);
-  end
-  else
-  begin
-    Static[StaticRound4].Visible := False;
-    Text[TextRound4].Visible := False;
-    Text[TextWinner4].Visible := False;
-  end;
-
-  if (I >= 5) then
-  begin
-    Static[StaticRound5].Visible := True;
-    Text[TextRound5].Visible := True;
-    Text[TextWinner5].Visible := True;
-
-    //Texts:
-    //Text[TextRound5].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[4].Plugin].Name);
-    //Text[TextWinner5].Text := PartySession.GetWinnerString(4);
-  end
-  else
-  begin
-    Static[StaticRound5].Visible := False;
-    Text[TextRound5].Visible := False;
-    Text[TextWinner5].Visible := False;
-  end;
-
-  if (I >= 6) then
-  begin
-    Static[StaticRound6].Visible := True;
-    Text[TextRound6].Visible := True;
-    Text[TextWinner6].Visible := True;
-
-    //Texts:
-    //Text[TextRound6].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[5].Plugin].Name);
-    //Text[TextWinner6].Text := PartySession.GetWinnerString(5);
-  end
-  else
-  begin
-    Static[StaticRound6].Visible := False;
-    Text[TextRound6].Visible := False;
-    Text[TextWinner6].Visible := False;
-  end;
-
-  if (I >= 7) then
-  begin
-    Static[StaticRound7].Visible := True;
-    Text[TextRound7].Visible := True;
-    Text[TextWinner7].Visible := True;
-
-    //Texts:
-    //Text[TextRound7].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[6].Plugin].Name);
-    //Text[TextWinner7].Text := PartySession.GetWinnerString(6);
-  end
-  else
-  begin
-    Static[StaticRound7].Visible := False;
-    Text[TextRound7].Visible := False;
-    Text[TextWinner7].Visible := False;
-  end;
 
   //Display Scores
   {if (PartySession.Teams.NumTeams >= 1) then
@@ -418,34 +289,34 @@ begin
     Text[TextTeam3Players].Visible := False;
     Static[StaticTeam3].Visible := False;
     Static[StaticNextPlayer3].Visible := False;
-  end;
+  end; }
 
   //nextRound Texts
-  Text[TextNextRound].Text := Language.Translate(DllMan.Selected.PluginDesc);
-  Text[TextNextRoundNo].Text := InttoStr(PartySession.CurRound + 1);
-  if (PartySession.Teams.NumTeams >= 1) then
+  {Text[TextNextRound].Text := Language.Translate('PLUGIN_' + uppercase(Party.Modes[Party.Rounds[Party.CurrentRound].Mode].Name) + '_DESC');
+  Text[TextNextRoundNo].Text := InttoStr(Party.CurrentRound + 1);
+  if (Length(Party.Teams) >= 1) then
   begin
-    Text[TextNextPlayer1].Text := PartySession.Teams.Teaminfo[0].Playerinfo[PartySession.Teams.Teaminfo[0].CurPlayer].Name;
+    Text[TextNextPlayer1].Text := Party.Teams[0].Players[Party.Teams[0].NextPlayer].Name;
     Text[TextNextPlayer1].Visible := True;
   end
   else
     Text[TextNextPlayer1].Visible := False;
-    
-  if (PartySession.Teams.NumTeams >= 2) then
+
+  if (Length(Party.Teams) >= 2) then
   begin
-    Text[TextNextPlayer2].Text := PartySession.Teams.Teaminfo[1].Playerinfo[PartySession.Teams.Teaminfo[1].CurPlayer].Name;
+    Text[TextNextPlayer2].Text := Party.Teams[1].Players[Party.Teams[1].NextPlayer].Name;
     Text[TextNextPlayer2].Visible := True;
   end
   else
     Text[TextNextPlayer2].Visible := False;
 
-  if (PartySession.Teams.NumTeams >= 3) then
+  if (Length(Party.Teams) >= 3) then
   begin
-    Text[TextNextPlayer3].Text := PartySession.Teams.Teaminfo[2].Playerinfo[PartySession.Teams.Teaminfo[2].CurPlayer].Name;
+    Text[TextNextPlayer3].Text := Party.Teams[2].Players[Party.Teams[2].NextPlayer].Name;
     Text[TextNextPlayer3].Visible := True;
   end
   else
-    Text[TextNextPlayer3].Visible := False;  }
+    Text[TextNextPlayer3].Visible := False;
 end;
 
 procedure TScreenPartyNewRound.SetAnimationProgress(Progress: real);
