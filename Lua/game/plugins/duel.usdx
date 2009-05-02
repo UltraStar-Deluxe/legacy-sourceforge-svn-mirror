@@ -1,0 +1,17 @@
+function plugin_init()
+  register('party mode: duel', '1.00', 'USDX Team', 'http://www.UltrastarDeluxe.org');
+
+  require('Usdx.Party')
+
+  Mode = {}
+
+  Mode.Name = 'Duel'
+  Mode.CanNonParty = true;
+  Mode.CanParty = true;
+
+  Usdx.Party.Register(Mode)
+
+  Mode = nil;
+
+  return true;
+end
