@@ -147,6 +147,8 @@ type
       function GetEventbyName(Name: String): THookableEvent;       //< tries to find the event w/ the given name in the list
       function GetEventbyHandle(hEvent: Integer): THookableEvent;     //< tries to find the event w/ the given handle
 
+      procedure UnHookByParent(Parent: Integer); //< remove all hooks by given parent id from all events
+
       procedure PrepareState(L: Plua_State);
 
       procedure DumpPlugins; //< prints plugin runtime information w/ Log.LogStatus
@@ -399,7 +401,7 @@ begin
 end;
 
 { tries to find the event w/ the given handle }
-function TLuaCore.GetEventbyHandle(hEvent: Integer): THookableEvent;   
+function TLuaCore.GetEventbyHandle(hEvent: Integer): THookableEvent;
 begin
   If (hEvent >= 0) AND (hEvent <= High(EventHandles)) AND (Length(EventHandles[hEvent]) > 0) then
   begin //hEvent in bounds and not already deleted
@@ -407,6 +409,24 @@ begin
   end
   else
     Result := nil;
+end;
+
+{ remove all hooks by given parent id from all events }
+procedure TLuaCore.UnHookByParent(Parent: Integer);
+  var
+    Cur: PEventListItem;
+begin
+  if (Parent >= 0) and (Parent <= High(Plugins)) then
+  begin
+    // go through event list
+    Cur := EventList;
+
+    While (Cur <> nil) do
+    begin
+      Cur.Event.UnHookByParent(Parent);
+      Cur := Cur.Next;
+    end;
+  end;
 end;
 
 { prepares the given already opened Lua state with the
@@ -812,6 +832,8 @@ begin
     ClearStack;
     lua_close(State);
     State := nil; //don't forget to nil it ;)
+
+    LuaCore.UnHookByParent(iId);
 
     if (sStatus = psRunning) then
       sStatus := psClosed;
