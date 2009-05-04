@@ -233,9 +233,16 @@ end;
 procedure TScreenMain.onShow;
 begin
   inherited;
-{**
- * Start background music
- *}
+
+ {**
+  * Clean up TPartyGame here
+  * at the moment there is no better place for this
+  *}
+  Party.Clear;
+
+ {**
+  * Start background music
+  *}
   SoundLib.StartBgMusic;
 end;
 

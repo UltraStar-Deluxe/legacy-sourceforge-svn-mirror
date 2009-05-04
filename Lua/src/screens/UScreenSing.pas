@@ -135,6 +135,7 @@ uses UGraphic,
   URecord,
   ULanguage,
   UDisplay,
+  UParty,
   Math;
 
  // Method for input parsing. If False is returned, GetNextWindow
@@ -615,6 +616,9 @@ begin
     if Lines[0].Line[P].TotalNotes = 0 then
       Inc(NumEmptySentences);
 
+  ClearSettings;
+  Party.CallBeforeSing;
+
   Log.LogStatus('End', 'onShow');
 end;
 
@@ -770,7 +774,6 @@ begin
       begin
         Finish;
         FadeOut := True;
-        FadeTo(@ScreenScore);
       end;
     end;
   end;
@@ -847,6 +850,8 @@ begin
   end;
 
   SetFontItalic(False);
+
+  Party.CallAfterSing;
 end;
 
 procedure TScreenSing.OnSentenceEnd(SentenceIndex: cardinal);
