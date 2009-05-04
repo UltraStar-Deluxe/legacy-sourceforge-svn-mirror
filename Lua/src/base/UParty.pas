@@ -153,6 +153,10 @@ type
 
     function StartGame(Rounds: ARounds): Boolean;
 
+    { sets the winner(s) of current round
+      returns true on success }
+    function SetWinner(WinBin: Integer): Boolean;
+
     { increases round counter by 1 and clears all round specific information;
       returns the number of the current round or -1 if last round has already
       been played }
@@ -531,6 +535,18 @@ begin
   end;
 end;
 
+{ sets the winner(s) of current round
+  returns true on success }
+function TPartyGame.SetWinner(WinBin: Integer): Boolean;
+begin
+  if (bPartyStarted) and (CurRound >= 0) and (CurRound <= High(Rounds)) then
+  begin
+    Rounds[CurRound].Winner := WinBin;
+  end
+  else
+    Result := false;
+end;
+
 { increases round counter by 1 and clears all round specific information;
   returns the number of the current round or -1 if last round has already
   been played }
@@ -674,8 +690,11 @@ begin
       if (CallLua(Parent, Functions.AfterSing)) then
       begin // execute default function:
 
-        // display party score screen
-        Display.FadeTo(@ScreenPartyScore);
+        if (bPartyGame) then
+          // display party score screen
+          Display.FadeTo(@ScreenPartyScore)
+        else //display standard score screen
+          Display.FadeTo(@ScreenScore);
       end;
   end;
 end;

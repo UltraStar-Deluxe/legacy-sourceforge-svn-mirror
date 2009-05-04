@@ -145,6 +145,7 @@ uses
   //------------------------------
 
   ULua           in 'lib\Lua\ULua.pas',
+  ULuaUtils      in 'lua\ULuaUtils.pas',
   ULuaGl         in 'lua\ULuaGl.pas',
   ULuaLog        in 'lua\ULuaLog.pas',
   ULuaTextGL     in 'lua\ULuaTextGL.pas',

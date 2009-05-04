@@ -57,6 +57,11 @@ function ULuaParty_Register(L: Plua_State): Integer; cdecl;
   of current game were played }
 function ULuaParty_GameFinished(L: Plua_State): Integer; cdecl;
 
+{ Party.SetWinner - sets winner of current party round,
+  if no party game is started or party game is finished
+  it will raise an error }
+function ULuaParty_SetWinner(L: Plua_State): Integer; cdecl;
+
 { Party.GetTeams - returns a table with all information and structure as
   in the TPartyGame.Teams array }
 function ULuaParty_GetTeams(L: Plua_State): Integer; cdecl;
@@ -66,47 +71,17 @@ function ULuaParty_GetTeams(L: Plua_State): Integer; cdecl;
 function ULuaParty_SetTeams(L: Plua_State): Integer; cdecl;
 
 const
-  ULuaParty_Lib_f: array [0..3] of lual_reg = (
+  ULuaParty_Lib_f: array [0..4] of lual_reg = (
     (name:'Register'; func:ULuaParty_Register),
     (name:'GameFinished'; func:ULuaParty_GameFinished),
+    (name:'SetWinner'; func:ULuaParty_SetWinner),
     (name:'GetTeams'; func:ULuaParty_GetTeams),
     (name:'SetTeams'; func:ULuaParty_SetTeams)
   );
 
 implementation
-uses ULuaCore, UParty, SysUtils;
+uses ULuaCore, ULuaUtils, UParty, SysUtils;
 
-{ converts a lua table with a structure like:
-    * = 1 , * = 4 , * = 5
-  to an integer with the value:
-    11001
-  does not pop anything }
-function Lua_ToBinInt(L: PLua_State; idx: Integer): Integer;
-  var
-    I: Integer;
-begin
-  // default: no bits set
-  Result := 0;
-
-  lua_checkstack(L, 3);
-
-  if (idx < 0) then
-    dec(idx); // we will push one value before using this
-
-  lua_PushNil(L);
-  while (lua_next(L, idx) <> 0) do
-  begin
-    if (lua_isNumber(L, -1)) then
-    begin //check if we got an integer value from 1 to 32
-      I := lua_toInteger(L, -1);
-      if (I >= 1) and (I <= 32) then
-        Result := Result or 1 shl (I - 1);
-    end;
-
-    // pop value, so key is on top
-    lua_pop(L, 1);
-  end;
-end;
 
 { Party.Register - register party mode at party manager
   arguments: info: table
@@ -194,6 +169,17 @@ begin
 
   //we return one value
   Result := 1;
+end;
+
+{ Party.SetWinner - sets winner of current party round,
+  if no party game is started or party game is finished
+  it will raise an error }
+function ULuaParty_SetWinner(L: Plua_State): Integer; cdecl;
+begin
+  luaL_checktype(L, 1, LUA_TTABLE);
+
+  if (not Party.SetWinner(Lua_ToBinInt(L, 1))) then
+    luaL_error(L, PChar('cann''t set party winner. Is party started and not finished yet?'));
 end;
 
 { Party.GetTeams - returns a table with all information and structure as

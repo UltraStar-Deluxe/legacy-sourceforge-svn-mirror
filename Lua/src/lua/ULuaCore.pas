@@ -117,6 +117,8 @@ type
       EventHandles: Array of String; //< Index is Events handle, value is events name. if length(value) is 0 handle is considered unregistred
 
       Plugins: Array of TLuaPlugin;
+
+      eLoadingFinished: THookableEvent;
     protected
       Modules: Array of TLuaModule; //< modules that has been registred, has to be proctected because fucntions of this unit need to get access
 
@@ -124,6 +126,8 @@ type
     public
       constructor Create;
       destructor Destroy;
+
+      procedure LoadPlugins;                         //< calls LoadPlugin w/ Plugindir and LoadingFinished Eventchain
 
       procedure BrowseDir(Dir: WideString);          //< searches for files w/ extension .usdx in the specified dir and tries to load them w/ lua
       procedure LoadPlugin(Filename: WideString);    //< tries to load filename w/ lua and creates the default usdx lua environment for the plugins state
@@ -177,7 +181,7 @@ var
   LuaCore: TLuaCore;
 
 implementation
-uses ULog, UPlatform, ULuaUsdx;
+uses ULog, UPlatform, ULuaUsdx, UMain;
 
 constructor TLuaCore.Create;
 begin
@@ -185,6 +189,8 @@ begin
 
   //init EventList w/ nil
   EventList := nil;
+
+  eLoadingFinished := nil;
 end;
 
 destructor TLuaCore.Destroy;
@@ -206,6 +212,18 @@ begin
   end;
 
   inherited;
+end;
+
+{ calls BrowseDir w/ plugin dir and LoadingFinished eventchain }
+procedure TLuaCore.LoadPlugins;
+begin
+  // we have to create event here, because in create it can
+  // not be registred, because LuaCore is no assigned
+  if (not Assigned(eLoadingFinished)) then
+    eLoadingFinished := THookableEvent.Create('Usdx.LoadingFinished');
+
+  BrowseDir(PluginPath);
+  eLoadingFinished.CallHookChain(false);
 end;
 
 { searches for files w/ extension .usdx in the specified
@@ -564,7 +582,15 @@ begin
     Id := lua_ToInteger(L, lua_upvalueindex(1));
 
     luaL_register(L, PChar('Usdx.' + LuaCore.Modules[Id].Name), @LuaCore.Modules[Id].Functions[0]);
-    
+
+    // set the modules table as global "modulename"
+    // so it can be accessed either by Usdx.modulename.x() or
+    // by modulename.x()
+    lua_setglobal(L, PChar(LuaCore.Modules[Id].Name));
+
+    // no we net to push the table again to return it
+    lua_getglobal(L, PChar(LuaCore.Modules[Id].Name));
+
     Result := 1; //return table
   end
   else

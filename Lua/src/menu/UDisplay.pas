@@ -40,7 +40,8 @@ uses
   gl,
   glu,
   SysUtils,
-  UMusic;
+  UMusic,
+  UHookableEvent;
 
 type
   TDisplay = class
@@ -60,6 +61,9 @@ type
       NextFPSSwap   : Cardinal;
 
       OSD_LastError : String;
+
+      ePreDraw: THookableEvent;
+      eDraw: THookableEvent;
 
       procedure DrawDebugInformation;
     public
@@ -131,6 +135,10 @@ begin
 
   //Set LastError for OSD to No Error
   OSD_LastError := 'No Errors';
+
+  // create events for plugins
+  ePreDraw := THookableEvent.Create('Display.PreDraw');
+  eDraw := THookableEvent.Create('Display.Draw');
 end;
 
 destructor TDisplay.Destroy;
@@ -183,6 +191,7 @@ begin
 
     if (not assigned(NextScreen)) and (not BlackScreen) then
     begin
+      ePreDraw.CallHookChain(false);
       CurrentScreen.Draw;
 
       //popup mod
@@ -197,6 +206,8 @@ begin
         FadeEnabled := True
       else if (Ini.ScreenFade = 0) then
         FadeEnabled := False;
+
+      eDraw.CallHookChain(false);
     end
     else
     begin
@@ -215,8 +226,11 @@ begin
           glPushAttrib(GL_VIEWPORT_BIT);
           glViewPort(0, 0, 512, 512);
 
+
           // draw screen that will be faded
+          ePreDraw.CallHookChain(false);
           CurrentScreen.Draw;
+          eDraw.CallHookChain(false);
 
           // clear OpenGL errors, otherwise fading might be disabled due to some
           // older errors in previous OpenGL calls.
@@ -255,7 +269,11 @@ begin
 
         // blackscreen-hack
         if not BlackScreen then
-          NextScreen.Draw // draw next screen
+        begin
+          ePreDraw.CallHookChain(false);
+          NextScreen.Draw; // draw next screen
+          eDraw.CallHookChain(false);
+        end
         else if ScreenAct = 1 then
         begin
           glClearColor(0, 0, 0 , 0);

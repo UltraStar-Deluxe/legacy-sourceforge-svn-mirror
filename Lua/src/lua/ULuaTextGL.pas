@@ -34,45 +34,114 @@ interface
 {$I switches.inc}
 
 uses
-  SysUtils,
   TextGL,
   ULua;
 
-function luaopen_TextGL (L: Plua_State): Integer; cdecl;
+{ TextGl.Pos(X, Y: Float) : sets font position }
+function ULuaTextGL_Pos(L: Plua_State): Integer; cdecl;
 
-function ULuaTextGL_Dummy(L: Plua_State): Integer; cdecl;
+{ TextGl.Size(Size: Float) : sets font size }
+function ULuaTextGL_Size(L: Plua_State): Integer; cdecl;
+
+{ TextGl.Style(Style: int) : sets font style (from 0 to 3) }
+function ULuaTextGL_Style(L: Plua_State): Integer; cdecl;
+
+{ TextGl.Italic(isItalic: boolean) : sets if font is italic }
+function ULuaTextGL_Italic(L: Plua_State): Integer; cdecl;
+
+{ TextGl.Width(Text: String) : returns width of Text if printed
+  w/ current settings in pixels }
+function ULuaTextGL_Width(L: Plua_State): Integer; cdecl;
+
+{ TextGl.Print(Text: String) : prints text to screen w/ current
+  settings}
+function ULuaTextGL_Print(L: Plua_State): Integer; cdecl;
+
+const
+  ULuaTextGl_Lib_f: array [0..5] of lual_reg = (
+    (name:'Pos'; func:ULuaTextGl_Pos),
+    (name:'Size'; func:ULuaTextGl_Size),
+    (name:'Style'; func:ULuaTextGl_Style),
+    (name:'Italic'; func:ULuaTextGl_Italic),
+    (name:'Width'; func:ULuaTextGl_Width),
+    (name:'Print'; func:ULuaTextGl_Print)
+  );
+
 
 implementation
 
-function ULuaTextGL_Dummy(L: Plua_State): Integer; cdecl;
+{ TextGl.Pos(X, Y: Float) : sets font position }
+function ULuaTextGL_Pos(L: Plua_State): Integer; cdecl;
+  var X, Y: Double;
 begin
-  result:=0; // number of results
+  X := luaL_checknumber(L, 1);
+  Y := luaL_checknumber(L, 2);
+
+  SetFontPos(X, Y);
+
+  Result := 0;
 end;
 
-const
-  ULuaTextGL_Lib_f: array [0..1] of lual_reg = (
-   (name:'Print';func:ULuaTextGL_Dummy),
-   (name:nil;func:nil)
-   );
-
-function luaopen_TextGL (L: Plua_State): Integer; cdecl;
+{ TextGl.Size(Size: Float) : sets font size }
+function ULuaTextGL_Size(L: Plua_State): Integer; cdecl;
+  var Size: Double;
 begin
-    luaL_register(L,'TextGL',@ULuaTextGL_Lib_f[0]);
-    result:=1;
+  Size := luaL_checknumber(L, 1);
+
+  SetFontSize(Size);
+  
+  Result := 0;
 end;
+
+{ TextGl.Style(Style: int) : sets font style (from 0 to 3) }
+function ULuaTextGL_Style(L: Plua_State): Integer; cdecl;
+  var Style: Integer;
+begin
+  Style := luaL_checkinteger(L, 1);
+
+  if (Style >= 0) and (Style <= 3) then
+    SetFontStyle(Style)
+  else
+    luaL_ArgError(L, 1, PChar('number from 0 to 3 expected')); 
+
+  Result := 0;
+end;
+
+{ TextGl.Italic(isItalic: boolean) : sets if font is italic }
+function ULuaTextGL_Italic(L: Plua_State): Integer; cdecl;
+  var isItalic: Boolean;
+begin
+  luaL_checkany(L, 1);
+  isItalic := lua_toBoolean(L, 1);
+
+  SetFontItalic(isItalic);
+  
+  Result := 0;
+end;
+
+{ TextGl.Width(Text: String) : returns width of Text if printed
+  w/ current settings in pixels }
+function ULuaTextGL_Width(L: Plua_State): Integer; cdecl;
+  var Text: String;
+begin
+  Text := luaL_checkstring(L, 1);
+  lua_pop(L, lua_gettop(L));
+
+  lua_PushNumber(L, glTextWidth(Text));
+
+  Result := 1;
+end;
+
+{ TextGl.Print(Text: String) : prints text to screen w/ current
+  settings}
+function ULuaTextGL_Print(L: Plua_State): Integer; cdecl;
+  var Text: String;
+begin
+  Text := luaL_checkstring(L, 1);
+
+  glPrint(Text);
+
+  Result := 0;
+end;
+
 end.
-
-{
-procedure BuildFont;                          // build our bitmap font
-procedure KillFont;                           // delete the font
-function  glTextWidth(const text: string): real; // returns text width
-procedure glPrint(const text: string);        // custom GL "Print" routine
-procedure ResetFont();                        // reset font settings of active font
-procedure SetFontPos(X, Y: real);             // sets X and Y
-procedure SetFontZ(Z: real);                  // sets Z
-procedure SetFontSize(Size: real);
-procedure SetFontStyle(Style: integer);       // sets active font style (normal, bold, etc)
-procedure SetFontItalic(Enable: boolean);     // sets italic type letter (works for all fonts)
-procedure SetFontAspectW(Aspect: real);
-procedure SetFontReflection(Enable:boolean;Spacing: real); // enables/disables text reflection
-}

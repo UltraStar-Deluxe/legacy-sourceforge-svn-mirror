@@ -281,13 +281,4 @@ begin
   Result := 0;
 end;
 
-{ this is a helper in case an evenet owner don't has no use for the results
-  returns number of popped elements }
-function Lua_ClearStack(L: Plua_State): Integer;
-  var I: Integer;
-begin
-  Result := lua_gettop(L);
-  lua_pop(L, Result);
-end;
-
 end.

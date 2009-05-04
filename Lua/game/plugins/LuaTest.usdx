@@ -1,0 +1,63 @@
+function plugin_init()
+  register('lua interface test plugin', 'not Versioned', 'Hawkear');
+
+  require('Usdx.Gl');
+  require('Usdx.TextGl');
+
+  Usdx.Hook('Display.Draw', 'OnDraw');
+
+  return true
+end
+
+function OnDraw()
+  -- Calculate FPS
+  FPScounter = 1 + (FPScounter or 0) -- increment FPScounter (which is nil, when undefined, therefore "or 0")
+  if Usdx.Time() > (LastTime or 0) then
+    LastTime = Usdx.Time() + 1000
+
+    print("FPS:    " .. FPScounter - (LastFPScounter or 0)) -- print is only displayed, if compiled with DEBUG
+    LastFPSCounted = FPScounter - (LastFPScounter or 0)
+
+    LastFPScounter = FPScounter
+
+    -- Show the first 200 Textures
+    TexNum = 1 + (TexNum or 0)
+    if TexNum > 200 then TexNum = 1 end
+    print("TexNum: " .. (TexNum or 0))
+  end
+
+  -- draw fps to top right corner
+  TextGl.Style(0)
+  TextGl.Pos(650, 36)
+  TextGl.Size(30)
+  TextGl.Italic(False)
+  Gl.Color(0.9, 0.9, 0.9, 0.7)
+  TextGl.Print('FPS: ' .. LastFPSCounted)
+
+  -- Draw some rectanGles
+  Gl.Enable("Gl_BLEND")
+  Gl.Color(1, 1, 1, 0.5)
+  for i = 1,10 do
+    Gl.Begin("Gl_LINE_loop")
+    Gl.Vertex(0+4*i, 0+4*i);
+    Gl.Vertex(0+4*i, 600-4*i);
+    Gl.Vertex(800-4*i, 600-4*i);
+    Gl.Vertex(800-4*i, 0+4*i);
+    Gl.End()
+  end
+  Gl.Disable("Gl_BLEND")
+
+  -- Display a Texture
+  Gl.Enable("Gl_BLEND")
+  Gl.Enable("Gl_TEXTURE_2D")
+  Gl.Color(1, 1, 1, 1)
+  Gl.BindTexture("Gl_TEXTURE_2D", TexNum or 0)
+  Gl.Begin("Gl_QUADS")
+    Gl.TexCoord(0, 0); Gl.Vertex(10,  10);
+    Gl.TexCoord(0, 1); Gl.Vertex(10,  110);
+    Gl.TexCoord(1, 1); Gl.Vertex(110, 110);
+    Gl.TexCoord(1, 0); Gl.Vertex(110, 10);
+  Gl.End()
+  Gl.Disable("Gl_TEXTURE_2D")
+  Gl.Disable("Gl_BLEND")
+end

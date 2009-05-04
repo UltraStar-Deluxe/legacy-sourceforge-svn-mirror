@@ -118,7 +118,7 @@ var
   PlayersPlay:  integer;
 
   CurrentSong : TSong;
-  Lua : Plua_State;
+  //Lua : Plua_State;
 
 const
   MAX_SONG_SCORE = 10000;     // max. achievable points per song
@@ -227,6 +227,9 @@ begin
     // Without SDL_INIT_TIMER SDL_GetTicks() might return strange values
     SDL_Init(SDL_INIT_VIDEO or SDL_INIT_TIMER);
     SDL_EnableUnicode(1);
+
+    // create luacore first so other classes can register their events
+    LuaCore := TLuaCore.Create;
 
     USTime := TTime.Create;
     VideoBGTimer := TRelativeTimer.Create;
@@ -390,7 +393,7 @@ begin
     end;
 
     // Lua
-    Log.BenchmarkStart(1);
+    {Log.BenchmarkStart(1);
     Lua := luaL_newstate;
     if Lua = nil then
       Log.LogError('Lua init failed','Lua');
@@ -403,7 +406,7 @@ begin
     luaopen_TextGL(Lua);  // TextGL (Lua)
     lua_pop(Lua, 1);      // remove table from stack
     luaopen_Texture(Lua); // Texture (Lua)
-    lua_pop(Lua, 1);      // remove table from stack
+    lua_pop(Lua, 1);      // remove table from stack   }
 
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Initializing Lua', 1);
@@ -422,13 +425,12 @@ begin
 
     Party := TPartyGame.Create;
 
-    LuaCore := TLuaCore.Create;
-
     LuaCore.RegisterModule('Log', ULuaLog_Lib_f);
     LuaCore.RegisterModule('Gl', ULuaGl_Lib_f);
+    LuaCore.RegisterModule('TextGl', ULuaTextGl_Lib_f);
     LuaCore.RegisterModule('Party', ULuaParty_Lib_f);
 
-    LuaCore.BrowseDir(PluginPath);
+    LuaCore.LoadPlugins;
     LuaCore.DumpPlugins; 
 
 
@@ -454,7 +456,7 @@ begin
     //TTF_Quit();
     SDL_Quit();
 
-    lua_close(Lua);
+    //lua_close(Lua);
 
     if assigned(Log) then
     begin
@@ -487,14 +489,14 @@ begin
     // display
     done := not Display.Draw;
 
-    // FIXME remove this when the Partymode works
+    {// FIXME remove this when the Partymode works
     if FileExists(ScriptPath + 'main.lua') then
     begin
       if 0 <> luaL_dofile(Lua, PAnsiChar(ScriptPath + 'main.lua')) then
       begin
         Log.LogError(lua_tostring(Lua,-1));
       end;
-    end;
+    end;      }
 
     SwapBuffers;
 
