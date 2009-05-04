@@ -644,6 +644,8 @@ begin
   Self.ErrorCount := 0;
   Self.sName := 'not registred';
   Self.sStatus := psNone;
+
+  State := nil; //< to prevent calls to unopened state
 end;
 
 destructor TLuaPlugin.Destroy;
@@ -753,7 +755,7 @@ end;
 function TLuaPlugin.CallFunctionByName(Name: String; const nArgs: Integer; const nResults: Integer; const ReportErrors: Boolean): Boolean;
 begin
   Result := false;
-  if not bPaused then
+  if (not bPaused) and (State <> nil) then
   begin
     // we need at least one stack slot free
     lua_checkstack(State, 1);
