@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<CONFIG>
+  <ProjectOptions>
+    <PathDelim Value="@LAZARUS_PATH_DELIM@"/>
+    <Version Value="6"/>
+    <General>
+      <Flags>
+        <MainUnitHasCreateFormStatements Value="False"/>
+        <MainUnitHasTitleStatement Value="False"/>
+        <AlwaysBuild Value="@LAZARUS_ALWAYS_BUILD@"/>
+      </Flags>
+      <SessionStorage Value="InProjectDir"/>
+      <MainUnit Value="0"/>
+      <IconPath Value="./"/>
+      <TargetFileExt Value="@LAZARUS_TGT_FILE_EXT@"/>
+      <Title Value="@LAZARUS_PROJECT_TITLE@"/>
+    </General>
+    <VersionInfo>
+      <ProjectVersion Value=""/>
+    </VersionInfo>
+    <PublishOptions>
+      <Version Value="2"/>
+      <IgnoreBinaries Value="False"/>
+      <IncludeFileFilter Value="*.(pas|pp|inc|lfm|lpr|lrs|lpi|lpk|sh|xml)"/>
+      <ExcludeFileFilter Value="*.(bak|ppu|ppw|o|so);*~;backup"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+        <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
+      </local>
+    </RunParams>
+    <Units Count="@LAZARUS_UNITS_COUNT@">@LAZARUS_UNIT_LIST@
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="8"/>
+    <PathDelim Value="@LAZARUS_PATH_DELIM@"/>
+    <Target>
+      <Filename Value="@LAZARUS_OUTPUT_NAME@"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="@LAZARUS_INCLUDE_PATH@"/>
+      <Libraries Value=""/>
+      <OtherUnitFiles Value="@LAZARUS_SRC_PATH@"/>
+      <UnitOutputDirectory Value="@LAZARUS_UNIT_OUTPUT_DIRECTORY@"/>
+      <SrcPath Value="@LAZARUS_OTHER_SRC_PATH@"/>
+    </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <CStyleOperator Value="False"/>
+        <AllowLabel Value="False"/>
+      </SyntaxOptions>
+    </Parsing>
+    <Linking>
+      <Debugging>
+        <GenerateDebugInfo Value="@LAZARUS_DEBUG@"/>
+      </Debugging>
+    </Linking>
+    <Other>
+      <Verbosity>
+        @LAZARUS_VERBOSITY@
+      </Verbosity>
+      <CustomOptions Value="@LAZARUS_CUSTOM_OPTIONS@"/>
+      <CompilerPath Value="$(CompPath)"/>
+    </Other>
+  </CompilerOptions>
+</CONFIG>

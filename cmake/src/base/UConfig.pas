@@ -107,13 +107,13 @@ const
 
   // include config-file (defines + constants)
   {$IF Defined(MSWindows)}
-    {$I ../config-win.inc}
+    {$I config-win.inc}
   {$ELSEIF Defined(Linux)}
-    {$I ../config-linux.inc}
+    {$I config-linux.inc}
   {$ELSEIF Defined(FreeBSD)}
-    {$I ../config-freebsd.inc}
+    {$I config-freebsd.inc}
   {$ELSEIF Defined(Darwin)}
-    {$I ../config-darwin.inc}
+    {$I config-darwin.inc}
   {$ELSE}
     {$MESSAGE Fatal 'Unknown OS'}
   {$IFEND}
