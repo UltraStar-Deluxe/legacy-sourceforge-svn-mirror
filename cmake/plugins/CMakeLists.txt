@@ -1,3 +1,5 @@
+# $URL$
+# $Id$
 add_custom_target(plugins ALL)
 
 add_subdirectory(5000Points)
