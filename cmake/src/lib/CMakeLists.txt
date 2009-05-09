@@ -1,3 +1,5 @@
+# $URL$
+# $Id$
 add_subdirectory(bass)
 add_subdirectory(collections)
 add_subdirectory(ctypes)

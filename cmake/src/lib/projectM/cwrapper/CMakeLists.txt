@@ -1,3 +1,5 @@
+# $URL$
+# $Id$
 if(libprojectM_USE_CWRAPPER)
   include_directories(${libprojectM_INCLUDEDIR}/libprojectM)
   add_definitions(-DPROJECTM_VERSION_INT=${libprojectM_VERSION_INT})

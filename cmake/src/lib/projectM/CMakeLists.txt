@@ -1,3 +1,5 @@
+# $URL$
+# $Id$
 pascal_add_package(projectm
   UNITS *.pas
   INCLUDES *.inc

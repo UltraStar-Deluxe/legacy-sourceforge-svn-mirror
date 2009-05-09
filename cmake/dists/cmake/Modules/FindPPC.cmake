@@ -103,6 +103,29 @@ foreach(once 1)
   set(FPC_TARGET "${FPC_PROCESSOR}-${FPC_PLATFORM}")
 
 
+  #-v -l     verbose/banner
+  #-n        ignore fpc.cfg
+  #-Fi -I    include-dir
+  #-k
+  #-Fl       linker-dir
+  #-Fo -Fu   object-/unit-dir
+  #-Xt -Xc
+  #-Ciort    range checks
+  #-Cs -Ch   stack/heap size
+  #-Cg -fPIC PIC code 
+  #-E
+  #-g -gv -gw(2/3) -gh -gl -pg
+  #-O
+  #-T -Xd -XP    cross-compiling
+  #-d -u     define/undefine
+  #-Xs       strip
+  #-B        build all modules
+  #-Dd -Dv   description + DLL-version
+
+  #PFLAGS_BASE_DEFAULT    := -Si -Sg- -Sc- -v0Binwe
+  #PFLAGS_DEBUG_DEFAULT   := -Xs- -g -gl -dDEBUG_MODE
+  #PFLAGS_RELEASE_DEFAULT := -Xs- -O2
+
   ##
   # Compiler checks
   ##
@@ -142,14 +165,19 @@ foreach(once 1)
   ppc_check(testlib.pas "library link;\nbegin\nend."
             "${default_flags}" check_result
             NO_CLEAN)
-  find_library(libpath testlib 
+  # find generated library
+  find_library(PPC_TEST_LIBPATH testlib 
                PATHS ${PPC_CHECK_DIR}
                NO_DEFAULT_PATH)
-  if(libpath)
-    get_filename_component(PPC_LIBRARY_SUFFIX ${libpath} EXT CACHE)
-    get_filename_component(libfilename ${libpath} NAME_WE)
+  # do not show library name in GUI
+  mark_as_advanced(PPC_TEST_LIBPATH)
+  # extract prefix and suffix from library name
+  if(PPC_TEST_LIBPATH)
+    get_filename_component(PPC_LIBRARY_SUFFIX ${PPC_TEST_LIBPATH} EXT CACHE)
+    get_filename_component(libfilename ${PPC_TEST_LIBPATH} NAME_WE)
     string(REGEX REPLACE "^(.*)testlib.*" "\\1" PPC_LIBRARY_PREFIX ${libfilename})
-  endif(libpath)
+  endif(PPC_TEST_LIBPATH)
+  # remove library test directory
   file(REMOVE_RECURSE ${PPC_CHECK_DIR}) 
   if(check_result)
     set(PPC_ERROR "Cannot link with standard libraries")

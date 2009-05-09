@@ -1,4 +1,3 @@
-#
 # UltrastarDX CMake script
 # by UltraStar Deluxe Team
 #
@@ -11,22 +10,21 @@
 #   http://www.cmake.org/cmake/help/cmake2.6docs.html
 # - CMake Useful Variables (CMake Wiki):
 #   http://www.cmake.org/Wiki/CMake_Useful_Variables
-###
+#
+# $URL$
+# $Id$
 
 ##
-# CMAKE
+# CMAKE SETTINGS
 ##
 
+# min. version and policies
 cmake_minimum_required(VERSION 2.6)
-
-if(COMMAND cmake_policy)
-#  cmake_policy(SET CMP0003 NEW)
-endif(COMMAND cmake_policy)
-
+# module and script directory
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/dists/cmake/Modules)
 
 ##
-# PROJECT
+# PROJECT SETTINGS
 ##
 
 project(UltrastarDX)
@@ -47,7 +45,7 @@ set(PACKAGE_IRC "#ultrastardx at quakenet.org")
 ##
 
 find_package(PPC 2.2.0 REQUIRED)
-include(UsePascal) 
+include(UsePascal)
 include(ExpandVersion)
 
 ##
@@ -98,22 +96,27 @@ if(NOT WIN32)
   pkg_check_modules(libswscale libswscale)
   expand_version(libswscale_VERSION)
 
-  # find projectM version
-  set(libprojectM_MODULE "libprojectM >= 0.98")
-  pkg_check_modules(libprojectM ${libprojectM_MODULE})
+  option(ENABLE_PROJECTM "Enable ProjectM support if available" OFF)
+  set(libprojectM_USE_CWRAPPER FALSE)
+  if(ENABLE_PROJECTM)
+    # find projectM version
+    set(libprojectM_MODULE "libprojectM >= 0.98")
+    pkg_check_modules(libprojectM ${libprojectM_MODULE})
+
+    if(libprojectM_FOUND)
+      # get projectM data-dir (for preset- and font-dir)
+      execute_process(
+        COMMAND ${PKG_CONFIG_EXECUTABLE} --variable=pkgdatadir ${libprojectM_MODULE}
+        OUTPUT_VARIABLE libprojectM_DATADIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+      # check if we need the c-wrapper
+      if(NOT libprojectM_VERSION VERSION_LESS "1.0.0")
+        set(libprojectM_USE_CWRAPPER TRUE)
+      endif()
+    endif(libprojectM_FOUND)
+  endif(ENABLE_PROJECTM)
   expand_version(libprojectM_VERSION)
-
-  # get projectM data-dir (for preset- and font-dir)
-  execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} --variable=pkgdatadir ${libprojectM_MODULE}
-    OUTPUT_VARIABLE libprojectM_DATADIR
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  # check if we need the c-wrapper
-  if(libprojectM_VERSION VERSION_LESS "1.0.0")
-    set(libprojectM_USE_CWRAPPER FALSE)
-  else(libprojectM_VERSION VERSION_LESS "1.0.0")
-    set(libprojectM_USE_CWRAPPER TRUE)
-  endif(libprojectM_VERSION VERSION_LESS "1.0.0")
 
   # find portaudio
   pkg_check_modules(portaudio REQUIRED portaudio-2.0)
@@ -186,7 +189,7 @@ install(
   PATTERN .svn EXCLUDE
 )
 install(
-  FILES 
+  FILES
     COPYING.txt
   DESTINATION share/ultrastardx
 )
@@ -217,51 +220,52 @@ ADD_CUSTOM_TARGET(uninstall
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Karaoke program that evaluates your performance")
 set(CPACK_PACKAGE_VENDOR "UltraStar Deluxe Team")
-#set(CPACK_PACKAGE_FILE_NAME "ultrastardx-${ULTRASTARDX_VERSION}")
-#set(CPACK_SOURCE_PACKAGE_FILE_NAME "ultrastardx-src-${ULTRASTARDX_VERSION}")
-#set(CPACK_SOURCE_GENERATOR "TBZ2")
-#set(CPACK_PACKAGE_EXECUTABLES "ultrastardx" "ultrastardx")
-#set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
-#set(CPACK_PACKAGE_INSTALL_DIRECTORY "Ultrastardx ${ULTRASTARDX_VERSION}")
+set(CPACK_PACKAGE_FILE_NAME "ultrastardx-${CMAKE_PACKAGE_VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "ultrastardx-src-${CMAKE_PACKAGE_VERSION}")
+set(CPACK_SOURCE_GENERATOR "TBZ2")
+set(CPACK_PACKAGE_EXECUTABLES "ultrastardx" "ultrastardx")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "ultrastardx ${CMAKE_PACKAGE_VERSION}")
 
 if(WIN32 AND NOT UNIX)
   set(CPACK_NSIS_DISPLAY_NAME "Ultrastar Deluxe") 
-  set(CPACK_NSIS_HELP_LINK "http://www.ultrastardx.org/")
-  set(CPACK_NSIS_URL_INFO_ABOUT "http://www.ultrastardx.org/")
+  set(CPACK_NSIS_HELP_LINK ${PACKAGE_WEBSITE})
+  set(CPACK_NSIS_URL_INFO_ABOUT ${PACKAGE_WEBSITE})
   set(CPACK_NSIS_CONTACT "help@ultrastardx.org")
   set(CPACK_NSIS_MODIFY_PATH OFF)
   set(CPACK_GENERATOR "ZIP;NSIS")
 else(WIN32 AND NOT UNIX)
-#  set(CPACK_STRIP_FILES "bin/ultrastardx")
+  set(CPACK_STRIP_FILES "bin/ultrastardx")
 endif(WIN32 AND NOT UNIX)
 
-#set(CPACK_SOURCE_IGNORE_FILES
-#  "~"
-#  "\\\\.svn"
-#  "\\\\.exe$"
-#  "\\\\.a$"
-#  "\\\\.dll$"
-#  "\\\\.dof$"
-#  "\\\\.cmake$"
-#  "\\\\.zip$"
-#  "\\\\.gz$"
-#  "\\\\.bz2$"
-#  "\\\\.tmp$"
-#  "\\\\.sh$"
-#  "\\\\.ppu$"
-#  "\\\\.o$"
-#  "Makefile"
-#  "CMakeFiles"
-#  "debug"
-#  "release$"
-#  "Debug$"
-#  "Release$"
-#  "CPack"
-#  "^${PROJECT_SOURCE_DIR}/bin/[a-z]"
-#  "^${PROJECT_SOURCE_DIR}/install_manifest.txt"
-#  "^${PROJECT_SOURCE_DIR}/CMakeCache.txt"
-#  "^${PROJECT_SOURCE_DIR}/ultrastardx\\\\."
-#)
+set(CPACK_SOURCE_IGNORE_FILES
+  "~"
+  "\\\\.svn"
+  "\\\\.exe$"
+  "\\\\.a$"
+  "\\\\.dll$"
+  "\\\\.dof$"
+  "\\\\.cmake$"
+  "\\\\.zip$"
+  "\\\\.gz$"
+  "\\\\.bz2$"
+  "\\\\.tmp$"
+  "\\\\.sh$"
+  "\\\\.dcu$"
+  "\\\\.ppu$"
+  "\\\\.o$"
+  "Makefile"
+  "CMakeFiles"
+  "debug"
+  "release$"
+  "Debug$"
+  "Release$"
+  "CPack"
+  "^${PROJECT_SOURCE_DIR}/bin/[a-z]"
+  "^${PROJECT_SOURCE_DIR}/install_manifest.txt"
+  "^${PROJECT_SOURCE_DIR}/CMakeCache.txt"
+  "^${PROJECT_SOURCE_DIR}/ultrastardx\\\\."
+)
 
 #include(CPack)
 
@@ -270,7 +274,6 @@ endif(WIN32 AND NOT UNIX)
 ##
 
 message(STATUS "
-!!
 !! Configuration of ${CPACK_PACKAGE_NAME} ${CPACK_PACKAGE_VERSION} done!
 !!
 !! Type \"make\" to compile and 
