@@ -1,5 +1,5 @@
 -- Calculate FPS
-FPScounter = 1 + (FPScounter or 0) -- increment FPScounter (which is nil, when undefined, therefore "or 0") 
+FPScounter = 1 + (FPScounter or 0) -- increment FPScounter (which is nil, when undefined, therefore "or 0")
 if os.time() > (LastTime or 0) then
   LastTime = os.time()
   print("FPS:    " .. FPScounter - (LastFPScounter or 0)) -- print is only displayed, if compiled with DEBUG
