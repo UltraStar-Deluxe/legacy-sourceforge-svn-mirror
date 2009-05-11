@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header $
 
-inherit subversion eutils games
+inherit subversion cmake-utils games
 
 SONGS_PKG=USDX-SongPackage
 SONGS_VER=01
@@ -34,7 +34,7 @@ RDEPEND="virtual/opengl
 	projectm? ( media-libs/libprojectm )"
 DEPEND="${RDEPEND}
 	dev-util/pkgconfig
-	>=dev-lang/fpc-2.2.0"
+	>=dev-lang/fpc-2.2.2"
 
 S=${WORKDIR}/${P}-src
 
@@ -50,10 +50,22 @@ src_unpack() {
 }
 
 src_compile() {
-	egamesconf \
-		$(use_with projectm libprojectM) \
-		$(use_enable debug) \
-		|| die
+	if use projectm ; then
+		enable_projectm="ON"
+	else
+		enable_projectm="OFF"
+	fi
+	if use debug ; then
+		build_type="Debug"
+	else
+		build_type="Release"
+	fi
+	cmake \
+		-DCMAKE_BUILD_TYPE=$build_type \
+		-DENABLE_PROJECTM=$enable_projectm \
+		-DCMAKE_INSTALL_PREFIX="/usr" \
+		. \
+		|| die "cmake failed"
 	emake || die "emake failed"
 }
 

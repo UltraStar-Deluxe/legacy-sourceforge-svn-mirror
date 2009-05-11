@@ -39,7 +39,6 @@ set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSIO
 set(PACKAGE_WEBSITE "http://www.ultrastardeluxe.org/")
 set(PACKAGE_IRC "#ultrastardx at quakenet.org")
 
-
 ##
 # MAIN DEPENDENCIES
 ##
@@ -69,6 +68,8 @@ if(NOT WIN32)
   else(SDLIMAGE_LIBRARY)
     message(FATAL_ERROR "Looking for SDL_image - missing")
   endif(SDLIMAGE_LIBRARY)
+  # hide SDL_image from GUI
+  mark_as_advanced(SDLIMAGE_LIBRARY SDLIMAGE_INCLUDE_DIR)
 
   pkg_check_modules(libpng REQUIRED libpng12)
   #find_package(PNG REQUIRED)
@@ -132,32 +133,23 @@ endif(NOT WIN32)
 
 include(FileUtils)
 
+set(USDX_GAME_DIR ${CMAKE_CURRENT_BINARY_DIR}/game)
+set(USDX_PLUGIN_DIR ${USDX_GAME_DIR}/plugins)
+
 # init runtime environment for out-of-source builds
 if(NOT WIN32)
 if(NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   # create game dir
-  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/game)
+  file(MAKE_DIRECTORY ${USDX_GAME_DIR})
 
   # symlink directories which are shared by all out-of-source builds
-  file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/covers
-               ${CMAKE_CURRENT_BINARY_DIR}/game/covers)
-  file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/fonts
-               ${CMAKE_CURRENT_BINARY_DIR}/game/fonts)
-  file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/languages
-               ${CMAKE_CURRENT_BINARY_DIR}/game/languages)
-  file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/resources
-               ${CMAKE_CURRENT_BINARY_DIR}/game/resources)
-  file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/sounds
-               ${CMAKE_CURRENT_BINARY_DIR}/game/sounds)
-  file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/themes
-               ${CMAKE_CURRENT_BINARY_DIR}/game/themes)
-  file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/visuals
-               ${CMAKE_CURRENT_BINARY_DIR}/game/visuals)
+  foreach(subdir covers fonts languages resources sounds themes visuals)
+    file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/${subdir} ${USDX_GAME_DIR}/${subdir})
+  endforeach(subdir)
 
   # copy directories which are either changed by the build process
   # or while execution
-  file_copy_dir(${CMAKE_CURRENT_SOURCE_DIR}/game/plugins
-                ${CMAKE_CURRENT_BINARY_DIR}/game/plugins)
+  file_copy_dir(${CMAKE_CURRENT_SOURCE_DIR}/game/plugins ${USDX_PLUGIN_DIR})
 endif()
 endif(NOT WIN32)
 
@@ -175,6 +167,8 @@ add_subdirectory(plugins)
 get_target_property(usdx_exe ultrastardx PASCAL_LOCATION)
 install(PROGRAMS ${usdx_exe} DESTINATION bin)
 
+set(USDX_INSTALL_DATA_DIR share/ultrastardx)
+
 install(
   DIRECTORY 
     artwork
@@ -184,14 +178,19 @@ install(
     game/resources
     game/sounds
     game/themes
-    ${CMAKE_CURRENT_BINARY_DIR}/game/plugins
-  DESTINATION share/ultrastardx
+  DESTINATION ${USDX_INSTALL_DATA_DIR}
+  PATTERN .svn EXCLUDE
+)
+install(
+  DIRECTORY ${USDX_PLUGIN_DIR}
+  DESTINATION ${USDX_INSTALL_DATA_DIR}
+  USE_SOURCE_PERMISSIONS
   PATTERN .svn EXCLUDE
 )
 install(
   FILES
     COPYING.txt
-  DESTINATION share/ultrastardx
+  DESTINATION ${USDX_INSTALL_DATA_DIR}
 )
 
 # add "uninstall" target

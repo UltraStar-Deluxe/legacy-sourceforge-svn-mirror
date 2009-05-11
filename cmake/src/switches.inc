@@ -5,12 +5,6 @@
 {$IFDEF FPC}
   {$H+} // use AnsiString instead of ShortString as String-type (default in Delphi)
 
-  // if -dDEBUG is specified on the command-line, FPC uses some default
-  // compiler-flags specified in fpc.cfg -> use -dDEBUG_MODE instead
-  {$IFDEF DEBUG_MODE}
-    {$DEFINE DEBUG}
-  {$ENDIF}
-
   {$DEFINE HasInline}
 {$ELSE}
   {$DEFINE Delphi}
