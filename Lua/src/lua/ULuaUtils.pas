@@ -19,8 +19,8 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  *
- * $URL: https://ultrastardx.svn.sourceforge.net/svnroot/ultrastardx/branches/experimental/Lua/src/lua/ULuaGl.pas $
- * $Id: ULuaGl.pas 1555 2009-01-11 18:19:42Z Hawkear $
+ * $URL$
+ * $Id$
  *}
 
 unit ULuaUtils;
