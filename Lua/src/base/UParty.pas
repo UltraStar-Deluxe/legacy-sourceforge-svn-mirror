@@ -559,6 +559,10 @@ begin
   if (CurRound >= 0) then
   begin
     GenScores;
+
+    // set no winner if plugin did not set a winner
+    if (Rounds[CurRound].Winner = -1) then
+      Rounds[CurRound].Winner := 0;
   end;
 
   // increase round counter
@@ -577,8 +581,6 @@ begin
     // select player
     for I := 0 to High(Teams) do
       Teams[I].NextPlayer := GetRandomPlayer(I);
-      
-    Rounds[CurRound].Winner := 0; //< reset winner
   end;
 end;
 
