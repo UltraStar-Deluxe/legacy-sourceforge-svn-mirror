@@ -42,18 +42,20 @@ type
     it is used as argument for TPartyGame.StartParty }
   ARounds = array of integer;
 
-  { record used by TPartyGame to store round specific data }
-  TParty_Round = record
-    Mode:   Integer;
-    Winner: Integer;
-  end;
-
-  { element of APartyTeamRanking returned by TPartyGame.GetTeamRanking }
+  { element of APartyTeamRanking returned by TPartyGame.GetTeamRanking
+    and parameter for TPartyGame.SetWinner }
   TParty_TeamRanking = record
     Team: Integer; //< id of team
     Rank: Integer; //< 1 to Length(Teams) e.g. 1 is for placed first
   end;
   AParty_TeamRanking = Array of TParty_TeamRanking; //< returned by TPartyGame.GetTeamRanking
+
+  { record used by TPartyGame to store round specific data }
+  TParty_Round = record
+    Mode:   Integer;
+    AlreadyPlayed: Boolean;
+    Ranking: AParty_TeamRanking;
+  end;
 
   TParty_ModeInfo = record
     Name: String; // name of this mode
@@ -106,7 +108,6 @@ type
 
     TimesPlayed: array of Integer; //< times every mode was played in current party game (for random mode calculation)
 
-    function IsWinner(Player, Winner: integer): boolean;
     procedure GenScores;
     function GetRandomMode: integer;
     function GetRandomPlayer(Team: integer): integer;
@@ -155,7 +156,7 @@ type
 
     { sets the winner(s) of current round
       returns true on success }
-    function SetWinner(WinBin: Integer): Boolean;
+    function SetRanking(Ranking: AParty_TeamRanking): Boolean;
 
     { increases round counter by 1 and clears all round specific information;
       returns the number of the current round or -1 if last round has already
@@ -211,6 +212,11 @@ const
 
   { to indicate that element (mode) should set randomly in ARounds array }
   Party_Round_Random = -1;
+
+  { values for TParty_TeamRanking.Rank }
+  PR_First = 1;
+  PR_Second = 2;
+  PR_Third = 3;
   
   StandardModus = 0; //Modus Id that will be played in non-party mode
 
@@ -354,21 +360,6 @@ begin
   end;
 end;
 
-{ private: returns true if the players bit is set in the winner int }
-function TPartyGame.IsWinner(Player, Winner: Integer): boolean;
-var
-  Bit: byte;
-begin
-  if (Player < 31) then
-  begin
-    Bit := 1 shl Player;
-
-    Result := ((Winner and Bit) = Bit);
-  end
-  else
-    Result := False;
-end;
-
 //----------
 //GenScores - inc scores for cur. round
 //----------
@@ -376,11 +367,21 @@ procedure TPartyGame.GenScores;
 var
   I: byte;
 begin
-  for I := 0 to High(Teams) do
-  begin
-    if isWinner(I, Rounds[CurRound].Winner) then
-      Inc(Teams[I].Score);
-  end;
+  if (Length(Teams) = 2) then
+  begin // score generation for 2 teams, winner gets 1 point
+    for I := 0 to High(Rounds[CurRound].Ranking) do
+      if (Rounds[CurRound].Ranking[I].Rank = PR_First) then
+        Inc(Teams[Rounds[CurRound].Ranking[I].Team].Score);
+  end
+  else if (Length(Teams) = 3) then
+  begin // score generation for 3 teams,
+    // winner gets 3 points 2nd gets 1 point
+    for I := 0 to High(Rounds[CurRound].Ranking) do
+      if (Rounds[CurRound].Ranking[I].Rank = PR_First) then
+        Inc(Teams[Rounds[CurRound].Ranking[I].Team].Score, 3)
+      else if (Rounds[CurRound].Ranking[I].Rank = PR_Second) then
+        Inc(Teams[Rounds[CurRound].Ranking[I].Team].Score);
+  end
 end;
 
 { set the attributes of Info to default values }
@@ -522,7 +523,7 @@ begin
       else
         Self.Rounds[I].Mode := GetRandomMode;
 
-      Self.Rounds[I].Winner := -1; // -1 indicates not played yet
+      Self.Rounds[I].AlreadyPlayed := False;
     end;
 
     // get the party started!11
@@ -539,11 +540,11 @@ end;
 
 { sets the winner(s) of current round
   returns true on success }
-function TPartyGame.SetWinner(WinBin: Integer): Boolean;
+function TPartyGame.SetRanking(Ranking: AParty_TeamRanking): Boolean;
 begin
   if (bPartyStarted) and (CurRound >= 0) and (CurRound <= High(Rounds)) then
   begin
-    Rounds[CurRound].Winner := WinBin;
+    Rounds[CurRound].Ranking := Ranking;
     Result := true;
   end
   else
@@ -559,11 +560,8 @@ begin
   // some lines concerning the previous round
   if (CurRound >= 0) then
   begin
+    Rounds[CurRound].AlreadyPlayed := True;
     GenScores;
-
-    // set no winner if plugin did not set a winner
-    if (Rounds[CurRound].Winner = -1) then
-      Rounds[CurRound].Winner := 0;
   end;
 
   // increase round counter
@@ -759,120 +757,29 @@ begin
 
   if (Round >= 0) and (Round <= High(Rounds)) then
   begin
-    if (Rounds[Round].Winner <> 0) then
+    if (Rounds[Round].AlreadyPlayed) then
     begin
-      if (Rounds[Round].Winner = -1) then
+      Result := Language.Translate('PARTY_NOTPLAYEDYET');
+    end
+    else
+    begin
+      SetLength(Winners, 0);
+      for I := 0 to High(Rounds[Round].Ranking) do
       begin
-        Result := Language.Translate('PARTY_NOTPLAYEDYET');
-      end
-      else
-      begin
-        SetLength(Winners, 0);
-        for I := 0 to High(Teams) do
+        if Rounds[Round].Ranking[I].Rank = PR_First then
         begin
-          if isWinner(I, Rounds[Round].Winner) then
-          begin
-            SetLength(Winners, Length(Winners) + 1);
-            Winners[high(Winners)] := Teams[I].Name;
-          end;
+          SetLength(Winners, Length(Winners) + 1);
+          Winners[high(Winners)] := Teams[I].Name;
         end;
-        Result := Language.Implode(Winners);
       end;
+
+      if (Length(Winners) > 0) then
+          Result := Language.Implode(Winners);
     end;
   end;
-
 
   if (Length(Result) = 0) then
     Result := Language.Translate('PARTY_NOBODY');
 end;
-
-{ //----------
-// CallModiDeInit - calls DeInitProc and ends the round
-//----------
-function TPartySession.CallModiDeInit(wParam: TwParam; lParam: TlParam): integer;
-var
-  I: integer;
-  MaxScore: word;
-begin
-  if (bPartyMode) then
-  begin
-    //Get Winner Byte!
-    if (@Modis[Rounds[CurRound].Modi].Info.ModiDeInit <> nil) then //get winners from plugin
-      Rounds[CurRound].Winner := Modis[Rounds[CurRound].Modi].Info.ModiDeInit(Modis[Rounds[CurRound].Modi].Info.ID)
-    else
-    begin //Create winners by score :/
-      Rounds[CurRound].Winner := 0;
-      MaxScore := 0;
-      for I := 0 to Teams.NumTeams-1 do
-      begin
-        // to-do : recode percentage stuff
-        //PlayerInfo.Playerinfo[I].Percentage := PlayerInfo.Playerinfo[I].Score div 9999;
-        if (Player[I].ScoreTotalInt > MaxScore) then
-        begin
-          MaxScore := Player[I].ScoreTotalInt;
-          Rounds[CurRound].Winner := 1 shl I;
-        end
-        else if (Player[I].ScoreTotalInt = MaxScore) and (Player[I].ScoreTotalInt <> 0) then
-        begin
-          Rounds[CurRound].Winner := Rounds[CurRound].Winner or (1 shl I);
-        end;
-      end;
-
-
-      //When nobody has points -> everybody looses
-      if (MaxScore = 0) then
-        Rounds[CurRound].Winner := 0;
-
-    end;
-
-    //Generate the scores
-    GenScores;
-
-    //Inc players TimesPlayed
-    if ((Modis[Rounds[CurRound-1].Modi].Info.LoadingSettings and MLS_IncTP) = MLS_IncTP) then
-    begin
-      for I := 0 to Teams.NumTeams-1 do
-        Inc(Teams.TeamInfo[I].Playerinfo[Teams.TeamInfo[I].CurPlayer].TimesPlayed);
-    end;
-  end
-  else if (@Modis[Rounds[CurRound].Modi].Info.ModiDeInit <> nil) then
-    Modis[Rounds[CurRound].Modi].Info.ModiDeInit(Modis[Rounds[CurRound].Modi].Info.ID);
-
-  // FIXME: return a valid result
-  Result := 0;
-end;
-
-//----------
-// GetTeamOrder - returns team order. Structure: Bits 1..3: Team at place1; Bits 4..6: Team at place2 ...
-//----------
-function  TPartySession.GetTeamOrder(wParam: TwParam; lParam: TlParam): integer;
-var
-  I, J: integer;
-  ATeams: array [0..5] of TeamOrderEntry;
-  TempTeam: TeamOrderEntry;
-begin
-  // to-do : PartyMode: Write this in another way, so that teams with the same score get the same place
-  //Fill Team array
-  for I := 0 to Teams.NumTeams-1 do
-  begin
-    ATeams[I].Teamnum := I;
-    ATeams[I].Score := Teams.Teaminfo[I].Score;
-  end;
-
-  //Sort teams
-  for J := 0 to Teams.NumTeams-1 do
-    for I := 1 to Teams.NumTeams-1 do
-      if ATeams[I].Score > ATeams[I-1].Score then
-      begin
-        TempTeam    := ATeams[I-1];
-        ATeams[I-1] := ATeams[I];
-        ATeams[I]   := TempTeam;
-      end;
-
-  //Copy to Result
-  Result := 0;
-  for I := 0 to Teams.NumTeams-1 do
-    Result := Result or (ATeams[I].TeamNum Shl I*3);
-end; }
 
 end.

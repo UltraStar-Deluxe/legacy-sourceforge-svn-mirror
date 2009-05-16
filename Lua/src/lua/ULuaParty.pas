@@ -57,10 +57,17 @@ function ULuaParty_Register(L: Plua_State): Integer; cdecl;
   of current game were played }
 function ULuaParty_GameFinished(L: Plua_State): Integer; cdecl;
 
-{ Party.SetWinner - sets winner of current party round,
+(* Party.SetRoundRanking - sets ranking of current party round,
+  arguments: Ranking: table
+  ranking of team i is the value (integer from 1 to number of teams) of the
+  table with index [i: number].
+  you may call this function in the following way:
+    Party.SetRoundRanking({3, 1, 2});
+    this means: team 1 is ranked third, team 2 is ranked first and team 3 is
+    ranked second.
   if no party game is started or party game is finished
-  it will raise an error }
-function ULuaParty_SetWinner(L: Plua_State): Integer; cdecl;
+  it will raise an error *)
+function ULuaParty_SetRoundRanking(L: Plua_State): Integer; cdecl;
 
 { Party.GetTeams - returns a table with all information and structure as
   in the TPartyGame.Teams array }
@@ -74,7 +81,7 @@ const
   ULuaParty_Lib_f: array [0..4] of lual_reg = (
     (name:'Register'; func:ULuaParty_Register),
     (name:'GameFinished'; func:ULuaParty_GameFinished),
-    (name:'SetWinner'; func:ULuaParty_SetWinner),
+    (name:'SetRoundRanking'; func:ULuaParty_SetRoundRanking),
     (name:'GetTeams'; func:ULuaParty_GetTeams),
     (name:'SetTeams'; func:ULuaParty_SetTeams)
   );
@@ -171,17 +178,44 @@ begin
   Result := 1;
 end;
 
-{ Party.SetWinner - sets winner of current party round,
+{ Party.SetRoundRanking - sets ranking of current party round,
   if no party game is started or party game is finished
   it will raise an error }
-function ULuaParty_SetWinner(L: Plua_State): Integer; cdecl;
+function ULuaParty_SetRoundRanking(L: Plua_State): Integer; cdecl;
+var
+  R: AParty_TeamRanking;
+  I: Integer;
+  Rank: Integer;
 begin
   Result := 0;
-  
+
   luaL_checktype(L, 1, LUA_TTABLE);
 
-  if (not Party.SetWinner(Lua_ToBinInt(L, 1))) then
-    luaL_error(L, PChar('cann''t set party winner. Is party started and not finished yet?'));
+  lua_checkstack(L, 1);
+
+  SetLength(R, Length(Party.Teams));
+
+  for I := 0 to High(R) do
+  begin
+    lua_pushInteger(L, I);
+    lua_gettable(L, 1);
+
+    R[I].Rank := Length(R);
+    if (lua_isnumber(L, -1)) then
+    begin
+      Rank := lua_toInteger(L, -1);
+      if (Rank >= 1) and (Rank <= Length(R)) then
+        R[I].Rank := Rank;
+    end;
+
+    lua_pop(L, 1);
+  end;
+
+  // pop table
+  lua_pop(L, 1);
+
+  if (not Party.SetRanking(R)) then
+    luaL_error(L, PChar('cann''t set party round ranking. Is party started and not finished yet?'));
 end;
 
 { Party.GetTeams - returns a table with all information and structure as
