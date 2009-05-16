@@ -239,16 +239,16 @@ procedure TLuaCore.BrowseDir(Dir: WideString);
     I: Integer;
 begin
   try
-    Files := Platform.DirectoryFindFiles(Dir, '.usdx', true)
+    Files := Platform.DirectoryFindFiles(Dir, '.usdx', true);
+    
+    for I := 0 to High(Files) do
+      if (Files[I].IsDirectory) then
+        BrowseDir(Dir + Files[i].Name) //browse recursive
+      else if (Files[I].IsFile) then
+        LoadPlugin(Dir + Files[i].Name);
   except
     Log.LogError('Couldn''t deal with directory/file: ' + Dir + ' in TLuaCore.BrowseDir')
   end;
-
-  for I := 0 to High(Files) do
-    if (Files[I].IsDirectory) then
-      BrowseDir(Dir + Files[i].Name) //browse recursive
-    else if (Files[I].IsFile) then
-      LoadPlugin(Dir + Files[i].Name);  
 end;
 
 { tries to load filename w/ lua and creates the default
