@@ -101,14 +101,13 @@ function ULuaParty_Register(L: Plua_State): Integer; cdecl;
   var
     Info: TParty_ModeInfo;
     Key: String;
+    P: TLuaPlugin;
 begin
   // check for table on stack
   luaL_checkType(L, 1, LUA_TTABLE);
 
   // get parent id
-  lua_getfield (L, LUA_REGISTRYINDEX, '_USDX_STATE_ID');
-  if (not lua_isNumber(L, -1)) then
-    luaL_error(L, 'unable to get _USDX_STATE_ID in ULuaParty_Register');
+  P := Lua_GetOwner(L);
 
 
   // set mode info to default
@@ -116,8 +115,7 @@ begin
 
 
   // set parent in info rec and pop it from stack
-  Info.Parent := lua_toInteger(L, -1);
-  lua_pop(L, 1);
+  Info.Parent := P.Id;
 
   // go through table elements
   lua_pushNil(L);

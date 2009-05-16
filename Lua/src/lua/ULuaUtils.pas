@@ -33,7 +33,7 @@ interface
 
 {$I switches.inc}
 
-uses ULua;
+uses ULua, ULuaCore;
 
 { converts a lua table with a structure like:
     * = 1 , * = 4 , * = 5
@@ -41,6 +41,13 @@ uses ULua;
     0b11001
   does not pop anything }
 function Lua_ToBinInt(L: PLua_State; idx: Integer): Integer;
+
+{ returns plugin that is the owner of the given state
+  may raise a lua error if the parent id is not found
+  in states registry, if state owner does not exists
+  or is not loaded. So a check for a nil value is not
+  necessary }
+function Lua_GetOwner(L: PLua_State): TLuaPlugin;
 
 { this is a helper in case an evenet owner don't has no use for the results
   returns number of popped elements }
@@ -61,7 +68,7 @@ begin
   // default: no bits set
   Result := 0;
 
-  lua_checkstack(L, 3);
+  lua_checkstack(L, 2);
 
   if (idx < 0) then
     dec(idx); // we will push one value before using this
@@ -81,10 +88,32 @@ begin
   end;
 end;
 
+{ returns plugin that is the owner of the given state
+  may raise a lua error if the parent id is not found
+  in states registry, if state owner does not exists
+  or is not loaded. So a check for a nil value is not
+  necessary }
+function Lua_GetOwner(L: PLua_State): TLuaPlugin;
+begin
+  lua_checkstack(L, 1);
+
+  lua_getfield (L, LUA_REGISTRYINDEX, '_USDX_STATE_ID');
+  if (not lua_isNumber(L, -1)) then
+    luaL_error(L, 'unable to get _USDX_STATE_ID');
+
+  Result := LuaCore.GetPluginById(lua_toInteger(L, -1));
+
+  lua_pop(L, 1); //< remove state id from stack
+
+  if (Result = nil) then
+    luaL_error(L, '_USDX_STATE_ID has invalid value')
+  else if (Result.Status > psRunning) then
+    luaL_error(L, 'owning plugin is not loaded or already unloaded in Lua_GetOwner');
+end;
+
 { this is a helper in case an evenet owner don't has no use for the results
   returns number of popped elements }
 function Lua_ClearStack(L: Plua_State): Integer;
-  var I: Integer;
 begin
   Result := lua_gettop(L);
   lua_pop(L, Result);

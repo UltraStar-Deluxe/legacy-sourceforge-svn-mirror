@@ -49,16 +49,20 @@ function ULuaUsdx_Version(L: Plua_State): Integer; cdecl;
               arguments: event_name: string }
 function ULuaUsdx_Hook(L: Plua_State): Integer; cdecl;
 
+{ Usdx.ShutMeDown - no results, no arguments
+  unloads the calling plugin }
+function ULuaUsdx_ShutMeDown(L: Plua_State): Integer; cdecl;
+
 const
   ULuaUsdx_Lib_f: array [0..3] of lual_reg = (
     (name:'Version'; func:ULuaUsdx_Version),
     (name:'Time'; func:ULuaUsdx_Time),
     (name:'Hook'; func:ULuaUsdx_Hook),
-    (name:nil; func:nil)
+    (name:'ShutMeDown'; func:ULuaUsdx_ShutMeDown)
   );
 
 implementation
-uses SDL, ULuaCore, UHookableEvent, UConfig;
+uses SDL, ULuaCore, ULuaUtils, UHookableEvent, UConfig;
 
 { Usdx.Time - returns sdl_time to have time numbers comparable with
               ultrastar deluxe ones. no arguments }
@@ -68,7 +72,7 @@ begin
   //remove arguments (if any)
   top := lua_gettop(L);
 
-  If (top > 0) then
+  if (top > 0) then
     lua_pop(L, top);
 
   //push result
@@ -84,7 +88,7 @@ begin
   //remove arguments (if any)
   top := lua_gettop(L);
 
-  If (top > 0) then
+  if (top > 0) then
     lua_pop(L, top);
 
   //push result
@@ -98,19 +102,13 @@ function ULuaUsdx_Hook(L: Plua_State): Integer; cdecl;
 var
   EventName: String;
   FunctionName: String;
-  ParentId: Integer;
+  P: TLuaPlugin;
   Event: THookableEvent;
 begin
   EventName := luaL_checkstring(L, 1);
   FunctionName := luaL_checkstring(L, 2);
 
-  lua_checkstack(L, 1);
-
-  lua_getfield (L, LUA_REGISTRYINDEX, '_USDX_STATE_ID');
-  if (not lua_isNumber(L, -1)) then
-    luaL_error(L, 'unable to get _USDX_STATE_ID in ULuaUsdx_Hook');
-
-  ParentId := lua_toInteger(L, -1);
+  P := Lua_GetOwner(L);
 
   lua_pop(L, lua_gettop(L)); //clear stack
 
@@ -119,10 +117,28 @@ begin
   Event := LuaCore.GetEventByName(EventName);
   if (Event <> nil) then
   begin
-    Event.Hook(L, ParentId, FunctionName);
+    Event.Hook(L, P.Id, FunctionName);
   end
   else
     luaL_error(L, PChar('event does not exist: ' + EventName));
+end;
+
+function ULuaUsdx_ShutMeDown(L: Plua_State): Integer; cdecl;
+  var
+    top: Integer;
+    P: TLuaPlugin;
+begin
+  Result := 0;
+  
+  //remove arguments (if any)
+  top := lua_gettop(L);
+
+  if (top > 0) then
+    lua_pop(L, top);
+
+  P := Lua_GetOwner(L);
+
+  P.ShutMeDown;
 end;
 
 end.

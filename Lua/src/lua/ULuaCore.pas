@@ -63,6 +63,7 @@ type
       State: Plua_State;   //< all functions of this plugin are called with this Lua state
       bPaused: Boolean;    //< If true no lua functions from this state are called
       ErrorCount: Integer; //< counts the errors that occured during function calls of this plugin
+      ShutDown: Boolean;   //< for self shutdown by plugin. true if plugin wants to be unloaded after execution of current function
 
       sName: String;
       sVersion: String;
@@ -91,6 +92,8 @@ type
 
       procedure PausePlugin(doPause: Boolean);
       property Paused: boolean read bPaused write PausePlugin;
+
+      procedure ShutMeDown;
 
       { calls the lua function in the global w/ the given name.
         the arguments to the function have to be pushed to the stack
@@ -183,7 +186,7 @@ var
   LuaCore: TLuaCore;
 
 implementation
-uses ULog, UPlatform, ULuaUsdx, UMain;
+uses ULog, UPlatform, ULuaUsdx, UMain, StrUtils;
 
 constructor TLuaCore.Create;
 begin
@@ -664,6 +667,7 @@ begin
   Self.ErrorCount := 0;
   Self.sName := 'not registred';
   Self.sStatus := psNone;
+  Self.ShutDown := False;
 
   State := nil; //< to prevent calls to unopened state
 end;
@@ -714,7 +718,7 @@ begin
       // plugin_init() if false or nothing is returned plugin init is aborted
       if (CallFunctionByName('plugin_init', 0, 1)) then
       begin
-        If (HasRegistred) AND (lua_toBoolean(State, 1)) then
+        If (HasRegistred) AND (sStatus = psNone) AND (lua_toBoolean(State, 1)) then
         begin
           sStatus := psRunning;
           ClearStack;
@@ -764,6 +768,12 @@ begin
   bPaused := doPause;
 end;
 
+{ unload plugin after execution of the current function }
+procedure TLuaPlugin.ShutMeDown;
+begin
+  ShutDown := True;
+end;
+
 { calls the lua function in the global w/ the given name.
   the arguments to the function have to be pushed to the stack
   before calling this function.
@@ -775,59 +785,73 @@ end;
 function TLuaPlugin.CallFunctionByName(Name: String; const nArgs: Integer; const nResults: Integer; const ReportErrors: Boolean): Boolean;
 begin
   Result := false;
-  if (not bPaused) and (State <> nil) then
+  if (State <> nil) then
   begin
-    // we need at least one stack slot free
-    lua_checkstack(State, 1);
+    if (not bPaused) then
+    begin
+      // we need at least one stack slot free
+      lua_checkstack(State, 1);
 
-    // lua_getglobal(State, PChar(Name)); //this is just a macro:
-    lua_getfield(State, LUA_GLOBALSINDEX, PChar(Name));
+      // lua_getglobal(State, PChar(Name)); //this is just a macro:
+      lua_getfield(State, LUA_GLOBALSINDEX, PChar(Name));
 
-    If (lua_isfunction(State, -1)) then
-    begin //we got a function
-      // move function in front of the arguments (if any)
-      if (nArgs > 0) then
-        lua_insert(State, -(nArgs + 1));
-      
-      // call it!
-      if (lua_pcall(State, nArgs, nResults, 0) = 0) then
-        Result := true //called w/o errors
-      else //increase error counter
-        Inc (ErrorCount);
+      if (lua_isfunction(State, -1)) then
+      begin //we got a function
+        // move function in front of the arguments (if any)
+        if (nArgs > 0) then
+          lua_insert(State, -(nArgs + 1));
+
+        // call it!
+        if (lua_pcall(State, nArgs, nResults, 0) = 0) then
+          Result := true //called w/o errors
+        else //increase error counter
+          Inc (ErrorCount);
+      end
+      else
+      begin //we have to pop the args and the field we pushed from stack
+        lua_pop(State, nArgs + 1);
+        //leave an errormessage on stack
+        lua_pushstring(State, Pchar('could not find function named ' + Name));
+      end;
     end
     else
-    begin //we have to pop the args and the field we pushed from stack
-      lua_pop(State, nArgs + 1);
+    begin //we have to pop the args from stack
+      lua_pop(State, nArgs);
       //leave an errormessage on stack
-      lua_pushstring(State, Pchar('could not find function named ' + Name));
+      lua_pushstring(State, PChar('plugin paused'));
     end;
+
+    if (not Result) AND (ReportErrors) then
+      Log.LogError(lua_toString(State, -1), 'lua/' + sName);
+
+    if ShutDown then
+    begin // plugin indicates self shutdown
+      ShutDown := False;
+      Unload;
+      Result := False;
+    end
   end
   else
-  begin //we have to pop the args from stack
-    lua_pop(State, nArgs);
-    //leave an errormessage on stack
-    lua_pushstring(State, PChar('plugin paused'));
+  begin
+    Log.LogError('trying to call function of closed or not opened lua state', IfThen(HasRegistred, Name, Filename));
   end;
-
-  if (not Result) AND (ReportErrors) then
-    Log.LogError(lua_toString(State, -1), 'lua/' + sName);
 end;
 
 { removes all values from stack }
 procedure TLuaPlugin.ClearStack;
 begin
-  if (lua_gettop(State) > 0) then
+  if (State <> nil) and (lua_gettop(State) > 0) then
     lua_pop(State, lua_gettop(State));
 end;
 
-{ Destroys the Luastate, and frees as much mem as possible,
+{ destroys the lua state, and frees as much mem as possible,
   w/o destroying the class and important information }
 procedure TLuaPlugin.Unload;
 begin
   if (State <> nil) then
   begin
     if (Status in [psRunning, psErrorOnRun]) then
-      CallFunctionByName('plugin_unload', 1, 0, False);
+      CallFunctionByName('plugin_unload');
 
     ClearStack;
     lua_close(State);
