@@ -406,32 +406,36 @@ begin
     luaopen_TextGL(Lua);  // TextGL (Lua)
     lua_pop(Lua, 1);      // remove table from stack
     luaopen_Texture(Lua); // Texture (Lua)
-    lua_pop(Lua, 1);      // remove table from stack   }
+    lua_pop(Lua, 1);      // remove table from stack
 
     Log.BenchmarkEnd(1);
-    Log.LogBenchmark('Initializing Lua', 1);
+    Log.LogBenchmark('Initializing Lua', 1);        }
 
-    Log.BenchmarkEnd(0);
-    Log.LogBenchmark('Loading Time', 0);
 
-    Log.LogStatus('Creating Core', 'Initialization');
-    {Core := TCore.Create(
-      USDXShortVersionStr,
-      MakeVersion(USDX_VERSION_MAJOR,
-                  USDX_VERSION_MINOR,
-                  USDX_VERSION_RELEASE,
-                  chr(0))
-    );  }
-
+    Log.BenchmarkStart(1);
     Party := TPartyGame.Create;
+    Log.BenchmarkEnd(1);
+    Log.LogBenchmark('Initializing Party Manager', 1);
 
+    Log.BenchmarkStart(1);
     LuaCore.RegisterModule('Log', ULuaLog_Lib_f);
     LuaCore.RegisterModule('Gl', ULuaGl_Lib_f);
     LuaCore.RegisterModule('TextGl', ULuaTextGl_Lib_f);
     LuaCore.RegisterModule('Party', ULuaParty_Lib_f);
 
+    Log.BenchmarkEnd(1);
+    Log.LogBenchmark('Initializing LuaCore', 1);
+
+    Log.BenchmarkStart(1);
     LuaCore.LoadPlugins;
-    LuaCore.DumpPlugins; 
+    Log.BenchmarkEnd(1);
+    Log.LogBenchmark('Loading Lua Plugins', 1);
+
+    LuaCore.DumpPlugins;
+
+
+    Log.BenchmarkEnd(0);
+    Log.LogBenchmark('Loading Time', 0);
 
 
     //------------------------------
