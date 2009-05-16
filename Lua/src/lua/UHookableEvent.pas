@@ -219,16 +219,19 @@ begin
 
   While (Cur <> nil) do
   begin
-    If (Cur.Parent = Parent) then
+    if (Cur.Parent = Parent) then
     begin //found a hook from parent => remove it
-      If (Prev <> nil) then
+      if (Prev <> nil) then
         Prev.Next := Cur.Next
       Else
         LastHook := Cur.Next;
 
       Dispose(Cur);
 
-      Cur := Prev.Next;
+      if (Prev <> nil) then
+        Cur := Prev.Next
+      else
+        Cur := LastHook;
     end
     else //move through the chain
     begin
