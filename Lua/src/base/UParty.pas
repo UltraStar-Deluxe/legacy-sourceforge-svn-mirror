@@ -226,6 +226,7 @@ uses
   ULuaCore,
   UDisplay,
   USong,
+  UMain,
   SysUtils;
 
 //-------------
@@ -668,7 +669,11 @@ begin
                   these functions should be called here before
                   sing screen is shown, or it should be called
                   by plugin if it wants to define a custom
-                  singscreen start up. } 
+                  singscreen start up. }
+
+        //set correct playersplay
+        if (bPartyGame) then
+          PlayersPlay := Length(Teams);
       end;
   end;
 end;

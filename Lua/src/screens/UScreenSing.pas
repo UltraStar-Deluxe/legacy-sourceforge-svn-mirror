@@ -330,6 +330,9 @@ begin
   Log.LogStatus('Begin', 'onShow');
   FadeOut := False;
 
+  ClearSettings;
+  Party.CallBeforeSing;
+
   // reset video playback engine, to play Video Clip...
   fCurrentVideoPlaybackEngine := VideoPlayback;
 
@@ -615,9 +618,6 @@ begin
   for P := Low(Lines[0].Line) to High(Lines[0].Line) do
     if Lines[0].Line[P].TotalNotes = 0 then
       Inc(NumEmptySentences);
-
-  ClearSettings;
-  Party.CallBeforeSing;
 
   Log.LogStatus('End', 'onShow');
 end;
