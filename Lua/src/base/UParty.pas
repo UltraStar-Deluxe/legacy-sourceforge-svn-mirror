@@ -798,7 +798,7 @@ begin
 
   if (Round >= 0) and (Round <= High(Rounds)) then
   begin
-    if (Rounds[Round].AlreadyPlayed) then
+    if (not Rounds[Round].AlreadyPlayed) then
     begin
       Result := Language.Translate('PARTY_NOTPLAYEDYET');
     end
