@@ -103,6 +103,8 @@ function ULuaParty_Register(L: Plua_State): Integer; cdecl;
     Key: String;
     P: TLuaPlugin;
 begin
+  Result := 0;
+  
   // check for table on stack
   luaL_checkType(L, 1, LUA_TTABLE);
 
@@ -174,6 +176,8 @@ end;
   it will raise an error }
 function ULuaParty_SetWinner(L: Plua_State): Integer; cdecl;
 begin
+  Result := 0;
+  
   luaL_checktype(L, 1, LUA_TTABLE);
 
   if (not Party.SetWinner(Lua_ToBinInt(L, 1))) then
@@ -326,6 +330,8 @@ function ULuaParty_SetTeams(L: Plua_State): Integer; cdecl;
     end;
   end;
 begin
+  Result := 0;
+  
   // check for table on stack
   luaL_checkType(L, 1, LUA_TTABLE);
 
