@@ -365,7 +365,7 @@ end;
 //----------
 procedure TPartyGame.GenScores;
 var
-  I: byte;
+  I: Integer;
 begin
   if (Length(Teams) = 2) then
   begin // score generation for 2 teams, winner gets 1 point
@@ -524,6 +524,8 @@ begin
         Self.Rounds[I].Mode := GetRandomMode;
 
       Self.Rounds[I].AlreadyPlayed := False;
+
+      SetLength(Self.Rounds[I].Ranking, 0);
     end;
 
     // get the party started!11

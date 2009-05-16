@@ -90,26 +90,21 @@ begin
     // check special keys
     case PressedKey of
       SDLK_ESCAPE,
-      SDLK_BACKSPACE :
+      SDLK_BACKSPACE,
+      SDLK_RETURN :
         begin
           AudioPlayback.PlaySound(SoundLib.Start);
-          {if (PartySession.CurRound < High(PartySession.Rounds)) then
-            FadeTo(@ScreenPartyNewRound)
-          else  // to-do : Party
-          begin
-            PartySession.EndRound;  }
-            FadeTo(@ScreenPartyWin);
-          //end;
-        end;
 
-      SDLK_RETURN:
-        begin
-          AudioPlayback.PlaySound(SoundLib.Start);
-          // to-do : Party
-          {if (PartySession.CurRound < High(PartySession.Rounds)) then
-            FadeTo(@ScreenPartyNewRound)
-          else }
+          Party.NextRound; //< go to next round
+
+          if (not Party.GameFinished) then
+          begin
+            FadeTo(@ScreenPartyNewRound);
+          end
+          else
+          begin
             FadeTo(@ScreenPartyWin);
+          end;
         end;
     end;
   end;
@@ -186,31 +181,14 @@ end;
 procedure TScreenPartyScore.onShow;
 var
   I, J: Integer;
-  Placings: Array [0..5] of Byte;
+  Ranking: AParty_TeamRanking;
 begin
   inherited;
 
-
-  //Get Maxscore
-
-  MaxScore := 0;
-  for I := 0 to ScreenSingModi.PlayerInfo.NumPlayers - 1 do
-  begin
-    if (ScreenSingModi.PlayerInfo.Playerinfo[I].Score > MaxScore) then
-      MaxScore := ScreenSingModi.PlayerInfo.Playerinfo[I].Score;
-  end;
-
-  //Get Placings
-  for I := 0 to ScreenSingModi.PlayerInfo.NumPlayers - 1 do
-  begin
-    Placings[I] := 0;
-    for J := 0 to ScreenSingModi.PlayerInfo.NumPlayers - 1 do
-      If (ScreenSingModi.PlayerInfo.Playerinfo[J].Score > ScreenSingModi.PlayerInfo.Playerinfo[I].Score) then
-        Inc(Placings[I]);
-  end;
+  Ranking := Party.Rounds[Party.CurrentRound].Ranking;
 
 
-  //Set Static Length
+  {//Set Static Length
   Static[StaticTeam1].Texture.ScaleW := ScreenSingModi.PlayerInfo.Playerinfo[0].Percentage / 100;
   Static[StaticTeam2].Texture.ScaleW := ScreenSingModi.PlayerInfo.Playerinfo[1].Percentage / 100;
   Static[StaticTeam3].Texture.ScaleW := ScreenSingModi.PlayerInfo.Playerinfo[2].Percentage / 100;
@@ -218,26 +196,29 @@ begin
   //fix: prevents static from drawn out of bounds.
   if Static[StaticTeam1].Texture.ScaleW > 99 then Static[StaticTeam1].Texture.ScaleW := 99;
   if Static[StaticTeam2].Texture.ScaleW > 99 then Static[StaticTeam2].Texture.ScaleW := 99;
-  if Static[StaticTeam3].Texture.ScaleW > 99 then Static[StaticTeam3].Texture.ScaleW := 99;
+  if Static[StaticTeam3].Texture.ScaleW > 99 then Static[StaticTeam3].Texture.ScaleW := 99; }
 
   //End Last Round // to-do : Party
   //PartySession.EndRound;
 
   //Set Winnertext
-  //Text[TextWinner].Text := Format(Language.Translate('PARTY_SCORE_WINS'), [PartySession.GetWinnerString(PartySession.CurRound)]);
+  Text[TextWinner].Text := Format(Language.Translate('PARTY_SCORE_WINS'), [Party.GetWinnerString(Party.CurrentRound)]);
 
-  if (ScreenSingModi.PlayerInfo.NumPlayers >= 1) then
+  if (Length(Party.Teams) >= 1) then
   begin
-    Text[TextScoreTeam1].Text := InttoStr(ScreenSingModi.PlayerInfo.Playerinfo[0].Score);
-    Text[TextNameTeam1].Text := String(ScreenSingModi.TeamInfo.Teaminfo[0].Name);
+    Text[TextScoreTeam1].Text := InttoStr(Party.Teams[0].Score);
+    Text[TextNameTeam1].Text := Party.Teams[0].Name;
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
     begin
-      Static[StaticTeam1Deco].Texture.TexNum := DecoTex[Placings[0]];
-      Static[StaticTeam1Deco].Texture.ColR := DecoColor[Placings[0]].R;
-      Static[StaticTeam1Deco].Texture.ColG := DecoColor[Placings[0]].G;
-      Static[StaticTeam1Deco].Texture.ColB := DecoColor[Placings[0]].B;
+      if (Length(Ranking) >= 1) and (Ranking[0].Rank >= 1) and (Ranking[0].Rank <= Length(DecoTex)) then
+      begin
+        Static[StaticTeam1Deco].Texture.TexNum := DecoTex[Ranking[0].Rank-1];
+        Static[StaticTeam1Deco].Texture.ColR := DecoColor[Ranking[0].Rank-1].R;
+        Static[StaticTeam1Deco].Texture.ColG := DecoColor[Ranking[0].Rank-1].G;
+        Static[StaticTeam1Deco].Texture.ColB := DecoColor[Ranking[0].Rank-1].B;
+      end;
     end;
 
     Text[TextScoreTeam1].Visible := True;
@@ -255,18 +236,21 @@ begin
     Static[StaticTeam1Deco].Visible := False;
   end;
 
-  if (ScreenSingModi.PlayerInfo.NumPlayers >= 2) then
+  if (Length(Party.Teams) >= 2) then
   begin
-    Text[TextScoreTeam2].Text := InttoStr(ScreenSingModi.PlayerInfo.Playerinfo[1].Score);
-    Text[TextNameTeam2].Text := String(ScreenSingModi.TeamInfo.Teaminfo[1].Name);
+    Text[TextScoreTeam2].Text := InttoStr(Party.Teams[1].Score);
+    Text[TextNameTeam2].Text := Party.Teams[1].Name;
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
     begin
-      Static[StaticTeam2Deco].Texture.TexNum := DecoTex[Placings[1]];
-      Static[StaticTeam2Deco].Texture.ColR := DecoColor[Placings[1]].R;
-      Static[StaticTeam2Deco].Texture.ColG := DecoColor[Placings[1]].G;
-      Static[StaticTeam2Deco].Texture.ColB := DecoColor[Placings[1]].B;
+      if (Length(Ranking) >= 2) and (Ranking[1].Rank >= 1) and (Ranking[1].Rank <= Length(DecoTex)) then
+      begin
+        Static[StaticTeam2Deco].Texture.TexNum := DecoTex[Ranking[1].Rank-1];
+        Static[StaticTeam2Deco].Texture.ColR := DecoColor[Ranking[1].Rank-1].R;
+        Static[StaticTeam2Deco].Texture.ColG := DecoColor[Ranking[1].Rank-1].G;
+        Static[StaticTeam2Deco].Texture.ColB := DecoColor[Ranking[1].Rank-1].B;
+      end;
     end;
 
     Text[TextScoreTeam2].Visible := True;
@@ -284,18 +268,21 @@ begin
     Static[StaticTeam2Deco].Visible := False;
   end;
 
-  if (ScreenSingModi.PlayerInfo.NumPlayers >= 3) then
+  if (Length(Party.Teams) >= 3) then
   begin
-    Text[TextScoreTeam3].Text := InttoStr(ScreenSingModi.PlayerInfo.Playerinfo[2].Score);
-    Text[TextNameTeam3].Text := String(ScreenSingModi.TeamInfo.Teaminfo[2].Name);
+    Text[TextScoreTeam3].Text := InttoStr(Party.Teams[2].Score);
+    Text[TextNameTeam3].Text := Party.Teams[2].Name;
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
     begin
-      Static[StaticTeam3Deco].Texture.TexNum := DecoTex[Placings[2]];
-      Static[StaticTeam3Deco].Texture.ColR := DecoColor[Placings[2]].R;
-      Static[StaticTeam3Deco].Texture.ColG := DecoColor[Placings[2]].G;
-      Static[StaticTeam3Deco].Texture.ColB := DecoColor[Placings[2]].B;
+      if (Length(Ranking) >= 3) and (Ranking[2].Rank >= 1) and (Ranking[2].Rank <= Length(DecoTex)) then
+      begin
+        Static[StaticTeam3Deco].Texture.TexNum := DecoTex[Ranking[2].Rank-1];
+        Static[StaticTeam3Deco].Texture.ColR := DecoColor[Ranking[2].Rank-1].R;
+        Static[StaticTeam3Deco].Texture.ColG := DecoColor[Ranking[2].Rank-1].G;
+        Static[StaticTeam3Deco].Texture.ColB := DecoColor[Ranking[2].Rank-1].B;
+      end;
     end;
 
     Text[TextScoreTeam3].Visible := True;
@@ -325,3 +312,4 @@ begin
 end;
 
 end.
+
