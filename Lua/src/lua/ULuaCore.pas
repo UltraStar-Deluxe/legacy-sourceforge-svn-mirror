@@ -108,7 +108,7 @@ type
 
       procedure Unload; //< Destroys the Luastate, and frees as much mem as possible, w/o destroying the class and important information 
 
-      destructor Destroy;
+      destructor Destroy; override;
   end;
 
   { class managing the plugins w/ their LuaStates, the events and modules
@@ -128,7 +128,7 @@ type
       function GetModuleIdByName(Name: String): Integer; //returns id of given module, or -1 if module is not found
     public
       constructor Create;
-      destructor Destroy;
+      destructor Destroy; override;
 
       procedure LoadPlugins;                         //< calls LoadPlugin w/ Plugindir and LoadingFinished Eventchain
 

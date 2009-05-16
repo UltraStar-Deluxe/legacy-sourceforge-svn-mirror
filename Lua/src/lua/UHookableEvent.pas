@@ -74,7 +74,7 @@ type
 
       function CallHookChain(Breakable: Boolean): PLua_State;   //< calls the events hookchain. if breakable, plugin can breake the chain by returning a value != 0 or false or nil
 
-      destructor Destroy;
+      destructor Destroy; override;
   end;
 
 { the default function for THookableEvent.PrepareStack it don't pass any arguments }
