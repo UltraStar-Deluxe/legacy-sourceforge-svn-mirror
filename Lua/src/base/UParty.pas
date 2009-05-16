@@ -541,11 +541,50 @@ end;
 { sets the winner(s) of current round
   returns true on success }
 function TPartyGame.SetRanking(Ranking: AParty_TeamRanking): Boolean;
+  var
+    I, J: Integer;
+    TeamExists: Integer;
+    Len: Integer;
+    Temp: TParty_TeamRanking;
 begin
   if (bPartyStarted) and (CurRound >= 0) and (CurRound <= High(Rounds)) then
   begin
     Rounds[CurRound].Ranking := Ranking;
     Result := true;
+
+    // look for teams that don't exist
+    TeamExists := 0;
+    for I := 0 to High(Rounds[CurRound].Ranking) do
+      TeamExists := TeamExists or (1 shl (Rounds[CurRound].Ranking[I].Team-1));
+
+    // create teams that don't exist
+    Len := Length(Rounds[CurRound].Ranking);
+    for I := 0 to High(Teams) do
+      if (TeamExists and (1 shl I) = 0) then
+      begin
+        Inc(Len);
+        SetLength(Rounds[CurRound].Ranking, Len);
+        Rounds[CurRound].Ranking[Len-1].Team := I + 1;
+        Rounds[CurRound].Ranking[Len-1].Rank := Length(Teams);
+      end;
+
+    // we may remove rankings from invalid teams here to
+    // but at the moment this is not necessary, because the
+    // functions this function is called from don't create
+    // invalid rankings
+
+    // bubble sort rankings by team
+    J := High(Rounds[CurRound].Ranking);
+    repeat
+      for I := 0 to J - 1 do
+        if (Rounds[CurRound].Ranking[I].Team > Rounds[CurRound].Ranking[I+1].Team) then
+        begin
+          Temp := Rounds[CurRound].Ranking[I];
+          Rounds[CurRound].Ranking[I] := Rounds[CurRound].Ranking[I+1];
+          Rounds[CurRound].Ranking[I+1] := Temp;
+        end;
+      Dec(J);
+    until J <= 0;
   end
   else
     Result := false;
