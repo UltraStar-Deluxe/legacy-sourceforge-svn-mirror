@@ -444,6 +444,7 @@ begin
   end
   else
   begin
+    Result := False;
     for I := 0 to High(Modes) do
       if (Modes[I].TeamCount and (1 shl (CountTeams - 1)) <> 0) then
       begin
@@ -542,6 +543,7 @@ begin
   if (bPartyStarted) and (CurRound >= 0) and (CurRound <= High(Rounds)) then
   begin
     Rounds[CurRound].Winner := WinBin;
+    Result := true;
   end
   else
     Result := false;
