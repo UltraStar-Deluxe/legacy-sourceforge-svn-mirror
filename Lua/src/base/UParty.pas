@@ -163,6 +163,9 @@ type
       been played }
     function NextRound: integer;
 
+    { indicates that current round has already been played }
+    procedure RoundPlayed;
+
     { true if in a Party Game (not in standard mode) }
     property PartyGame: Boolean read BPartyGame;
 
@@ -624,6 +627,13 @@ begin
   end;
 end;
 
+{ indicates that current round has already been played }
+procedure TPartyGame.RoundPlayed;
+begin
+  if (bPartyStarted) and (CurRound >= 0) and (CurRound <= High(Rounds)) then
+    Rounds[CurRound].AlreadyPlayed := True;
+end;
+
 { returns true if last round was already played }
 function TPartyGame.GameFinished: Boolean;
 begin
@@ -788,35 +798,45 @@ begin
   end; 
 end;
 
-{ returns a string like "Team 1 (and Team 2) win" }
+{ returns a string like "Team 1 (and Team 2) win"
+  if Round is in range from 0 to high(Rounds) then
+  result is name of winners of specified round.
+  if Round is -1 the result is name of winners of
+  the whole party game}
 function TPartyGame.GetWinnerString(Round: Integer): String;
 var
   Winners: array of String;
   I: integer;
+  Ranking: AParty_TeamRanking;
 begin
   Result := '';
-
+  Ranking := nil;
+  
   if (Round >= 0) and (Round <= High(Rounds)) then
   begin
     if (not Rounds[Round].AlreadyPlayed) then
-    begin
-      Result := Language.Translate('PARTY_NOTPLAYEDYET');
-    end
+      Result := Language.Translate('PARTY_NOTPLAYEDYET')
     else
-    begin
-      SetLength(Winners, 0);
-      for I := 0 to High(Rounds[Round].Ranking) do
-      begin
-        if Rounds[Round].Ranking[I].Rank = PR_First then
-        begin
-          SetLength(Winners, Length(Winners) + 1);
-          Winners[high(Winners)] := Teams[I].Name;
-        end;
-      end;
+      Ranking := Rounds[Round].Ranking;
+  end
+  else if (Round = -1) then
+    Ranking := GetTeamRanking;
 
-      if (Length(Winners) > 0) then
-          Result := Language.Implode(Winners);
+
+  if (Ranking <> nil) then
+  begin
+    SetLength(Winners, 0);
+    for I := 0 to High(Ranking) do
+    begin
+      if (Ranking[I].Rank = PR_First) and (Ranking[I].Team >= 0) and (Ranking[I].Team <= High(Teams)) then
+      begin
+        SetLength(Winners, Length(Winners) + 1);
+        Winners[high(Winners)] := Teams[Ranking[I].Team].Name;
+      end;
     end;
+
+    if (Length(Winners) > 0) then
+      Result := Language.Implode(Winners);
   end;
 
   if (Length(Result) = 0) then

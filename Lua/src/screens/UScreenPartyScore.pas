@@ -185,6 +185,10 @@ var
 begin
   inherited;
 
+  // indicate that round is finished
+  Party.RoundPlayed;
+
+  // get rankings for current round
   Ranking := Party.Rounds[Party.CurrentRound].Ranking;
 
 
@@ -197,9 +201,6 @@ begin
   if Static[StaticTeam1].Texture.ScaleW > 99 then Static[StaticTeam1].Texture.ScaleW := 99;
   if Static[StaticTeam2].Texture.ScaleW > 99 then Static[StaticTeam2].Texture.ScaleW := 99;
   if Static[StaticTeam3].Texture.ScaleW > 99 then Static[StaticTeam3].Texture.ScaleW := 99; }
-
-  //End Last Round // to-do : Party
-  //PartySession.EndRound;
 
   //Set Winnertext
   Text[TextWinner].Text := Format(Language.Translate('PARTY_SCORE_WINS'), [Party.GetWinnerString(Party.CurrentRound)]);
