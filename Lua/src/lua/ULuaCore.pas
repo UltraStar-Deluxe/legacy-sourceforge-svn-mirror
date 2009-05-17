@@ -729,6 +729,7 @@ begin
       else
       begin
         sStatus := psErrorInInit;
+        Log.LogError(String(lua_toString(State, 1)), 'lua');
         Log.LogError('error in plugin_init: ' + Filename, 'lua');
         Unload;
       end;
@@ -736,6 +737,7 @@ begin
     else
     begin
       sStatus := psErrorOnLoad;
+      Log.LogError(String(lua_toString(State, 1)), 'lua');
       Log.LogError('unable to call file: ' + Filename, 'lua');
       Unload;
     end;
@@ -744,6 +746,7 @@ begin
   else
   begin
     sStatus := psErrorOnLoad;
+    Log.LogError(String(lua_toString(State, 1)), 'lua');
     Log.LogError('unable to load file: ' + Filename, 'lua');
     Unload;
   end;
