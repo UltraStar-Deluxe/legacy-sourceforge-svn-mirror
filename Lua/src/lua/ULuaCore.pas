@@ -729,7 +729,6 @@ begin
       else
       begin
         sStatus := psErrorInInit;
-        Log.LogError(String(lua_toString(State, 1)), 'lua');
         Log.LogError('error in plugin_init: ' + Filename, 'lua');
         Unload;
       end;
