@@ -46,6 +46,7 @@ set(PACKAGE_IRC "#ultrastardx at quakenet.org")
 find_package(PPC 2.2.0 REQUIRED)
 include(UsePascal)
 include(ExpandVersion)
+include(FileUtils)
 
 ##
 # LIBRARIES
@@ -192,6 +193,30 @@ install(
     COPYING.txt
   DESTINATION ${USDX_INSTALL_DATA_DIR}
 )
+# install fink libs
+if(APPLE)
+  if(EXISTS ${usdx_exe})
+    include(AnalyzeDylibDeps)
+    analyze_dylib_deps(${usdx_exe} libdeps)
+    set(USDX_DYLIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/dylib)
+
+    # install() does not follow symlinks so we have to copy the libs at cmake time
+    file(MAKE_DIRECTORY ${USDX_DYLIB_DIR})
+    foreach(dylib ${libdeps})
+      get_filename_component(dylib_name ${dylib} NAME)
+      file_copy_if_different(${dylib} ${USDX_DYLIB_DIR}/${dylib_name})
+    endforeach()
+
+    install(DIRECTORY ${USDX_DYLIB_DIR}/ DESTINATION dylib USE_SOURCE_PERMISSIONS)
+  else()
+    message("
+!! To create a Mac OS X bundle, first compile with 
+!!   \"make\" then 
+!!   reconfigure with cmake (e.g. \"cmake ..\") and finally call 
+!!   \"cpack -G Bundle\"
+")
+  endif()
+endif(APPLE)
 
 # add "uninstall" target
 # See: http://www.vtk.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F
@@ -219,12 +244,20 @@ ADD_CUSTOM_TARGET(uninstall
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Karaoke program that evaluates your performance")
 set(CPACK_PACKAGE_VENDOR "UltraStar Deluxe Team")
-set(CPACK_PACKAGE_FILE_NAME "ultrastardx-${CMAKE_PACKAGE_VERSION}")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "ultrastardx-src-${CMAKE_PACKAGE_VERSION}")
+set(CPACK_PACKAGE_FILE_NAME "ultrastardx-${CPACK_PACKAGE_VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "ultrastardx-src-${CPACK_PACKAGE_VERSION}")
 set(CPACK_SOURCE_GENERATOR "TBZ2")
 set(CPACK_PACKAGE_EXECUTABLES "ultrastardx" "ultrastardx")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "ultrastardx ${CMAKE_PACKAGE_VERSION}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "ultrastardx ${CPACK_PACKAGE_VERSION}")
+
+if(APPLE)
+  set(CPACK_BUNDLE_NAME UltraStarDeluxe)
+  set(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/icons/ultrastardx.icns)
+  set(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/macosx/Info.plist)
+  set(CPACK_BUNDLE_STARTUP_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dists/bundle-startup.sh)
+  #CPACK_PACKAGE_ICON
+endif(APPLE)
 
 if(WIN32 AND NOT UNIX)
   set(CPACK_NSIS_DISPLAY_NAME "Ultrastar Deluxe") 
@@ -266,13 +299,13 @@ set(CPACK_SOURCE_IGNORE_FILES
   "^${PROJECT_SOURCE_DIR}/ultrastardx\\\\."
 )
 
-#include(CPack)
+include(CPack)
 
 ##
 # SUMMARY
 ##
 
-message(STATUS "
+message("
 !! Configuration of ${CPACK_PACKAGE_NAME} ${CPACK_PACKAGE_VERSION} done!
 !!
 !! Type \"make\" to compile and 

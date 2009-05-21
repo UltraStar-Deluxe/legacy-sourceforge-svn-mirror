@@ -17,7 +17,7 @@ endfunction(FILE_SYMLINK)
 
 function(FILE_COPY_DIR src dst)
   if(NOT EXISTS ${src})
-    message(FATAL_ERROR "File \"${src}\" does not exist!")    
+    message(FATAL_ERROR "Directory \"${src}\" does not exist!")    
   endif(NOT EXISTS ${src})
   execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${src}" "${dst}"
@@ -27,3 +27,29 @@ function(FILE_COPY_DIR src dst)
     message(FATAL_ERROR "Copy \"${src}\" to \"${dst}\" failed!")
   endif(result)
 endfunction(FILE_COPY_DIR)
+
+function(FILE_COPY src dst)
+  if(NOT EXISTS ${src})
+    message(FATAL_ERROR "File \"${src}\" does not exist!")    
+  endif(NOT EXISTS ${src})
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy "${src}" "${dst}"
+    RESULT_VARIABLE result
+  )
+  if(result)
+    message(FATAL_ERROR "Copy \"${src}\" to \"${dst}\" failed!")
+  endif(result)
+endfunction(FILE_COPY)
+
+function(FILE_COPY_IF_DIFFERENT src dst)
+  if(NOT EXISTS ${src})
+    message(FATAL_ERROR "File \"${src}\" does not exist!")    
+  endif(NOT EXISTS ${src})
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${src}" "${dst}"
+    RESULT_VARIABLE result
+  )
+  if(result)
+    message(FATAL_ERROR "Copy \"${src}\" to \"${dst}\" failed!")
+  endif(result)
+endfunction(FILE_COPY_IF_DIFFERENT)
