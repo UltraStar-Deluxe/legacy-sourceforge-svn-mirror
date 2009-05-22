@@ -3,15 +3,13 @@ function plugin_init()
 
   require('Usdx.Party')
 
-  Mode = {}
+  local Mode = {}
 
   Mode.Name = 'Duel'
   Mode.CanNonParty = true;
   Mode.CanParty = true;
 
   Usdx.Party.Register(Mode)
-
-  Mode = nil;
 
   return true;
 end
