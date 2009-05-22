@@ -65,8 +65,8 @@ type
     Name:         string;
 
     // Index in Teaminfo record
-    TeamID:       Byte;
-    PlayerID:     Byte;
+    TeamID:       byte;
+    PlayerID:     byte;
 
     // Scores
     Score:        real;
@@ -79,10 +79,10 @@ type
     ScoreTotalInt:  integer;
 
     // LineBonus
-    ScoreLast:    Real;//Last Line Score
+    ScoreLast:    real;//Last Line Score
 
     // PerfectLineTwinkle (effect)
-    LastSentencePerfect: Boolean;
+    LastSentencePerfect: boolean;
 
     HighNote:   integer; // index of last note (= High(Note)?)
     LengthNote: integer; // number of notes (= Length(Note)?).
@@ -108,7 +108,7 @@ var
   PlayListPath:     string;
   ScriptPath:       string;
 
-  Done:     Boolean;
+  Done:     boolean;
   // FIXME: ConversionFileName should not be global
   ConversionFileName: string;
   Restart:  boolean;
@@ -524,7 +524,7 @@ begin
     end;
 
   end;
-End;
+end;
 
 procedure CheckEvents;
 var
@@ -540,7 +540,7 @@ begin
       begin
         Display.Fade := 0;
         Display.NextScreenWithCheck := nil;
-        Display.CheckOK := True;
+        Display.CheckOK := true;
       end;
       SDL_MOUSEBUTTONDOWN:
       begin
@@ -605,13 +605,13 @@ begin
           // if there is a visible popup then let it handle input instead of underlying screen
           // shoud be done in a way to be sure the topmost popup has preference (maybe error, then check)
           else if (ScreenPopupError <> nil) and (ScreenPopupError.Visible) then
-            done := not ScreenPopupError.ParseInput(Event.key.keysym.sym, WideChar(Event.key.keysym.unicode), True)
+            done := not ScreenPopupError.ParseInput(Event.key.keysym.sym, WideChar(Event.key.keysym.unicode), true)
           else if (ScreenPopupCheck <> nil) and (ScreenPopupCheck.Visible) then
-            done := not ScreenPopupCheck.ParseInput(Event.key.keysym.sym, WideChar(Event.key.keysym.unicode), True)
+            done := not ScreenPopupCheck.ParseInput(Event.key.keysym.sym, WideChar(Event.key.keysym.unicode), true)
           else
           begin
             // check if screen wants to exit
-            done := not Display.CurrentScreen^.ParseInput(Event.key.keysym.sym, WideChar(Event.key.keysym.unicode), True);
+            done := not Display.CurrentScreen^.ParseInput(Event.key.keysym.sym, WideChar(Event.key.keysym.unicode), true);
 
             // if screen wants to exit
             if done then
@@ -625,7 +625,7 @@ begin
               begin
                 Display.Fade := 0;
                 Display.NextScreenWithCheck := nil;
-                Display.CheckOK := True;
+                Display.CheckOK := true;
               end;
             end;
 
@@ -825,7 +825,7 @@ end;
 
 procedure NewSentence(Screen: TScreenSing);
 var
-  i: Integer;
+  i: integer;
 begin
   // clean note of player
   for i := 0 to High(Player) do
@@ -893,7 +893,7 @@ var
   Range: integer;
   NoteHit: boolean;
   MaxSongPoints: integer; // max. points for the song (without line bonus)
-  MaxLinePoints: Real;    // max. points for the current line
+  MaxLinePoints: real;    // max. points for the current line
 begin
   // TODO: add duet mode support
   // use Lines[LineSetIndex] with LineSetIndex depending on the current player
@@ -1111,7 +1111,7 @@ begin
 
     ScoreLast     := 0;
 
-    LastSentencePerfect := False;
+    LastSentencePerfect := false;
   end;
 end;
 
