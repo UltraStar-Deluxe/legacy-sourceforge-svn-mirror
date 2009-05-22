@@ -190,6 +190,7 @@ uses
   ULuaTexture,
   ULuaTextGL,
   ULuaParty,
+  ULuaScreenSing,
   UThemes;
 
 
@@ -422,6 +423,7 @@ begin
     LuaCore.RegisterModule('Gl', ULuaGl_Lib_f);
     LuaCore.RegisterModule('TextGl', ULuaTextGl_Lib_f);
     LuaCore.RegisterModule('Party', ULuaParty_Lib_f);
+    LuaCore.RegisterModule('ScreenSing', ULuaScreenSing_Lib_f);
 
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Initializing LuaCore', 1);

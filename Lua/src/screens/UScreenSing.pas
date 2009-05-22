@@ -103,11 +103,12 @@ type
 
     // some settings to be set by plugins
     settings: record
-      
+      Finish: Boolean; //< if true, screen will finish on next draw
 
 
     end;
     procedure ClearSettings;
+    procedure EndSong;
 
     constructor Create; override;
     procedure onShow; override;
@@ -636,7 +637,12 @@ end;
 
 procedure TScreenSing.ClearSettings;
 begin
+  Settings.Finish := False;
+end;
 
+procedure TScreenSing.EndSong;
+begin
+  Settings.Finish := True;
 end;
 
 procedure TScreenSing.onHide;
@@ -762,11 +768,14 @@ begin
   if ShowFinish then
   begin
     if (not AudioPlayback.Finished) and ((CurrentSong.Finish = 0) or
-      (LyricsState.GetCurrentTime() * 1000 <= CurrentSong.Finish)) then
+      (LyricsState.GetCurrentTime() * 1000 <= CurrentSong.Finish)) and (not Settings.Finish) then
     begin
       // analyze song if not paused
       if (not Paused) then
+      begin
         Sing(Self);
+        Party.CallOnSing;
+      end;
     end
     else
     begin

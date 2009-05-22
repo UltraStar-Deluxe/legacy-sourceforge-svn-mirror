@@ -153,7 +153,8 @@ uses
   UHookableEvent in 'lua\UHookableEvent.pas',
   ULuaCore       in 'lua\ULuaCore.pas',
   ULuaUsdx       in 'lua\ULuaUsdx.pas',
-  ULuaParty      in 'lua\ULuaParty.pas',  
+  ULuaParty      in 'lua\ULuaParty.pas',
+  ULuaScreenSing in 'lua\ULuaScreenSing.pas', 
 
   //------------------------------
   //Includes - Menu System
