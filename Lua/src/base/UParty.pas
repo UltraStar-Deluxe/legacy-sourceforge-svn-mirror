@@ -754,11 +754,6 @@ begin
         else //display standard score screen
           Display.FadeTo(@ScreenScore);
       end;
-
-    // do this after every leave of singscreen, to ensure that settings
-    // are defaulted. This leads to the restriction that settings have
-    // to be set in PartyMode.BeforeSing
-    ScreenSing.ClearSettings;
   end;
 end;
 
