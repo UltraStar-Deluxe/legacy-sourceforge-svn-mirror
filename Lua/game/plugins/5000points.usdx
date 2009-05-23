@@ -31,6 +31,7 @@ function Sing()
 end
 
 function Calculate_Winner()
+  Scores = Scores or ScreenSing.GetScores();
   local Ranking = {};
   for i = 1, #Scores do
     if Scores[i] >= 5000 then
