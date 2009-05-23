@@ -315,6 +315,8 @@ begin
       Skin_LyricsLowerX, Skin_LyricsLowerY, Skin_LyricsLowerW, Skin_LyricsLowerH);
 
   LyricsSync := TLyricsSyncSource.Create();
+
+  ClearSettings;
 end;
 
 procedure TScreenSing.onShow;
