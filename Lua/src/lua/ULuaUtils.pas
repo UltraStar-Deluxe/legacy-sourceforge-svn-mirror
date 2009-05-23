@@ -42,6 +42,13 @@ uses ULua, ULuaCore;
   does not pop anything }
 function Lua_ToBinInt(L: PLua_State; idx: Integer): Integer;
 
+{ converts an integer with the value:
+    0b11001
+  to a lua table with a structure like:
+    * = 1 , * = 4 , * = 5
+  and pushed the table onto the stack }
+procedure Lua_PushBinInt(L: PLua_State; BinInt: Integer);
+
 { returns plugin that is the owner of the given state
   may raise a lua error if the parent id is not found
   in states registry, if state owner does not exists
@@ -86,6 +93,30 @@ begin
     // pop value, so key is on top
     lua_pop(L, 1);
   end;
+end;
+
+{ converts an integer with the value:
+    0b11001
+  to a lua table with a structure like:
+    * = 1 , * = 4 , * = 5
+  and pushed the table onto the stack }
+procedure Lua_PushBinInt(L: PLua_State; BinInt: Integer);
+var
+  I, Index: Integer;
+begin
+  lua_newTable(L);
+
+
+  Index := 1; //< lua starts w/ index 1
+  for I := 0 to 31 do
+    if (BinInt and (1 shl I) <> 0) then
+    begin
+      lua_pushInteger(L, Index);
+      lua_pushInteger(L, I);
+      lua_settable(L, -3);
+
+      Inc(Index);
+    end;
 end;
 
 { returns plugin that is the owner of the given state

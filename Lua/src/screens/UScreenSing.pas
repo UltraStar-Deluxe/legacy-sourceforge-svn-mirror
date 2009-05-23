@@ -105,9 +105,13 @@ type
     settings: record
       Finish: Boolean; //< if true, screen will finish on next draw
 
+      LyricsVisible: Boolean; //< shows or hides lyrics
+      NotesVisible: Integer; //< if bit[playernum] is set the notes for the specified player are visible. By default all players notes are visible
 
+      PlayerEnabled: Integer; //< defines whether a player can score atm
     end;
     procedure ClearSettings;
+    procedure ApplySettings; //< applies changes of settings record
     procedure EndSong;
 
     constructor Create; override;
@@ -638,6 +642,12 @@ end;
 procedure TScreenSing.ClearSettings;
 begin
   Settings.Finish := False;
+end;
+
+{ applies changes of settings record }
+procedure TScreenSing.ApplySettings;
+begin
+  //
 end;
 
 procedure TScreenSing.EndSong;

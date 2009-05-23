@@ -44,14 +44,25 @@ function ULuaScreenSing_GetScores(L: Plua_State): Integer; cdecl;
   an error }
 function ULuaScreenSing_Finish(L: Plua_State): Integer; cdecl;
 
+{ ScreenSing.GetSettings - no arguments
+  returns a table filled with the data of TScreenSing }
+function ULuaScreenSing_GetSettings(L: Plua_State): Integer; cdecl;
+
+{ ScreenSing.SetSettings - arguments: Table
+  sets all attributes of TScreenSing.Settings that are
+  unequal to nil in Table }
+function ULuaScreenSing_SetSettings(L: Plua_State): Integer; cdecl;
+
 const
-  ULuaScreenSing_Lib_f: array [0..1] of lual_reg = (
+  ULuaScreenSing_Lib_f: array [0..3] of lual_reg = (
     (name:'GetScores';func:ULuaScreenSing_GetScores),
-    (name:'Finish';func:ULuaScreenSing_Finish)
+    (name:'Finish';func:ULuaScreenSing_Finish),
+    (name:'GetSettings';func:ULuaScreenSing_GetSettings),
+    (name:'SetSettings';func:ULuaScreenSing_SetSettings)
   );
 
 implementation
-uses UScreenSing, UMain, UDisplay, UGraphic;
+uses UScreenSing, UMain, UDisplay, UGraphic, ULuaUtils, SysUtils;
 
 { returns a table with following structure:
     t[1..playercount] = score of player i }
@@ -100,6 +111,67 @@ begin
   end
   else
     LuaL_error(L, 'Usdx.ScreenSing.Finish is called, but sing screen is not shown.'); 
+end;
+
+{ ScreenSing.GetSettings - no arguments
+  returns a table filled with the data of TScreenSing }
+function ULuaScreenSing_GetSettings(L: Plua_State): Integer; cdecl;
+  var Top: Integer;
+begin
+  // pop arguments
+  Top := lua_getTop(L);
+  if (Top > 0) then
+    lua_pop(L, Top);
+
+  lua_createtable(L, 0, 3);
+
+  //fill table w/ info
+  lua_pushBoolean(L, ScreenSing.Settings.LyricsVisible);
+  lua_setField(L, -2, 'LyricsVisible');
+
+  lua_pushBinInt(L, ScreenSing.Settings.NotesVisible);
+  lua_setField(L, -2, 'NotesVisible');
+
+  lua_pushBinInt(L, ScreenSing.Settings.PlayerEnabled);
+  lua_setField(L, -2, 'PlayerEnabled');
+
+
+  Result := 1;
+end;
+
+{ ScreenSing.SetSettings - arguments: Table
+  sets all attributes of TScreenSing.Settings that are
+  unequal to nil in Table }
+function ULuaScreenSing_SetSettings(L: Plua_State): Integer; cdecl;
+  var
+    Key: String;
+begin
+  Result := 0;
+
+  // check for table on stack
+  luaL_checkType(L, 1, LUA_TTABLE);
+
+  // go through table elements
+  lua_pushNil(L);
+  while (lua_Next(L, 1) <> 0) do
+  begin
+    Key := lowercase(lua_ToString(L, -2));
+
+    if (Key = 'lyricsvisible') and (lua_isBoolean(L, -1)) then
+      ScreenSing.settings.LyricsVisible := lua_toBoolean(L, -1)
+    else if (Key = 'notesvisible') and (lua_isTable(L, -1)) then
+      ScreenSing.settings.NotesVisible := lua_toBinInt(L, -1)
+    else if (Key = 'playerenabled') and (lua_isTable(L, -1)) then
+      ScreenSing.settings.PlayerEnabled := lua_toBinInt(L, -1);
+
+    // pop value from stack so key is on top
+    lua_pop(L, 1);
+  end;
+
+  // clear stack from table
+  lua_pop(L, lua_gettop(L));
+
+  ScreenSing.ApplySettings;
 end;
 
 end.
