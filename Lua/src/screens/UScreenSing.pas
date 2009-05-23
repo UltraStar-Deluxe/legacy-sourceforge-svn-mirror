@@ -642,6 +642,9 @@ end;
 procedure TScreenSing.ClearSettings;
 begin
   Settings.Finish := False;
+  Settings.LyricsVisible := True;
+  Settings.NotesVisible := low(Integer);
+  Settings.PlayerEnabled := low(Integer);
 end;
 
 { applies changes of settings record }
