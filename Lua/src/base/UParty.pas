@@ -53,8 +53,9 @@ type
   { record used by TPartyGame to store round specific data }
   TParty_Round = record
     Mode:   Integer;
-    AlreadyPlayed: Boolean;
+    AlreadyPlayed: Boolean; //< true if round was already played
     Ranking: AParty_TeamRanking;
+    RankingSet: Boolean; //< true if Self.Ranking is already set
   end;
 
   TParty_ModeInfo = record
@@ -113,6 +114,8 @@ type
     function GetRandomPlayer(Team: integer): integer;
 
     function CallLua(Parent: Integer; Func: String):Boolean;
+
+    procedure SetRankingByScore;
   public
     //Teams: TTeamInfo;
     Rounds: array of TParty_Round;    //< holds info which modes are played in this party game (if started)
@@ -388,7 +391,7 @@ begin
 end;
 
 { set the attributes of Info to default values }
-procedure TPartyGame.DefaultModeInfo(var Info: TParty_ModeInfo);    
+procedure TPartyGame.DefaultModeInfo(var Info: TParty_ModeInfo);
 begin
   Info.Name := 'undefined';
   Info.Parent := -1; //< not loaded by plugin (e.g. Duell)
@@ -526,7 +529,8 @@ begin
       else
         Self.Rounds[I].Mode := GetRandomMode;
 
-      Self.Rounds[I].AlreadyPlayed := False;
+      Self.Rounds[I].AlreadyPlayed := false;
+      Self.Rounds[I].RankingSet := false;
 
       SetLength(Self.Rounds[I].Ranking, 0);
     end;
@@ -590,9 +594,68 @@ begin
         end;
       Dec(J);
     until J <= 0;
+
+    //set rounds RankingSet to true
+    Rounds[CurRound].RankingSet := true;
   end
   else
     Result := false;
+end;
+
+{ sets ranking of current round by score saved in players array }
+procedure TPartyGame.SetRankingByScore;
+  var
+    I, J: Integer;
+    Rank: Integer;
+    Ranking: AParty_TeamRanking;
+    Scores: array of Integer;
+    TmpRanking: TParty_TeamRanking;
+    TmpScore: Integer;
+begin
+  if (Length(Player) = Length(Teams)) then
+  begin
+    SetLength(Ranking, Length(Teams));
+    SetLength(Scores, Length(Teams));
+
+    // fill ranking array
+    for I := 0 to High(Ranking) do
+    begin
+      Ranking[I].Team := I;
+      Ranking[I].Rank := 0;
+      Scores[I] := Player[I].ScoreTotalInt;
+    end;
+
+    // bubble sort by score
+    J := High(Ranking);
+    repeat
+      for I := 0 to J - 1 do
+        if (Scores[I] < Scores[I+1]) then
+        begin
+          TmpRanking := Ranking[I];
+          Ranking[I] := Ranking[I+1];
+          Ranking[I+1] := TmpRanking;
+
+          TmpScore := Scores[I];
+          Scores[I] := Scores[I+1];
+          Scores[I+1] := TmpScore;
+        end;
+      Dec(J);
+    until J <= 0;
+
+    // set rank field
+    Rank := 1; //first rank has id 1
+    for I := 0 to High(Ranking) do
+    begin
+      Ranking[I].Rank := Rank;
+
+      if (I < High(Ranking)) and (Scores[I] <> Scores[I+1]) then
+        Inc(Rank); // next rank if next team has different score
+    end;
+  end
+  else
+    SetLength(Ranking, 0);
+
+  SetRanking(Ranking);
 end;
 
 { increases round counter by 1 and clears all round specific information;
@@ -604,7 +667,8 @@ begin
   // some lines concerning the previous round
   if (CurRound >= 0) then
   begin
-    Rounds[CurRound].AlreadyPlayed := True;
+    Rounds[CurRound].AlreadyPlayed := true;
+
     GenScores;
   end;
 
@@ -631,7 +695,13 @@ end;
 procedure TPartyGame.RoundPlayed;
 begin
   if (bPartyStarted) and (CurRound >= 0) and (CurRound <= High(Rounds)) then
+  begin
+    // set rounds ranking by score if it was not set by plugin
+    if (not Rounds[CurRound].RankingSet) then
+      SetRankingByScore;
+
     Rounds[CurRound].AlreadyPlayed := True;
+  end;
 end;
 
 { returns true if last round was already played }
@@ -778,7 +848,7 @@ begin
   J := High(Result);
   repeat
     for I := 0 to J - 1 do
-      if (Teams[Result[I].Team].Score > Teams[Result[I+1].Team].Score) then
+      if (Teams[Result[I].Team].Score < Teams[Result[I+1].Team].Score) then
       begin
         Temp := Result[I];
         Result[I] := Result[I+1];
