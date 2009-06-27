@@ -46,14 +46,14 @@ type
   TScreenStatMain = class(TMenu)
     private
       //Some Stat Value that don't need to be calculated 2 times
-      SongsWithVid: Cardinal;
+      SongsWithVid: cardinal;
       function FormatOverviewIntro(FormatStr: string): string;
       function FormatSongOverview(FormatStr: string): string;
       function FormatPlayerOverview(FormatStr: string): string;
     public
       TextOverview:    integer;
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
 
@@ -73,10 +73,10 @@ uses
   ULog,
   UUnicodeUtils;
 
-function TScreenStatMain.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenStatMain.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -165,7 +165,7 @@ begin
 
   //Set Songs with Vid
   SongsWithVid := 0;
-  For I := 0 to Songs.SongList.Count -1 do
+  for I := 0 to Songs.SongList.Count -1 do
     if (TSong(Songs.SongList[I]).Video <> '') then
       Inc(SongsWithVid);
 end;
@@ -180,7 +180,7 @@ end;
 
 function TScreenStatMain.FormatOverviewIntro(FormatStr: string): string;
 var
-  Year, Month, Day: Word;
+  Year, Month, Day: word;
 begin
   {Format:
     %0:d Ultrastar Version
@@ -201,8 +201,8 @@ end;
 
 function TScreenStatMain.FormatSongOverview(FormatStr: string): string;
 var
-  CntSongs, CntSungSongs, CntVidSongs: Integer;
-  MostPopSongArtist, MostPopSongTitle: String;
+  CntSongs, CntSungSongs, CntVidSongs: integer;
+  MostPopSongArtist, MostPopSongTitle: string;
   StatList: TList;
   MostSungSong: TStatResultMostSungSong;
 begin
@@ -217,7 +217,7 @@ begin
   CntSungSongs := Database.GetTotalEntrys(stMostSungSong);
   CntVidSongs := SongsWithVid;
 
-  StatList := Database.GetStats(stMostSungSong, 1, 0, False);
+  StatList := Database.GetStats(stMostSungSong, 1, 0, false);
   if ((StatList <> nil) and (StatList.Count > 0)) then
   begin
     MostSungSong := StatList[0];
@@ -245,11 +245,11 @@ end;
 
 function TScreenStatMain.FormatPlayerOverview(FormatStr: string): string;
 var
-  CntPlayers: Integer;
+  CntPlayers: integer;
   BestScoreStat:    TStatResultBestScores;
   BestSingerStat:   TStatResultBestSingers;
-  BestPlayer, BestScorePlayer: String;
-  BestPlayerScore, BestScore: Integer;
+  BestPlayer, BestScorePlayer: string;
+  BestPlayerScore, BestScore: integer;
   SingerStats, ScoreStats: TList;
 begin
   {Format:
@@ -261,7 +261,7 @@ begin
 
   CntPlayers := Database.GetTotalEntrys(stBestSingers);
 
-  SingerStats := Database.GetStats(stBestSingers, 1, 0, False);
+  SingerStats := Database.GetStats(stBestSingers, 1, 0, false);
   if ((SingerStats <> nil) and (SingerStats.Count > 0)) then
   begin
     BestSingerStat := SingerStats[0];
@@ -275,7 +275,7 @@ begin
   end;
   Database.FreeStats(SingerStats);
 
-  ScoreStats  := Database.GetStats(stBestScores, 1, 0, False);
+  ScoreStats  := Database.GetStats(stBestScores, 1, 0, false);
   if ((ScoreStats <> nil) and (ScoreStats.Count > 0)) then
   begin
     BestScoreStat := ScoreStats[0];
@@ -303,7 +303,7 @@ end;
 
 procedure TScreenStatMain.SetOverview;
 var
-  Overview: String;
+  Overview: string;
 begin
   // Format overview
   Overview := FormatOverviewIntro(Language.Translate('STAT_OVERVIEW_INTRO')) + '\n \n' + 
@@ -312,11 +312,11 @@ begin
   Text[0].Text := Overview;
 end;
 
-
 procedure TScreenStatMain.SetAnimationProgress(Progress: real);
-var I: Integer;
+var
+  I: integer;
 begin
-  For I := 0 to high(Button) do
+  for I := 0 to high(Button) do
     Button[I].Texture.ScaleW := Progress;
 end;
 

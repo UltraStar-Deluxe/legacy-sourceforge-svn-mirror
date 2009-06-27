@@ -40,15 +40,15 @@ uses
   UMusic,
   UFiles,
   UIni,
-  UThemes,
-  USongs;
+  USongs,
+  UThemes;
 
 type
   TScreenOptionsGame = class(TMenu)
     public
       old_Tabs, old_Sorting: integer;
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure onShow; override;
       procedure RefreshSongs;
   end;
@@ -60,10 +60,12 @@ uses
   UUnicodeUtils,
   SysUtils;
 
-function TScreenOptionsGame.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenOptionsGame.ParseInput(PressedKey: cardinal;
+                                       CharCode: UCS4Char;
+				       PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if PressedDown then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -81,12 +83,12 @@ begin
         begin
           AudioPlayback.PlaySound(SoundLib.Back);
           RefreshSongs;
-
           FadeTo(@ScreenOptions);
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 6 then begin
+          if SelInteraction = 6 then
+          begin
             AudioPlayback.PlaySound(SoundLib.Back);
             RefreshSongs;
             FadeTo(@ScreenOptions);
@@ -126,15 +128,34 @@ begin
   old_Sorting := Ini.Sorting;
   old_Tabs    := Ini.Tabs;
 
+  Theme.OptionsGame.SelectPlayers.showArrows  := true;
+  Theme.OptionsGame.SelectPlayers.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsGame.SelectPlayers,    Ini.Players,    IPlayers);
-  AddSelectSlide(Theme.OptionsGame.SelectDifficulty, Ini.Difficulty, IDifficulty);
+
+  Theme.OptionsGame.SelectDifficulty.showArrows  := true;
+  Theme.OptionsGame.SelectDifficulty.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsGame.SelectDifficulty, Ini.Difficulty, IDifficultyTranslated);
+
+  Theme.OptionsGame.SelectLanguage.showArrows  := true;
+  Theme.OptionsGame.SelectLanguage.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsGame.SelectLanguage,   Ini.Language,   ILanguage);
-  AddSelectSlide(Theme.OptionsGame.SelectTabs,       Ini.Tabs,       ITabs);
-  AddSelectSlide(Theme.OptionsGame.SelectSorting,    Ini.Sorting,    ISorting);
-  AddSelectSlide(Theme.OptionsGame.SelectDebug,      Ini.Debug,      IDebug);
+
+  Theme.OptionsGame.SelectTabs.showArrows  := true;
+  Theme.OptionsGame.SelectTabs.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsGame.SelectTabs,       Ini.Tabs,       ITabsTranslated);
+
+  Theme.OptionsGame.SelectSorting.showArrows  := true;
+  Theme.OptionsGame.SelectSorting.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsGame.SelectSorting,    Ini.Sorting,    ISortingTranslated);
+
+  Theme.OptionsGame.SelectDebug.showArrows  := true;
+  Theme.OptionsGame.SelectDebug.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsGame.SelectDebug,      Ini.Debug,      IDebugTranslated);
+
+
 
   AddButton(Theme.OptionsGame.ButtonExit);
-  if (Length(Button[0].Text)=0) then
+  if (Length(Button[0].Text) = 0) then
     AddButtonText(14, 20, Theme.Options.Description[7]);
 
 end;
@@ -142,7 +163,7 @@ end;
 //Refresh Songs Patch
 procedure TScreenOptionsGame.RefreshSongs;
 begin
-if (ini.Sorting <> old_Sorting) or (ini.Tabs <> old_Tabs) then
+  if (ini.Sorting <> old_Sorting) or (ini.Tabs <> old_Tabs) then
     ScreenSong.Refresh;
 end;
 

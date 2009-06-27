@@ -47,9 +47,9 @@ type
     private
       procedure ReloadTheme;
     public
-      SkinSelect: Integer;
+      SkinSelect: integer;
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure onShow; override;
       procedure InteractInc; override;
       procedure InteractDec; override;
@@ -65,10 +65,10 @@ uses
   UUnicodeUtils,
   USkins;
 
-function TScreenOptionsThemes.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenOptionsThemes.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -162,11 +162,17 @@ begin
 
   LoadFromTheme(Theme.OptionsThemes);
 
+  Theme.OptionsThemes.SelectTheme.showArrows := true;
+  Theme.OptionsThemes.SelectTheme.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsThemes.SelectTheme, Ini.Theme, ITheme);
 
+  Theme.OptionsThemes.SelectSkin.showArrows := true;
+  Theme.OptionsThemes.SelectSkin.oneItemOnly := true;
   SkinSelect := AddSelectSlide(Theme.OptionsThemes.SelectSkin, Ini.SkinNo, ISkin);
 
-  AddSelectSlide(Theme.OptionsThemes.SelectColor, Ini.Color, IColor);
+  Theme.OptionsThemes.SelectColor.showArrows := true;
+  Theme.OptionsThemes.SelectColor.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsThemes.SelectColor, Ini.Color, IColorTranslated);
 
   AddButton(Theme.OptionsThemes.ButtonExit);
   if (Length(Button[0].Text)=0) then
@@ -190,7 +196,6 @@ begin
 
   ScreenOptionsThemes.Interaction    := self.Interaction;
   ScreenOptionsThemes.Draw;
-
 
   Display.Draw;
   SwapBuffers;

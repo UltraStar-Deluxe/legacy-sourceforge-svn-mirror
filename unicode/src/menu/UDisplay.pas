@@ -45,43 +45,71 @@ type
   TDisplay = class
     private
       //fade-to-black-hack
-      BlackScreen: Boolean;
+      BlackScreen:   boolean;
 
-      FadeEnabled:  Boolean;  // true if fading is enabled
-      FadeFailed: Boolean;    // true if fading is possible (enough memory, etc.)
-      FadeState: integer;     // fading state, 0 means that the fade texture must be initialized
-      LastFadeTime: Cardinal; // last fade update time
+      FadeEnabled:   boolean;  // true if fading is enabled
+      FadeFailed:    boolean;  // true if fading is possible (enough memory, etc.)
+      FadeState:     integer;  // fading state, 0 means that the fade texture must be initialized
+      LastFadeTime:  cardinal; // last fade update time
 
-      FadeTex: array[1..2] of GLuint;
+      FadeTex:       array[1..2] of GLuint;
+ 
+      FPSCounter:    cardinal;
+      LastFPS:       cardinal;
+      NextFPSSwap:   cardinal;
 
-      FPSCounter    : Cardinal;
-      LastFPS       : Cardinal;
-      NextFPSSwap   : Cardinal;
+      OSD_LastError: string;
 
-      OSD_LastError : String;
+      { software cursor data }
+      Cursor_X:              double;
+      Cursor_Y:              double;
+      Cursor_Pressed:        boolean;
+      Cursor_HiddenByScreen: boolean; // hides software cursor and deactivate auto fade in
+
+      // used for cursor fade out when there is no movement
+      Cursor_Visible:      boolean;
+      Cursor_LastMove:     cardinal;
+      Cursor_Fade:         boolean;
 
       procedure DrawDebugInformation;
     public
-      NextScreen   : PMenu;
-      CurrentScreen : PMenu;
+      NextScreen:          PMenu;
+      CurrentScreen:       PMenu;
 
       //popup data
       NextScreenWithCheck: Pmenu;
-      CheckOK  : Boolean;
+      CheckOK:             boolean;
 
       // FIXME: Fade is set to 0 in UMain and other files but not used here anymore.
-      Fade     : Real;
+      Fade:                real;
 
       constructor Create;
       destructor  Destroy; override;
 
       procedure SaveScreenShot;
 
-      function  Draw: Boolean;
+      function  Draw: boolean;
+
+      { sets SDL_ShowCursor depending on options set in Ini }
+      procedure SetCursor;
+
+      { called when cursor moves, positioning of software cursor }
+      procedure MoveCursor(X, Y: double; Pressed: boolean);
+
+      
+      { draws software cursor }
+      procedure DrawCursor;
   end;
 
 var
-  Display:          TDisplay;
+  Display: TDisplay;
+
+const
+  { constants for software cursor effects
+    time in milliseconds }
+  Cursor_FadeIn_Time = 500;      // seconds the fade in effect lasts
+  Cursor_FadeOut_Time = 2000;    // seconds the fade out effect lasts
+  Cursor_AutoHide_Time = 5000;   // seconds until auto fade out starts if there is no mouse movement
 
 implementation
 
@@ -104,15 +132,15 @@ begin
   inherited Create;
 
   //popup hack
-  CheckOK             := False;
+  CheckOK             := false;
   NextScreen          := nil;
   NextScreenWithCheck := nil;
-  BlackScreen         := False;
+  BlackScreen         := false;
 
   // fade mod
-  FadeState := 0;
+  FadeState   := 0;
   FadeEnabled := (Ini.ScreenFade = 1);
-  FadeFailed:= false;
+  FadeFailed  := false;
 
   glGenTextures(2, @FadeTex);
 
@@ -125,6 +153,15 @@ begin
 
   //Set LastError for OSD to No Error
   OSD_LastError := 'No Errors';
+
+  // software cursor default values
+  Cursor_LastMove := 0;
+  Cursor_Visible  := false;
+  Cursor_Pressed  := false;
+  Cursor_X        := -1;
+  Cursor_Y        := -1;
+  Cursor_Fade     := false;
+  Cursor_HiddenByScreen := true;
 end;
 
 destructor TDisplay.Destroy;
@@ -133,14 +170,14 @@ begin
   inherited Destroy;
 end;
 
-function TDisplay.Draw: Boolean;
+function TDisplay.Draw: boolean;
 var
-  S: integer;
-  FadeStateSquare: Real;
-  currentTime: Cardinal;
-  glError: glEnum;
+  S:               integer;
+  FadeStateSquare: real;
+  currentTime:     cardinal;
+  glError:         glEnum;
 begin
-  Result := True;
+  Result := true;
 
   //We don't need this here anymore,
   //Because the background care about cleaning the buffers
@@ -166,12 +203,12 @@ begin
       begin
         NextScreen := NextScreenWithCheck;
         NextScreenWithCheck := nil;
-        CheckOk := False;
+        CheckOk := false;
       end
       else
       begin
         // on end of game fade to black before exit
-        BlackScreen := True;
+        BlackScreen := true;
       end;
     end;
 
@@ -188,16 +225,16 @@ begin
       // fade mod
       FadeState := 0;
       if ((Ini.ScreenFade = 1) and (not FadeFailed)) then
-        FadeEnabled := True
+        FadeEnabled := true
       else if (Ini.ScreenFade = 0) then
-        FadeEnabled := False;
+        FadeEnabled := false;
     end
     else
     begin
       // disable fading if initialization failed
       if (FadeEnabled and FadeFailed) then
       begin
-        FadeEnabled := False;
+        FadeEnabled := false;
       end;
       
       if (FadeEnabled and not FadeFailed) then
@@ -275,7 +312,7 @@ begin
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
       end
-      // blackscreen hack
+// blackscreen hack
       else if not BlackScreen then
       begin
         NextScreen.OnShow;
@@ -286,7 +323,7 @@ begin
         // fade out complete...
         FadeState := 0;
         CurrentScreen.onHide;
-        CurrentScreen.ShowFinish := False;
+        CurrentScreen.ShowFinish := false;
         CurrentScreen := NextScreen;
         NextScreen := nil;
         if not BlackScreen then
@@ -296,16 +333,172 @@ begin
         end
         else
         begin
-          Result := False;
+          Result := false;
           Break;
         end;
       end;
     end; // if
 
-    //Draw OSD only on first Screen if Debug Mode is enabled
+// Draw OSD only on first Screen if Debug Mode is enabled
     if ((Ini.Debug = 1) or (Params.Debug)) and (S = 1) then
       DrawDebugInformation;      
   end; // for
+
+  if not BlackScreen then
+    DrawCursor;
+end;
+
+{ sets SDL_ShowCursor depending on options set in Ini }
+procedure TDisplay.SetCursor;
+var
+  Cursor: Integer;
+begin
+  Cursor := 0;
+
+  if (CurrentScreen <> @ScreenSing) or (Cursor_HiddenByScreen) then
+  begin // hide cursor on singscreen
+    if (Ini.Mouse = 0) and (Ini.FullScreen = 0) then
+      // show sdl (os) cursor in window mode even when mouse support is off
+      Cursor := 1
+    else if (Ini.Mouse = 1) then
+      // show sdl (os) cursor when hardware cursor is selected
+      Cursor := 1;
+
+    if (Ini.Mouse <> 2) then
+      Cursor_HiddenByScreen := false;
+  end
+  else if (Ini.Mouse <> 2) then
+    Cursor_HiddenByScreen := true;
+
+
+  SDL_ShowCursor(Cursor);
+
+  if (Ini.Mouse = 2) then
+  begin
+    if Cursor_HiddenByScreen then
+    begin
+      // show software cursor
+      Cursor_HiddenByScreen := false;
+      Cursor_Visible := false;
+      Cursor_Fade := false;
+    end
+    else if (CurrentScreen = @ScreenSing) then
+    begin
+      // hide software cursor in singscreen
+      Cursor_HiddenByScreen := true;
+      Cursor_Visible := false;
+      Cursor_Fade := false;
+    end;
+  end;
+end;
+
+{ called when cursor moves, positioning of software cursor }
+procedure TDisplay.MoveCursor(X, Y: double; Pressed: boolean);
+var
+  Ticks: cardinal;
+begin
+  if (Ini.Mouse = 2) and 
+     ((X <> Cursor_X) or (Y <> Cursor_Y) or (Pressed <> Cursor_Pressed)) then
+  begin
+    Cursor_X := X;
+    Cursor_Y := Y;
+    Cursor_Pressed := Pressed;
+
+    Ticks := SDL_GetTicks;
+
+    { fade in on movement (or button press) if not first movement }
+    if (not Cursor_Visible) and (Cursor_LastMove <> 0) then
+    begin
+      if Cursor_Fade then // we use a trick here to consider progress of fade out
+        Cursor_LastMove := Ticks - round(Cursor_FadeIn_Time * (1 - (Ticks - Cursor_LastMove)/Cursor_FadeOut_Time))
+      else
+        Cursor_LastMove := Ticks;
+
+      Cursor_Visible := true;
+      Cursor_Fade := true;
+    end
+    else if not Cursor_Fade then
+    begin
+      Cursor_LastMove := Ticks;
+    end;
+  end;
+end;
+
+{ draws software cursor }
+procedure TDisplay.DrawCursor;
+var
+  Alpha: single;
+  Ticks: cardinal;
+begin
+  if (Ini.Mouse = 2) then
+  begin // draw software cursor
+    Ticks := SDL_GetTicks;
+
+    if (Cursor_Visible) and (Cursor_LastMove + Cursor_AutoHide_Time <= Ticks) then
+    begin // start fade out after 5 secs w/o activity
+      Cursor_Visible := false;
+      Cursor_LastMove := Ticks;
+      Cursor_Fade := true;
+    end;
+    
+    // fading
+    if Cursor_Fade then
+    begin
+      if Cursor_Visible then
+      begin // fade in
+        if (Cursor_LastMove + Cursor_FadeIn_Time <= Ticks) then
+          Cursor_Fade := false
+        else
+          Alpha := sin((Ticks - Cursor_LastMove) * 0.5 * pi / Cursor_FadeIn_Time) * 0.7;
+      end
+      else
+      begin //fade out
+        if (Cursor_LastMove + Cursor_FadeOut_Time <= Ticks) then
+          Cursor_Fade := false
+        else
+          Alpha := cos((Ticks - Cursor_LastMove) * 0.5 * pi / Cursor_FadeOut_Time) * 0.7;
+      end;
+    end;
+
+    // no else if here because we may turn off fade in if block
+    if not Cursor_Fade then
+    begin
+      if Cursor_Visible then
+        Alpha := 0.7 // alpha when cursor visible and not fading
+      else
+        Alpha := 0;  // alpha when cursor is hidden
+    end;
+
+    if (Alpha > 0) and (not Cursor_HiddenByScreen) then
+    begin
+      glColor4f(1, 1, 1, Alpha);
+      glEnable(GL_TEXTURE_2D);
+      glEnable(GL_BLEND);
+      glDisable(GL_DEPTH_TEST);
+
+      if (Cursor_Pressed) and (Tex_Cursor_Pressed.TexNum > 0) then
+        glBindTexture(GL_TEXTURE_2D, Tex_Cursor_Pressed.TexNum)
+      else
+        glBindTexture(GL_TEXTURE_2D, Tex_Cursor_Unpressed.TexNum);
+
+      glBegin(GL_QUADS);
+        glTexCoord2f(0, 0);
+        glVertex2f(Cursor_X, Cursor_Y);
+
+        glTexCoord2f(0, 1);
+        glVertex2f(Cursor_X, Cursor_Y + 32);
+
+        glTexCoord2f(1, 1);
+        glVertex2f(Cursor_X + 32, Cursor_Y + 32);
+
+        glTexCoord2f(1, 0);
+        glVertex2f(Cursor_X + 32, Cursor_Y);
+      glEnd;
+
+      glDisable(GL_BLEND);
+      glDisable(GL_TEXTURE_2D);
+    end;
+  end;
 end;
 
 procedure TDisplay.SaveScreenShot;
@@ -318,7 +511,7 @@ var
   Align:      integer;
   RowSize:    integer;
 begin
-  // Exit if Screenshot-path does not exist or read-only
+// Exit if Screenshot-path does not exist or read-only
   if (ScreenshotsPath = '') then
     Exit;
 
@@ -332,9 +525,9 @@ begin
       break
   end;
 
-  // we must take the row-alignment (4byte by default) into account
+// we must take the row-alignment (4byte by default) into account
   glGetIntegerv(GL_PACK_ALIGNMENT, @Align);
-  // calc aligned row-size
+// calc aligned row-size
   RowSize := ((ScreenW*3 + (Align-1)) div Align) * Align;
 
   GetMem(ScreenData, RowSize * ScreenH);
@@ -347,8 +540,8 @@ begin
       ScreenData, ScreenW, ScreenH, 24, RowSize,
       $0000FF, $00FF00, $FF0000, 0);
 
-  //Success := WriteJPGImage(FileName, Surface, 95);
-  //Success := WriteBMPImage(FileName, Surface);
+//  Success := WriteJPGImage(FileName, Surface, 95);
+//  Success := WriteBMPImage(FileName, Surface);
   Success := WritePNGImage(FileName, Surface);
   if Success then
     ScreenPopupError.ShowPopup('Screenshot saved: ' + ExtractFileName(FileName))
@@ -360,12 +553,13 @@ begin
 end;
 
 //------------
-// DrawDebugInformation - Procedure draw FPS and some other Informations on Screen
+// DrawDebugInformation - procedure draw fps and some other informations on screen
 //------------
 procedure TDisplay.DrawDebugInformation;
-var Ticks: Cardinal;
+var
+  Ticks: cardinal;
 begin
-  //Some White Background for information
+// Some White Background for information
   glEnable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
   glColor4f(1, 1, 1, 0.5);
@@ -377,13 +571,13 @@ begin
   glEnd;
   glDisable(GL_BLEND);
 
-  //Set Font Specs
+// set font specs
   SetFontStyle(0);
   SetFontSize(21);
-  SetFontItalic(False);
+  SetFontItalic(false);
   glColor4f(0, 0, 0, 1);
 
-  //Calculate FPS
+// calculate fps
   Ticks := SDL_GetTicks();
   if (Ticks >= NextFPSSwap) then
   begin
@@ -394,17 +588,17 @@ begin
 
   Inc(FPSCounter);
 
-  //Draw Text
+// draw text
 
-  //FPS
+// fps
   SetFontPos(695, 0);
   glPrint ('FPS: ' + InttoStr(LastFPS));
 
-  //RSpeed
+// rspeed
   SetFontPos(695, 13);
   glPrint ('RSpeed: ' + InttoStr(Round(1000 * TimeMid)));
 
-  //LastError
+// lasterror
   SetFontPos(695, 26);
   glColor4f(1, 0, 0, 1);
   glPrint (OSD_LastError);

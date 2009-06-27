@@ -198,7 +198,14 @@ var
     Tex_Score_NoteBarRound_Lightest : array [1..6] of TTexture;
 
     Tex_Score_Ratings               : array [0..7] of TTexture;
-    
+
+  // arrows for SelectSlide
+    Tex_SelectS_ArrowL:  TTexture;
+    Tex_SelectS_ArrowR:  TTexture;
+
+  // textures for software mouse cursor
+    Tex_Cursor_Unpressed: TTexture;
+    Tex_Cursor_Pressed:   TTexture;
 const
   Skin_BGColorR = 1;
   Skin_BGColorG = 1;
@@ -231,17 +238,6 @@ const
   Skin_OscR = 0;
   Skin_OscG = 0;
   Skin_OscB = 0;
-
-  // TODO: add to theme ini file
-  Skin_LyricsT = 493;
-  Skin_LyricsUpperX = 80;
-  Skin_LyricsUpperW = 640;
-  Skin_LyricsUpperY = Skin_LyricsT;
-  Skin_LyricsUpperH = 41;
-  Skin_LyricsLowerX = 80;
-  Skin_LyricsLowerW = 640;
-  Skin_LyricsLowerY = Skin_LyricsT + Skin_LyricsUpperH + 1;
-  Skin_LyricsLowerH = 41;
 
   Skin_SpectrumT = 470;
   Skin_SpectrumBot = 570;
@@ -339,6 +335,15 @@ begin
   Tex_Ball              := Texture.LoadTexture(Skin.GetTextureFileName('Ball'),            TEXTURE_TYPE_TRANSPARENT, $FF00FF);
   Tex_Lyric_Help_Bar    := Texture.LoadTexture(Skin.GetTextureFileName('LyricHelpBar'),    TEXTURE_TYPE_TRANSPARENT, $FF00FF);
 
+  Tex_SelectS_ArrowL    := Texture.LoadTexture(Skin.GetTextureFileName('Select_ArrowLeft'),    TEXTURE_TYPE_TRANSPARENT, 0);
+  Tex_SelectS_ArrowR    := Texture.LoadTexture(Skin.GetTextureFileName('Select_ArrowRight'),    TEXTURE_TYPE_TRANSPARENT, 0);
+
+  Tex_Cursor_Unpressed  := Texture.LoadTexture(Skin.GetTextureFileName('Cursor'), TEXTURE_TYPE_TRANSPARENT, 0);
+
+  if (Skin.GetTextureFileName('Cursor_Pressed') <> '') then
+    Tex_Cursor_Pressed    := Texture.LoadTexture(Skin.GetTextureFileName('Cursor_Pressed'), TEXTURE_TYPE_TRANSPARENT, 0)
+  else
+    Tex_Cursor_Pressed.TexNum := 0;
 
   //TimeBar mod
   Tex_TimeProgress := Texture.LoadTexture(Skin.GetTextureFileName('TimeBar'));
@@ -497,6 +502,7 @@ begin
 
   Log.LogStatus('TDisplay.Create', 'UGraphic.Initialize3D');
   Display := TDisplay.Create;
+  //Display.SetCursor;
 
   //Log.BenchmarkEnd(2); Log.LogBenchmark('====> Creating Display', 2);
 
@@ -629,14 +635,14 @@ begin
   begin
     Log.LogStatus('SDL_SetVideoMode', 'Set Video Mode...   Full Screen');
     screen := SDL_SetVideoMode(W, H, (Depth+1) * 16, SDL_OPENGL or SDL_FULLSCREEN );
-    SDL_ShowCursor(0);
   end
   else
   begin
     Log.LogStatus('SDL_SetVideoMode', 'Set Video Mode...   Windowed');
     screen := SDL_SetVideoMode(W, H, 0, SDL_OPENGL or SDL_RESIZABLE);
-    SDL_ShowCursor(1);
   end;
+
+  SDL_ShowCursor(0);
 
   if (screen = nil) then
   begin
