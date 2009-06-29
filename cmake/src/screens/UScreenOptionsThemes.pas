@@ -161,11 +161,17 @@ begin
 
   LoadFromTheme(Theme.OptionsThemes);
 
+  Theme.OptionsThemes.SelectTheme.showArrows := true;
+  Theme.OptionsThemes.SelectTheme.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsThemes.SelectTheme, Ini.Theme, ITheme);
 
+  Theme.OptionsThemes.SelectSkin.showArrows := true;
+  Theme.OptionsThemes.SelectSkin.oneItemOnly := true;
   SkinSelect := AddSelectSlide(Theme.OptionsThemes.SelectSkin, Ini.SkinNo, ISkin);
 
-  AddSelectSlide(Theme.OptionsThemes.SelectColor, Ini.Color, IColor);
+  Theme.OptionsThemes.SelectColor.showArrows := true;
+  Theme.OptionsThemes.SelectColor.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsThemes.SelectColor, Ini.Color, IColorTranslated);
 
   AddButton(Theme.OptionsThemes.ButtonExit);
   if (Length(Button[0].Text)=0) then

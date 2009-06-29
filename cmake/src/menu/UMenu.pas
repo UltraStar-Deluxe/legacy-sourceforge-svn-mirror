@@ -34,19 +34,20 @@ interface
 {$I switches.inc}
 
 uses
-  gl,
   SysUtils,
-  UTexture,
+  Math,
+  gl,
+  SDL,
+  UMenuBackground,
+  UMenuButton,
+  UMenuButtonCollection,
+  UMenuInteract,
+  UMenuSelectSlide,
   UMenuStatic,
   UMenuText,
-  UMenuButton,
-  UMenuSelectSlide,
-  UMenuInteract,
-  UMenuBackground,
-  UThemes,
-  UMenuButtonCollection,
-  Math,
-  UMusic;
+  UMusic,
+  UTexture,
+  UThemes;
 
 type
 {  Int16 = SmallInt;}
@@ -61,7 +62,7 @@ type
 
       ButtonPos:        integer;
       Button:           array of TButton;
-     
+
       SelectsS:         array of TSelectSlide;
       ButtonCollection: array of TButtonCollection;
     public
@@ -72,6 +73,7 @@ type
 
       Fade:       integer; // fade type
       ShowFinish: boolean; // true if there is no fade
+      RightMbESC: boolean; // true to simulate ESC keypress when RMB is pressed
 
       destructor Destroy; override;
       constructor Create; overload; virtual;
@@ -82,10 +84,10 @@ type
       function WideCharUpperCase(wchar: WideChar) : WideString;
       function WideStringUpperCase(wstring: WideString) : WideString;
       procedure AddInteraction(Typ, Num: integer);
-      procedure SetInteraction(Num: integer);
+      procedure SetInteraction(Num: integer); virtual;
       property Interaction: integer read SelInteraction write SetInteraction;
 
-      //Procedure Load BG, Texts, Statics and Button Collections from ThemeBasic
+      // procedure load bg, texts, statics and button collections from themebasic
       procedure LoadFromTheme(const ThemeBasic: TThemeBasic);
 
       procedure PrepareButtonCollections(const Collections: AThemeButtonCollection);
@@ -145,9 +147,10 @@ type
       function DrawFG: boolean; virtual;
       function Draw: boolean; virtual;
       function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown : boolean): boolean; virtual;
-      // FIXME: ParseMouse is not implemented in any subclass and not even used anywhere in the code
-      //   -> do this before activation of this method
-      //function ParseMouse(Typ: integer; X: integer; Y: integer): boolean; virtual; abstract;
+      function ParseMouse(MouseButton: integer; BtnDown: boolean; X, Y: integer): boolean; virtual;
+      function InRegion(X1, Y1, W, H, X, Y: real): boolean;
+      function InteractAt(X, Y: real): integer;
+      function CollectionAt(X, Y: real): integer;
       procedure onShow; virtual;
       procedure onShowFinish; virtual;
       procedure onHide; virtual;
@@ -167,6 +170,9 @@ type
   end;
 
 const
+  MENU_MDOWN = 8;
+  MENU_MUP   = 0;
+
   pmMove    = 1;
   pmClick   = 2;
   pmUnClick = 3;
@@ -183,14 +189,14 @@ implementation
 
 uses
   UCommon,
-  ULog,
-  UMain,
+  UCovers,
+  UDisplay,
   UDrawTexture,
   UGraphic,
-  UDisplay,
-  UCovers,
-  UTime,
+  ULog,
+  UMain,
   USkins,
+  UTime,
   //Background types
   UMenuBackgroundNone,
   UMenuBackgroundColor,
@@ -221,6 +227,8 @@ begin
   ButtonPos := -1;
 
   Background := nil;
+
+  RightMbESC := true;
 end;
 {
 constructor TMenu.Create(Back: string);
@@ -252,7 +260,7 @@ begin
   BackH := H;
 end;   }
 
-function RGBFloatToInt(R, G, B: Double): cardinal;
+function RGBFloatToInt(R, G, B: double): cardinal;
 begin
   Result := (Trunc(255 * R) shl 16) or
             (Trunc(255 * G) shl  8) or
@@ -291,8 +299,8 @@ begin
       begin
         Button[OldNum].Selected := false;
       
-        //Deselect Collection if Next Button is Not from Collection
-        if (NewTyp <> iButton) Or (Button[NewNum].Parent <> Button[OldNum].Parent) then
+        // deselect collection if next button is not from collection
+        if (NewTyp <> iButton) or (Button[NewNum].Parent <> Button[OldNum].Parent) then
           ButtonCollection[Button[OldNum].Parent-1].Selected := false;
       end;
   end;
@@ -596,17 +604,25 @@ begin
   Result := AddStatic(X, Y, W, H, Name, TEXTURE_TYPE_PLAIN);
 end;
 
-function TMenu.AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType): integer;
+function TMenu.AddStatic(X, Y, W, H: real;
+                         ColR, ColG, ColB: real;
+			 const Name: string;
+			 Typ: TTextureType): integer;
 begin
   Result := AddStatic(X, Y, W, H, ColR, ColG, ColB, Name, Typ, $FFFFFF);
 end;
 
-function TMenu.AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType): integer;
+function TMenu.AddStatic(X, Y, W, H, Z: real;
+                         ColR, ColG, ColB: real;
+			 const Name: string;
+			 Typ: TTextureType): integer;
 begin
   Result := AddStatic(X, Y, W, H, Z, ColR, ColG, ColB, Name, Typ, $FFFFFF);
 end;
 
-function TMenu.AddStatic(X, Y, W, H: real; const Name: string; Typ: TTextureType): integer;
+function TMenu.AddStatic(X, Y, W, H: real;
+                         const Name: string;
+			 Typ: TTextureType): integer;
 var
   StatNum: integer;
 begin
@@ -624,17 +640,32 @@ begin
   Result := StatNum;
 end;
 
-function TMenu.AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType; Color: integer): integer;
+function TMenu.AddStatic(X, Y, W, H: real;
+                         ColR, ColG, ColB: real;
+			 const Name: string;
+			 Typ: TTextureType;
+			 Color: integer): integer;
 begin
   Result := AddStatic(X, Y, W, H, 0, ColR, ColG, ColB, Name, Typ, Color);
 end;
 
-function TMenu.AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType; Color: integer): integer;
+function TMenu.AddStatic(X, Y, W, H, Z: real;
+                         ColR, ColG, ColB: real;
+			 const Name: string;
+			 Typ: TTextureType;
+			 Color: integer): integer;
 begin
   Result := AddStatic(X, Y, W, H, Z, ColR, ColG, ColB, 0, 0, 1, 1, Name, Typ, Color, false, 0);
 end;
 
-function TMenu.AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; TexX1, TexY1, TexX2, TexY2: real; const Name: string; Typ: TTextureType; Color: integer; Reflection: boolean; ReflectionSpacing: real): integer;
+function TMenu.AddStatic(X, Y, W, H, Z: real;
+                         ColR, ColG, ColB: real;
+			 TexX1, TexY1, TexX2, TexY2: real;
+			 const Name: string;
+			 Typ: TTextureType;
+			 Color: integer;
+			 Reflection: boolean;
+			 ReflectionSpacing: real): integer;
 var
   StatNum: integer;
 begin
@@ -652,12 +683,22 @@ begin
   begin
     Static[StatNum] := TStatic.Create(Texture.GetTexture(Name, Typ, Color)); // new skin
   end;
-
+                     
   // configures static
   Static[StatNum].Texture.X := X;
   Static[StatNum].Texture.Y := Y;
-  Static[StatNum].Texture.W := W;
-  Static[StatNum].Texture.H := H;
+
+  //Set height and width via sprite size if omitted
+  if(H = 0) then
+    Static[StatNum].Texture.H := Static[StatNum].Texture.H
+  else
+    Static[StatNum].Texture.H := H;
+
+  if(W = 0) then
+    Static[StatNum].Texture.W := Static[StatNum].Texture.W
+  else
+    Static[StatNum].Texture.W := W;
+
   Static[StatNum].Texture.Z := Z;
   if (Typ <> TEXTURE_TYPE_COLORIZED) then
   begin
@@ -696,12 +737,22 @@ begin
   Result := TextNum;
 end;
 
-function TMenu.AddText(X, Y: real; Style: integer; Size, ColR, ColG, ColB: real; const Text: string): integer;
+function TMenu.AddText(X, Y: real;
+                      Style: integer;
+		      Size, ColR, ColG, ColB: real
+		      ; const Text: string): integer;
 begin
   Result := AddText(X, Y, 0, Style, Size, ColR, ColG, ColB, 0, Text, false, 0, 0);
 end;
 
-function TMenu.AddText(X, Y, W: real; Style: integer; Size, ColR, ColG, ColB: real; Align: integer; const Text_: string; Reflection_: boolean; ReflectionSpacing_: real; Z : real): integer;
+function TMenu.AddText(X, Y, W: real;
+                       Style: integer;
+		       Size, ColR, ColG, ColB: real;
+		       Align: integer;
+		       const Text_: string;
+		       Reflection_: boolean;
+		       ReflectionSpacing_: real;
+		       Z : real): integer;
 var
   TextNum: integer;
 begin
@@ -771,10 +822,10 @@ begin
       ThemeButton.Text[BT].Text);
   end;
 
-  //BAutton Collection Mod
+  // bautton collection mod
   if (ThemeButton.Parent <> 0) then
   begin
-    //If Collection Exists then Change Interaction to Child Button
+    // if collection exists then change interaction to child button
     if (@ButtonCollection[ThemeButton.Parent-1] <> nil) then
     begin
       Interactions[High(Interactions)].Typ := iBCollectionChild;
@@ -803,8 +854,10 @@ begin
 end;
 
 function TMenu.AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real;
-                         const Name: string; Typ: TTextureType;
-                         Reflection: boolean; ReflectionSpacing, DeSelectReflectionSpacing: real): integer;
+                         const Name: string;
+			 Typ: TTextureType;
+                         Reflection: boolean;
+			 ReflectionSpacing, DeSelectReflectionSpacing: real): integer;
 begin
   // adds button
   //SetLength is used once to reduce Memory usement
@@ -857,7 +910,7 @@ begin
   Button[Result].Reflectionspacing := ReflectionSpacing;
   Button[Result].DeSelectReflectionspacing := DeSelectReflectionSpacing;
 
-  //Button Collection Mod
+  // button collection mod
   Button[Result].Parent := 0;
 
   // adds interaction
@@ -870,11 +923,10 @@ begin
   Setlength(Button, 0);
 end;
 
-// Method to draw our TMenu and all his child buttons
+// method to draw our tmenu and all his child buttons
 function TMenu.DrawBG: boolean;
 begin
   Background.Draw;
-
   Result := true;
 end;
 
@@ -993,9 +1045,10 @@ begin
   Int := Int - ceil(Length(Interactions) / 2);
 
   //Set Interaction
-  if ((Int < 0) or (Int > Length(Interactions) - 1))
-    then  Int         := Interaction //nonvalid button, keep current one
-    else  Interaction := Int;        //select row above
+  if ((Int < 0) or (Int > Length(Interactions) - 1)) then
+    Int         := Interaction // invalid button, keep current one
+  else
+    Interaction := Int;        // select row above
 end;
 
 procedure TMenu.InteractNextRow;
@@ -1007,9 +1060,10 @@ begin
   Int := Int + ceil(Length(Interactions) / 2);
 
   //Set Interaction
-  if ((Int < 0) or (Int > Length(Interactions) - 1))
-    then  Int         := Interaction //nonvalid button, keep current one
-    else  Interaction := Int;        //select row above
+  if ((Int < 0) or (Int > Length(Interactions) - 1)) then
+    Int         := Interaction // invalid button, keep current one
+  else
+    Interaction := Int;        // select row above
 end;
 
 procedure TMenu.InteractNext;
@@ -1023,7 +1077,8 @@ begin
     Int := (Int + 1) mod Length(Interactions);
 
     //If no Interaction is Selectable Simply Select Next
-    if (Int = Interaction) then Break;
+    if (Int = Interaction) then
+      Break;
 
   until IsSelectable(Int);
 
@@ -1040,10 +1095,12 @@ begin
   // change interaction as long as it's needed
   repeat
     Int := Int - 1;
-    if Int = -1 then Int := High(Interactions);
+    if Int = -1 then
+      Int := High(Interactions);
 
     //If no Interaction is Selectable Simply Select Next
-    if (Int = Interaction) then Break;
+    if (Int = Interaction) then
+      Break;
   until IsSelectable(Int);
 
   //Set Interaction
@@ -1068,7 +1125,8 @@ begin
   while (Again = true) do
   begin
     Num := SelInteraction - CustomSwitch;
-    if Num = -1 then Num := High(Interactions);
+    if Num = -1 then
+      Num := High(Interactions);
     Interaction := Num;
     Again := false; // reset, default to accept changing interaction
 
@@ -1212,6 +1270,9 @@ begin
   SelectsS[High(SelectsS)].Texture.Z := ThemeSelectS.Z;
   SelectsS[High(SelectsS)].TextureSBG.Z := ThemeSelectS.Z;
 
+  SelectsS[High(SelectsS)].showArrows := ThemeSelectS.showArrows;
+  SelectsS[High(SelectsS)].oneItemOnly := ThemeSelectS.oneItemOnly;
+
   //Generate Lines
   SelectsS[High(SelectsS)].GenLines;
 
@@ -1255,9 +1316,20 @@ begin
   else
     SelectsS[S].TextureSBG := Texture.GetTexture(SBGName, SBGTyp);
 
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowL   := Tex_SelectS_ArrowL;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowL.X := X + W + SkipX;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowL.Y := Y;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowL.W := Tex_SelectS_ArrowL.W;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowL.H := Tex_SelectS_ArrowL.H;
+
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowR   := Tex_SelectS_ArrowR;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowR.X := X + W + SkipX + SBGW - Tex_SelectS_ArrowR.W;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowR.Y := Y;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowR.W := Tex_SelectS_ArrowR.W;
+  SelectsS[High(SelectsS)].Tex_SelectS_ArrowR.H := Tex_SelectS_ArrowR.H;
+
   SelectsS[S].TextureSBG.X := X + W + SkipX;
   SelectsS[S].TextureSBG.Y := Y;
-  //SelectsS[S].TextureSBG.W := 450;
   SelectsS[S].SBGW := SBGW;
   SelectsS[S].TextureSBG.H := H;
   SelectsS[S].SBGColR := SBGColR;
@@ -1355,10 +1427,12 @@ begin
 
   SetLength(SelectsS[SelectNo].TextOptT, SO + 1);
   SelectsS[SelectNo].TextOptT[SO] := AddText;
+{
+  SelectsS[S].SelectedOption := SelectsS[S].SelectOptInt; // refresh
 
-  //SelectsS[S].SelectedOption := SelectsS[S].SelectOptInt; // refresh
-
-  //if SO = Selects[S].PData^ then Selects[S].SelectedOption := SO;
+  if SO = Selects[S].PData^ then
+    Selects[S].SelectedOption := SO;
+}
 end;
 
 procedure TMenu.UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; Values: array of string; var Data: integer);
@@ -1458,11 +1532,11 @@ begin
           end;
         end;
       end;
-    //interact Prev if there is Nothing to Change
+    // interact prev if there is nothing to change
     else
       begin
         InteractPrev;
-        //If ButtonCollection with more than 1 Entry then Select Last Entry
+        // if buttoncollection with more than 1 entry then select last entry
         if (Button[Interactions[Interaction].Num].Parent <> 0) and (ButtonCollection[Button[Interactions[Interaction].Num].Parent-1].CountChilds > 1) then
         begin
           //Select Last Child
@@ -1571,10 +1645,120 @@ begin
   Result := true;
 end;
 
+function TMenu.ParseMouse(MouseButton: integer; BtnDown: boolean; X, Y: integer): boolean;
+var
+  nBut: integer;
+begin
+  //default mouse parsing: clicking generates return keypress,
+  //  mousewheel selects in select slide
+  //override ParseMouse to customize
+  Result := true;
+
+  if RightMbESC and (MouseButton = SDL_BUTTON_RIGHT) and BtnDown then
+  begin
+    //if RightMbESC is set, send ESC keypress
+    Result:=ParseInput(SDLK_ESCAPE, #0, true);
+  end;
+
+  nBut := InteractAt(X, Y);
+  if nBut >= 0 then
+  begin
+    //select on mouse-over
+    if nBut <> Interaction then
+      SetInteraction(nBut);
+    if (MouseButton = SDL_BUTTON_LEFT) and BtnDown then
+    begin
+      //click button
+      Result:=ParseInput(SDLK_RETURN, #0, true);
+    end;
+    if (Interactions[nBut].Typ = iSelectS) then
+    begin
+      //forward/backward in select slide with mousewheel
+      if (MouseButton = SDL_BUTTON_WHEELDOWN) and BtnDown then
+      begin
+        ParseInput(SDLK_RIGHT, #0, true);
+      end;
+      if (MouseButton = SDL_BUTTON_WHEELUP) and BtnDown then
+      begin
+        ParseInput(SDLK_LEFT, #0, true);
+      end;
+    end;
+  end
+  else
+  begin
+    nBut := CollectionAt(X, Y);
+    if nBut >= 0 then
+    begin
+      // if over button collection, select first child but don't allow click
+      nBut := ButtonCollection[nBut].FirstChild - 1;
+      if nBut <> Interaction then
+        SetInteraction(nBut);
+    end;
+  end;
+end;
+
+function TMenu.InRegion(X1, Y1, W, H, X, Y: real): boolean;
+begin
+  Result := false;
+  X1 := X1 * Screen.w / 800;
+  W  := W  * Screen.w / 800;
+  Y1 := Y1 * Screen.h / 600;
+  H  := H  * Screen.h / 600;
+  if (X >= X1) and (X <= X1 + W) and (Y >= Y1) and (Y <= Y1 + H) then
+    Result := true;
+end;
+
+//takes x,y coordinates and returns the interaction number
+//of the control at this position
+function TMenu.InteractAt(X, Y: real): integer;
+var
+  i, nBut: integer;
+begin
+  Result := -1;
+  for i := Low(Interactions) to High(Interactions) do
+  begin
+    case Interactions[i].Typ of
+      iButton: if InRegion(Button[Interactions[i].Num].X, Button[Interactions[i].Num].Y, Button[Interactions[i].Num].W, Button[Interactions[i].Num].H, X, Y) and
+           Button[Interactions[i].Num].Visible then
+	begin
+          Result:=i;
+          exit;
+        end;
+      iBCollectionChild: if InRegion(Button[Interactions[i].Num].X, Button[Interactions[i].Num].Y, Button[Interactions[i].Num].W, Button[Interactions[i].Num].H, X, Y) then
+        begin
+          Result:=i;
+          exit;
+        end;
+      iSelectS: if InRegion(SelectSs[Interactions[i].Num].X, SelectSs[Interactions[i].Num].Y, SelectSs[Interactions[i].Num].W, SelectSs[Interactions[i].Num].H, X, Y) or
+        InRegion(SelectSs[Interactions[i].Num].TextureSBG.X, SelectSs[Interactions[i].Num].TextureSBG.Y, SelectSs[Interactions[i].Num].TextureSBG.W, SelectSs[Interactions[i].Num].TextureSBG.H, X, Y) then
+	begin
+          Result:=i;
+          exit;
+        end;
+    end;
+  end;
+end;
+
+//takes x,y coordinates and returns the button collection id
+function TMenu.CollectionAt(X, Y: real): integer;
+var
+  i, nBut: integer;
+begin
+  Result := -1;
+  for i:= Low(ButtonCollection) to High(ButtonCollection) do
+  begin
+    if InRegion(ButtonCollection[i].X, ButtonCollection[i].Y, ButtonCollection[i].W, ButtonCollection[i].H, X, Y) and
+        ButtonCollection[i].Visible then
+    begin
+      Result:=i;
+      exit;
+    end;
+  end;
+end;
+
 procedure TMenu.SetAnimationProgress(Progress: real);
 begin
   // nothing
 end;
 
 end.
-
