@@ -1,4 +1,4 @@
-                         {* UltraStar Deluxe - Karaoke Game
+{* UltraStar Deluxe - Karaoke Game
  *
  * UltraStar Deluxe is the legal property of its developers, whose names
  * are too numerous to list here. Please refer to the COPYRIGHT
@@ -40,6 +40,21 @@ uses
     t[1..playercount] = score of player i }
 function ULuaScreenSing_GetScores(L: Plua_State): Integer; cdecl;
 
+{ returns a table with following structure:
+    t[1..playercount] = rating of player i range: [0..1] }
+function ULuaScreenSing_GetRating(L: Plua_State): Integer; cdecl;
+
+{ returns a table with following structure:
+    t[1..playercount] = rect of players score background: table(x, y, w, h) }
+function ULuaScreenSing_GetScoreBGRect(L: Plua_State): Integer; cdecl;
+
+{ returns a table with following structure:
+    t[1..playercount] = rect of players rating bar: table(x, y, w, h) }
+function ULuaScreenSing_GetRBRect(L: Plua_State): Integer; cdecl;
+
+{ ScreenSing.GetBeat() - returns current beat of lyricstate }
+function ULuaScreenSing_GetBeat(L: Plua_State): Integer; cdecl;
+
 { finishes current song, if sing screen is not shown it will raise
   an error }
 function ULuaScreenSing_Finish(L: Plua_State): Integer; cdecl;
@@ -54,15 +69,19 @@ function ULuaScreenSing_GetSettings(L: Plua_State): Integer; cdecl;
 function ULuaScreenSing_SetSettings(L: Plua_State): Integer; cdecl;
 
 const
-  ULuaScreenSing_Lib_f: array [0..3] of lual_reg = (
+  ULuaScreenSing_Lib_f: array [0..7] of lual_reg = (
     (name:'GetScores';func:ULuaScreenSing_GetScores),
+    (name:'GetRating';func:ULuaScreenSing_GetRating),
+    (name:'GetBeat';func:ULuaScreenSing_GetBeat),
+    (name:'GetScoreBGRect';func:ULuaScreenSing_GetScoreBGRect),
+    (name:'GetRBRect';func:ULuaScreenSing_GetRBRect),
     (name:'Finish';func:ULuaScreenSing_Finish),
     (name:'GetSettings';func:ULuaScreenSing_GetSettings),
     (name:'SetSettings';func:ULuaScreenSing_SetSettings)
   );
 
 implementation
-uses UScreenSing, UMain, UDisplay, UGraphic, ULuaUtils, SysUtils;
+uses UScreenSing, UMain, UDisplay, UGraphic, UMusic, ULuaUtils, SysUtils;
 
 { returns a table with following structure:
     t[1..playercount] = score of player i }
@@ -86,6 +105,107 @@ begin
   begin
     lua_pushInteger(L, I + 1);
     lua_pushInteger(L, Player[I].ScoreTotalInt);
+
+    lua_settable(L, -3);
+  end;
+
+  // leave table on stack, it is our result
+end;
+
+{ returns a table with following structure:
+    t[1..playercount] = rating of player i range: [0..1] }
+function ULuaScreenSing_GetRating(L: Plua_State): Integer; cdecl;
+  var
+    Top: Integer;
+    I: Integer;
+begin
+  Result := 1;
+
+  // pop arguments
+  Top := lua_getTop(L);
+  if (Top > 0) then
+    lua_pop(L, Top);
+
+  // create table
+  lua_createtable(L, Length(Player), 0);
+
+  // fill w/ values
+  for I := 0 to High(ScreenSing.Scores.Players) do
+  begin
+    lua_pushInteger(L, I + 1);
+    lua_pushNumber(L, ScreenSing.Scores.Players[I].RBPos);
+
+    lua_settable(L, -3);
+  end;
+
+  // leave table on stack, it is our result
+end;
+
+{ returns a table with following structure:
+    t[1..playercount] = rect of players ScoreBG: table(x, y, w, h) }
+function ULuaScreenSing_GetScoreBGRect(L: Plua_State): Integer; cdecl;
+  var
+    Top: Integer;
+    I: Integer;
+begin
+  Result := 1;
+
+  // pop arguments
+  Top := lua_getTop(L);
+  if (Top > 0) then
+    lua_pop(L, Top);
+
+  // create table
+  lua_createtable(L, Length(ScreenSing.Scores.Players), 0);
+
+  // fill w/ values
+  for I := 0 to High(ScreenSing.Scores.Players) do
+  begin
+    lua_pushInteger(L, I + 1);
+
+    if (ScreenSing.Scores.Players[I].Position = High(Byte)) then
+      // player has no position, prevent crash by pushing nil
+      lua_pushNil(L)
+    else
+      with ScreenSing.Scores.Positions[ScreenSing.Scores.Players[I].Position] do
+        lua_PushRect(L, BGX, BGY, BGW, BGH);
+
+
+    lua_settable(L, -3);
+  end;
+
+  // leave table on stack, it is our result
+end;
+
+{ returns a table with following structure:
+    t[1..playercount] = rect of players rating bar: table(x, y, w, h) }
+function ULuaScreenSing_GetRBRect(L: Plua_State): Integer; cdecl;
+  var
+    Top: Integer;
+    I: Integer;
+begin
+  Result := 1;
+
+  // pop arguments
+  Top := lua_getTop(L);
+  if (Top > 0) then
+    lua_pop(L, Top);
+
+  // create table
+  lua_createtable(L, Length(ScreenSing.Scores.Players), 0);
+
+  // fill w/ values
+  for I := 0 to High(ScreenSing.Scores.Players) do
+  begin
+    lua_pushInteger(L, I + 1);
+
+    if (ScreenSing.Scores.Players[I].Position = High(Byte)) then
+      // player has no position, prevent crash by pushing nil
+      lua_pushNil(L)
+    else
+      with ScreenSing.Scores.Positions[ScreenSing.Scores.Players[I].Position] do
+        lua_PushRect(L, RBX, RBY, RBW, RBH);
+
 
     lua_settable(L, -3);
   end;
@@ -172,6 +292,21 @@ begin
   lua_pop(L, lua_gettop(L));
 
   ScreenSing.ApplySettings;
+end;
+
+{ ScreenSing.GetBeat() - returns current beat of lyricstate }
+function ULuaScreenSing_GetBeat(L: Plua_State): Integer; cdecl;
+var top: Integer;
+begin
+  //remove arguments (if any)
+  top := lua_gettop(L);
+
+  if (top > 0) then
+    lua_pop(L, top);
+
+  //push result
+  lua_pushnumber(L, LyricsState.MidBeat);
+  Result := 1; //one result
 end;
 
 end.

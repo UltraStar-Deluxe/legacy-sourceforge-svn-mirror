@@ -49,6 +49,13 @@ function Lua_ToBinInt(L: PLua_State; idx: Integer): Integer;
   and pushed the table onto the stack }
 procedure Lua_PushBinInt(L: PLua_State; BinInt: Integer);
 
+{ pushes a table with position and size of a rectangle
+  t.x => position of the rectangle in pixels at x-axis
+  t.y => position of the rectangle in pixels at y-axis
+  t.w => width of the rectangle
+  t.h => height of the rectangle }
+procedure Lua_PushRect(L: PLua_State; X, Y, W, H: Double);
+
 { returns plugin that is the owner of the given state
   may raise a lua error if the parent id is not found
   in states registry, if state owner does not exists
@@ -117,6 +124,32 @@ begin
 
       Inc(Index);
     end;
+end;
+
+{ pushes a table with position and size of a rectangle
+  t.x => position of the rectangle in pixels at x-axis
+  t.y => position of the rectangle in pixels at y-axis
+  t.w => width of the rectangle
+  t.h => height of the rectangle }
+procedure Lua_PushRect(L: PLua_State; X, Y, W, H: Double);
+begin
+  lua_createtable(L, 0, 4); // table w/ 4 record fields
+
+  // x pos
+  lua_pushNumber(L, X);
+  lua_setField(L, -2, 'x');
+
+  // y pos
+  lua_pushNumber(L, Y);
+  lua_setField(L, -2, 'y');
+
+  // width
+  lua_pushNumber(L, W);
+  lua_setField(L, -2, 'w');
+
+  // height
+  lua_pushNumber(L, H);
+  lua_setField(L, -2, 'h');
 end;
 
 { returns plugin that is the owner of the given state
