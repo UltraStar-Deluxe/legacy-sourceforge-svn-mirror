@@ -196,7 +196,7 @@ begin
     // Theme
     Log.BenchmarkStart(1);
     Log.LogStatus('Load Themes', 'Initialization');
-    Theme := TTheme.Create(ThemePath + ITheme[Ini.Theme] + '.ini', Ini.Color);
+    Theme := TTheme.Create(ThemePath.Append(ITheme[Ini.Theme] + '.ini'), Ini.Color);
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading Themes', 1);
 
@@ -252,10 +252,10 @@ begin
     Log.LogStatus('DataBase System', 'Initialization');
     DataBase := TDataBaseSystem.Create;
 
-    if (Params.ScoreFile = '') then
-      DataBase.Init (Platform.GetGameUserPath + 'Ultrastar.db')
+    if (Params.ScoreFile.IsUnset) then
+      DataBase.Init(Platform.GetGameUserPath.Append('Ultrastar.db'))
     else
-      DataBase.Init (Params.ScoreFile);
+      DataBase.Init(Params.ScoreFile);
 
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading DataBase System', 1);

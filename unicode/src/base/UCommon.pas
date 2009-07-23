@@ -41,7 +41,8 @@ uses
   {$ENDIF}
   sdl,
   UConfig,
-  ULog;
+  ULog,
+  UPath;
 
 type
   TMessageType = (mtInfo, mtError);
@@ -65,8 +66,16 @@ procedure RestoreNumericLocale();
   function MakeLong(a, b: word): longint;
 {$ENDIF}
 
-function AdaptFilePaths(const aPath: widestring): widestring;
-function FileExistsInsensitive(var FileName: string): boolean;
+type
+  TDirectoryEntry = record
+    Name:        IPath;
+    IsDirectory: boolean;
+    IsFile:      boolean;
+  end;
+
+  TDirectoryEntryArray = array of TDirectoryEntry;
+
+function DirectoryFindFiles(Dir: IPath; Filter: UTF8String; ReturnAllSubDirs: boolean): TDirectoryEntryArray;
 
 // A stable alternative to TList.Sort() (use TList.Sort() if applicable, see below)
 procedure MergeSort(List: TList; CompareFunc: TListSortCompare);
@@ -82,6 +91,7 @@ uses
   {$IFDEF Delphi}
   Dialogs,
   {$ENDIF}
+  UFilesystem,
   UMain,
   UUnicodeUtils;
 
@@ -206,12 +216,6 @@ begin
                     exOverflow, exUnderflow, exPrecision]);
 end;
 
-function AdaptFilePaths(const aPath: WideString): WideString;
-begin
-  result := StringReplaceW(aPath, '\', PathDelim);//, [rfReplaceAll]);
-end;
-
-
 {$IFNDEF MSWINDOWS}
 procedure ZeroMemory(Destination: pointer; Length: dword);
 begin
@@ -225,42 +229,44 @@ end;
 
 {$ENDIF}
 
-{ TODO: REMOVE }
-// Checks if a regular files or directory with the given name exists.
-// The comparison is case insensitive.
-function FileExistsInsensitive(var FileName: string): boolean;
+function DirectoryFindFiles(Dir: IPath; Filter: UTF8String; ReturnAllSubDirs: Boolean): TDirectoryEntryArray;
 var
-  FilePath, LocalFileName: string;
-  SearchInfo: TSearchRec;
+  i: integer;
+  Iter: IFileIterator;
+  FileInfo: TFileInfo;
+  FileName: IPath;
+  Attrib: integer;
 begin
-{$IF Defined(Linux) or Defined(FreeBSD)}
-  // speed up standard case
-  if FileExists(FileName) then
-  begin
-    Result := true;
-    exit;
-  end;
+  i := 0;
+  Filter := UTF8LowerCase(Filter);
 
-  Result := false;
-
-  FilePath := ExtractFilePath(FileName);
-  if (FindFirst(FilePath + '*', faAnyFile, SearchInfo) = 0) then
+  // search for all files and directories
+  Iter := FileSystem.FileFind(Dir.Append('*'), faAnyFile);
+  while (Iter.HasNext) do
   begin
-    LocalFileName := ExtractFileName(FileName);
-    repeat
-      if (AnsiSameText(LocalFileName, SearchInfo.Name)) then
+    FileInfo := Iter.Next;
+    FileName := FileInfo.Name;
+    if (not FileName.Equals('.')) and (not FileName.Equals('..')) then
+    begin
+      Attrib := Dir.Append(FileName).GetAttr();
+      if ReturnAllSubDirs and ((Attrib and faDirectory) <> 0) then
       begin
-        FileName := FilePath + SearchInfo.Name;
-        Result := true;
-        break;
+        SetLength(Result, i + 1);
+        Result[i].Name        := FileName;
+        Result[i].IsDirectory := true;
+        Result[i].IsFile      := false;
+        i := i + 1;
+      end
+      else if (Filter = '') or (Pos(Filter, LowerCase(FileName.ToUTF8)) > 0) then
+      begin
+        SetLength(Result, i + 1);
+        Result[i].Name        := FileName;
+        Result[i].IsDirectory := false;
+        Result[i].IsFile      := true;
+        i := i + 1;
       end;
-    until (FindNext(SearchInfo) <> 0);
+    end;
   end;
-  FindClose(SearchInfo);
-{$ELSE}
-  // Windows and Mac OS X do not have case sensitive file systems
-  Result := FileExists(FileName);
-{$IFEND}
 end;
 
 // +++++++++++++++++++++ helpers for RWOpsFromStream() +++++++++++++++

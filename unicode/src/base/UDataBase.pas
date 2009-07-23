@@ -34,10 +34,11 @@ interface
 {$I switches.inc}
 
 uses
+  Classes,
+  SQLiteTable3,
   USongs,
   USong,
-  Classes,
-  SQLiteTable3;
+  UPath;
 
 //--------------------
 //DataBaseSystem - Class including all DB Methods
@@ -88,16 +89,16 @@ type
   TDataBaseSystem = class
     private
       ScoreDB: TSQLiteDatabase;
-      fFilename: string;
+      fFilename: IPath;
 
       function GetVersion(): integer;
       procedure SetVersion(Version: integer);
     public
-      property Filename: string read fFilename;
+      property Filename: IPath read fFilename;
 
       destructor Destroy; override;
 
-      procedure Init(const Filename: string);
+      procedure Init(const Filename: IPath);
       procedure ReadScore(Song: TSong);
       procedure AddScore(Song: TSong; Level: integer; const Name: UTF8String; Score: integer);
       procedure WriteScore(Song: TSong);
@@ -128,19 +129,19 @@ const
 (**
  * Opens Database and Create Tables if not Exist
  *)
-procedure TDataBaseSystem.Init(const Filename: string);
+procedure TDataBaseSystem.Init(const Filename: IPath);
 var
   Version: integer;
 begin
   if Assigned(ScoreDB) then
     Exit;
 
-  Log.LogStatus('Initializing database: "'+Filename+'"', 'TDataBaseSystem.Init');
+  Log.LogStatus('Initializing database: "'+Filename.ToNative+'"', 'TDataBaseSystem.Init');
 
   try
   
     // Open Database
-    ScoreDB   := TSQLiteDatabase.Create(Filename);
+    ScoreDB   := TSQLiteDatabase.Create(Filename.ToUTF8);
     fFilename := Filename;
 
     // Close and delete outdated file
@@ -150,10 +151,10 @@ begin
       Log.LogInfo('Outdated cover-database file found', 'TDataBaseSystem.Init');
       // Close and delete outdated file
       ScoreDB.Free;
-      if (not DeleteFile(Filename)) then
-        raise Exception.Create('Could not delete ' + Filename);
+      if (not Filename.DeleteFile()) then
+        raise Exception.Create('Could not delete ' + Filename.ToNative);
       // Reopen
-      ScoreDB := TSQLiteDatabase.Create(Filename);
+      ScoreDB := TSQLiteDatabase.Create(Filename.ToUTF8);
       Version := 0;
     end;
     

@@ -34,7 +34,9 @@ interface
 {$I switches.inc}
 
 uses
-  Classes;
+  Classes,
+  UPath,
+  UUnicodeUtils;
 
 type
   TNote = record
@@ -42,30 +44,30 @@ type
     Duration: Cardinal;
     Tone:     Integer;
     NoteTyp:  Byte;
-    Lyric:    String;
+    Lyric:    UTF8String;
   end;
-  ANote = Array of TNote;
+  ANote = array of TNote;
 
   TSentence = record
     Singer:   Byte;
     Duration: Cardinal;
     Notes:    ANote;
   end;
-  ASentence = Array of TSentence;
+  ASentence = array of TSentence;
 
-  TSongInfo = Record
+  TSongInfo = record
     ID: Cardinal;
     DualChannel: Boolean;
-    Header: Record
-      Artist:     String;
-      Title:      String;
+    Header: record
+      Artist:     UTF8String;
+      Title:      UTF8String;
       Gap:        Cardinal;
       BPM:        Real;
       Resolution: Byte;
-      Edition:    String;
-      Genre:      String;
-      Year:       String;
-      Language:   String;
+      Edition:    UTF8String;
+      Genre:      UTF8String;
+      Year:       UTF8String;
+      Language:   UTF8String;
     end;
     CountSentences: Cardinal;
     Sentences: ASentence;
@@ -81,23 +83,23 @@ type
       BindLyrics: Boolean;    //Should the Lyrics be bind to the last Word (no Space)
       FirstNote: Boolean;     //Is this the First Note found? For Gap calculating
 
-      Function  ParseLine(Line: String): Boolean;
+      function  ParseLine(Line: RawByteString): Boolean;
     public
       SongInfo: TSongInfo;
-      ErrorMessage: String;
-      Edition: String;
-      SingstarVersion: String;
+      ErrorMessage: string;
+      Edition: UTF8String;
+      SingstarVersion: string;
 
-      Settings: Record
+      Settings: record
         DashReplacement: Char;
       end;
 
-      Constructor Create;
+      constructor Create;
 
-      Function  ParseConfigforEdition(const Filename: String): String;
+      function  ParseConfigForEdition(const Filename: IPath): String;
 
-      Function  ParseSongHeader(const Filename: String): Boolean; //Parse Song Header only
-      Function  ParseSong (const Filename: String): Boolean;      //Parse whole Song
+      function  ParseSongHeader(const Filename: IPath): Boolean; //Parse Song Header only
+      function  ParseSong (const Filename: IPath): Boolean;      //Parse whole Song
   end;
 
 const
@@ -114,9 +116,12 @@ const
   DS_Both    = 3;
 
 implementation
-uses SysUtils, StrUtils;
 
-Constructor TParser.Create;
+uses
+  SysUtils,
+  StrUtils;
+
+constructor TParser.Create;
 begin
   inherited Create;
   ErrorMessage := '';
@@ -124,19 +129,28 @@ begin
   DecimalSeparator := '.';
 end;
 
-Function  TParser.ParseSong (const Filename: String): Boolean;
-var I: Integer;
+function TParser.ParseSong(const Filename: IPath): Boolean;
+var
+  I: Integer;
+  FileStream: TBinaryFileStream;
 begin
+  {$message warn 'TODO: TParser.ParseSong'}
+
+(*
   Result := False;
-  if FileExists(Filename) then
+  if Filename.IsFile() then
   begin
     SSFile := TStringList.Create;
 
+    ErrorMessage := 'Can''t open melody.xml file';
+
     try
-      ErrorMessage := 'Can''t open melody.xml file';
-      SSFile.LoadFromFile(Filename);
+      FileStream := TBinaryFileStream.Create(Filename);
+      SSFile.LoadFromStream(FileStream);
+
       ErrorMessage := '';
       Result := True;
+
       I := 0;
 
       SongInfo.CountSentences := 0;
@@ -153,7 +167,7 @@ begin
 
       SetLength(SongInfo.Sentences, 0);
 
-      While Result And (I < SSFile.Count) do
+      while Result and (I < SSFile.Count) do
       begin
         Result := ParseLine(SSFile.Strings[I]);
 
@@ -164,12 +178,16 @@ begin
       SSFile.Free;
     end;
   end;
+  *)
 end;
 
-Function  TParser.ParseSongHeader (const Filename: String): Boolean;
+function  TParser.ParseSongHeader (const Filename: IPath): Boolean;
 var I: Integer;
 begin
   Result := False;
+
+  {$message warn 'TODO: TParser.ParseSong'}
+  (*
   if FileExists(Filename) then
   begin
     SSFile := TStringList.Create;
@@ -211,6 +229,7 @@ begin
   end
   else
     ErrorMessage := 'Can''t find melody.xml file';
+    *)
 end;
 
 Function TParser.ParseLine(Line: String): Boolean;
@@ -569,7 +588,7 @@ begin
     Result := true;
 end;
 
-Function  TParser.ParseConfigforEdition(const Filename: String): String;
+Function  TParser.ParseConfigForEdition(const Filename: IPath): String;
 var
   txt: TStringlist;
   I: Integer;
@@ -578,6 +597,10 @@ var
 begin
   Result := '';
   txt := TStringlist.Create;
+
+  {$message warn 'TODO: TParser.ParseConfigForEdition'}
+
+  (*
   try
     txt.LoadFromFile(Filename);
 
@@ -601,6 +624,7 @@ begin
   finally
     txt.Free;
   end;
+  *)
 end;
 
 end.

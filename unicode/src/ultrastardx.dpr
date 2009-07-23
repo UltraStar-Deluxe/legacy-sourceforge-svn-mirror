@@ -210,8 +210,8 @@ uses
   UFont             in 'base\UFont.pas',
   UTextEncoding     in 'base\UTextEncoding.pas',
 
-  //UFilename         in 'base\UFilename.pas',
-  //UFilesystem       in 'base\UFilesystem.pas',
+  UPath             in 'base\UPath.pas',
+  UFilesystem       in 'base\UFilesystem.pas',
 
   //------------------------------
   //Includes - Plugin Support

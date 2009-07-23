@@ -136,7 +136,7 @@ begin
   if (SelInteraction = 0) then
   begin
     Skin.OnThemeChange;
-    UpdateSelectSlideOptions (Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
+    UpdateSelectSlideOptions(Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
   end;
 
   ReloadTheme();
@@ -188,7 +188,7 @@ end;
 
 procedure TScreenOptionsThemes.ReloadTheme;
 begin
-  Theme.LoadTheme(ThemePath + ITheme[Ini.Theme] + '.ini', Ini.Color);
+  Theme.LoadTheme(ThemePath.Append(ITheme[Ini.Theme] + '.ini'), Ini.Color);
 
   ScreenOptionsThemes := TScreenOptionsThemes.create();
   ScreenOptionsThemes.onshow;

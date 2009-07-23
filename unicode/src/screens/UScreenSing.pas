@@ -49,6 +49,7 @@ uses
   USongs,
   UTexture,
   UThemes,
+  UPath,
   UTime;
 
 type
@@ -217,6 +218,8 @@ end;
 
 // pause mod
 procedure TScreenSing.Pause;
+var
+  VideoFile: IPath;
 begin
   if (not Paused) then  // enable pause
   begin
@@ -229,8 +232,8 @@ begin
     AudioPlayback.Pause;
 
     // pause video
-    if (CurrentSong.Video <> '') and FileExists(CurrentSong.Path +
-      CurrentSong.Video) then
+    VideoFile := CurrentSong.Path.Append(CurrentSong.Video);
+    if (CurrentSong.Video.IsSet) and VideoFile.Exists then
       fCurrentVideoPlaybackEngine.Pause;
 
   end
@@ -242,8 +245,8 @@ begin
     AudioPlayback.Play;
 
     // video
-    if (CurrentSong.Video <> '') and FileExists(CurrentSong.Path +
-      CurrentSong.Video) then
+    VideoFile := CurrentSong.Path.Append(CurrentSong.Video);
+    if (CurrentSong.Video.IsSet) and VideoFile.Exists then
       fCurrentVideoPlaybackEngine.Pause;
 
     Paused := false;
@@ -318,7 +321,7 @@ var
   V2M:    boolean;
   V3R:    boolean;
   Color: TRGB;
-
+  VideoFile, BgFile: IPath;
   success: boolean;
 begin
   inherited;
@@ -424,7 +427,7 @@ begin
   // FIXME: bad style, put the try-except into loadsong() and not here
   try
     // check if file is xml
-    if copy(CurrentSong.FileName, length(CurrentSong.FileName) - 3, 4) = '.xml' then
+    if CurrentSong.FileName.GetExtension.ToUTF8 = '.xml' then
       success := CurrentSong.LoadXMLSong()
     else
       success := CurrentSong.LoadSong();
@@ -468,9 +471,10 @@ begin
    *}
   VideoLoaded := false;
   fShowVisualization := false;
-  if (CurrentSong.Video <> '') and FileExists(CurrentSong.Path + CurrentSong.Video) then
+  VideoFile := CurrentSong.Path.Append(CurrentSong.Video);
+  if (CurrentSong.Video.IsSet) and VideoFile.IsFile then
   begin
-    if (fCurrentVideoPlaybackEngine.Open(CurrentSong.Path + CurrentSong.Video)) then
+    if (fCurrentVideoPlaybackEngine.Open(VideoFile)) then
     begin
       fShowVisualization := false;
       fCurrentVideoPlaybackEngine := VideoPlayback;
@@ -483,15 +487,17 @@ begin
   {*
    * set background to: picture
    *}
-  if (CurrentSong.Background <> '') and (VideoLoaded = false)
+  if (CurrentSong.Background.IsSet) and (VideoLoaded = false)
     and (TVisualizerOption(Ini.VisualizerOption) = voOff)  then
+  begin
+    BgFile := CurrentSong.Path.Append(CurrentSong.Background);
     try
-      Tex_Background := Texture.LoadTexture(CurrentSong.Path + CurrentSong.Background);
+      Tex_Background := Texture.LoadTexture(BgFile);
     except
-      Log.LogError('Background could not be loaded: ' + CurrentSong.Path +
-        CurrentSong.Background);
+      Log.LogError('Background could not be loaded: ' + BgFile.ToNative);
       Tex_Background.TexNum := 0;
     end
+  end
   else
   begin
     Tex_Background.TexNum := 0;

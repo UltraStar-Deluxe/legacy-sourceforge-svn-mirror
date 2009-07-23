@@ -55,7 +55,7 @@ type
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure OnShow; override;
-      procedure ShowPopup(Msg: string; Handler: TPopupCheckHandler;
+      procedure ShowPopup(const Msg: UTF8String; Handler: TPopupCheckHandler;
           HandlerData: Pointer; DefaultValue: boolean = false);
       function Draw: boolean; override;
   end;
@@ -73,7 +73,7 @@ type
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure OnShow; override;
       procedure OnHide; override;
-      procedure ShowPopup(msg: string);
+      procedure ShowPopup(const Msg: UTF8String);
       function Draw: boolean; override;
   end;
 
@@ -165,7 +165,7 @@ begin
   inherited;
 end;
 
-procedure TScreenPopupCheck.ShowPopup(Msg: string; Handler: TPopupCheckHandler;
+procedure TScreenPopupCheck.ShowPopup(const Msg: UTF8String; Handler: TPopupCheckHandler;
     HandlerData: Pointer; DefaultValue: boolean);
 begin
   if (DefaultValue) then
@@ -253,7 +253,7 @@ procedure TScreenPopupError.onHide;
 begin
 end;
 
-procedure TScreenPopupError.ShowPopup(msg: string);
+procedure TScreenPopupError.ShowPopup(const Msg: UTF8String);
 begin
   Interaction := 0; //Reset Interaction
   Visible := true;  //Set Visible

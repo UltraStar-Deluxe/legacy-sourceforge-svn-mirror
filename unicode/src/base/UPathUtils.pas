@@ -35,28 +35,29 @@ interface
 
 uses
   SysUtils,
-  Classes;
+  Classes,
+  UPath;
 
 var
   // Absolute Paths
-  GamePath:         string;
-  SoundPath:        string;
-  SongPaths:        TStringList;
-  LogPath:          string;
-  ThemePath:        string;
-  SkinsPath:        string;
-  ScreenshotsPath:  string;
-  CoverPaths:       TStringList;
-  LanguagesPath:    string;
-  PluginPath:       string;
-  VisualsPath:      string;
-  FontPath:         string;
-  ResourcesPath:    string;
-  PlayListPath:     string;
+  GamePath:         IPath;
+  SoundPath:        IPath;
+  SongPaths:        IInterfaceList;
+  LogPath:          IPath;
+  ThemePath:        IPath;
+  SkinsPath:        IPath;
+  ScreenshotsPath:  IPath;
+  CoverPaths:       IInterfaceList;
+  LanguagesPath:    IPath;
+  PluginPath:       IPath;
+  VisualsPath:      IPath;
+  FontPath:         IPath;
+  ResourcesPath:    IPath;
+  PlaylistPath:     IPath;
 
-function FindPath(out PathResult: string; const RequestedPath: string; NeedsWritePermission: boolean): boolean;
+function FindPath(out PathResult: IPath; const RequestedPath: IPath; NeedsWritePermission: boolean): boolean;
 procedure InitializePaths;
-procedure AddSongPath(const Path: string);
+procedure AddSongPath(const Path: IPath);
 
 implementation
 
@@ -66,33 +67,38 @@ uses
   UCommandLine,
   ULog;
 
-procedure AddSpecialPath(var PathList: TStringList; const Path: string);
+procedure AddSpecialPath(var PathList: IInterfaceList; const Path: IPath);
 var
   Index: integer;
-  PathAbs, OldPathAbs: string;
+  PathAbs, PathTmp: IPath;
+  OldPath, OldPathAbs, OldPathTmp: IPath;
 begin
   if (PathList = nil) then
-    PathList := TStringList.Create;
+    PathList := TInterfaceList.Create;
 
-  if (Path = '') or not ForceDirectories(Path) then
+  if Path.Equals(PATH_NONE) or not Path.CreateDirectory(true) then
     Exit;
 
-  PathAbs := IncludeTrailingPathDelimiter(ExpandFileName(Path));
+  PathTmp := Path.GetAbsolutePath();
+  PathAbs := PathTmp.AppendPathDelim();
 
   // check if path or a part of the path was already added
   for Index := 0 to PathList.Count-1 do
   begin
-    OldPathAbs := IncludeTrailingPathDelimiter(ExpandFileName(PathList[Index]));
+    OldPath := PathList[Index] as IPath;
+    OldPathTmp := OldPath.GetAbsolutePath();
+    OldPathAbs := OldPathTmp.AppendPathDelim();
+
     // check if the new directory is a sub-directory of a previously added one.
     // This is also true, if both paths point to the same directories.
-    if (AnsiStartsText(OldPathAbs, PathAbs)) then
+    if (OldPathAbs.IsChildOf(PathAbs, false) or OldPathAbs.Equals(PathAbs)) then
     begin
       // ignore the new path
       Exit;
     end;
 
     // check if a previously added directory is a sub-directory of the new one.
-    if (AnsiStartsText(PathAbs, OldPathAbs)) then
+    if (PathAbs.IsChildOf(OldPathAbs, false)) then
     begin
       // replace the old with the new one.
       PathList[Index] := PathAbs;
@@ -103,12 +109,12 @@ begin
   PathList.Add(PathAbs);
 end;
 
-procedure AddSongPath(const Path: string);
+procedure AddSongPath(const Path: IPath);
 begin
   AddSpecialPath(SongPaths, Path);
 end;
 
-procedure AddCoverPath(const Path: string);
+procedure AddCoverPath(const Path: IPath);
 begin
   AddSpecialPath(CoverPaths, Path);
 end;
@@ -117,30 +123,27 @@ end;
  * Initialize a path variable
  * After setting paths, make sure that paths exist
  *)
-function FindPath(out   PathResult:           string; 
-                  const RequestedPath:        string; 
-		        NeedsWritePermission: boolean)
-         : boolean;
+function FindPath(
+  out PathResult: IPath;
+  const RequestedPath: IPath;
+  NeedsWritePermission: boolean): boolean;
 begin
   Result := false;
 
-  if (RequestedPath = '') then
+  if (RequestedPath.Equals(PATH_NONE)) then
     Exit;
 
   // Make sure the directory exists
-  if (not ForceDirectories(RequestedPath)) then
+  if (not RequestedPath.CreateDirectory(true)) then
   begin
-    PathResult := '';
+    PathResult := PATH_NONE;
     Exit;
   end;
 
-  PathResult := IncludeTrailingPathDelimiter(RequestedPath);
+  PathResult := RequestedPath.AppendPathDelim();
 
-  if (NeedsWritePermission) and
-     (FileIsReadOnly(RequestedPath)) then
-  begin
+  if (NeedsWritePermission) and RequestedPath.IsReadOnly() then
     Exit;
-  end;
 
   Result := true;
 end;
@@ -149,40 +152,45 @@ end;
  * Function sets all absolute paths e.g. song path and makes sure the directorys exist
  *)
 procedure InitializePaths;
+var
+  SharedPath, UserPath: IPath;
 begin
   // Log directory (must be writable)
   if (not FindPath(LogPath, Platform.GetLogPath, true)) then
   begin
     Log.FileOutputEnabled := false;
-    Log.LogWarn('Log directory "'+ Platform.GetLogPath +'" not available', 'InitializePaths');
+    Log.LogWarn('Log directory "'+ Platform.GetLogPath.ToNative +'" not available', 'InitializePaths');
   end;
 
-  FindPath(SoundPath,     Platform.GetGameSharedPath + 'sounds',    false);
-  FindPath(ThemePath,     Platform.GetGameSharedPath + 'themes',    false);
-  FindPath(SkinsPath,     Platform.GetGameSharedPath + 'themes',    false);
-  FindPath(LanguagesPath, Platform.GetGameSharedPath + 'languages', false);
-  FindPath(PluginPath,    Platform.GetGameSharedPath + 'plugins',   false);
-  FindPath(VisualsPath,   Platform.GetGameSharedPath + 'visuals',   false);
-  FindPath(FontPath,      Platform.GetGameSharedPath + 'fonts',     false);
-  FindPath(ResourcesPath, Platform.GetGameSharedPath + 'resources', false);
+  SharedPath := Platform.GetGameSharedPath;
+  UserPath := Platform.GetGameUserPath;
+
+  FindPath(SoundPath,     SharedPath.Append('sounds'),    false);
+  FindPath(ThemePath,     SharedPath.Append('themes'),    false);
+  FindPath(SkinsPath,     SharedPath.Append('themes'),    false);
+  FindPath(LanguagesPath, SharedPath.Append('languages'), false);
+  FindPath(PluginPath,    SharedPath.Append('plugins'),   false);
+  FindPath(VisualsPath,   SharedPath.Append('visuals'),   false);
+  FindPath(FontPath,      SharedPath.Append('fonts'),     false);
+  FindPath(ResourcesPath, SharedPath.Append('resources'), false);
 
   // Playlists are not shared as we need one directory to write too
-  FindPath(PlaylistPath, Platform.GetGameUserPath + 'playlists', true);
+  FindPath(PlaylistPath, UserPath.Append('playlists'), true);
 
   // Screenshot directory (must be writable)
-  if (not FindPath(ScreenshotsPath,  Platform.GetGameUserPath + 'screenshots', true)) then
+  if (not FindPath(ScreenshotsPath, UserPath.Append('screenshots'), true)) then
   begin
-    Log.LogWarn('Screenshot directory "'+ Platform.GetGameUserPath +'" not available', 'InitializePaths');
+    Log.LogWarn('Screenshot directory "'+ UserPath.ToNative +'" not available', 'InitializePaths');
   end;
 
   // Add song paths
   AddSongPath(Params.SongPath);
-  AddSongPath(Platform.GetGameSharedPath + 'songs');
-  AddSongPath(Platform.GetGameUserPath + 'songs');
+  AddSongPath(SharedPath.Append('songs'));
+  AddSongPath(UserPath.Append('songs'));
 
   // Add category cover paths
-  AddCoverPath(Platform.GetGameSharedPath + 'covers');
-  AddCoverPath(Platform.GetGameUserPath + 'covers');
+  AddCoverPath(SharedPath.Append('covers'));
+  AddCoverPath(UserPath.Append('covers'));
 end;
 
 end.

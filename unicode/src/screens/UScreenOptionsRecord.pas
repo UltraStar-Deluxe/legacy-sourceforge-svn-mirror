@@ -61,8 +61,8 @@ type
       PreviewDeviceIndex: integer;
 
       // string arrays for select-slide options
-      InputSourceNames: array of string;
-      InputDeviceNames: array of string;
+      InputSourceNames: array of UTF8String;
+      InputDeviceNames: array of UTF8String;
 
       // dynamic generated themes for channel select-sliders
       SelectSlideChannelTheme: array of TThemeSelectSlide;

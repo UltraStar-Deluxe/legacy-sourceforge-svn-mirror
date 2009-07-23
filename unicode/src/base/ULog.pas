@@ -34,7 +34,8 @@ interface
 {$I switches.inc}
 
 uses
-  Classes;
+  Classes,
+  UPath;
 
 (*
  * LOG_LEVEL_[TYPE] defines the "minimum" index for logs of type TYPE. Each
@@ -198,7 +199,7 @@ begin
     if not BenchmarkFileOpened then
     begin
       BenchmarkFileOpened := true;
-      AssignFile(BenchmarkFile, LogPath + 'Benchmark.log');
+      AssignFile(BenchmarkFile, LogPath.Append('Benchmark.log').ToNative);
       {$I-}
       Rewrite(BenchmarkFile);
       if IOResult = 0 then
@@ -270,7 +271,7 @@ procedure TLog.LogToFile(const Text: string);
 begin
   if (FileOutputEnabled and not LogFileOpened) then
   begin
-    AssignFile(LogFile, LogPath + 'Error.log');
+    AssignFile(LogFile, LogPath.Append('Error.log').ToNative);
     {$I-}
     Rewrite(LogFile);
     if IOResult = 0 then
@@ -399,20 +400,19 @@ end;
 
 procedure TLog.LogVoice(SoundNr: integer);
 var
-  FS:           TFileStream;
-  FileName:     string;
+  FS:           TBinaryFileStream;
+  Prefix:       string;
+  FileName:     IPath;
   Num:          integer;
 begin
   for Num := 1 to 9999 do begin
-    FileName := IntToStr(Num);
-    while Length(FileName) < 4 do
-      FileName := '0' + FileName;
-    FileName := LogPath + 'Voice' + FileName + '.raw';
-    if not FileExists(FileName) then
+    Prefix := Format('Voice%.4d', [Num]);
+    FileName := LogPath.Append(Prefix + '.raw');
+    if not FileName.Exists() then
       break
   end;
 
-  FS := TFileStream.Create(FileName, fmCreate);
+  FS := TBinaryFileStream.Create(FileName, fmCreate);
 
   AudioInputProcessor.Sound[SoundNr].LogBuffer.Seek(0, soBeginning);
   FS.CopyFrom(AudioInputProcessor.Sound[SoundNr].LogBuffer, AudioInputProcessor.Sound[SoundNr].LogBuffer.Size);

@@ -35,15 +35,16 @@ interface
 
 uses
   SysUtils,
-  UMenu,
   SDL,
   SDL_Image,
+  gl,
+  UMenu,
   UDisplay,
   UTexture,
-  gl,
   UMusic,
   UFiles,
   UThemes,
+  UPath,
   UGraphicClasses;
 
 type
@@ -204,38 +205,38 @@ end;
 
 constructor TScreenCredits.Create;
 var
-  CreditsPath: string;
+  CreditsPath: IPath;
 begin
   inherited Create;
 
-  CreditsPath := ResourcesPath + 'credits/';
+  CreditsPath := ResourcesPath.Append('credits', pdAppend);
 
-  credits_bg_tex := Texture.LoadTexture(CreditsPath + CRDTS_BG_FILE, TEXTURE_TYPE_PLAIN, 0);
-  credits_bg_ovl := Texture.LoadTexture(CreditsPath + CRDTS_OVL_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_bg_tex := Texture.LoadTexture(CreditsPath.Append(CRDTS_BG_FILE), TEXTURE_TYPE_PLAIN, 0);
+  credits_bg_ovl := Texture.LoadTexture(CreditsPath.Append(CRDTS_OVL_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
 
-  credits_blindguard  := Texture.LoadTexture(CreditsPath + CRDTS_blindguard_FILE,  TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_blindy      := Texture.LoadTexture(CreditsPath + CRDTS_blindy_FILE,      TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_canni       := Texture.LoadTexture(CreditsPath + CRDTS_canni_FILE,       TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_commandio   := Texture.LoadTexture(CreditsPath + CRDTS_commandio_FILE,   TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_lazyjoker   := Texture.LoadTexture(CreditsPath + CRDTS_lazyjoker_FILE,   TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_mog         := Texture.LoadTexture(CreditsPath + CRDTS_mog_FILE,         TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_mota        := Texture.LoadTexture(CreditsPath + CRDTS_mota_FILE,        TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_skillmaster := Texture.LoadTexture(CreditsPath + CRDTS_skillmaster_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  credits_whiteshark  := Texture.LoadTexture(CreditsPath + CRDTS_whiteshark_FILE,  TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_blindguard  := Texture.LoadTexture(CreditsPath.Append(CRDTS_blindguard_FILE),  TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_blindy      := Texture.LoadTexture(CreditsPath.Append(CRDTS_blindy_FILE),      TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_canni       := Texture.LoadTexture(CreditsPath.Append(CRDTS_canni_FILE),       TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_commandio   := Texture.LoadTexture(CreditsPath.Append(CRDTS_commandio_FILE),   TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_lazyjoker   := Texture.LoadTexture(CreditsPath.Append(CRDTS_lazyjoker_FILE),   TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_mog         := Texture.LoadTexture(CreditsPath.Append(CRDTS_mog_FILE),         TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_mota        := Texture.LoadTexture(CreditsPath.Append(CRDTS_mota_FILE),        TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_skillmaster := Texture.LoadTexture(CreditsPath.Append(CRDTS_skillmaster_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  credits_whiteshark  := Texture.LoadTexture(CreditsPath.Append(CRDTS_whiteshark_FILE),  TEXTURE_TYPE_TRANSPARENT, 0);
 
-  intro_layer01 := Texture.LoadTexture(CreditsPath + INTRO_L01_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer02 := Texture.LoadTexture(CreditsPath + INTRO_L02_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer03 := Texture.LoadTexture(CreditsPath + INTRO_L03_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer04 := Texture.LoadTexture(CreditsPath + INTRO_L04_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer05 := Texture.LoadTexture(CreditsPath + INTRO_L05_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer06 := Texture.LoadTexture(CreditsPath + INTRO_L06_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer07 := Texture.LoadTexture(CreditsPath + INTRO_L07_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer08 := Texture.LoadTexture(CreditsPath + INTRO_L08_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  intro_layer09 := Texture.LoadTexture(CreditsPath + INTRO_L09_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer01 := Texture.LoadTexture(CreditsPath.Append(INTRO_L01_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer02 := Texture.LoadTexture(CreditsPath.Append(INTRO_L02_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer03 := Texture.LoadTexture(CreditsPath.Append(INTRO_L03_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer04 := Texture.LoadTexture(CreditsPath.Append(INTRO_L04_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer05 := Texture.LoadTexture(CreditsPath.Append(INTRO_L05_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer06 := Texture.LoadTexture(CreditsPath.Append(INTRO_L06_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer07 := Texture.LoadTexture(CreditsPath.Append(INTRO_L07_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer08 := Texture.LoadTexture(CreditsPath.Append(INTRO_L08_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  intro_layer09 := Texture.LoadTexture(CreditsPath.Append(INTRO_L09_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
 
-  outro_bg  := Texture.LoadTexture(CreditsPath + OUTRO_BG_FILE,  TEXTURE_TYPE_PLAIN, 0);
-  outro_esc := Texture.LoadTexture(CreditsPath + OUTRO_ESC_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
-  outro_exd := Texture.LoadTexture(CreditsPath + OUTRO_EXD_FILE, TEXTURE_TYPE_TRANSPARENT, 0);
+  outro_bg  := Texture.LoadTexture(CreditsPath.Append(OUTRO_BG_FILE),  TEXTURE_TYPE_PLAIN, 0);
+  outro_esc := Texture.LoadTexture(CreditsPath.Append(OUTRO_ESC_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
+  outro_exd := Texture.LoadTexture(CreditsPath.Append(OUTRO_EXD_FILE), TEXTURE_TYPE_TRANSPARENT, 0);
 
   CRDTS_Stage:=InitialDelay;
 end;
@@ -255,7 +256,7 @@ begin
   deluxe_slidein := 0;
   Credits_Alpha  := 0;
 //  Music.SetLoop(true); loop loops not, shit
-  AudioPlayback.Open(soundpath + 'wome-credits-tune.mp3'); // thank you wetue
+  AudioPlayback.Open(soundpath.Append('wome-credits-tune.mp3')); // thank you wetue
 //  Music.Play;
   CTime := 0;
 //  setlength(CTime_hold,0);
@@ -1386,7 +1387,7 @@ begin
       begin
         CTime_hold := 0;
         AudioPlayback.Stop;
-        AudioPlayback.Open(soundpath + 'credits-outro-tune.mp3');
+        AudioPlayback.Open(SoundPath.Append('credits-outro-tune.mp3'));
         AudioPlayback.SetVolume(0.2);
         AudioPlayback.SetLoop(true);
         AudioPlayback.Play;

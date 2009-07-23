@@ -57,7 +57,9 @@ uses
   {$ENDIF}
   UCatCovers,
   UXMLSong,
-  UTextEncoding;
+  UTextEncoding,
+  UFilesystem,
+  UPath;
 
 type
 
@@ -74,6 +76,7 @@ type
   end;
 
   TSong = class
+  private
     FileLineNo  : integer;  // line, which is read last, for error reporting
 
     function EncodeFilename(Filename: string): string;
@@ -81,19 +84,22 @@ type
     procedure ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: UTF8String);
     procedure NewSentence(LineNumberP: integer; Param1, Param2: integer);
 
-    function ReadTXTHeader( const aFileName : WideString ): boolean;
-    function ReadXMLHeader( const aFileName : WideString ): boolean;
+    function ReadTXTHeader(const aFileName: IPath): boolean;
+    function ReadXMLHeader(const aFileName: IPath): boolean;
+
+    function GetFolderCategory(const aFileName: IPath): UTF8String;
+    function FindSongFile(Dir: IPath; Mask: UTF8String): IPath;
+
   public
-    Path:       WideString;
-    Folder:     WideString; // for sorting by folder
-    fFileName,
-    FileName:   WideString;
+    Path:         IPath; // kust path component of file (only set if file was found)
+    Folder:       UTF8String; // for sorting by folder (only set if file was found)
+    FileName:     IPath; // just name component of file (only set if file was found)
 
     // filenames
-    Cover:      WideString;
-    Mp3:        WideString;
-    Background: WideString;
-    Video:      WideString;
+    Cover:      IPath;
+    Mp3:        IPath;
+    Background: IPath;
+    Video:      IPath;
     
     // sorting methods
     Genre:      UTF8String;
@@ -127,7 +133,7 @@ type
     OrderTyp:   integer; // type of sorting for this button (0=name)
     CatNumber:  integer; // Count of Songs in Category for Cats and Number of Song in Category for Songs
 
-    SongFile: TextFile;   // all procedures in this unit operate on this file
+    //SongFile: TextFile;   // all procedures in this unit operate on this file
 
     Base    : array[0..1] of integer;
     Rel     : array[0..1] of integer;
@@ -140,7 +146,7 @@ type
 
 
     constructor Create(); overload;
-    constructor Create( const aFileName : WideString ); overload;
+    constructor Create(const aFileName : IPath); overload;
     function    LoadSong: boolean;
     function    LoadXMLSong: boolean;
     function    Analyse(): boolean;
@@ -167,58 +173,61 @@ begin
   inherited;
 end;
 
-constructor TSong.Create( const aFileName: WideString );
-  // This may be changed, when we rewrite song select code.
-  // it is some kind of dirty, but imho the best possible
-  // solution as we do atm not support nested categorys.
-  // it works like the folder sorting in 1.0.1a
-  // folder is set to the first folder under the songdir
-  // so songs ~/.ultrastardx/songs/punk is in the same
-  // category as songs in shared/ultrastardx/songs are.
-  // note: folder is just the name of a category it has
-  //       nothing to do with the path used for file loading
-  function GetFolderCategory: WideString;
-    var
-      I: Integer;
-      P: Integer; //position of next path delimiter
+// This may be changed, when we rewrite song select code.
+// it is some kind of dirty, but imho the best possible
+// solution as we do atm not support nested categorys.
+// it works like the folder sorting in 1.0.1a
+// folder is set to the first folder under the songdir
+// so songs ~/.ultrastardx/songs/punk is in the same
+// category as songs in shared/ultrastardx/songs are.
+// note: folder is just the name of a category it has
+//       nothing to do with the path used for file loading
+function TSong.GetFolderCategory(const aFileName: IPath): UTF8String;
+var
+  I: Integer;
+  CurSongPath: IPath;
+  CurSongPathRel: IPath;
+begin
+  Result := 'Unknown'; //default folder category, if we can't locate the song dir
+
+  for I := 0 to SongPaths.Count-1 do
   begin
-    Result := 'Unknown'; //default folder category, if we can't locate the song dir
-
-    for I := 0 to SongPaths.Count-1 do
-      if (AnsiStartsText(SongPaths.Strings[I], aFilename)) then
+    CurSongPath := SongPaths[I] as IPath;
+    if (aFileName.IsChildOf(CurSongPath, false)) then
+    begin
+      if (aFileName.IsChildOf(CurSongPath, true)) then
       begin
-        P := PosEx(PathDelim, aFilename, Length(SongPaths.Strings[I]) + 1);
-
-        If (P > 0) then
-        begin
-          // we have found the category name => get it
-          Result := copy(self.Path, Length(SongPaths.Strings[I]) + 1, P - Length(SongPaths.Strings[I]) - 1);
-        end
-        else
-        begin
-          // songs are in the "root" of the songdir => use songdir for the categorys name 
-          Result := SongPaths.Strings[I];
-        end;
-
-        Exit;
+        // songs are in the "root" of the songdir => use songdir for the categorys name
+        Result := CurSongPath.ToUTF8; // TODO: remove trailing path-delim?
+      end
+      else
+      begin
+        // use the first subdirectory below CurSongPath as the category name
+        CurSongPathRel := aFileName.GetRelativePath(CurSongPath.AppendPathDelim);
+        Result := CurSongPathRel.SplitDirs[0].RemovePathDelim.ToUTF8;
       end;
+      Exit;
+    end;
   end;
+end;
+
+constructor TSong.Create(const aFileName: IPath);
 begin
   inherited Create();
 
   Mult    := 1;
   MultBPM := 4;
-  fFileName := aFileName;
 
   LastError := '';
 
-  if fileexists( aFileName ) then
+  Self.Path     := aFileName.GetPath;
+  Self.FileName := aFileName.GetName;
+  Self.Folder   := GetFolderCategory(aFileName);
+
+  (*
+  if (aFileName.IsFile) then
   begin
-    self.Path     := ExtractFilePath( aFileName );
-    self.Folder   := GetFolderCategory;
-    self.FileName := ExtractFileName( aFileName );
-    (*
-    if ReadTXTHeader( aFileName ) then
+    if ReadTXTHeader(aFileName) then
     begin
       LoadSong();
     end
@@ -227,8 +236,21 @@ begin
       Log.LogError('Error Loading SongHeader, abort Song Loading');
       Exit;
     end;
-    *)
   end;
+  *)
+end;
+
+function TSong.FindSongFile(Dir: IPath; Mask: UTF8String): IPath;
+var
+  Iter: IFileIterator;
+  FileInfo: TFileInfo;
+  FileName: IPath;
+begin
+  Iter := FileSystem.FileFind(Dir.Append(Mask), faDirectory);
+  if (Iter.HasNext) then
+    Result := Iter.Next.Name
+  else
+    Result := PATH_NONE;
 end;
 
 function TSong.EncodeFilename(Filename: string): string;
@@ -247,7 +269,7 @@ end;
 //Load TXT Song
 function TSong.LoadSong(): boolean;
 var
-  TempC:    char;
+  TempC:    AnsiChar;
   Text:     UTF8String;
   Count:    integer;
   Both:     boolean;
@@ -256,15 +278,19 @@ var
   Param3:   integer;
   ParamS:   UTF8String;
   I:        integer;
+  NotesFound: boolean;
+  TextStream: TTextFileStream;
+  FileNamePath: IPath;
 begin
   Result := false;
   LastError := '';
 
-  if not FileExists(Path + PathDelim + FileName) then
+  FileNamePath := Path.Append(FileName);
+  if not FileNamePath.IsFile() then
   begin
     LastError := 'ERROR_CORRUPT_SONG_FILE_NOT_FOUND';
-    Log.LogError('File not found: "' + Path + PathDelim + FileName + '"', 'TSong.LoadSong()');
-    exit;
+    Log.LogError('File not found: "' + FileNamePath.ToNative + '"', 'TSong.LoadSong()');
+    Exit;
   end;
 
   MultBPM           := 4; // multiply beat-count of note by 4
@@ -275,34 +301,42 @@ begin
   if Length(Player) = 2 then
     Both := true;
 
+  {$MESSAGE warn 'TODO: TSong.LoadSong'}
+    
+  (*
   try
     // Open song file for reading.....
-    FileMode := fmOpenRead;
-    AssignFile(SongFile, fFileName);
-    Reset(SongFile);
+    TextStream := nil;
+    TextStream := TBinaryFileStream.Create(FullFileName, fmOpenRead);
 
     //Clear old Song Header
-    if (self.Path = '') then
-      self.Path := ExtractFilePath(FileName);
+    if (Self.Path.IsUnset) then
+      Self.Path := FullFileName.GetPath();
 
-    if (self.FileName = '') then
-      self.Filename := ExtractFileName(FileName);
+    if (Self.FileName.IsUnset) then
+      Self.Filename := FullFileName.GetName();
 
-    FileLineNo := 0;
     //Search for Note Begining
-    repeat
-      ReadLn(SongFile, Text);
+    FileLineNo := 0;
+    NotesFound := false;
+    while (TextStream.ReadLine(Text)) do
+    begin
       Inc(FileLineNo);
-
-      if (Eof(SongFile)) then
-      begin //Song File Corrupted - No Notes
-        CloseFile(SongFile);
-        Log.LogError('Could not load txt File, no Notes found: ' + FileName);
-        LastError := 'ERROR_CORRUPT_SONG_NO_NOTES';
-        Exit;
+      if (Length(Text) > 0) and (Text[0] in [':', 'F', '*']) then
+      begin
+        TempC := Text[0];
+        NotesFound := true;
+        Break;
       end;
-      Read(SongFile, TempC);
-    until ((TempC = ':') or (TempC = 'F') or (TempC = '*'));
+    end;
+
+    if (not NotesFound) then
+    begin //Song File Corrupted - No Notes
+      TextStream.Free;
+      Log.LogError('Could not load txt File, no Notes found: ' + FileName);
+      LastError := 'ERROR_CORRUPT_SONG_NO_NOTES';
+      Exit;
+    end;
 
     SetLength(Lines, 2);
     for Count := 0 to High(Lines) do
@@ -327,7 +361,7 @@ begin
     while (TempC <> 'E') and (not EOF(SongFile)) do
     begin
 
-      if (TempC = ':') or (TempC = '*') or (TempC = 'F') then
+      if (TempC in [':', '*', 'F']) then
       begin
         // read notes
         Read(SongFile, Param1);
@@ -398,7 +432,7 @@ begin
         if (Length(Lines[I].Line) < 2) then
         begin
           LastError := 'ERROR_CORRUPT_SONG_NO_BREAKS';
-          Log.LogError('Error Loading File, Can''t find any Linebreaks: "' + fFileName + '"');
+          Log.LogError('Error Loading File, Can''t find any Linebreaks: "' + FullFileName + '"');
           exit;
         end;
 
@@ -425,10 +459,11 @@ begin
     end;
 
     LastError := 'ERROR_CORRUPT_SONG_ERROR_IN_LINE';
-    Log.LogError('Error Loading File: "' + fFileName + '" in Line ' + inttostr(FileLineNo));
+    Log.LogError('Error Loading File: "' + FullFileName + '" in Line ' + inttostr(FileLineNo));
     exit;
   end;
-
+  *)
+  
   Result := true;
 end;
 
@@ -447,13 +482,15 @@ var
   NoteType:  char;
   SentenceEnd, Rest, Time: integer;
   Parser: TParser;
+  FileNamePath: IPath;
 begin
   Result := false;
   LastError := '';
 
-  if not FileExists(Path + PathDelim + FileName) then
+  FileNamePath := Path.Append(FileName);
+  if not FileNamePath.IsFile() then
   begin
-    Log.LogError('File not found: "' + Path + PathDelim + FileName + '"', 'TSong.LoadSong()');
+    Log.LogError('File not found: "' + FileNamePath.ToNative + '"', 'TSong.LoadSong()');
     exit;
   end;
 
@@ -491,7 +528,7 @@ begin
 
   //Try to Parse the Song
 
-  if Parser.ParseSong(Path + PathDelim + FileName) then
+  if Parser.ParseSong(FileNamePath) then
   begin
     //Writeln('XML Inputfile Parsed succesful');
 
@@ -558,7 +595,7 @@ begin
   end
   else
   begin
-    Log.LogError('Could not parse Inputfile: ' + Path + PathDelim + FileName);
+    Log.LogError('Could not parse Inputfile: ' + FileNamePath.ToNative);
     exit;
   end;
 
@@ -570,10 +607,11 @@ begin
   Result := true;
 end;
 
-function TSong.ReadXMLHeader(const aFileName : WideString): boolean;
+function TSong.ReadXMLHeader(const aFileName : IPath): boolean;
 var
   Done        : byte;
   Parser      : TParser;
+  FileNamePath: IPath;
 begin
   Result := true;
   Done   := 0;
@@ -582,7 +620,8 @@ begin
   Parser := TParser.Create;
   Parser.Settings.DashReplacement := '~';
 
-  if Parser.ParseSong(self.Path + self.FileName) then
+  FileNamePath := Self.Path.Append(Self.FileName);
+  if Parser.ParseSong(FileNamePath) then
   begin
     //-----------
     //Required Attributes
@@ -601,9 +640,9 @@ begin
     Done := Done or 2;
 
     //MP3 File //Test if Exists
-    self.Mp3 := platform.FindSongFile(Path, '*.mp3');
+    Self.Mp3 := FindSongFile(Self.Path, '*.mp3');
     //Add Mp3 Flag to Done
-    if (FileExists(self.Path + self.Mp3)) then
+    if (Self.Path.Append(Self.Mp3).IsFile()) then
       Done := Done or 4;
 
     //Beats per Minute
@@ -624,10 +663,10 @@ begin
     self.GAP := Parser.SongInfo.Header.Gap;
 
     //Cover Picture
-    self.Cover := platform.FindSongFile(Path, '*[CO].jpg');
+    self.Cover := FindSongFile(Path, '*[CO].jpg');
 
     //Background Picture
-    self.Background := platform.FindSongFile(Path, '*[BG].jpg');
+    self.Background := FindSongFile(Path, '*[BG].jpg');
 
     // Video File
     //    self.Video := Value
@@ -648,7 +687,7 @@ begin
     self.Language := Parser.SongInfo.Header.Language;
   end
   else
-    Log.LogError('File Incomplete or not SingStar XML (A): ' + aFileName);
+    Log.LogError('File Incomplete or not SingStar XML (A): ' + aFileName.ToNative);
 
   Parser.Free;
 
@@ -657,36 +696,35 @@ begin
   begin
     Result := false;
     if (Done and 8) = 0 then      //No BPM Flag
-      Log.LogError('BPM Tag Missing: ' + self.FileName)
+      Log.LogError('BPM Tag Missing: ' + self.FileName.ToNative)
     else if (Done and 4) = 0 then //No MP3 Flag
-      Log.LogError('MP3 Tag/File Missing: ' + self.FileName)
+      Log.LogError('MP3 Tag/File Missing: ' + self.FileName.ToNative)
     else if (Done and 2) = 0 then //No Artist Flag
-      Log.LogError('Artist Tag Missing: ' + self.FileName)
+      Log.LogError('Artist Tag Missing: ' + self.FileName.ToNative)
     else if (Done and 1) = 0 then //No Title Flag
-      Log.LogError('Title Tag Missing: ' + self.FileName)
+      Log.LogError('Title Tag Missing: ' + self.FileName.ToNative)
     else //unknown Error
-      Log.LogError('File Incomplete or not SingStar XML (B - '+ inttostr(Done) +'): ' + aFileName);
+      Log.LogError('File Incomplete or not SingStar XML (B - '+ inttostr(Done) +'): ' + aFileName.ToNative);
   end;
 
 end;
 
 
-function TSong.ReadTXTHeader(const aFileName : WideString): boolean;
+{**
+ * "International" StrToFloat variant. Uses either ',' or '.' as decimal
+ * separator.
+ *}
+function StrToFloatI18n(const Value: string): extended;
+var
+  TempValue : string;
+begin
+  TempValue := Value;
+  if (Pos(',', TempValue) <> 0) then
+    TempValue[Pos(',', TempValue)] := '.';
+  Result := StrToFloatDef(TempValue, 0);
+end;
 
-  {**
-   * "International" StrToFloat variant. Uses either ',' or '.' as decimal
-   * separator. 
-   *}
-  function StrToFloatI18n(const Value: string): extended;
-  var
-    TempValue : string;
-  begin
-    TempValue := Value;
-    if (Pos(',', TempValue) <> 0) then
-      TempValue[Pos(',', TempValue)] := '.';
-    Result := StrToFloatDef(TempValue, 0);
-  end;
-
+function TSong.ReadTXTHeader(const aFileName : IPath): boolean;
 var
   Line, Identifier: string;
   Value: string;
@@ -696,6 +734,10 @@ var
 begin
   Result := true;
   Done   := 0;
+
+  {$message warn 'TSong.ReadTXTHeader'}
+
+  (*
 
   //Read first Line
   ReadLn (SongFile, Line);
@@ -913,7 +955,7 @@ begin
     else //unknown Error
       Log.LogError('File Incomplete or not Ultrastar TxT (B - '+ inttostr(Done) +'): ' + aFileName);
   end;
-
+  *)
 end;
 
 function  TSong.GetErrorLineNo: integer;
@@ -1034,7 +1076,8 @@ begin
   end
   else
   begin //use old line if it there were no notes added since last call of NewSentence
-    Log.LogError('Error loading Song, sentence w/o note found in line ' + InttoStr(FileLineNo) + ': ' + Filename);
+    Log.LogError('Error loading Song, sentence w/o note found in line ' +
+                 InttoStr(FileLineNo) + ': ' + Filename.ToNative);
   end;
 
   Lines[LineNumberP].Line[Lines[LineNumberP].High].HighNote := -1;
@@ -1076,7 +1119,7 @@ begin
   Encoding := DEFAULT_ENCODING;
 
   //Required Information
-  Mp3    := '';
+  Mp3    := PATH_NONE;
   SetLength(BPM, 0);
 
   GAP    := 0;
@@ -1084,9 +1127,9 @@ begin
   Finish := 0;
 
   //Additional Information
-  Background := '';
-  Cover      := '';
-  Video      := '';
+  Background := PATH_NONE;
+  Cover      := PATH_NONE;
+  Video      := PATH_NONE;
   VideoGAP   := 0;
   NotesGAP   := 0;
   Resolution := 4;
@@ -1096,7 +1139,8 @@ begin
 end;
 
 function TSong.Analyse(): boolean;
-
+var
+  SongFile: TTextFileStream;
 begin
   Result := false;
 
@@ -1104,20 +1148,17 @@ begin
   FileLineNo := 0;
 
   //Open File and set File Pointer to the beginning
-  AssignFile(SongFile, self.Path + self.FileName);
-
+  SongFile := TTextFileStream.Create(Self.Path.Append(Self.FileName), fmOpenRead);
   try
-    Reset(SongFile);
-
     //Clear old Song Header
-    self.clear;
+    Self.clear;
 
     //Read Header
-    Result := self.ReadTxTHeader( FileName )
+    Result := self.ReadTxTHeader(FileName)
 
     //And Close File
   finally
-    CloseFile(SongFile);
+    SongFile.Free;
   end;
 end;
 

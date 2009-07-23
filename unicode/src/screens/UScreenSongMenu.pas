@@ -73,7 +73,7 @@ const
   SM_Party_Joker      = 128 or 2;
 
 var
-  ISelections: array of string;
+  ISelections: array of UTF8String;
   SelectValue: integer;
 
 implementation

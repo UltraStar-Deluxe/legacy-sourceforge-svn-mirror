@@ -38,6 +38,7 @@ uses
   Math,
   gl,
   SDL,
+  UPath,
   UMenuBackground,
   UMenuButton,
   UMenuButtonCollection,
@@ -96,13 +97,13 @@ type
 
       // static
       function AddStatic(ThemeStatic: TThemeStatic): integer; overload;
-      function AddStatic(X, Y, W, H: real; const Name: string): integer; overload;
-      function AddStatic(X, Y, W, H: real; const Name: string; Typ: TTextureType): integer; overload;
-      function AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType): integer; overload;
-      function AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType): integer; overload;
-      function AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType; Color: integer): integer; overload;
-      function AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; const Name: string; Typ: TTextureType; Color: integer): integer; overload;
-      function AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; TexX1, TexY1, TexX2, TexY2: real; const Name: string; Typ: TTextureType; Color: integer; Reflection: boolean; ReflectionSpacing: real): integer; overload;
+      function AddStatic(X, Y, W, H: real; const TexName: IPath): integer; overload;
+      function AddStatic(X, Y, W, H: real; const TexName: IPath; Typ: TTextureType): integer; overload;
+      function AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; const TexName: IPath; Typ: TTextureType): integer; overload;
+      function AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; const TexName: IPath; Typ: TTextureType): integer; overload;
+      function AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; const TexName: IPath; Typ: TTextureType; Color: integer): integer; overload;
+      function AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; const TexName: IPath; Typ: TTextureType; Color: integer): integer; overload;
+      function AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; TexX1, TexY1, TexX2, TexY2: real; const TexName: IPath; Typ: TTextureType; Color: integer; Reflection: boolean; ReflectionSpacing: real): integer; overload;
 
       // text
       function AddText(ThemeText: TThemeText): integer; overload;
@@ -113,9 +114,9 @@ type
       // button
       procedure SetButtonLength(Length: cardinal); //Function that Set Length of Button Array in one Step instead of register new Memory for every Button
       function AddButton(ThemeButton: TThemeButton): integer; overload;
-      function AddButton(X, Y, W, H: real; const Name: string): integer; overload;
-      function AddButton(X, Y, W, H: real; const Name: string; Typ: TTextureType; Reflection: boolean): integer; overload;
-      function AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real; const Name: string; Typ: TTextureType; Reflection: boolean; ReflectionSpacing, DeSelectReflectionSpacing: real): integer; overload;
+      function AddButton(X, Y, W, H: real; const TexName: IPath): integer; overload;
+      function AddButton(X, Y, W, H: real; const TexName: IPath; Typ: TTextureType; Reflection: boolean): integer; overload;
+      function AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real; const TexName: IPath; Typ: TTextureType; Reflection: boolean; ReflectionSpacing, DeSelectReflectionSpacing: real): integer; overload;
       procedure ClearButtons;
       procedure AddButtonText(AddX, AddY: real; const AddText: UTF8String); overload;
       procedure AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; const AddText: UTF8String); overload;
@@ -123,16 +124,16 @@ type
       procedure AddButtonText(CustomButton: TButton; AddX, AddY: real; ColR, ColG, ColB: real; Font: integer; Size: integer; Align: integer; const AddText: UTF8String); overload;
 
       // select slide
-      function AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; const Values: array of string): integer; overload;
+      function AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; const Values: array of UTF8String): integer; overload;
       function AddSelectSlide(X, Y, W, H, SkipX, SBGW, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt,
         TColR, TColG, TColB, TInt, TDColR, TDColG, TDColB, TDInt,
         SBGColR, SBGColG, SBGColB, SBGInt, SBGDColR, SBGDColG, SBGDColB, SBGDInt,
         STColR, STColG, STColB, STInt, STDColR, STDColG, STDColB, STDInt: real;
-        const Name: string; Typ: TTextureType; const SBGName: string; SBGTyp: TTextureType;
+        const TexName: IPath; Typ: TTextureType; const SBGName: IPath; SBGTyp: TTextureType;
         const Caption: UTF8String; var Data: integer): integer; overload;
       procedure AddSelectSlideOption(const AddText: UTF8String); overload;
       procedure AddSelectSlideOption(SelectNo: cardinal; const AddText: UTF8String); overload;
-      procedure UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; const Values: array of string; var Data: integer);
+      procedure UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; const Values: array of UTF8String; var Data: integer);
 
 //      function AddWidget(X, Y : UInt16; WidgetSrc : PSDL_Surface): Int16;
 //      procedure ClearWidgets(MinNumber : Int16);
@@ -389,7 +390,7 @@ begin
       begin
 
         //At first some intelligent try to decide which BG to load
-        FileExt := lowercase(ExtractFileExt(Skin.GetTextureFileName(ThemedSettings.Tex)));
+        FileExt := LowerCase(Skin.GetTextureFileName(ThemedSettings.Tex).GetExtension.ToUTF8);
 
         if IsInArray(FileExt, SUPPORTED_EXTS_BACKGROUNDTEXTURE) then
           TryBGCreate(TMenuBackgroundTexture)
@@ -597,29 +598,29 @@ begin
     ThemeStatic.Typ, $FFFFFF, ThemeStatic.Reflection, ThemeStatic.Reflectionspacing);
 end;
 
-function TMenu.AddStatic(X, Y, W, H: real; const Name: string): integer;
+function TMenu.AddStatic(X, Y, W, H: real; const TexName: IPath): integer;
 begin
-  Result := AddStatic(X, Y, W, H, Name, TEXTURE_TYPE_PLAIN);
+  Result := AddStatic(X, Y, W, H, TexName, TEXTURE_TYPE_PLAIN);
 end;
 
 function TMenu.AddStatic(X, Y, W, H: real;
-                         ColR, ColG, ColB: real;
-			 const Name: string;
+       ColR, ColG, ColB: real;
+			 const TexName: IPath;
 			 Typ: TTextureType): integer;
 begin
-  Result := AddStatic(X, Y, W, H, ColR, ColG, ColB, Name, Typ, $FFFFFF);
+  Result := AddStatic(X, Y, W, H, ColR, ColG, ColB, TexName, Typ, $FFFFFF);
 end;
 
 function TMenu.AddStatic(X, Y, W, H, Z: real;
-                         ColR, ColG, ColB: real;
-			 const Name: string;
+       ColR, ColG, ColB: real;
+			 const TexName: IPath;
 			 Typ: TTextureType): integer;
 begin
-  Result := AddStatic(X, Y, W, H, Z, ColR, ColG, ColB, Name, Typ, $FFFFFF);
+  Result := AddStatic(X, Y, W, H, Z, ColR, ColG, ColB, TexName, Typ, $FFFFFF);
 end;
 
 function TMenu.AddStatic(X, Y, W, H: real;
-                         const Name: string;
+       const TexName: IPath;
 			 Typ: TTextureType): integer;
 var
   StatNum: integer;
@@ -627,7 +628,7 @@ begin
   // adds static
   StatNum := Length(Static);
   SetLength(Static, StatNum + 1);
-  Static[StatNum] := TStatic.Create(Texture.GetTexture(Name, Typ, $FF00FF)); // new skin
+  Static[StatNum] := TStatic.Create(Texture.GetTexture(TexName, Typ, $FF00FF)); // new skin
 
   // configures static
   Static[StatNum].Texture.X := X;
@@ -640,26 +641,26 @@ end;
 
 function TMenu.AddStatic(X, Y, W, H: real;
                          ColR, ColG, ColB: real;
-			 const Name: string;
+			 const TexName: IPath;
 			 Typ: TTextureType;
 			 Color: integer): integer;
 begin
-  Result := AddStatic(X, Y, W, H, 0, ColR, ColG, ColB, Name, Typ, Color);
+  Result := AddStatic(X, Y, W, H, 0, ColR, ColG, ColB, TexName, Typ, Color);
 end;
 
 function TMenu.AddStatic(X, Y, W, H, Z: real;
                          ColR, ColG, ColB: real;
-			 const Name: string;
+			 const TexName: IPath;
 			 Typ: TTextureType;
 			 Color: integer): integer;
 begin
-  Result := AddStatic(X, Y, W, H, Z, ColR, ColG, ColB, 0, 0, 1, 1, Name, Typ, Color, false, 0);
+  Result := AddStatic(X, Y, W, H, Z, ColR, ColG, ColB, 0, 0, 1, 1, TexName, Typ, Color, false, 0);
 end;
 
 function TMenu.AddStatic(X, Y, W, H, Z: real;
                          ColR, ColG, ColB: real;
 			 TexX1, TexY1, TexX2, TexY2: real;
-			 const Name: string;
+			 const TexName: IPath;
 			 Typ: TTextureType;
 			 Color: integer;
 			 Reflection: boolean;
@@ -675,11 +676,11 @@ begin
   if (Typ = TEXTURE_TYPE_COLORIZED) then
   begin
     // give encoded color to GetTexture()
-    Static[StatNum] := TStatic.Create(Texture.GetTexture(Name, Typ, RGBFloatToInt(ColR, ColG, ColB)));
+    Static[StatNum] := TStatic.Create(Texture.GetTexture(TexName, Typ, RGBFloatToInt(ColR, ColG, ColB)));
   end
   else
   begin
-    Static[StatNum] := TStatic.Create(Texture.GetTexture(Name, Typ, Color)); // new skin
+    Static[StatNum] := TStatic.Create(Texture.GetTexture(TexName, Typ, Color)); // new skin
   end;
                      
   // configures static
@@ -841,18 +842,18 @@ begin
   Log.LogBenchmark('====> Screen Options32', 6);
 end;
 
-function TMenu.AddButton(X, Y, W, H: real; const Name: string): integer;
+function TMenu.AddButton(X, Y, W, H: real; const TexName: IPath): integer;
 begin
-  Result := AddButton(X, Y, W, H, Name, TEXTURE_TYPE_PLAIN, false);
+  Result := AddButton(X, Y, W, H, TexName, TEXTURE_TYPE_PLAIN, false);
 end;
 
-function TMenu.AddButton(X, Y, W, H: real; const Name: string; Typ: TTextureType; Reflection: boolean): integer;
+function TMenu.AddButton(X, Y, W, H: real; const TexName: IPath; Typ: TTextureType; Reflection: boolean): integer;
 begin
-  Result := AddButton(X, Y, W, H, 1, 1, 1, 1, 1, 1, 1, 0.5, Name, TEXTURE_TYPE_PLAIN, Reflection, 15, 15);
+  Result := AddButton(X, Y, W, H, 1, 1, 1, 1, 1, 1, 1, 0.5, TexName, TEXTURE_TYPE_PLAIN, Reflection, 15, 15);
 end;
 
 function TMenu.AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real;
-                         const Name: string;
+                         const TexName: IPath;
 			 Typ: TTextureType;
                          Reflection: boolean;
 			 ReflectionSpacing, DeSelectReflectionSpacing: real): integer;
@@ -874,12 +875,12 @@ begin
   if (Typ = TEXTURE_TYPE_COLORIZED) then
   begin
     // give encoded color to GetTexture()
-    Button[Result] := TButton.Create(Texture.GetTexture(Name, Typ, RGBFloatToInt(ColR, ColG, ColB)),
-                                     Texture.GetTexture(Name, Typ, RGBFloatToInt(DColR, DColG, DColB)));
+    Button[Result] := TButton.Create(Texture.GetTexture(TexName, Typ, RGBFloatToInt(ColR, ColG, ColB)),
+                                     Texture.GetTexture(TexName, Typ, RGBFloatToInt(DColR, DColG, DColB)));
   end
   else
   begin
-    Button[Result] := TButton.Create(Texture.GetTexture(Name, Typ));
+    Button[Result] := TButton.Create(Texture.GetTexture(TexName, Typ));
   end;
 
   // configures button
@@ -1264,7 +1265,7 @@ begin
   end;
 end;
 
-function TMenu.AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; const Values: array of string): integer;
+function TMenu.AddSelectSlide(ThemeSelectS: TThemeSelectSlide; var Data: integer; const Values: array of UTF8String): integer;
 var
   SO: integer;
 begin
@@ -1301,7 +1302,7 @@ function TMenu.AddSelectSlide(X, Y, W, H, SkipX, SBGW, ColR, ColG, ColB, Int, DC
   TColR, TColG, TColB, TInt, TDColR, TDColG, TDColB, TDInt,
   SBGColR, SBGColG, SBGColB, SBGInt, SBGDColR, SBGDColG, SBGDColB, SBGDInt,
   STColR, STColG, STColB, STInt, STDColR, STDColG, STDColB, STDInt: real;
-  const Name: string; Typ: TTextureType; const SBGName: string; SBGTyp: TTextureType;
+  const TexName: IPath; Typ: TTextureType; const SBGName: IPath; SBGTyp: TTextureType;
   const Caption: UTF8String; var Data: integer): integer;
 var
   S: integer;
@@ -1312,9 +1313,9 @@ begin
   SelectsS[S] := TSelectSlide.Create;
 
   if (Typ = TEXTURE_TYPE_COLORIZED) then
-    SelectsS[S].Texture := Texture.GetTexture(Name, Typ, RGBFloatToInt(ColR, ColG, ColB))
+    SelectsS[S].Texture := Texture.GetTexture(TexName, Typ, RGBFloatToInt(ColR, ColG, ColB))
   else
-    SelectsS[S].Texture := Texture.GetTexture(Name, Typ);
+    SelectsS[S].Texture := Texture.GetTexture(TexName, Typ);
   SelectsS[S].X := X;
   SelectsS[S].Y := Y;
   SelectsS[S].W := W;
@@ -1453,7 +1454,8 @@ begin
 }
 end;
 
-procedure TMenu.UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide; SelectNum: integer; const Values: array of string; var Data: integer);
+procedure TMenu.UpdateSelectSlideOptions(ThemeSelectSlide: TThemeSelectSlide;
+  SelectNum: integer; const Values: array of UTF8String; var Data: integer);
 var
   SO: integer;
 begin

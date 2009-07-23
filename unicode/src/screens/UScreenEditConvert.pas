@@ -55,7 +55,8 @@ uses
   USongs,
   USong,
   UMusic,
-  UThemes;
+  UThemes,
+  UPath;
 
 type
   TMidiNote = record
@@ -128,7 +129,7 @@ type
   end;
 
 var
-  ConversionFileName: string;
+  ConversionFileName: IPath;
 
 implementation
 
@@ -220,7 +221,7 @@ begin
             if CountSelectedTracks > 0 then
             begin
               Extract;
-              SResult := SaveSong(Song, Lines, ChangeFileExt(ConversionFileName, '.txt'),
+              SResult := SaveSong(Song, Lines, ConversionFileName.SetExtension('.txt'),
                        false);
               if (SResult <> ssrOK) then
               begin
@@ -499,7 +500,7 @@ begin
   AddButton(500, 20, 100, 40, Skin.GetTextureFileName('ButtonF'));
   AddButtonText(20, 5, 0, 0, 0, 'Save');
 
-  ConversionFileName := 'D:/daten/africa.mid';//GamePath + 'file.mid';
+  ConversionFileName := GamePath.Append('file.mid');
 
   for P := 0 to 100 do
   begin
@@ -525,7 +526,7 @@ begin
   MidiOut.Open;
   MidiFile := nil;
 
-  if FileExists(ConversionFileName) then
+  if ConversionFileName.Exists then
   begin
     MidiFile := TMidiFile.Create(nil);
     MidiFile.Filename := ConversionFileName;

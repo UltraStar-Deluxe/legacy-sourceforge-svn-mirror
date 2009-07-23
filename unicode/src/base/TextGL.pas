@@ -37,9 +37,10 @@ uses
   gl,
   glext,
   SDL,
+  Classes,
   UTexture,
   UFont,
-  Classes,
+  UPath,
   ULog;
 
 type
@@ -75,26 +76,26 @@ uses
   UMain,
   UPathUtils;
 
-function FindFontFile(FontIni: TCustomIniFile; Font: string): string;
+function FindFontFile(FontIni: TCustomIniFile; Font: string): IPath;
 var
-  Filename: string;
+  Filename: IPath;
 begin
-  Filename := FontIni.ReadString(Font, 'File', '');
-  Result := FontPath + Filename;
+  Filename := Path(FontIni.ReadString(Font, 'File', ''));
+  Result := FontPath.Append(Filename);
   // if path does not exist, try as an absolute path
-  if (not FileExists(Result)) then
+  if (not Result.IsFile) then
     Result := Filename;
 end;
 
 procedure BuildFont;
 var
   FontIni: TMemIniFile;
-  FontFile: string;
+  FontFile: IPath;
 begin
   ActFont := 0;
 
   SetLength(Fonts, 4);
-  FontIni := TMemIniFile.Create(FontPath + 'fonts.ini');
+  FontIni := TMemIniFile.Create(FontPath.Append('fonts.ini').ToNative);
 
   try
 
@@ -117,8 +118,9 @@ begin
     FontFile := FindFontFile(FontIni, 'Outline2');
     Fonts[3].Font := TFTScalableOutlineFont.Create(FontFile, 64, 0.08);
 
-  except on E: Exception do
-    Log.LogCritical(E.Message, 'BuildFont');
+  except
+    on E: Exception do
+      Log.LogCritical(E.Message, 'BuildFont');
   end;
 
   // close ini-file

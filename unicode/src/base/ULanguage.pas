@@ -79,6 +79,8 @@ uses
   Classes,
   SysUtils,
   ULog,
+  UPath,
+  UFilesystem,
   UPathUtils;
 
 {**
@@ -129,23 +131,26 @@ end;
  *}
 procedure TLanguage.LoadList;
 var
-  SR:     TSearchRec;   // for parsing directory
+  Iter: IFileIterator;
+  IniInfo: TFileInfo;
+  LangName: string;
 begin
   SetLength(List, 0);
   SetLength(ILanguage, 0);
 
-  if FindFirst(LanguagesPath + '*.ini', 0, SR) = 0 then
+  Iter := FileSystem.FileFind(LanguagesPath.Append('*.ini'), 0);
+  while(Iter.HasNext) do
   begin
-    repeat
-      SetLength(List, Length(List)+1);
-      SetLength(ILanguage, Length(ILanguage)+1);
-      SR.Name := ChangeFileExt(SR.Name, '');
+    IniInfo := Iter.Next;
 
-      List[High(List)].Name := SR.Name;
-      ILanguage[High(ILanguage)] := SR.Name;
-    until (FindNext(SR) <> 0);
-    SysUtils.FindClose(SR);
-  end; // if FindFirst
+    LangName := IniInfo.Name.SetExtension('').ToUTF8;
+
+    SetLength(List, Length(List)+1);
+    List[High(List)].Name := LangName;
+
+    SetLength(ILanguage, Length(ILanguage)+1);
+    ILanguage[High(ILanguage)] := LangName;
+  end;
 end;
 
 {**
@@ -158,7 +163,7 @@ var
   S:          TStringList;
 begin
   SetLength(Entry, 0);
-  IniFile := TIniFile.Create(LanguagesPath + Language + '.ini');
+  IniFile := TIniFile.Create(LanguagesPath.Append(Language + '.ini').ToNative);
   S := TStringList.Create;
 
   IniFile.ReadSectionValues('Text', S);

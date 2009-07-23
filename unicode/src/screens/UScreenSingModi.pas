@@ -47,7 +47,7 @@ uses
   ULyrics,
   TextGL,
   gl,
-
+  UPath,
   UThemes,
   UScreenSing,
   ModiSDK;
@@ -71,7 +71,7 @@ type
 
 type
   TCustomSoundEntry = record
-    Filename : string;
+    Filename : IPath;
     Stream   : TAudioPlaybackStream;
   end;
 
@@ -503,19 +503,20 @@ end;
 
 function LoadTex(const Name: PChar; Typ: TTextureType): TsmallTexture;
 var
-  Texname, EXT: string;
+  TexName: IPath;
+  Ext: UTF8String;
   Tex: TTexture;
 begin
   //Get texture Name
   TexName := Skin.GetTextureFileName(string(Name));
   //Get File Typ
-  Ext := ExtractFileExt(TexName);
-  if (uppercase(Ext) = '.JPG') then
+  Ext := TexName.GetExtension().ToUTF8;
+  if (UpperCase(Ext) = '.JPG') then
     Ext := 'JPG'
   else
     Ext := 'BMP';
 
-  Tex := Texture.LoadTexture(false, PChar(TexName), UTEXTURE.TTextureType(Typ), 0);
+  Tex := Texture.LoadTexture(false, TexName, UTexture.TTextureType(Typ), 0);
 
   Result.TexNum := Tex.TexNum;
   Result.W := Tex.W;
@@ -544,20 +545,21 @@ function LoadSound(const Name: PChar): cardinal;
 var
   Stream: TAudioPlaybackStream;
   i: integer;
-  Filename: string;
+  Filename: IPath;
+  SoundFile: IPath;
 begin
   //Search for Sound in already loaded Sounds
-  Filename := UpperCase(SoundPath + Name);
+  SoundFile := SoundPath.Append(Name);
   for i := 0 to High(CustomSounds) do
   begin
-    if (UpperCase(CustomSounds[i].Filename) = Filename) then
+    if (SoundFile.Equals(CustomSounds[i].Filename, true)) then
     begin
       Result := i;
       Exit;
     end;
   end;
 
-  Stream := AudioPlayback.OpenSound(SoundPath + string(Name));
+  Stream := AudioPlayback.OpenSound(SoundFile);
   if (Stream = nil) then
   begin
     Result := 0;

@@ -40,28 +40,26 @@ interface
 {$ENDIF}
 
 uses
+  SysUtils,
+  Classes,
   {$IFDEF MSWINDOWS}
     Windows,
     DirWatch,
   {$ELSE}
     {$IFNDEF DARWIN}
-      syscall,
+    syscall,
     {$ENDIF}
     baseunix,
     UnixType,
   {$ENDIF}
-  SysUtils,
-  Classes,
   UPlatform,
   ULog,
   UTexture,
   UCommon,
-  {$IFDEF DARWIN}
-    cthreads,
-  {$ENDIF}
   {$IFDEF USE_PSEUDO_THREAD}
-    PseudoThread,
+  PseudoThread,
   {$ENDIF}
+  UPath,
   USong,
   UCatCovers;
 
@@ -107,11 +105,10 @@ type
 
 
     procedure LoadSongList;     // load all songs
-    procedure BrowseDir(Dir: widestring); // should return number of songs in the future
-    procedure BrowseTXTFiles(Dir: widestring);
-    procedure BrowseXMLFiles(Dir: widestring);
+    procedure BrowseDir(Dir: IPath); // should return number of songs in the future
+    procedure BrowseTXTFiles(Dir: IPath);
+    procedure BrowseXMLFiles(Dir: IPath);
     procedure Sort(Order: integer);
-    function  FindSongFile(Dir, Mask: widestring): widestring;
     property  Processing: boolean read fProcessing;
   end;
 
@@ -165,6 +162,7 @@ uses
   UIni,
   UPathUtils,
   UNote,
+  UFilesystem,
   UUnicodeUtils;
 
 constructor TSongs.Create();
@@ -239,7 +237,7 @@ begin
 
     // browse directories
     for I := 0 to SongPaths.Count-1 do
-      BrowseDir(SongPaths[I]);
+      BrowseDir(SongPaths[I] as IPath);
 
     if assigned(CatSongs) then
       CatSongs.Refresh;
@@ -271,13 +269,13 @@ begin
   Resume();
 end;
 
-procedure TSongs.BrowseDir(Dir: widestring);
+procedure TSongs.BrowseDir(Dir: IPath);
 begin
   BrowseTXTFiles(Dir);
   BrowseXMLFiles(Dir);
 end;
 
-procedure TSongs.BrowseTXTFiles(Dir: widestring);
+procedure TSongs.BrowseTXTFiles(Dir: IPath);
 var
   i:     integer;
   Files: TDirectoryEntryArray;
@@ -285,27 +283,27 @@ var
 begin
 
   try
-    Files := Platform.DirectoryFindFiles(Dir, '.txt', true)
+    Files := DirectoryFindFiles(Dir, '.txt', true)
   except
-    Log.LogError('Couldn''t deal with directory/file: ' + Dir + ' in TSongs.BrowseTXTFiles')
+    Log.LogError('Couldn''t deal with directory/file: ' + Dir.ToNative + ' in TSongs.BrowseTXTFiles')
   end;
 
   for i := 0 to Length(Files) - 1 do
   begin
     if Files[i].IsDirectory then
     begin
-      BrowseTXTFiles(Dir + Files[i].Name + PathDelim);  //Recursive Call
+      BrowseTXTFiles(Dir.Append(Files[i].Name, pdAppend));  //Recursive Call
     end
     else
     begin
-      lSong := TSong.create(Dir + Files[i].Name);
+      lSong := TSong.Create(Dir.Append(Files[i].Name));
 
       if lSong.Analyse then
         SongList.add(lSong)
       else
       begin
-        Log.LogError('AnalyseFile failed for "' + Files[i].Name + '".');
-        freeandnil(lSong);
+        Log.LogError('AnalyseFile failed for "' + Files[i].Name.ToNative + '".');
+        FreeAndNil(lSong);
       end;
 
     end;
@@ -314,7 +312,7 @@ begin
 
 end;
 
-procedure TSongs.BrowseXMLFiles(Dir: widestring);
+procedure TSongs.BrowseXMLFiles(Dir: IPath);
 var
   i:     integer;
   Files: TDirectoryEntryArray;
@@ -322,26 +320,26 @@ var
 begin
 
   try
-    Files := Platform.DirectoryFindFiles(Dir, '.xml', true)
+    Files := DirectoryFindFiles(Dir, '.xml', true)
   except
-    Log.LogError('Couldn''t deal with directory/file: ' + Dir + ' in TSongs.BrowseXMLFiles')
+    Log.LogError('Couldn''t deal with directory/file: ' + Dir.ToNative + ' in TSongs.BrowseXMLFiles')
   end;
 
   for i := 0 to Length(Files) - 1 do
   begin
     if Files[i].IsDirectory then
     begin
-      BrowseXMLFiles(Dir + Files[i].Name + PathDelim); // Recursive Call
+      BrowseXMLFiles(Dir.Append(Files[i].Name, pdAppend)); // Recursive Call
     end
     else
     begin
-      lSong := TSong.create(Dir + Files[i].Name);
+      lSong := TSong.Create(Dir.Append(Files[i].Name));
 
       if lSong.AnalyseXML then
         SongList.add(lSong)
       else
       begin
-        Log.LogError('AnalyseFile failed for "' + Files[i].Name + '".');
+        Log.LogError('AnalyseFile failed for "' + Files[i].Name.ToNative + '".');
         freeandnil(lSong);
       end;
 
@@ -377,7 +375,7 @@ end;
 
 function CompareByFolder(Song1, Song2: Pointer): integer;
 begin
-  Result := CompareText(TSong(Song1).Folder, TSong(Song2).Folder);
+  Result := UTF8CompareText(TSong(Song1).Folder, TSong(Song2).Folder);
 end;
 
 function CompareByLanguage(Song1, Song2: Pointer): integer;
@@ -417,18 +415,6 @@ begin
   // by artist afterwards, the songs of an artist will not be sorted by title anymore.
   // The stable MergeSort guarantees to maintain this order. 
   MergeSort(SongList, CompareFunc);
-end;
-
-function TSongs.FindSongFile(Dir, Mask: widestring): widestring;
-var
-  SR: TSearchRec;   // for parsing song directory
-begin
-  Result := '';
-  if FindFirst(Dir + Mask, faDirectory, SR) = 0 then
-  begin
-    Result := SR.Name;
-  end; // if
-  FindClose(SR);
 end;
 
 procedure TCatSongs.SortSongs();
@@ -603,7 +589,7 @@ begin
         end;
 
         sFolder: begin
-          if (CompareText(CurCategory, CurSong.Folder) <> 0) then
+          if (UTF8CompareText(CurCategory, CurSong.Folder) <> 0) then
           begin
             CurCategory := CurSong.Folder;
             // add folder tab
@@ -831,7 +817,7 @@ begin
       begin
         case Filter of
           fltAll:
-            TmpString := Song[I].Artist + ' ' + Song[i].Title + ' ' + UTF8Encode(Song[i].Folder);
+            TmpString := Song[I].Artist + ' ' + Song[i].Title + ' ' + Song[i].Folder;
           fltTitle:
             TmpString := Song[I].Title;
           fltArtist:

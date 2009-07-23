@@ -132,7 +132,8 @@ uses
   USkins,
   ULanguage,
   UTextEncoding,
-  UUnicodeUtils;
+  UUnicodeUtils,
+  UPath;
 
 
 procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
@@ -142,7 +143,7 @@ begin
   if (Value) then
   begin
     CurrentSong.Encoding := encUTF8;
-    SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName,
+    SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path.Append(CurrentSong.FileName),
              boolean(Data));
   end;
 end;
@@ -179,7 +180,7 @@ begin
       Ord('S'):
         begin
           // Save Song
-          SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName,
+          SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path.Append(CurrentSong.FileName),
                    (SDL_ModState = KMOD_LSHIFT));
           if (SResult = ssrEncodingError) then
           begin
@@ -1258,6 +1259,8 @@ begin
 end;
 
 procedure TScreenEditSub.onShow;
+var
+  FileExt: IPath;
 begin
   inherited;
 
@@ -1267,11 +1270,12 @@ begin
   ResetSingTemp;
 
   try 
-  //Check if File is XML
-   if copy(CurrentSong.FileName,length(CurrentSong.FileName)-3,4) = '.xml' then
-     Error := not CurrentSong.LoadXMLSong()
-   else
-     Error := not CurrentSong.LoadSong();
+    //Check if File is XML
+    FileExt := CurrentSong.FileName.GetExtension;
+    if FileExt.ToUTF8 = '.xml' then
+      Error := not CurrentSong.LoadXMLSong()
+    else
+      Error := not CurrentSong.LoadSong();
   except
     Error := true;
   end;
@@ -1293,12 +1297,12 @@ begin
   {$ENDIF}
     Text[TextTitle].Text :=   CurrentSong.Title;
     Text[TextArtist].Text :=  CurrentSong.Artist;
-    Text[TextMp3].Text :=     CurrentSong.Mp3;
+    Text[TextMp3].Text :=     CurrentSong.Mp3.ToUTF8;
 
     Lines[0].Current := 0;
     CurrentNote := 0;
     Lines[0].Line[0].Note[0].Color := 1;
-    AudioPlayback.Open(CurrentSong.Path + CurrentSong.Mp3);
+    AudioPlayback.Open(CurrentSong.Path.Append(CurrentSong.Mp3));
     //Set Down Music Volume for Better hearability of Midi Sounds
     //Music.SetVolume(0.4);
 

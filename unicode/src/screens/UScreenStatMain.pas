@@ -166,7 +166,7 @@ begin
   //Set Songs with Vid
   SongsWithVid := 0;
   for I := 0 to Songs.SongList.Count -1 do
-    if (TSong(Songs.SongList[I]).Video <> '') then
+    if (TSong(Songs.SongList[I]).Video.IsSet) then
       Inc(SongsWithVid);
 end;
 

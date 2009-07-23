@@ -34,11 +34,12 @@ interface
 {$I switches.inc}
 
 uses
-  ULog,
   IniFiles,
   SysUtils,
   Classes,
-  UTexture;
+  ULog,
+  UTexture,
+  UPath;
 
 type
   TRGB = record
@@ -531,10 +532,10 @@ type
     TextFound:        TThemeText;
 
     //Translated Texts
-    Songsfound:       string;
-    NoSongsfound:     string;
-    CatText:          string;
-    IType:            array [0..2] of string;
+    Songsfound:       UTF8String;
+    NoSongsfound:     UTF8String;
+    CatText:          UTF8String;
+    IType:            array [0..2] of UTF8String;
   end;
 
   //Party Screens
@@ -761,11 +762,11 @@ type
 
     Playlist:         TThemePlaylist;
 
-    ILevel: array[0..2] of string;
+    ILevel: array[0..2] of UTF8String;
 
-    constructor Create(const FileName: string); overload; // Initialize theme system
-    constructor Create(const FileName: string; Color: integer); overload; // Initialize theme system with color
-    function LoadTheme(FileName: string; sColor: integer): boolean; // Load some theme settings from file
+    constructor Create(const FileName: IPath); overload; // Initialize theme system
+    constructor Create(const FileName: IPath; Color: integer); overload; // Initialize theme system with color
+    function LoadTheme(const FileName: IPath; sColor: integer): boolean; // Load some theme settings from file
 
     procedure LoadColors;
 
@@ -845,12 +846,12 @@ begin
   glColor4f(Color.R, Color.G, Color.B, Min(Color.A, Alpha));
 end;
 
-constructor TTheme.Create(const FileName: string);
+constructor TTheme.Create(const FileName: IPath);
 begin
   Create(FileName, 0);
 end;
 
-constructor TTheme.Create(const FileName: string; Color: integer);
+constructor TTheme.Create(const FileName: IPath; Color: integer);
 begin
   inherited Create();
 
@@ -893,7 +894,7 @@ begin
 
 end;
 
-function TTheme.LoadTheme(FileName: string; sColor: integer): boolean;
+function TTheme.LoadTheme(const FileName: IPath; sColor: integer): boolean;
 var
   I:    integer;
 begin
@@ -901,23 +902,21 @@ begin
 
   CreateThemeObjects();
 
-  Log.LogStatus('Loading: '+ FileName, 'TTheme.LoadTheme');
+  Log.LogStatus('Loading: '+ FileName.ToNative, 'TTheme.LoadTheme');
 
-  FileName := AdaptFilePaths(FileName);
-
-  if not FileExists(FileName) then
+  if not FileName.IsFile() then
   begin
-    Log.LogError('Theme does not exist ('+ FileName +')', 'TTheme.LoadTheme');
+    Log.LogError('Theme does not exist ('+ FileName.ToNative +')', 'TTheme.LoadTheme');
   end;
 
-  if FileExists(FileName) then
+  if FileName.IsFile() then
   begin
     Result := true;
 
     {$IFDEF THEMESAVE}
-    ThemeIni := TIniFile.Create(FileName);
+    ThemeIni := TIniFile.Create(FileName.ToNative);
     {$ELSE}
-    ThemeIni := TMemIniFile.Create(FileName);
+    ThemeIni := TMemIniFile.Create(FileName.ToNative);
     {$ENDIF}
 
     if ThemeIni.ReadString('Theme', 'Name', '') <> '' then

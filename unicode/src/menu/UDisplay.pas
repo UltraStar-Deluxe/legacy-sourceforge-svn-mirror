@@ -36,10 +36,11 @@ interface
 uses
   UCommon,
   SDL,
-  UMenu,
   gl,
   glu,
-  SysUtils;
+  SysUtils,
+  UMenu,
+  UPath;
 
 type
   TDisplay = class
@@ -504,47 +505,47 @@ end;
 procedure TDisplay.SaveScreenShot;
 var
   Num:        integer;
-  FileName:   string;
+  FileName:   IPath;
+  Prefix:     UTF8String;
   ScreenData: PChar;
   Surface:    PSDL_Surface;
   Success:    boolean;
   Align:      integer;
   RowSize:    integer;
 begin
-// Exit if Screenshot-path does not exist or read-only
-  if (ScreenshotsPath = '') then
+  // Exit if Screenshot-path does not exist or read-only
+  if (ScreenshotsPath.IsUnset) then
     Exit;
 
   for Num := 1 to 9999 do
   begin
-    FileName := IntToStr(Num);
-    while Length(FileName) < 4 do
-      FileName := '0' + FileName;
-    FileName := ScreenshotsPath + 'screenshot' + FileName + '.png';
-    if not FileExists(FileName) then
-      break
+    // fill prefix to 4 digits with leading '0', e.g. '0001'
+    Prefix := Format('screenshot%.4d', [Num]);
+    FileName := ScreenshotsPath.Append(Prefix + '.png');
+    if not FileName.Exists() then
+      break;
   end;
 
-// we must take the row-alignment (4byte by default) into account
+  // we must take the row-alignment (4byte by default) into account
   glGetIntegerv(GL_PACK_ALIGNMENT, @Align);
-// calc aligned row-size
+  // calc aligned row-size
   RowSize := ((ScreenW*3 + (Align-1)) div Align) * Align;
 
   GetMem(ScreenData, RowSize * ScreenH);
   glReadPixels(0, 0, ScreenW, ScreenH, GL_RGB, GL_UNSIGNED_BYTE, ScreenData);
-// on big endian machines (powerpc) this may need to be changed to
-// Needs to be tests. KaMiSchi Sept 2008
-// in this case one may have to add " glext, " to the list of used units
-//  glReadPixels(0, 0, ScreenW, ScreenH, GL_BGR, GL_UNSIGNED_BYTE, ScreenData);
+  // on big endian machines (powerpc) this may need to be changed to
+  // Needs to be tests. KaMiSchi Sept 2008
+  // in this case one may have to add " glext, " to the list of used units
+  //  glReadPixels(0, 0, ScreenW, ScreenH, GL_BGR, GL_UNSIGNED_BYTE, ScreenData);
   Surface := SDL_CreateRGBSurfaceFrom(
       ScreenData, ScreenW, ScreenH, 24, RowSize,
       $0000FF, $00FF00, $FF0000, 0);
 
-//  Success := WriteJPGImage(FileName, Surface, 95);
-//  Success := WriteBMPImage(FileName, Surface);
+  //  Success := WriteJPGImage(FileName, Surface, 95);
+  //  Success := WriteBMPImage(FileName, Surface);
   Success := WritePNGImage(FileName, Surface);
   if Success then
-    ScreenPopupError.ShowPopup('Screenshot saved: ' + ExtractFileName(FileName))
+    ScreenPopupError.ShowPopup('Screenshot saved: ' + FileName.GetName.ToUTF8())
   else
     ScreenPopupError.ShowPopup('Screenshot failed');
 
@@ -559,7 +560,7 @@ procedure TDisplay.DrawDebugInformation;
 var
   Ticks: cardinal;
 begin
-// Some White Background for information
+  // Some White Background for information
   glEnable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
   glColor4f(1, 1, 1, 0.5);
@@ -571,13 +572,13 @@ begin
   glEnd;
   glDisable(GL_BLEND);
 
-// set font specs
+  // set font specs
   SetFontStyle(0);
   SetFontSize(21);
   SetFontItalic(false);
   glColor4f(0, 0, 0, 1);
 
-// calculate fps
+  // calculate fps
   Ticks := SDL_GetTicks();
   if (Ticks >= NextFPSSwap) then
   begin
@@ -588,17 +589,17 @@ begin
 
   Inc(FPSCounter);
 
-// draw text
+  // draw text
 
-// fps
+  // fps
   SetFontPos(695, 0);
   glPrint ('FPS: ' + InttoStr(LastFPS));
 
-// rspeed
+  // rspeed
   SetFontPos(695, 13);
   glPrint ('RSpeed: ' + InttoStr(Round(1000 * TimeMid)));
 
-// lasterror
+  // lasterror
   SetFontPos(695, 26);
   glColor4f(1, 0, 0, 1);
   glPrint (OSD_LastError);

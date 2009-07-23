@@ -34,7 +34,8 @@ interface
 {$I switches.inc}
 
 uses
-  SysUtils;
+  SysUtils,
+  UUnicodeUtils;
 
 type
   TEncoding = (
@@ -51,25 +52,25 @@ const
  * Decodes Src encoded in SrcEncoding to a UTF-16 or UTF-8 encoded Dst string.
  * Returns true if the conversion was successful.
  *}
-function DecodeString(const Src: AnsiString; out Dst: WideString; SrcEncoding: TEncoding): boolean; overload;
-function DecodeString(const Src: AnsiString; SrcEncoding: TEncoding): WideString; overload;
-function DecodeStringUTF8(const Src: AnsiString; out Dst: UTF8String; SrcEncoding: TEncoding): boolean; overload;
-function DecodeStringUTF8(const Src: AnsiString; SrcEncoding: TEncoding): UTF8String; overload;
+function DecodeString(const Src: RawByteString; out Dst: WideString; SrcEncoding: TEncoding): boolean; overload;
+function DecodeString(const Src: RawByteString; SrcEncoding: TEncoding): WideString; overload;
+function DecodeStringUTF8(const Src: RawByteString; out Dst: UTF8String; SrcEncoding: TEncoding): boolean; overload;
+function DecodeStringUTF8(const Src: RawByteString; SrcEncoding: TEncoding): UTF8String; overload;
 
 {**
  * Encodes the UTF-16 or UTF-8 encoded Src string to Dst using DstEncoding
  * Returns true if the conversion was successful.
  *}
-function EncodeString(const Src: WideString; out Dst: AnsiString; DstEncoding: TEncoding): boolean; overload;
-function EncodeString(const Src: WideString; DstEncoding: TEncoding): AnsiString; overload;
-function EncodeStringUTF8(const Src: UTF8String; out Dst: AnsiString; DstEncoding: TEncoding): boolean; overload;
-function EncodeStringUTF8(const Src: UTF8String; DstEncoding: TEncoding): AnsiString; overload;
+function EncodeString(const Src: WideString; out Dst: RawByteString; DstEncoding: TEncoding): boolean; overload;
+function EncodeString(const Src: WideString; DstEncoding: TEncoding): RawByteString; overload;
+function EncodeStringUTF8(const Src: UTF8String; out Dst: RawByteString; DstEncoding: TEncoding): boolean; overload;
+function EncodeStringUTF8(const Src: UTF8String; DstEncoding: TEncoding): RawByteString; overload;
 
 {**
  * If Text starts with an UTF-8 BOM, the BOM is removed and true will
  * be returned.
  *}
-function CheckReplaceUTF8BOM(var Text: AnsiString): boolean;
+function CheckReplaceUTF8BOM(var Text: RawByteString): boolean;
 
 {**
  * Parses an encoding string to its TEncoding equivalent.
@@ -87,27 +88,26 @@ function EncodingName(Encoding: TEncoding): AnsiString;
 implementation
 
 uses
-  StrUtils,
-  UUnicodeUtils;
+  StrUtils;
 
 type
   IEncoder = interface
     function GetName(): AnsiString;
-    function Encode(const InStr: UCS4String; out OutStr: AnsiString): boolean;
-    function Decode(const InStr: AnsiString; out OutStr: UCS4String): boolean;
+    function Encode(const InStr: UCS4String; out OutStr: RawByteString): boolean;
+    function Decode(const InStr: RawByteString; out OutStr: UCS4String): boolean;
   end;
 
   TEncoder = class(TInterfacedObject, IEncoder)
   public
     function GetName(): AnsiString; virtual; abstract;
-    function Encode(const InStr: UCS4String; out OutStr: AnsiString): boolean; virtual; abstract;
-    function Decode(const InStr: AnsiString; out OutStr: UCS4String): boolean; virtual; abstract;
+    function Encode(const InStr: UCS4String; out OutStr: RawByteString): boolean; virtual; abstract;
+    function Decode(const InStr: RawByteString; out OutStr: UCS4String): boolean; virtual; abstract;
   end;
 
   TSingleByteEncoder = class(TEncoder)
   public
-    function Encode(const InStr: UCS4String; out OutStr: AnsiString): boolean; override;
-    function Decode(const InStr: AnsiString; out OutStr: UCS4String): boolean; override;
+    function Encode(const InStr: UCS4String; out OutStr: RawByteString): boolean; override;
+    function Decode(const InStr: RawByteString; out OutStr: UCS4String): boolean; override;
     function DecodeChar(InChr: AnsiChar; out OutChr: UCS4Char): boolean; virtual; abstract;
     function EncodeChar(InChr: UCS4Char; out OutChr: AnsiChar): boolean; virtual; abstract;
   end;
@@ -118,7 +118,7 @@ const
 var
   Encoders: array[TEncoding] of IEncoder;
 
-function TSingleByteEncoder.Encode(const InStr: UCS4String; out OutStr: AnsiString): boolean;
+function TSingleByteEncoder.Encode(const InStr: UCS4String; out OutStr: RawByteString): boolean;
 var
   I: integer;
 begin
@@ -131,7 +131,7 @@ begin
   end;
 end;
 
-function TSingleByteEncoder.Decode(const InStr: AnsiString; out OutStr: UCS4String): boolean;
+function TSingleByteEncoder.Decode(const InStr: RawByteString; out OutStr: UCS4String): boolean;
 var
   I: integer;
 begin
@@ -145,7 +145,7 @@ begin
   OutStr[High(OutStr)] := 0;
 end;
 
-function DecodeString(const Src: AnsiString; out Dst: WideString; SrcEncoding: TEncoding): boolean;
+function DecodeString(const Src: RawByteString; out Dst: WideString; SrcEncoding: TEncoding): boolean;
 var
   DstUCS4: UCS4String;
 begin
@@ -153,12 +153,12 @@ begin
   Dst := UCS4StringToWideString(DstUCS4);
 end;
 
-function DecodeString(const Src: AnsiString; SrcEncoding: TEncoding): WideString;
+function DecodeString(const Src: RawByteString; SrcEncoding: TEncoding): WideString;
 begin
   DecodeString(Src, Result, SrcEncoding);
 end;
 
-function DecodeStringUTF8(const Src: AnsiString; out Dst: UTF8String; SrcEncoding: TEncoding): boolean;
+function DecodeStringUTF8(const Src: RawByteString; out Dst: UTF8String; SrcEncoding: TEncoding): boolean;
 var
   DstUCS4: UCS4String;
 begin
@@ -166,32 +166,32 @@ begin
   Dst := UCS4ToUTF8String(DstUCS4);
 end;
 
-function DecodeStringUTF8(const Src: AnsiString; SrcEncoding: TEncoding): UTF8String;
+function DecodeStringUTF8(const Src: RawByteString; SrcEncoding: TEncoding): UTF8String;
 begin
   DecodeStringUTF8(Src, Result, SrcEncoding);
 end;
 
-function EncodeString(const Src: WideString; out Dst: AnsiString; DstEncoding: TEncoding): boolean;
+function EncodeString(const Src: WideString; out Dst: RawByteString; DstEncoding: TEncoding): boolean;
 begin
   Result := Encoders[DstEncoding].Encode(WideStringToUCS4String(Src), Dst);
 end;
 
-function EncodeString(const Src: WideString; DstEncoding: TEncoding): AnsiString;
+function EncodeString(const Src: WideString; DstEncoding: TEncoding): RawByteString;
 begin
   EncodeString(Src, Result, DstEncoding);
 end;
 
-function EncodeStringUTF8(const Src: UTF8String; out Dst: AnsiString; DstEncoding: TEncoding): boolean;
+function EncodeStringUTF8(const Src: UTF8String; out Dst: RawByteString; DstEncoding: TEncoding): boolean;
 begin
   Result := Encoders[DstEncoding].Encode(UTF8ToUCS4String(Src), Dst);
 end;
 
-function EncodeStringUTF8(const Src: UTF8String; DstEncoding: TEncoding): AnsiString;
+function EncodeStringUTF8(const Src: UTF8String; DstEncoding: TEncoding): RawByteString;
 begin
   EncodeStringUTF8(Src, Result, DstEncoding);
 end;
 
-function CheckReplaceUTF8BOM(var Text: AnsiString): boolean;
+function CheckReplaceUTF8BOM(var Text: RawByteString): boolean;
 begin
   if AnsiStartsStr(UTF8_BOM, Text) then
   begin

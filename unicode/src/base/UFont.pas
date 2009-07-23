@@ -47,13 +47,14 @@ uses
   glext,
   glu,
   sdl,
+  Math,
+  Classes,
+  SysUtils,
   UUnicodeUtils,
   {$IFDEF BITMAP_FONT}
   UTexture,
   {$ENDIF}
-  Math,
-  Classes,
-  SysUtils;
+  UPath;
 
 type
 
@@ -506,7 +507,7 @@ type
       procedure ResetIntern();
 
     protected
-      fFilename: AnsiString;        //**< filename of the font-file
+      fFilename: IPath;             //**< filename of the font-file
       fSize: integer;               //**< Font base size (in pixels)
       fOutset: single;              //**< size of outset extrusion (in pixels)
       fFace: FT_Face;               //**< Holds the height of the font
@@ -537,7 +538,7 @@ type
        * @param  LoadFlags  flags passed to FT_Load_Glyph()
        * @raises Exception  if the font-file could not be loaded
        *}
-      constructor Create(const Filename: AnsiString;
+      constructor Create(const Filename: IPath;
                          Size: integer; Outset: single = 0.0;
                          LoadFlags: FT_Int32 = FT_LOAD_DEFAULT);
 
@@ -567,7 +568,7 @@ type
        * The extrusion in pixels is Size*OutsetAmount
        * (0.0 -> no extrusion, 0.1 -> 10%).
        *}
-      constructor Create(const Filename: AnsiString;
+      constructor Create(const Filename: IPath;
                          Size: integer; OutsetAmount: single = 0.0;
                          UseMipmaps: boolean = true);
 
@@ -585,7 +586,7 @@ type
    *}
   TFTOutlineFont = class(TFont)
     private
-      fFilename: AnsiString;
+      fFilename: IPath;
       fSize: integer;
       fOutset: single;
       fInnerFont, fOutlineFont: TFTFont;
@@ -612,7 +613,7 @@ type
       procedure SetReflectionPass(Enable: boolean); override;
 
     public
-      constructor Create(const Filename: AnsiString;
+      constructor Create(const Filename: IPath;
                          Size: integer; Outset: single;
                          LoadFlags: FT_Int32 = FT_LOAD_DEFAULT);
       destructor Destroy; override;
@@ -646,7 +647,7 @@ type
       function CreateMipmap(Level: integer; Scale: single): TFont; override;
 
     public
-      constructor Create(const Filename: AnsiString;
+      constructor Create(const Filename: IPath;
                          Size: integer; OutsetAmount: single;
                          UseMipmaps: boolean = true);
 
@@ -688,7 +689,7 @@ type
        * @param  InfoFile  the name of the info (.dat) file
        * @raises Exception if the file is corrupted
        *}
-      procedure LoadFontInfo(const InfoFile: AnsiString);
+      procedure LoadFontInfo(const InfoFile: IPath);
 
     protected
       procedure Render(const Text: UCS4String); override;
@@ -708,7 +709,7 @@ type
        *        (y-axis up) and from the lower edge of the glyphs bounding box)
        * @param(Ascender  pixels from baseline to top of highest glyph)
        *}
-      constructor Create(const Filename: AnsiString; Outline: integer;
+      constructor Create(const Filename: IPath; Outline: integer;
                          Baseline, Ascender, Descender: integer);
       destructor Destroy(); override;
 
@@ -1406,7 +1407,7 @@ end;
  *}
 
 constructor TFTFont.Create(
-    const Filename: AnsiString;
+    const Filename: IPath;
     Size: integer; Outset: single;
     LoadFlags: FT_Int32);
 var
@@ -1422,8 +1423,8 @@ begin
   fPart := fpNone;
 
   // load font information
-  if (FT_New_Face(TFreeType.GetLibrary(), PChar(Filename), 0, fFace) <> 0) then
-    raise Exception.Create('FT_New_Face: Could not load font '''  + Filename + '''');
+  if (FT_New_Face(TFreeType.GetLibrary(), PChar(Filename.ToNative), 0, fFace) <> 0) then
+    raise Exception.Create('FT_New_Face: Could not load font '''  + Filename.ToNative + '''');
 
   // support scalable fonts only
   if (not FT_IS_SCALABLE(fFace)) then
@@ -1645,7 +1646,7 @@ end;
  * TFTScalableFont
  *}
 
-constructor TFTScalableFont.Create(const Filename: AnsiString;
+constructor TFTScalableFont.Create(const Filename: IPath;
                    Size: integer; OutsetAmount: single;
                    UseMipmaps: boolean);
 var
@@ -1701,7 +1702,7 @@ end;
  *}
 
 constructor TFTOutlineFont.Create(
-    const Filename: AnsiString;
+    const Filename: IPath;
     Size: integer; Outset: single;
     LoadFlags: FT_Int32);
 begin
@@ -1893,7 +1894,7 @@ end;
  *}
 
 constructor TFTScalableOutlineFont.Create(
-    const Filename: AnsiString;
+    const Filename: IPath;
     Size: integer; OutsetAmount: single;
     UseMipmaps: boolean);
 var
@@ -2555,7 +2556,7 @@ end;
  * TBitmapFont
  *}
 
-constructor TBitmapFont.Create(const Filename: AnsiString; Outline: integer;
+constructor TBitmapFont.Create(const Filename: IPath; Outline: integer;
     Baseline, Ascender, Descender: integer);
 begin
   inherited Create();
@@ -2567,7 +2568,7 @@ begin
   fAscender  := Ascender;
   fDescender := Descender;
 
-  LoadFontInfo(ChangeFileExt(Filename, '.dat'));
+  LoadFontInfo(Filename.SetExtension('.dat'));
 
   ResetIntern();
 end;
@@ -2597,18 +2598,18 @@ begin
     fWidths[Count] := Round(fWidths[Count] * WidthMult) + WidthAdd;
 end;
 
-procedure TBitmapFont.LoadFontInfo(const InfoFile: AnsiString);
+procedure TBitmapFont.LoadFontInfo(const InfoFile: IPath);
 var
-  Stream:  TFileStream;
+  Stream:  THandleStream;
 begin
   FillChar(fWidths[0], Length(fWidths), 0);
 
   Stream := nil;
   try
-    Stream := TFileStream.Create(InfoFile, fmOpenRead);
+    Stream := TBinaryFileStream.Create(InfoFile, fmOpenRead);
     Stream.Read(fWidths, 256);
   except
-    raise Exception.Create('Could not read font info file ''' +  InfoFile + '''');
+    raise Exception.Create('Could not read font info file ''' +  InfoFile.ToNative + '''');
   end;
   Stream.Free;
 end;

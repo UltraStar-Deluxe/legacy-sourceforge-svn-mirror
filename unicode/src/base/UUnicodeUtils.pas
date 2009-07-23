@@ -149,6 +149,11 @@ function UCS4UpperCase(const str: UCS4String): UCS4String; overload;
 function UCS4CharToString(ch: UCS4Char): UCS4String;
 
 {**
+ * @seealso System.Pos()
+ *}
+function UTF8Pos(const substr: UTF8String; const str: UTF8String): Integer;
+
+{**
  * Copies a segment of str starting with Index (1-based) with Count characters (not bytes).
  *}
 function UTF8Copy(const str: UTF8String; Index: Integer = 1; Count: Integer = -1): UTF8String;
@@ -518,6 +523,11 @@ begin
   SetLength(Result, 2);
   Result[0] := ch;
   Result[1] := 0;
+end;
+
+function UTF8Pos(const substr: UTF8String; const str: UTF8String): Integer;
+begin
+  Result := Pos(substr, str);
 end;
 
 function UTF8Copy(const str: UTF8String; Index: Integer; Count: Integer): UTF8String;

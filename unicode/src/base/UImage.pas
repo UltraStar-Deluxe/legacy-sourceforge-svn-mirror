@@ -34,7 +34,8 @@ interface
 {$I switches.inc}
 
 uses
-  SDL;
+  SDL,
+  UPath;
 
 {$DEFINE HavePNG}
 {$DEFINE HaveBMP}
@@ -131,20 +132,20 @@ type
  *******************************************************)
 
 {$IFDEF HavePNG}
-function WritePNGImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WritePNGImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 {$ENDIF}
 {$IFDEF HaveBMP}
-function WriteBMPImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WriteBMPImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 {$ENDIF}
 {$IFDEF HaveJPG}
-function WriteJPGImage(const FileName: string; Surface: PSDL_Surface; Quality: integer): boolean;
+function WriteJPGImage(const FileName: IPath; Surface: PSDL_Surface; Quality: integer): boolean;
 {$ENDIF}
 
 (*******************************************************
  * Image loading
  *******************************************************)
 
-function LoadImage(const Filename: string): PSDL_Surface;
+function LoadImage(const Filename: IPath): PSDL_Surface;
 
 (*******************************************************
  * Image manipulation
@@ -282,17 +283,17 @@ end;
 
 procedure user_read_data(png_ptr: png_structp; data: png_bytep; length: png_size_t); cdecl;
 var
-  inFile: TFileStream;
+  inFile: THandleStream;
 begin
-  inFile := TFileStream(png_get_io_ptr(png_ptr));
+  inFile := THandleStream(png_get_io_ptr(png_ptr));
   inFile.Read(data^, length);
 end;
 
 procedure user_write_data(png_ptr: png_structp; data: png_bytep; length: png_size_t); cdecl;
 var
-  outFile: TFileStream;
+  outFile: THandleStream;
 begin
-  outFile := TFileStream(png_get_io_ptr(png_ptr));
+  outFile := THandleStream(png_get_io_ptr(png_ptr));
   outFile.Write(data^, length);
 end;
 
@@ -323,11 +324,11 @@ end;
 (*
  * ImageData must be in RGB-format
  *)
-function WritePNGImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WritePNGImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 var
   png_ptr:   png_structp;
   info_ptr:  png_infop;
-  pngFile:   TFileStream;
+  pngFile:   THandleStream;
   row:       integer;
   rowData:   array of png_bytep;
 //  rowStride: integer;
@@ -339,9 +340,9 @@ begin
 
   // open file for writing
   try
-    pngFile := TFileStream.Create(FileName, fmCreate);
+    pngFile := TBinaryFileStream.Create(FileName, fmCreate);
   except
-    Log.LogError('Could not open file: "' + FileName + '"', 'WritePngImage');
+    Log.LogError('Could not open file: "' + FileName.ToNative + '"', 'WritePngImage');
     Exit;
   end;
 
@@ -500,9 +501,9 @@ type
 (*
  * ImageData must be in BGR-format
  *)
-function WriteBMPImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WriteBMPImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 var
-  bmpFile:    TFileStream;
+  bmpFile:    THandleStream;
   FileInfo:   BITMAPINFOHEADER;
   FileHeader: BITMAPFILEHEADER;
   Converted:  boolean;
@@ -513,9 +514,9 @@ begin
 
   // open file for writing
   try
-    bmpFile := TFileStream.Create(FileName, fmCreate);
+    bmpFile := TBinaryFileStream.Create(FileName, fmCreate);
   except
-    Log.LogError('Could not open file: "' + FileName + '"', 'WriteBMPImage');
+    Log.LogError('Could not open file: "' + FileName.ToNative + '"', 'WriteBMPImage');
     Exit;
   end;
 
@@ -579,7 +580,7 @@ begin
 
     Result := true;
   finally
-    Log.LogError('Could not write file: "' + FileName + '"', 'WriteBMPImage');
+    Log.LogError('Could not write file: "' + FileName.ToNative + '"', 'WriteBMPImage');
   end;
 
   if (Converted) then
@@ -597,7 +598,7 @@ end;
 
 {$IFDEF HaveJPG}
 
-function WriteJPGImage(const FileName: string; Surface: PSDL_Surface; Quality: integer): boolean;
+function WriteJPGImage(const FileName: IPath; Surface: PSDL_Surface; Quality: integer): boolean;
 var
   {$IFDEF Delphi}
   Bitmap:    TBitmap;
@@ -676,9 +677,9 @@ begin
     try
       // compress image (don't forget this line, otherwise it won't be compressed)
       Jpeg.Compress();
-      Jpeg.SaveToFile(FileName);
+      Jpeg.SaveToFile(FileName.ToNative);
     except
-      Log.LogError('Could not save file: "' + FileName + '"', 'WriteJPGImage');
+      Log.LogError('Could not save file: "' + FileName.ToNative + '"', 'WriteJPGImage');
       Exit;
     end;
     Jpeg.Free;
@@ -763,27 +764,25 @@ end;
 (*
  * Loads an image from the given file
  *)
-function LoadImage(const Filename: string): PSDL_Surface;
+function LoadImage(const Filename: IPath): PSDL_Surface;
 var
-  FilenameFound: string;
+  FilenameCaseAdj: IPath;
 begin
-  Result   := nil;
+  Result := nil;
 
-  // FileExistsInsensitive() requires a var-arg
-  FilenameFound := Filename;
-
-  // try to find the file case insensitive
-  if (not FileExistsInsensitive(FilenameFound)) then
+  // try to adjust filename's case and check if it exists
+  FilenameCaseAdj := Filename.AdjustCase(false);
+  if (not FilenameCaseAdj.IsFile) then
   begin
-    Log.LogError('Image-File does not exist "'+FilenameFound+'"', 'LoadImage');
+    Log.LogError('Image-File does not exist "' + FilenameCaseAdj.ToNative + '"', 'LoadImage');
     Exit;
   end;
 
   // load from file
   try
-    Result := IMG_Load(PChar(FilenameFound));
+    Result := IMG_Load(PChar(FilenameCaseAdj.ToNative));
   except
-    Log.LogError('Could not load from file "'+FilenameFound+'"', 'LoadImage');
+    Log.LogError('Could not load from file "' + FilenameCaseAdj.ToNative + '"', 'LoadImage');
     Exit;
   end;
 end;

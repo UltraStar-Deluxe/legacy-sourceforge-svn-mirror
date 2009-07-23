@@ -38,6 +38,7 @@ uses
   SDL,
   UCommon,
   UDisplay,
+  UPath,
   UFiles,
   UIni,
   ULanguage,
@@ -842,9 +843,9 @@ var
   I: integer;
   CoverButtonIndex: integer;
   CoverButton: TButton;
-  CoverName: string;
   CoverTexture: TTexture;
   Cover: TCover;
+  CoverFile: IPath;
   Song: TSong;
 begin
   if (Length(CatSongs.Song) <= 0) then
@@ -859,7 +860,7 @@ begin
     CoverButton := nil;
 
     // create a clickable cover
-    CoverButtonIndex := AddButton(300 + I*250, 140, 200, 200, '', TEXTURE_TYPE_PLAIN, Theme.Song.Cover.Reflections);
+    CoverButtonIndex := AddButton(300 + I*250, 140, 200, 200, PATH_NONE, TEXTURE_TYPE_PLAIN, Theme.Song.Cover.Reflections);
     if (CoverButtonIndex > -1) then
       CoverButton := Button[CoverButtonIndex];
     if (CoverButton = nil) then
@@ -868,18 +869,16 @@ begin
     Song := CatSongs.Song[I];
 
     // if cover-image is not found then show 'no cover'
-    if (not FileExists(Song.Path + Song.Cover)) then
-      Song.Cover := '';
-
-    if (Song.Cover = '') then
-      CoverName := Skin.GetTextureFileName('SongCover')
-    else
-      CoverName := Song.Path + Song.Cover;
+    CoverFile := Song.Path.Append(Song.Cover);
+    if (not CoverFile.IsFile()) then
+      Song.Cover := PATH_NONE;
+    if (Song.Cover.IsUnset) then
+      CoverFile := Skin.GetTextureFileName('SongCover');
 
     // load cover and cache its texture
-    Cover := Covers.FindCover(CoverName);
+    Cover := Covers.FindCover(CoverFile);
     if (Cover = nil) then
-      Cover := Covers.AddCover(CoverName);
+      Cover := Covers.AddCover(CoverFile);
 
     // use the cached texture
     // TODO: this is a workaround until the new song-loading works.
@@ -919,7 +918,7 @@ begin
     end;
 
     // Set visibility of video icon
-    Static[VideoIcon].Visible := (CatSongs.Song[Interaction].Video <> '');
+    Static[VideoIcon].Visible := CatSongs.Song[Interaction].Video.IsSet;
 
     // Set texts
     Text[TextArtist].Text := CatSongs.Song[Interaction].Artist;
@@ -1472,7 +1471,7 @@ begin
 
   // if preview is deactivated: load musicfile now
   if (IPreviewVolumeVals[Ini.PreviewVolume] = 0) then
-    AudioPlayback.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3);
+    AudioPlayback.Open(CatSongs.Song[Interaction].Path.Append(CatSongs.Song[Interaction].Mp3));
 
   // if hide then stop music (for party mode popup on exit)
   if (Display.NextScreen <> @ScreenSing) and
@@ -1651,7 +1650,7 @@ begin
   if not assigned(Song) then
     Exit;
 
-  if AudioPlayback.Open(Song.Path + Song.Mp3) then
+  if AudioPlayback.Open(Song.Path.Append(Song.Mp3)) then
   begin
     AudioPlayback.Position := AudioPlayback.Length / 4;
     // set preview volume

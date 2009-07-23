@@ -34,10 +34,13 @@ interface
 {$I switches.inc}
 
 uses
+  Math,
+  SysUtils,
+  gl,
+  SDL,
+  UPath,
   UMenu,
   UMusic,
-  SDL,
-  SysUtils,
   UFiles,
   UTime,
   USongs,
@@ -46,8 +49,6 @@ uses
   UTexture,
   UMenuText,
   ULyrics,
-  Math,
-  gl,
   UThemes;
 
 type
@@ -55,10 +56,10 @@ type
     private
       TextF:          array[0..1] of integer;
       TextN:          integer;
+      fPath:          IPath;
     public
       Tex_Background: TTexture;
       FadeOut:        boolean;
-      Path:           string;
       BackScreen:     pointer;
       procedure AddBox(X, Y, W, H: real);
       constructor Create; override;
@@ -107,7 +108,7 @@ begin
       SDLK_ESCAPE:
         begin
           //Empty Filename and go to last Screen
-          ConversionFileName := '';
+          ConversionFileName := PATH_NONE;
           AudioPlayback.PlaySound(SoundLib.Back);
           FadeTo(BackScreen);
         end;
@@ -117,14 +118,14 @@ begin
           if (Interaction = 2) then
           begin
             //Update Filename and go to last Screen
-            ConversionFileName := Text[TextN].Text;
+            ConversionFileName := Path(Text[TextN].Text);
             AudioPlayback.PlaySound(SoundLib.Back);
             FadeTo(BackScreen);
           end
           else if (Interaction = 1) then
           begin
             //Empty Filename and go to last Screen
-            ConversionFileName := '';
+            ConversionFileName := PATH_NONE;
             AudioPlayback.PlaySound(SoundLib.Back);
             FadeTo(BackScreen);
           end;
@@ -176,7 +177,7 @@ begin
 
   // file name
   AddBox(20, 540, 500, 40);
-  TextN := AddText(50, 548, 0, 24, 0, 0, 0, ConversionFileName);
+  TextN := AddText(50, 548, 0, 24, 0, 0, 0, ConversionFileName.ToUTF8);
   AddInteraction(iText, TextN);
 
   // buttons

@@ -45,14 +45,17 @@ type
   IPath = interface;
 
   {**
-   * TUnicodeFileStream
+   * TBinaryFileStream (inherited from THandleStream)
    *}
   {$IFDEF MSWINDOWS}
-  TUnicodeFileStream = class(TTntFileStream)
+  TBinaryFileStream = class(TTntFileStream)
   {$ELSE}
-  TUnicodeFileStream = class(TFileStream)
+  TBinaryFileStream = class(TFileStream)
   {$ENDIF}
   public
+    {**
+     * @seealso TFileStream.Create for valid Mode parameters
+     *}
     constructor Create(const FileName: IPath; Mode: Word);
   end;
 
@@ -65,13 +68,28 @@ type
     procedure SaveToFile(const FileName: IPath);
   end;
 
+  TTextFileStream = class(TBinaryFileStream)
+    function ReadLine(var Line: UTF8String): boolean; overload;
+    function ReadLine(var Line: AnsiString): boolean; overload;
+    procedure Write(Str: RawByteString);
+    procedure WriteLine(Line: RawByteString = '');
+  end;
+
+  {**
+   * pdKeep:   Keep path as is, neither remove or append a delimiter
+   * pdAppend: Append a delimiter if path does not have a trailing one 
+   * pdRemove: Remove a trailing delimiter from the path 
+   *}
+  TPathDelimOption = (pdKeep, pdAppend, pdRemove);
+
   IPathDynArray = array of IPath;
-  
+
   {**
    * IPath
    * The Path's pathname is immutable and cannot be changed after creation.
    *}
   IPath = interface
+  ['{686BF103-CE43-4598-B85D-A2C3AF950897}']
     {**
      * Returns the path as an UTF8 encoded string.
      * If UseNativeDelim is set to true, the native path delimiter ('\' on win32)
@@ -100,11 +118,6 @@ type
      *}
     function Open(Mode: LongWord): THandle;
 
-    {**
-     * Note: Stream must be freed with TUniFileStream.Free after usage
-     *}
-    function OpenStream(Mode: Word): TUnicodeFileStream;
-
     {** @seealso SysUtils.ExtractFileDrive() *}
     function GetDrive(): IPath;
 
@@ -125,7 +138,9 @@ type
      * The file itself is not changed, use Rename() for this task.
      * @seealso SysUtils.ChangeFileExt()
      *}
-    function SetExtension(const Extension: IPath): IPath;
+    function SetExtension(const Extension: IPath): IPath; overload;
+    function SetExtension(const Extension: RawByteString): IPath; overload;
+    function SetExtension(const Extension: WideString): IPath; overload;
 
     {**
      * Returns the representation of the path relative to Basename.
@@ -143,16 +158,19 @@ type
      * end with a path delimiter one is inserted in front of the Child path.
      * Example: Path('parent').Append(Path('child')) -> Path('parent/child')
      *}
-    function Append(const Child: IPath): IPath;
+    function Append(const Child: IPath; DelimOption: TPathDelimOption = pdKeep): IPath; overload;
+    function Append(const Child: RawByteString; DelimOption: TPathDelimOption = pdKeep): IPath; overload;
+    function Append(const Child: WideString; DelimOption: TPathDelimOption = pdKeep): IPath; overload;
 
     {**
-     * Splits the path into its components.
-     * Example: C:\test\dir -> ['C:\', 'test\', 'dir']
+     * Splits the path into its components. Path delimiters are not removed from
+     * components. 
+     * Example: C:\test\my\dir -> ['C:\', 'test\', 'my\', 'dir']
      *}
     function SplitDirs(): IPathDynArray;
 
     {**
-     * Returns the parent directory or PathNone if none exists.
+     * Returns the parent directory or PATH_NONE if none exists.
      *}
     function GetParent(): IPath;
 
@@ -171,10 +189,10 @@ type
     function AdjustCase(AdjustAllLevels: boolean): IPath;
 
     {** @seealso SysUtils.IncludeTrailingPathDelimiter() *}
-    function IncludeTrailingPathDelimiter(): IPath;
+    function AppendPathDelim(): IPath;
 
     {** @seealso SysUtils.ExcludeTrailingPathDelimiter() *}
-    function ExcludeTrailingPathDelimiter(): IPath;
+    function RemovePathDelim(): IPath;
 
     function Exists(): boolean;
     function IsFile(): boolean;
@@ -188,12 +206,28 @@ type
     function SetReadOnly(ReadOnly: boolean): boolean;
 
     {**
+     * Checks if this path points to nothing, that means the path consists of
+     * the empty string '' and hence equals PATH_NONE.
+     * This is a shortcut for IPath.Equals('') or IPath.Equals(PATH_NONE).
+     * If IsUnset() returns true this path and PATH_NONE are equal but they must
+     * not be identical as the references might point to different objects.
+     *
+     * Example:
+     *   Path('').Equals(PATH_EMPTY) -> true
+     *   Path('') = PATH_EMPTY       -> false
+     *}
+    function IsUnset(): boolean;
+    function IsSet(): boolean;
+
+    {**
      * Compares this path with Other and returns true if both paths are
      * equal. Both paths are expanded and trailing slashes excluded before
      * comparison. If IgnoreCase is true, the case will be ignored on
      * case-sensitive filesystems.
      *}
-    function Equals(const Other: IPath; IgnoreCase: boolean = false): boolean;
+    function Equals(const Other: IPath; IgnoreCase: boolean = false): boolean; overload;
+    function Equals(const Other: RawByteString; IgnoreCase: boolean = false): boolean; overload;
+    function Equals(const Other: WideString; IgnoreCase: boolean = false): boolean; overload;
 
     {**
      * Searches for a file in DirList. The Result is nil if the file was
@@ -222,17 +256,17 @@ type
  * - On Apple only UTF8 is supported
  * - Same applies to Unix with LC_CTYPE set to UTF8 encoding (default on newer systems)
  *}
-function Path(const PathName: RawByteString): IPath; overload;
+function Path(const PathName: RawByteString; DelimOption: TPathDelimOption = pdKeep): IPath; overload;
 
 {**
  * Creates a new path with the given UTF-16 pathname.
  *}
-function Path(const PathName: WideString): IPath; overload;
+function Path(const PathName: WideString; DelimOption: TPathDelimOption = pdKeep): IPath; overload;
 
 {**
- * Returns a reference to a singleton with path simply set to ''.
+ * Returns a singleton for Path('').
  *}
-function PathNone(): IPath;
+function PATH_NONE(): IPath;
 
 implementation
 
@@ -247,7 +281,7 @@ type
       {**
        * Unifies the filename. Path-delimiters are replaced by '/'.
        *}
-      procedure Unify();
+      procedure Unify(DelimOption: TPathDelimOption);
 
       {**
        * Returns a copy of fName with path delimiters changed to '/'.
@@ -257,7 +291,7 @@ type
       procedure AssertRefCount; inline;
 
     public
-      constructor Create(const Name: UTF8String);
+      constructor Create(const Name: UTF8String; DelimOption: TPathDelimOption);
       destructor Destroy(); override;
 
       function ToUTF8(UseNativeDelim: boolean): UTF8String;
@@ -265,27 +299,36 @@ type
       function ToNative(): RawByteString;
 
       function Open(Mode: LongWord): THandle;
-      function OpenStream(Mode: Word): TUnicodeFileStream;
 
       function GetDrive(): IPath;
       function GetPath(): IPath;
       function GetDir(): IPath;
       function GetName(): IPath;
       function GetExtension(): IPath;
-      function SetExtension(const Extension: IPath): IPath;
+
+      function SetExtension(const Extension: IPath): IPath; overload;
+      function SetExtension(const Extension: RawByteString): IPath; overload;
+      function SetExtension(const Extension: WideString): IPath; overload;
+
       function GetRelativePath(const BaseName: IPath): IPath;
       function GetAbsolutePath(): IPath;
       function GetParent(): IPath;
       function SplitDirs(): IPathDynArray;
-      function Append(const Child: IPath): IPath;
 
-      function Equals(const Other: IPath; IgnoreCase: boolean): boolean;
+      function Append(const Child: IPath; DelimOption: TPathDelimOption): IPath; overload;
+      function Append(const Child: RawByteString; DelimOption: TPathDelimOption): IPath; overload;
+      function Append(const Child: WideString; DelimOption: TPathDelimOption): IPath; overload;
+
+      function Equals(const Other: IPath; IgnoreCase: boolean): boolean; overload;
+      function Equals(const Other: RawByteString; IgnoreCase: boolean): boolean; overload;
+      function Equals(const Other: WideString; IgnoreCase: boolean): boolean; overload;
+
       function IsChildOf(const Parent: IPath; Direct: boolean): boolean;
 
       function AdjustCase(AdjustAllLevels: boolean): IPath;
 
-      function IncludeTrailingPathDelimiter(): IPath;
-      function ExcludeTrailingPathDelimiter(): IPath;
+      function AppendPathDelim(): IPath;
+      function RemovePathDelim(): IPath;
 
       function GetFileAge(): integer; overload;
       function GetFileAge(out FileDateTime: TDateTime): boolean; overload;
@@ -297,7 +340,10 @@ type
       function SetAttr(Attr: Integer): boolean;
       function IsReadOnly(): boolean;
       function SetReadOnly(ReadOnly: boolean): boolean;
-      
+
+      function IsUnset(): boolean;
+      function IsSet(): boolean;
+
       function FileSearch(const DirList: IPath): IPath;
 
       function CreateFile(): THandle;
@@ -308,34 +354,36 @@ type
       function CopyFile(const Target: IPath; FailIfExists: boolean): boolean;
   end;
 
-function Path(const PathName: RawByteString): IPath;
+function Path(const PathName: RawByteString; DelimOption: TPathDelimOption): IPath;
 begin
   if (IsUTF8String(PathName)) then
-    Result := TPathImpl.Create(PathName)
+    Result := TPathImpl.Create(PathName, DelimOption)
   else if (IsNativeUTF8()) then
-    Result := PathNone
+    Result := PATH_NONE
   else
-    Result := TPathImpl.Create(AnsiToUtf8(PathName));
+    Result := TPathImpl.Create(AnsiToUtf8(PathName), DelimOption);
 end;
 
-function Path(const PathName: WideString): IPath;
+function Path(const PathName: WideString; DelimOption: TPathDelimOption): IPath;
 begin
-  Result := TPathImpl.Create(UTF8Encode(PathName));
+  Result := TPathImpl.Create(UTF8Encode(PathName), DelimOption);
 end;
 
 
 
 procedure TPathImpl.AssertRefCount;
 begin
+  {$IFDEF FPC}
   if (FRefCount <= 0) then
     raise Exception.Create('RefCount error: ' + inttostr(FRefCount));
+  {$ENDIF}
 end;
 
-constructor TPathImpl.Create(const Name: UTF8String);
+constructor TPathImpl.Create(const Name: UTF8String; DelimOption: TPathDelimOption);
 begin
   inherited Create();
   fName := Name;
-  Unify();
+  Unify(DelimOption);
 end;
 
 destructor TPathImpl.Destroy();
@@ -343,7 +391,7 @@ begin
   inherited;
 end;
 
-procedure TPathImpl.Unify();
+procedure TPathImpl.Unify(DelimOption: TPathDelimOption);
 var
   I: integer;
 begin
@@ -352,6 +400,12 @@ begin
   begin
     if (fName[I] in ['\', '/']) and (fName[I] <> PathDelim) then
       fName[I] := PathDelim;
+  end;
+
+  // Include/ExcludeTrailingPathDelimiter need PathDelim as path delimiter 
+  case DelimOption of
+    pdAppend: fName := IncludeTrailingPathDelimiter(fName);
+    pdRemove: fName := ExcludeTrailingPathDelimiter(fName);
   end;
 end;
 
@@ -430,6 +484,16 @@ begin
   Result := FileSystem.ChangeFileExt(Self, Extension);
 end;
 
+function TPathImpl.SetExtension(const Extension: RawByteString): IPath;
+begin
+  Result := SetExtension(Path(Extension));
+end;
+
+function TPathImpl.SetExtension(const Extension: WideString): IPath;
+begin
+  Result := SetExtension(Path(Extension));
+end;
+
 function TPathImpl.GetRelativePath(const BaseName: IPath): IPath;
 begin
   AssertRefCount;
@@ -448,9 +512,9 @@ var
 begin
   AssertRefCount;
 
-  Result := PathNone;
+  Result := PATH_NONE;
 
-  CurPath := Self.ExcludeTrailingPathDelimiter();
+  CurPath := Self.RemovePathDelim();
   // check if current path has a parent (no further '/')
   if (Pos(PathDelim, CurPath.ToUTF8()) = 0) then
     Exit;
@@ -491,7 +555,7 @@ begin
     // TODO: remove this workaround for FPC bug
     TmpPath := CurPath;
     CurPath := TmpPath.GetParent();
-  until (CurPath = PathNone);
+  until (CurPath = PATH_NONE);
 
   // reverse list
   SetLength(Result, Length(Components));
@@ -499,26 +563,54 @@ begin
     Result[I] := Components[High(Components)-I];
 end;
 
-function TPathImpl.Append(const Child: IPath): IPath;
+function TPathImpl.Append(const Child: IPath; DelimOption: TPathDelimOption): IPath;
+var
+  TmpResult: IPath;
 begin
   AssertRefCount;
 
   if (fName = '') then
-    Result := Child
+    TmpResult := Child
   else
-    Result := Path(Self.IncludeTrailingPathDelimiter().ToUTF8() + Child.ToUTF8());
+    TmpResult := Path(Self.AppendPathDelim().ToUTF8() + Child.ToUTF8());
+
+  case DelimOption of
+    pdKeep: Result := TmpResult;
+    pdAppend: Result := TmpResult.AppendPathDelim;
+    pdRemove: Result := TmpResult.RemovePathDelim;
+  end;
+end;
+
+function TPathImpl.Append(const Child: RawByteString; DelimOption: TPathDelimOption): IPath;
+begin
+  Result := Append(Path(Child), DelimOption);
+end;
+
+function TPathImpl.Append(const Child: WideString; DelimOption: TPathDelimOption): IPath;
+begin
+  Result := Append(Path(Child), DelimOption);
 end;
 
 function TPathImpl.Equals(const Other: IPath; IgnoreCase: boolean): boolean;
 var
   SelfPath, OtherPath: UTF8String;
 begin
-  SelfPath := Self.GetAbsolutePath().ExcludeTrailingPathDelimiter().ToUTF8();
-  OtherPath := Other.GetAbsolutePath().ExcludeTrailingPathDelimiter().ToUTF8();
+  SelfPath := Self.GetAbsolutePath().RemovePathDelim().ToUTF8();
+  OtherPath := Other.GetAbsolutePath().RemovePathDelim().ToUTF8();
   if (FileSystem.IsCaseSensitive() and not IgnoreCase) then
     Result := (CompareStr(SelfPath, OtherPath) = 0)
   else
     Result := (CompareText(SelfPath, OtherPath) = 0);
+end;
+
+function TPathImpl.Equals(const Other: RawByteString; IgnoreCase: boolean): boolean;
+begin
+  Result := Equals(Path(Other), IgnoreCase);
+end;
+
+function TPathImpl.Equals(const Other: WideString; IgnoreCase: boolean): boolean;
+begin
+  Result := Equals(Path(Other), IgnoreCase);
 end;
 
 function TPathImpl.IsChildOf(const Parent: IPath; Direct: boolean): boolean;
@@ -533,11 +625,11 @@ begin
     // TODO: remove workaround for fpc refcount bug
     TmpPath := Self.GetParent();
     TmpPath2 := TmpPath.GetAbsolutePath();
-    SelfPath := TmpPath2.IncludeTrailingPathDelimiter().ToUTF8();
+    SelfPath := TmpPath2.AppendPathDelim().ToUTF8();
 
     // TODO: remove workaround for fpc refcount bug
     TmpPath := Parent.GetAbsolutePath();
-    ParentPath := TmpPath.IncludeTrailingPathDelimiter().ToUTF8();
+    ParentPath := TmpPath.AppendPathDelim().ToUTF8();
 
     // simply check if this paths parent path (SelfPath) equals ParentPath
     Result := (SelfPath = ParentPath);
@@ -546,11 +638,11 @@ begin
   begin
     // TODO: remove workaround for fpc refcount bug
     TmpPath := Self.GetAbsolutePath();
-    SelfPath := TmpPath.IncludeTrailingPathDelimiter().ToUTF8();
+    SelfPath := TmpPath.AppendPathDelim().ToUTF8();
 
     // TODO: remove workaround for fpc refcount bug
     TmpPath := Parent.GetAbsolutePath();
-    ParentPath := TmpPath.IncludeTrailingPathDelimiter().ToUTF8();
+    ParentPath := TmpPath.AppendPathDelim().ToUTF8();
 
     if (Length(SelfPath) <= Length(ParentPath)) then
       Exit;
@@ -583,12 +675,12 @@ begin
 
   // extract name component of current path
   // TODO: remove workaround for fpc refcount bug
-  TmpPath := CurPath.ExcludeTrailingPathDelimiter();
+  TmpPath := CurPath.RemovePathDelim();
   LocalName := TmpPath.GetName();
 
   // try to adjust parent
   OldParent := CurPath.GetParent();
-  if (OldParent <> PathNone) then
+  if (OldParent <> PATH_NONE) then
   begin
     if (not AdjustAllLevels) then
     begin
@@ -663,13 +755,13 @@ begin
   end;
 end;
 
-function TPathImpl.IncludeTrailingPathDelimiter(): IPath;
+function TPathImpl.AppendPathDelim(): IPath;
 begin
   AssertRefCount;
   Result := FileSystem.IncludeTrailingPathDelimiter(Self);
 end;
 
-function TPathImpl.ExcludeTrailingPathDelimiter(): IPath;
+function TPathImpl.RemovePathDelim(): IPath;
 begin
   AssertRefCount;
   Result := FileSystem.ExcludeTrailingPathDelimiter(Self);
@@ -691,11 +783,6 @@ end;
 function TPathImpl.Open(Mode: LongWord): THandle;
 begin
   Result := FileSystem.FileOpen(Self, Mode);
-end;
-
-function TPathImpl.OpenStream(Mode: Word): TUnicodeFileStream;
-begin
-  Result := TUnicodeFileStream.Create(Self, Mode);
 end;
 
 function TPathImpl.GetFileAge(): integer;
@@ -759,6 +846,16 @@ begin
   Result := FileSystem.FileSetReadOnly(Self, ReadOnly);
 end;
 
+function TPathImpl.IsUnset(): boolean;
+begin
+  Result := (fName = '');
+end;
+
+function TPathImpl.IsSet(): boolean;
+begin
+  Result := (fName <> '');
+end;
+
 function TPathImpl.FileSearch(const DirList: IPath): IPath;
 begin
   AssertRefCount;
@@ -786,23 +883,38 @@ begin
 end;
 
 
-{ TUnicodeFileStream }
+{ TBinaryFileStream }
 
+constructor TBinaryFileStream.Create(const FileName: IPath; Mode: Word);
+begin
 {$IFDEF MSWINDOWS}
-
-constructor TUnicodeFileStream.Create(const FileName: IPath; Mode: Word);
-begin
   inherited Create(FileName.ToWide(), Mode);
-end;
-
 {$ELSE}
-
-constructor TUnicodeFileStream.Create(const FileName: IPath; Mode: Word);
-begin
   inherited Create(FileName.ToNative(), Mode);
+{$ENDIF}
 end;
 
-{$ENDIF}
+{ TTextFileStream }
+
+function TTextFileStream.ReadLine(var Line: UTF8String): boolean;
+begin
+  // TODO
+end;
+
+function TTextFileStream.ReadLine(var Line: AnsiString): boolean;
+begin
+  // TODO
+end;
+
+procedure TTextFileStream.WriteLine(Line: RawByteString);
+begin
+  Self.WriteBuffer(Line[1], Length(Line));
+end;
+
+procedure TTextFileStream.Write(Str: RawByteString);
+begin
+  Self.WriteBuffer(Str[1], Length(Str));
+end;
 
 { TUnicodeMemoryStream }
 
@@ -810,7 +922,7 @@ procedure TUnicodeMemoryStream.LoadFromFile(const FileName: IPath);
 var
   Stream: TStream;
 begin
-  Stream := TUnicodeFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+  Stream := TBinaryFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   try
     LoadFromStream(Stream);
   finally
@@ -822,7 +934,7 @@ procedure TUnicodeMemoryStream.SaveToFile(const FileName: IPath);
 var
   Stream: TStream;
 begin
-  Stream := TUnicodeFileStream.Create(FileName, fmCreate);
+  Stream := TBinaryFileStream.Create(FileName, fmCreate);
   try
     SaveToStream(Stream);
   finally
@@ -831,17 +943,17 @@ begin
 end;
 
 var
-  PathNone_Singelton: IPath;
+  PATH_NONE_Singelton: IPath;
 
-function PathNone(): IPath;
+function PATH_NONE(): IPath;
 begin
-  Result := PathNone_Singelton;
+  Result := PATH_NONE_Singelton;
 end;
 
 initialization
-  PathNone_Singelton := Path('');
+  PATH_NONE_Singelton := Path('');
 
 finalization
-  PathNone_Singelton := nil;
+  PATH_NONE_Singelton := nil;
 
 end.

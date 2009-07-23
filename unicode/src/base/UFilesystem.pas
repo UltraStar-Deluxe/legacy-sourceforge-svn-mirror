@@ -223,7 +223,7 @@ end;
 
 function TFileSystemImpl.CreateFileStream(const FileName: IPath; Mode: Word): THandleStream;
 begin
-  Result := TUnicodeFileStream.Create(FileName, Mode);
+  Result := TBinaryFileStream.Create(FileName, Mode);
 end;
 
 function TFileSystemImpl.FileFind(const FilePattern: IPath; Attr: Integer): IFileIterator;

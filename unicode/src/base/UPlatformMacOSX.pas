@@ -36,7 +36,8 @@ interface
 uses
   Classes,
   ULog,
-  UPlatform;
+  UPlatform,
+  UPath;
 
 type
   {**
@@ -93,13 +94,13 @@ type
        * GetBundlePath returns the path to the application bundle
        * UltraStarDeluxe.app.
        *}
-      function GetBundlePath: WideString;
+      function GetBundlePath: IPath;
 
       {**
        * GetApplicationSupportPath returns the path to
        * $HOME/Library/Application Support/UltraStarDeluxe.
        *}
-      function GetApplicationSupportPath: WideString;
+      function GetApplicationSupportPath: IPath;
 
       {**
        * see the description of @link(Init).
@@ -116,30 +117,24 @@ type
       procedure Init; override;
 
       {**
-       * DirectoryFindFiles returns all entries of a folder with names and
-       * booleans about their type, i.e. file or directory.
-       *}
-      function  DirectoryFindFiles(Dir, Filter: WideString; ReturnAllSubDirs: boolean): TDirectoryEntryArray; override;
-
-      {**
        * GetLogPath returns the path for log messages. Currently it is set to
        * $HOME/Library/Application Support/UltraStarDeluxe/Log.
        *}
-      function  GetLogPath        : WideString; override;
+      function  GetLogPath        : IPath; override;
 
       {**
        * GetGameSharedPath returns the path for shared resources. Currently it
        * is set to /Library/Application Support/UltraStarDeluxe.
        * However it is not used.
        *}
-      function  GetGameSharedPath : WideString; override;
+      function  GetGameSharedPath : IPath; override;
 
       {**
        * GetGameUserPath returns the path for user resources. Currently it is
        * set to $HOME/Library/Application Support/UltraStarDeluxe.
        * This is where a user can add songs, themes, ....
        *}
-      function  GetGameUserPath   : WideString; override;
+      function  GetGameUserPath   : IPath; override;
   end;
 
 implementation
@@ -248,87 +243,38 @@ begin
   ChDir(OldBaseDir);
 end;
 
-function TPlatformMacOSX.GetBundlePath: WideString;
+function TPlatformMacOSX.GetBundlePath: IPath;
 var
-  i, pos : integer;
+  TmpPath: IPath;
 begin
   // Mac applications are packaged in folders.
   // Cutting the last two folders yields the application folder.
-
-  Result := GetExecutionDir();
-  for i := 1 to 2 do
-  begin
-    pos := Length(Result);
-    repeat
-      Delete(Result, pos, 1);
-      pos := Length(Result);
-    until (pos = 0) or (Result[pos] = '/');
-  end;
+  TmpPath := GetExecutionDir().GetParent;
+  Result := TmpPath.GetParent;
 end;
 
-function TPlatformMacOSX.GetApplicationSupportPath: WideString;
+function TPlatformMacOSX.GetApplicationSupportPath: IPath;
 const
   PathName : string = '/Library/Application Support/UltraStarDeluxe';
+  HomeDir: IPath;
 begin
-  Result := GetEnvironmentVariable('HOME') + PathName + '/';
+  HomeDir := GetEnvironmentVariable('HOME');
+  Result := HomeDir.Append(PathName, true);
 end;
 
-function TPlatformMacOSX.GetLogPath: WideString;
+function TPlatformMacOSX.GetLogPath: IPath;
 begin
-  Result := GetApplicationSupportPath + 'Logs';
+  Result := GetApplicationSupportPath.Append('Logs');
 end;
 
-function TPlatformMacOSX.GetGameSharedPath: WideString;
+function TPlatformMacOSX.GetGameSharedPath: IPath;
 begin
   Result := GetApplicationSupportPath;
 end;
 
-function TPlatformMacOSX.GetGameUserPath: WideString;
+function TPlatformMacOSX.GetGameUserPath: IPath;
 begin
   Result := GetApplicationSupportPath;
-end;
-
-{ TODO: REMOVE }
-function TPlatformMacOSX.DirectoryFindFiles(Dir, Filter: WideString; ReturnAllSubDirs: boolean): TDirectoryEntryArray;
-var
-  i       : integer;
-  TheDir  : pdir;
-  ADirent : pDirent;
-  lAttrib : integer;
-begin
-  i := 0;
-  Filter := LowerCase(Filter);
-
-  TheDir := FpOpenDir(Dir);
-  if Assigned(TheDir) then
-  begin
-    repeat
-      ADirent := FpReadDir(TheDir^);
-
-      if Assigned(ADirent) and (ADirent^.d_name <> '.') and (ADirent^.d_name <> '..') then
-      begin
-        lAttrib := FileGetAttr(Dir + ADirent^.d_name);
-        if ReturnAllSubDirs and ((lAttrib and faDirectory) <> 0) then
-        begin
-          SetLength(Result, i + 1);
-          Result[i].Name        := ADirent^.d_name;
-          Result[i].IsDirectory := true;
-          Result[i].IsFile      := false;
-          i := i + 1;
-        end
-        else if (Length(Filter) = 0) or (Pos( Filter, LowerCase(ADirent^.d_name)) > 0) then
-        begin
-          SetLength(Result, i + 1);
-          Result[i].Name        := ADirent^.d_name;
-          Result[i].IsDirectory := false;
-          Result[i].IsFile      := true;
-          i := i + 1;
-        end;
-      end;
-    until (ADirent = nil);
-
-    FpCloseDir(TheDir^);
-  end;
 end;
 
 end.
