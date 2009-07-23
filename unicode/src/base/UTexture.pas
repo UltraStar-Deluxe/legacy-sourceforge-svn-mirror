@@ -198,7 +198,7 @@ begin
   for TextureIndex := 0 to High(Texture) do
   begin
     CurrentTexture := @Texture[TextureIndex];
-    if (CurrentTexture.Name = Name) and
+    if (CurrentTexture.Name.Equals(Name)) and
        (CurrentTexture.Typ = Typ) then
     begin
       // colorized textures must match in their color too
