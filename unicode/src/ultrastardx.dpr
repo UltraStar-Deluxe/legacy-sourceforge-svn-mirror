@@ -50,11 +50,7 @@ uses
   {$IFDEF Unix}
   cthreads,            // THIS MUST be the first used unit in FPC if Threads are used!!
                        // (see http://wiki.lazarus.freepascal.org/Multithreaded_Application_Tutorial)
-  // cwstring crashes in FPC 2.2.2 so do not use the cwstring stuff
-  {.$IFNDEF DARWIN}
-  {$IFDEF NOIGNORE}
-  cwstring,            // Enable Unicode support. MacOSX misses some references to iconv.
-  {$ENDIF}
+  cwstring,            // Enable Unicode support
   {$ENDIF}
 
   {$IFNDEF FPC}
