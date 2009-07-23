@@ -76,7 +76,6 @@ uses
   UTexture,
   ULanguage,
   UParty,
-  USongs,
   UScreenSong,
   ULog,
   UUnicodeUtils;

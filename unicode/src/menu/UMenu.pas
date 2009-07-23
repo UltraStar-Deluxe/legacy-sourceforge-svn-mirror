@@ -1616,7 +1616,7 @@ begin
   if RightMbESC and (MouseButton = SDL_BUTTON_RIGHT) and BtnDown then
   begin
     //if RightMbESC is set, send ESC keypress
-    Result:=ParseInput(SDLK_ESCAPE, #0, true);
+    Result:=ParseInput(SDLK_ESCAPE, 0, true);
   end;
 
   nBut := InteractAt(X, Y);
@@ -1628,18 +1628,18 @@ begin
     if (MouseButton = SDL_BUTTON_LEFT) and BtnDown then
     begin
       //click button
-      Result:=ParseInput(SDLK_RETURN, #0, true);
+      Result:=ParseInput(SDLK_RETURN, 0, true);
     end;
     if (Interactions[nBut].Typ = iSelectS) then
     begin
       //forward/backward in select slide with mousewheel
       if (MouseButton = SDL_BUTTON_WHEELDOWN) and BtnDown then
       begin
-        ParseInput(SDLK_RIGHT, #0, true);
+        ParseInput(SDLK_RIGHT, 0, true);
       end;
       if (MouseButton = SDL_BUTTON_WHEELUP) and BtnDown then
       begin
-        ParseInput(SDLK_LEFT, #0, true);
+        ParseInput(SDLK_LEFT, 0, true);
       end;
     end;
   end

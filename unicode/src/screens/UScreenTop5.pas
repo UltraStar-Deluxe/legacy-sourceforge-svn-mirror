@@ -113,7 +113,7 @@ begin
   Result := true;
   if (MouseButton = SDL_BUTTON_LEFT) and BtnDown then
     //left-click anywhere sends return
-    ParseInput(SDLK_RETURN, #0, true);
+    ParseInput(SDLK_RETURN, 0, true);
 end;
 
 constructor TScreenTop5.Create;

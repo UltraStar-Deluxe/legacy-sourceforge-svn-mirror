@@ -199,7 +199,7 @@ begin
   Result := True;
   if (MouseButton = SDL_BUTTON_LEFT) and BtnDown then begin
     //left-click anywhere sends return
-    ParseInput(SDLK_RETURN, #0, true);
+    ParseInput(SDLK_RETURN, 0, true);
   end;
 end;
 

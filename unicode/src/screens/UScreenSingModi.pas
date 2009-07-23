@@ -64,7 +64,7 @@ type
       constructor Create; override;
       procedure onShow; override;
       //procedure onShowFinish; override;
-      function ParseInput(PressedKey: cCardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function Draw: boolean; override;
       procedure Finish; override;
   end;
