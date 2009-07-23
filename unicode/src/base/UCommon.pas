@@ -82,17 +82,6 @@ procedure ZeroMemory(Destination: pointer; Length: dword);
 function MakeLong(a, b: word): longint;
 {$ENDIF}
 
-type
-  TDirectoryEntry = record
-    Name:        IPath;
-    IsDirectory: boolean;
-    IsFile:      boolean;
-  end;
-
-  TDirectoryEntryArray = array of TDirectoryEntry;
-
-function DirectoryFindFiles(Dir: IPath; Filter: UTF8String; ReturnAllSubDirs: boolean): TDirectoryEntryArray;
-
 // A stable alternative to TList.Sort() (use TList.Sort() if applicable, see below)
 procedure MergeSort(List: TList; CompareFunc: TListSortCompare);
 
@@ -297,46 +286,6 @@ begin
 end;
 
 {$ENDIF}
-
-function DirectoryFindFiles(Dir: IPath; Filter: UTF8String; ReturnAllSubDirs: Boolean): TDirectoryEntryArray;
-var
-  i: integer;
-  Iter: IFileIterator;
-  FileInfo: TFileInfo;
-  FileName: IPath;
-  Attrib: integer;
-begin
-  i := 0;
-  Filter := UTF8LowerCase(Filter);
-
-  // search for all files and directories
-  Iter := FileSystem.FileFind(Dir.Append('*'), faAnyFile);
-  while (Iter.HasNext) do
-  begin
-    FileInfo := Iter.Next;
-    FileName := FileInfo.Name;
-    if (not FileName.Equals('.')) and (not FileName.Equals('..')) then
-    begin
-      Attrib := Dir.Append(FileName).GetAttr();
-      if ReturnAllSubDirs and ((Attrib and faDirectory) <> 0) then
-      begin
-        SetLength(Result, i + 1);
-        Result[i].Name        := FileName;
-        Result[i].IsDirectory := true;
-        Result[i].IsFile      := false;
-        i := i + 1;
-      end
-      else if (Filter = '') or (Pos(Filter, LowerCase(FileName.ToUTF8)) > 0) then
-      begin
-        SetLength(Result, i + 1);
-        Result[i].Name        := FileName;
-        Result[i].IsDirectory := false;
-        Result[i].IsFile      := true;
-        i := i + 1;
-      end;
-    end;
-  end;
-end;
 
 {$IFDEF FPC}
 function RandomRange(aMin: integer; aMax: integer): integer;

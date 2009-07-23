@@ -81,6 +81,8 @@ type
     Length: string;
   end;
 
+  TPathDynArray = array of IPath;
+
   {$IFDEF USE_PSEUDO_THREAD}
   TSongs = class(TPseudoThread)
   {$ELSE}
@@ -105,6 +107,7 @@ type
 
 
     procedure LoadSongList;     // load all songs
+    procedure FindFilesByExtension(const Dir: IPath; const Ext: IPath; Recursive: Boolean; var Files: TPathDynArray);
     procedure BrowseDir(Dir: IPath); // should return number of songs in the future
     procedure BrowseTXTFiles(Dir: IPath);
     procedure BrowseXMLFiles(Dir: IPath);
@@ -275,78 +278,86 @@ begin
   BrowseXMLFiles(Dir);
 end;
 
-procedure TSongs.BrowseTXTFiles(Dir: IPath);
+procedure TSongs.FindFilesByExtension(const Dir: IPath; const Ext: IPath; Recursive: Boolean; var Files: TPathDynArray);
 var
-  i:     integer;
-  Files: TDirectoryEntryArray;
-  lSong: TSong;
+  Iter: IFileIterator;
+  FileInfo: TFileInfo;
+  FileName: IPath;
 begin
-
-  try
-    Files := DirectoryFindFiles(Dir, '.txt', true)
-  except
-    Log.LogError('Couldn''t deal with directory/file: ' + Dir.ToNative + ' in TSongs.BrowseTXTFiles')
-  end;
-
-  for i := 0 to Length(Files) - 1 do
+  // search for all files and directories
+  Iter := FileSystem.FileFind(Dir.Append('*'), faAnyFile);
+  while (Iter.HasNext) do
   begin
-    if Files[i].IsDirectory then
+    FileInfo := Iter.Next;
+    FileName := FileInfo.Name;
+    if ((FileInfo.Attr and faDirectory) <> 0) then
     begin
-      BrowseTXTFiles(Dir.Append(Files[i].Name, pdAppend));  //Recursive Call
+      if Recursive and (not FileName.Equals('.')) and (not FileName.Equals('..')) then
+        FindFilesByExtension(Dir.Append(FileName), Ext, true, Files);
     end
     else
     begin
-      lSong := TSong.Create(Dir.Append(Files[i].Name));
-
-      if lSong.Analyse then
-        SongList.add(lSong)
-      else
+      if (Ext.Equals(FileName.GetExtension(), true)) then
       begin
-        Log.LogError('AnalyseFile failed for "' + Files[i].Name.ToNative + '".');
-        FreeAndNil(lSong);
+        SetLength(Files, Length(Files)+1);
+        Files[High(Files)] := Dir.Append(FileName);
       end;
-
     end;
   end;
-  SetLength(Files, 0);
+end;
 
+procedure TSongs.BrowseTXTFiles(Dir: IPath);
+var
+  I: integer;
+  Files: TPathDynArray;
+  Song: TSong;
+  Extension: IPath;
+begin
+  SetLength(Files, 0);
+  Extension := Path('.txt');
+  FindFilesByExtension(Dir, Extension, true, Files);
+
+  for I := 0 to High(Files) do
+  begin
+    Song := TSong.Create(Files[I]);
+
+    if Song.Analyse then
+      SongList.Add(Song)
+    else
+    begin
+      Log.LogError('AnalyseFile failed for "' + Files[I].ToNative + '".');
+      FreeAndNil(Song);
+    end;
+  end;
+
+  SetLength(Files, 0);
 end;
 
 procedure TSongs.BrowseXMLFiles(Dir: IPath);
 var
-  i:     integer;
-  Files: TDirectoryEntryArray;
-  lSong: TSong;
+  I: integer;
+  Files: TPathDynArray;
+  Song: TSong;
+  Extension: IPath;
 begin
+  SetLength(Files, 0);
+  Extension := Path('.xml');
+  FindFilesByExtension(Dir, Extension, true, Files);
 
-  try
-    Files := DirectoryFindFiles(Dir, '.xml', true)
-  except
-    Log.LogError('Couldn''t deal with directory/file: ' + Dir.ToNative + ' in TSongs.BrowseXMLFiles')
-  end;
-
-  for i := 0 to Length(Files) - 1 do
+  for I := 0 to High(Files) do
   begin
-    if Files[i].IsDirectory then
-    begin
-      BrowseXMLFiles(Dir.Append(Files[i].Name, pdAppend)); // Recursive Call
-    end
+    Song := TSong.Create(Files[I]);
+
+    if Song.AnalyseXML then
+      SongList.Add(Song)
     else
     begin
-      lSong := TSong.Create(Dir.Append(Files[i].Name));
-
-      if lSong.AnalyseXML then
-        SongList.add(lSong)
-      else
-      begin
-        Log.LogError('AnalyseFile failed for "' + Files[i].Name.ToNative + '".');
-        freeandnil(lSong);
-      end;
-
+      Log.LogError('AnalyseFile failed for "' + Files[I].ToNative + '".');
+      FreeAndNil(Song);
     end;
   end;
-  SetLength(Files, 0);
 
+  SetLength(Files, 0);
 end;
 
 (*
