@@ -251,7 +251,7 @@ begin
             end
             else
             begin
-              ScreenPopupError.ShowPopup(Language.Translate('ERROR_EDITOR_NO_TRACK_SELECTED'));
+              ScreenPopupError.ShowPopup(Language.Translate('EDITOR_ERROR_NO_TRACK_SELECTED'));
             end;
             {$ENDIF}
           end;
