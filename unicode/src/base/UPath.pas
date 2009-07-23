@@ -36,6 +36,7 @@ interface
 uses
   SysUtils,
   Classes,
+  IniFiles,
   {$IFDEF MSWINDOWS}
   TntClasses,
   {$ENDIF}
@@ -52,6 +53,23 @@ type
   public
     procedure LoadFromFile(const FileName: IPath);
     procedure SaveToFile(const FileName: IPath);
+  end;
+
+  {**
+   * Unicode capable IniFile implementation.
+   * TMemIniFile and TIniFile are not able to handle INI-files with
+   * an UTF-8 BOM. This implementation checks if an UTF-8 BOM exists
+   * and removes it from the internal string-list.
+   * UTF8Encoded is set accordingly.
+   *}
+  TUnicodeMemIniFile = class(TMemIniFile)
+  private
+    FFilename: IPath;
+    FUTF8Encoded: boolean;
+  public
+    constructor Create(const FileName: IPath; UTF8Encoded: boolean = false); reintroduce;
+    procedure UpdateFile; override;
+    property UTF8Encoded: boolean READ FUTF8Encoded WRITE FUTF8Encoded;
   end;
   
   {**
@@ -363,6 +381,7 @@ implementation
 
 uses
   RTLConsts,
+  UTextEncoding,
   UFilesystem;
 
 {*
@@ -1312,6 +1331,66 @@ begin
     Stream.Free;
   end;
 end;
+
+{ TUnicodeMemIniFile }
+
+constructor TUnicodeMemIniFile.Create(const FileName: IPath; UTF8Encoded: boolean);
+var
+  List: TStringList;
+  Stream: TBinaryFileStream;
+  BOMBuf: array[0..2] of AnsiChar;
+begin
+  inherited Create('');
+  FFilename := FileName;
+  FUTF8Encoded := UTF8Encoded;
+
+  if FileName.Exists() then
+  begin
+    List := nil;
+    Stream := nil;
+    try
+      List := TStringList.Create;
+      Stream := TBinaryFileStream.Create(FileName, fmOpenRead);
+      if (Stream.Read(BOMBuf[0], SizeOf(BOMBuf)) = 3) and
+         (CompareMem(PChar(UTF8_BOM), @BomBuf, Length(UTF8_BOM))) then
+      begin
+        // truncate BOM
+        FUTF8Encoded := true;
+      end
+      else
+      begin
+        // rewind file
+        Stream.Seek(0, soBeginning);
+      end;
+      List.LoadFromStream(Stream);
+      SetStrings(List);
+    finally
+      Stream.Free;
+      List.Free;
+    end;
+  end;
+end;
+
+procedure TUnicodeMemIniFile.UpdateFile;
+var
+  List: TStringList;
+  Stream: TBinaryFileStream;
+begin
+  List := nil;
+  Stream := nil;
+  try
+    List := TStringList.Create;
+    GetStrings(List);
+    Stream := TBinaryFileStream.Create(FFileName, fmCreate);
+    if UTF8Encoded then
+      Stream.Write(UTF8_BOM, Length(UTF8_BOM));
+    List.SaveToStream(Stream);
+  finally
+    List.Free;
+    Stream.Free;
+  end;
+end;
+
 
 var
   PATH_NONE_Singelton: IPath;
