@@ -219,7 +219,7 @@ end;
 procedure TScreenPartyNewRound.OnShow;
 var
   I: integer;
-  function GetTeamPlayers(const Num: byte): string;
+  function GetTeamPlayers(const Num: byte): UTF8String;
   var
     Players: array of UTF8String;
     J: byte;
@@ -230,7 +230,7 @@ var
     //Create Players array
     SetLength(Players, PartySession.Teams.TeamInfo[Num-1].NumPlayers);
     for J := 0 to PartySession.Teams.TeamInfo[Num-1].NumPlayers-1 do
-      Players[J] := string(PartySession.Teams.TeamInfo[Num-1].PlayerInfo[J].Name);
+      Players[J] := UTF8String(PartySession.Teams.TeamInfo[Num-1].PlayerInfo[J].Name);
 
     //Implode and Return
     Result := Language.Implode(Players);
@@ -365,7 +365,7 @@ begin
   if (PartySession.Teams.NumTeams >= 1) then
   begin
     Text[TextScoreTeam1].Text := InttoStr(PartySession.Teams.TeamInfo[0].Score);
-    Text[TextNameTeam1].Text := string(PartySession.Teams.TeamInfo[0].Name);
+    Text[TextNameTeam1].Text := UTF8String(PartySession.Teams.TeamInfo[0].Name);
     Text[TextTeam1Players].Text := GetTeamPlayers(1);
 
     Text[TextScoreTeam1].Visible := true;
@@ -386,7 +386,7 @@ begin
   if (PartySession.Teams.NumTeams >= 2) then
   begin
     Text[TextScoreTeam2].Text := InttoStr(PartySession.Teams.TeamInfo[1].Score);
-    Text[TextNameTeam2].Text := string(PartySession.Teams.TeamInfo[1].Name);
+    Text[TextNameTeam2].Text := UTF8String(PartySession.Teams.TeamInfo[1].Name);
     Text[TextTeam2Players].Text := GetTeamPlayers(2);
 
     Text[TextScoreTeam2].Visible := true;
@@ -407,7 +407,7 @@ begin
   if (PartySession.Teams.NumTeams >= 3) then
   begin
     Text[TextScoreTeam3].Text := InttoStr(PartySession.Teams.TeamInfo[2].Score);
-    Text[TextNameTeam3].Text := string(PartySession.Teams.TeamInfo[2].Name);
+    Text[TextNameTeam3].Text := UTF8String(PartySession.Teams.TeamInfo[2].Name);
     Text[TextTeam3Players].Text := GetTeamPlayers(3);
 
     Text[TextScoreTeam3].Visible := true;

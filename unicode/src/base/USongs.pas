@@ -76,7 +76,7 @@ type
   end;
 
   TScore = record
-    Name:   widestring;
+    Name:   UTF8String;
     Score:  integer;
     Length: string;
   end;

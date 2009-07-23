@@ -61,7 +61,7 @@ type
 
   PPLayer = ^TPlayer;
   TPlayer = record
-    Name:           string;
+    Name:           UTF8String;
 
     // Index in Teaminfo record
     TeamID:         byte;

@@ -116,7 +116,7 @@ type
     // voice
     procedure LogVoice(SoundNr: integer);
     // buffer
-    procedure LogBuffer(const buf : Pointer; const bufLength : Integer; const filename : string);
+    procedure LogBuffer(const buf : Pointer; const bufLength : Integer; const filename : IPath);
   end;
 
 procedure DebugWriteln(const aString: String);
@@ -420,21 +420,19 @@ begin
   FS.Free;
 end;
 
-procedure TLog.LogBuffer(const buf: Pointer; const bufLength: Integer; const filename: string);
+procedure TLog.LogBuffer(const buf: Pointer; const bufLength: Integer; const filename: IPath);
 var
-  f : TFileStream;
+  f : TBinaryFileStream;
 begin
-  f := nil;
-
   try
-    f := TFileStream.Create( filename, fmCreate);
-    f.Write( buf^, bufLength);
-    f.Free;
-  except
-    on e : Exception do begin
-      Log.LogError('TLog.LogBuffer: Failed to log buffer into file "' + filename + '". ErrMsg: ' + e.Message);
+    f := TBinaryFileStream.Create( filename, fmCreate);
+    try
+      f.Write( buf^, bufLength);
+    finally
       f.Free;
     end;
+  except on e : Exception do
+    Log.LogError('TLog.LogBuffer: Failed to log buffer into file "' + filename.ToNative + '". ErrMsg: ' + e.Message);
   end;
 end;
 

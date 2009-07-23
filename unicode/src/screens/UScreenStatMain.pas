@@ -47,9 +47,9 @@ type
     private
       //Some Stat Value that don't need to be calculated 2 times
       SongsWithVid: cardinal;
-      function FormatOverviewIntro(FormatStr: string): string;
-      function FormatSongOverview(FormatStr: string): string;
-      function FormatPlayerOverview(FormatStr: string): string;
+      function FormatOverviewIntro(FormatStr: UTF8String): UTF8String;
+      function FormatSongOverview(FormatStr: UTF8String): UTF8String;
+      function FormatPlayerOverview(FormatStr: UTF8String): UTF8String;
     public
       TextOverview:    integer;
       constructor Create; override;
@@ -178,7 +178,7 @@ begin
   SetOverview;
 end;
 
-function TScreenStatMain.FormatOverviewIntro(FormatStr: string): string;
+function TScreenStatMain.FormatOverviewIntro(FormatStr: UTF8String): UTF8String;
 var
   Year, Month, Day: word;
 begin
@@ -199,10 +199,10 @@ begin
   end;
 end;
 
-function TScreenStatMain.FormatSongOverview(FormatStr: string): string;
+function TScreenStatMain.FormatSongOverview(FormatStr: UTF8String): UTF8String;
 var
   CntSongs, CntSungSongs, CntVidSongs: integer;
-  MostPopSongArtist, MostPopSongTitle: string;
+  MostPopSongArtist, MostPopSongTitle: UTF8String;
   StatList: TList;
   MostSungSong: TStatResultMostSungSong;
 begin
@@ -243,12 +243,12 @@ begin
   end;
 end;
 
-function TScreenStatMain.FormatPlayerOverview(FormatStr: string): string;
+function TScreenStatMain.FormatPlayerOverview(FormatStr: UTF8String): UTF8String;
 var
   CntPlayers: integer;
   BestScoreStat:    TStatResultBestScores;
   BestSingerStat:   TStatResultBestSingers;
-  BestPlayer, BestScorePlayer: string;
+  BestPlayer, BestScorePlayer: UTF8String;
   BestPlayerScore, BestScore: integer;
   SingerStats, ScoreStats: TList;
 begin
@@ -303,7 +303,7 @@ end;
 
 procedure TScreenStatMain.SetOverview;
 var
-  Overview: string;
+  Overview: UTF8String;
 begin
   // Format overview
   Overview := FormatOverviewIntro(Language.Translate('STAT_OVERVIEW_INTRO')) + '\n \n' + 

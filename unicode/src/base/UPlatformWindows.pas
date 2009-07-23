@@ -61,44 +61,6 @@ uses
   Windows,
   UConfig;
 
-(*
-function  FindMatchingFileW(var F: TSearchRecW): Integer; forward;
-function  DirectoryExistsW(const Directory: widestring): Boolean; forward;
-
-function FindMatchingFileW(var F: TSearchRecW): Integer;
-var
-  LocalFileTime: TFileTime;
-begin
-  with F do
-  begin
-    while FindData.dwFileAttributes and ExcludeAttr <> 0 do
-{$IFDEF Delphi}
-      if not FindNextFileW(FindHandle, FindData) then
-{$ELSE}
-      if not FindNextFileW(FindHandle, @FindData) then
-{$ENDIF}
-      begin
-        Result := GetLastError;
-        Exit;
-      end;
-    FileTimeToLocalFileTime(FindData.ftLastWriteTime, LocalFileTime);
-    FileTimeToDosDateTime(LocalFileTime, LongRec(Time).Hi, LongRec(Time).Lo);
-    Size := FindData.nFileSizeLow;
-    Attr := FindData.dwFileAttributes;
-    Name := FindData.cFileName;
-  end;
-  Result := 0;
-end;
-
-function DirectoryExistsW(const Directory: widestring): Boolean;
-var
-  Code: Integer;
-begin
-  Code := GetFileAttributesW(PWideChar(Directory));
-  Result := (Code <> -1) and (FILE_ATTRIBUTE_DIRECTORY and Code <> 0);
-end;
-*)
-
 //------------------------------
 //Start more than One Time Prevention
 //------------------------------

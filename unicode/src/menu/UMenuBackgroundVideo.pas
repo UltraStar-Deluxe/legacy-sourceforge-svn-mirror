@@ -73,7 +73,7 @@ type
     public
       constructor Create;
 
-      function    GetBGVideo(filename: string): TBGVideo;
+      function    GetBGVideo(filename: IPath): TBGVideo;
       procedure   RemoveItem(
       procedure   FreeAllItems;
 
@@ -190,7 +190,7 @@ begin
 
 end;
 
-function    TBGVideoPool.GetBGVideo(filename: string): TBGVideo;
+function    TBGVideoPool.GetBGVideo(filename: IPath): TBGVideo;
 begin
 
 end;

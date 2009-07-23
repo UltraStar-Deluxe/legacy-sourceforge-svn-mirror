@@ -131,7 +131,7 @@ type
       procedure FixSelected; //Show Wrong Song when Tabs on Fix
       procedure FixSelected2; //Show Wrong Song when Tabs on Fix
       procedure ShowCatTL(Cat: integer);// Show Cat in Top left
-      procedure ShowCatTLCustom(Caption: string);// Show Custom Text in Top left
+      procedure ShowCatTLCustom(Caption: UTF8String);// Show Custom Text in Top left
       procedure HideCatTL;// Show Cat in Tob left
       procedure Refresh; //Refresh Song Sorting
       procedure ChangeMusic;
@@ -213,7 +213,7 @@ begin
 end;
 //Show Wrong Song when Tabs on Fix End
 
-procedure TScreenSong.ShowCatTLCustom(Caption: string);// Show Custom Text in Top left
+procedure TScreenSong.ShowCatTLCustom(Caption: UTF8String);// Show Custom Text in Top left
 begin
   Text[TextCat].Text := Caption;
   Text[TextCat].Visible := true;

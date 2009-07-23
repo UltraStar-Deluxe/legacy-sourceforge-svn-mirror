@@ -96,7 +96,7 @@ type
       ColB:      array[0..100] of real;
       Len:       real;
       SelTrack:  integer;     // index of selected track
-      //FileName:  string;
+      //FileName:  IPath;
 
       {$IFDEF UseMIDIPort}
       MidiFile:  TMidiFile;

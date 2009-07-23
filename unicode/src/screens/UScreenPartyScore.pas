@@ -245,7 +245,7 @@ begin
   if (ScreenSingModi.PlayerInfo.NumPlayers >= 1) then
   begin
     Text[TextScoreTeam1].Text := InttoStr(ScreenSingModi.PlayerInfo.Playerinfo[0].Score);
-    Text[TextNameTeam1].Text := string(ScreenSingModi.TeamInfo.Teaminfo[0].Name);
+    Text[TextNameTeam1].Text := UTF8String(ScreenSingModi.TeamInfo.Teaminfo[0].Name);
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
@@ -274,7 +274,7 @@ begin
   if (ScreenSingModi.PlayerInfo.NumPlayers >= 2) then
   begin
     Text[TextScoreTeam2].Text := InttoStr(ScreenSingModi.PlayerInfo.Playerinfo[1].Score);
-    Text[TextNameTeam2].Text := string(ScreenSingModi.TeamInfo.Teaminfo[1].Name);
+    Text[TextNameTeam2].Text := UTF8String(ScreenSingModi.TeamInfo.Teaminfo[1].Name);
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
@@ -303,7 +303,7 @@ begin
   if (ScreenSingModi.PlayerInfo.NumPlayers >= 3) then
   begin
     Text[TextScoreTeam3].Text := InttoStr(ScreenSingModi.PlayerInfo.Playerinfo[2].Score);
-    Text[TextNameTeam3].Text := string(ScreenSingModi.TeamInfo.Teaminfo[2].Name);
+    Text[TextNameTeam3].Text := UTF8String(ScreenSingModi.TeamInfo.Teaminfo[2].Name);
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then

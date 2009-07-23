@@ -128,7 +128,7 @@ type
 
       {**
        * Splits lines in Text seperated by newline (char-code #13).
-       * @param Text   UTF-8 encoded string
+       * @param Text   UCS-4 encoded string
        * @param Lines  splitted UCS4String lines
        *}
       procedure SplitLines(const Text: UCS4String; var Lines: TUCS4StringArray);

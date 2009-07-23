@@ -457,7 +457,7 @@ const
   SOUNDID_CLICK    = 5;
   LAST_SOUNDID = SOUNDID_CLICK;
 
-  BaseSoundFilenames: array[0..LAST_SOUNDID] of string = (
+  BaseSoundFilenames: array[0..LAST_SOUNDID] of IPath = (
     '%SOUNDPATH%/Common start.mp3',                 // Start
     '%SOUNDPATH%/Common back.mp3',                  // Back
     '%SOUNDPATH%/menu swoosh.mp3',                  // Swoosh

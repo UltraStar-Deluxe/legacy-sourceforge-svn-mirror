@@ -33,6 +33,9 @@ interface
 
 {$I switches.inc}
 
+uses
+  UUnicodeUtils;
+
 type
   TLanguageEntry = record
     ID:     AnsiString;  //**< identifier (ASCII)
@@ -60,7 +63,7 @@ type
 
     public
       constructor Create;
-      function Translate(const Text: UTF8String): UTF8String;
+      function Translate(const Text: RawByteString): UTF8String;
       procedure ChangeLanguage(const Language: AnsiString);
       procedure AddConst(const ID: AnsiString; const Text: UTF8String);
       procedure ChangeConst(const ID: AnsiString; const Text: UTF8String);
@@ -208,7 +211,7 @@ end;
  * setting. If Text is not a known ID, it will be returned as is. 
  * @param Text either an ID or an UTF-8 encoded string 
  *}
-function TLanguage.Translate(const Text: UTF8String): UTF8String;
+function TLanguage.Translate(const Text: RawByteString): UTF8String;
 var
   E:  integer; // entry
   ID: AnsiString;

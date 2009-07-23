@@ -408,9 +408,9 @@ begin
         Button[3].Visible := true;
         SelectsS[0].Visible := false;
 
-        Button[0].Text[0].Text := string(PartySession.Teams.Teaminfo[0].Name);
-        Button[1].Text[0].Text := string(PartySession.Teams.Teaminfo[1].Name);
-        Button[2].Text[0].Text := string(PartySession.Teams.Teaminfo[2].Name);
+        Button[0].Text[0].Text := UTF8String(PartySession.Teams.Teaminfo[0].Name);
+        Button[1].Text[0].Text := UTF8String(PartySession.Teams.Teaminfo[1].Name);
+        Button[2].Text[0].Text := UTF8String(PartySession.Teams.Teaminfo[2].Name);
         Button[3].Text[0].Text := Language.Translate('SONG_MENU_CANCEL');
 
         // set right interaction
