@@ -355,22 +355,22 @@ end;
 
 function CompareByEdition(Song1, Song2: Pointer): integer;
 begin
-  Result := CompareText(TSong(Song1).Edition, TSong(Song2).Edition);
+  Result := UTF8CompareText(TSong(Song1).Edition, TSong(Song2).Edition);
 end;
 
 function CompareByGenre(Song1, Song2: Pointer): integer;
 begin
-  Result := CompareText(TSong(Song1).Genre, TSong(Song2).Genre);
+  Result := UTF8CompareText(TSong(Song1).Genre, TSong(Song2).Genre);
 end;
 
 function CompareByTitle(Song1, Song2: Pointer): integer;
 begin
-  Result := CompareText(TSong(Song1).Title, TSong(Song2).Title);
+  Result := UTF8CompareText(TSong(Song1).Title, TSong(Song2).Title);
 end;
 
 function CompareByArtist(Song1, Song2: Pointer): integer;
 begin
-  Result := CompareText(TSong(Song1).Artist, TSong(Song2).Artist);
+  Result := UTF8CompareText(TSong(Song1).Artist, TSong(Song2).Artist);
 end;
 
 function CompareByFolder(Song1, Song2: Pointer): integer;
@@ -380,7 +380,7 @@ end;
 
 function CompareByLanguage(Song1, Song2: Pointer): integer;
 begin
-  Result := CompareText(TSong(Song1).Language, TSong(Song2).Language);
+  Result := UTF8CompareText(TSong(Song1).Language, TSong(Song2).Language);
 end;
 
 procedure TSongs.Sort(Order: integer);
