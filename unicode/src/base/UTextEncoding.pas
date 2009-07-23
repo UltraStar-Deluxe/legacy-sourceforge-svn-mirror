@@ -19,8 +19,8 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  *
- * $URL: https://ultrastardx.svn.sourceforge.net/svnroot/ultrastardx/trunk/src/menu/UMenuText.pas $
- * $Id: UMenuText.pas 1485 2008-10-28 20:16:05Z tobigun $
+ * $URL$
+ * $Id$
  *}
 
 unit UTextEncoding;
