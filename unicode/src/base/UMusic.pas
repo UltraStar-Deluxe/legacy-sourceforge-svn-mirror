@@ -401,7 +401,7 @@ type
   (*
   IVideoDecoder = Interface( IGenericDecoder )
   ['{2F184B2B-FE69-44D5-9031-0A2462391DCA}']
-      function Open(const Filename: string): TVideoDecodeStream;
+      function Open(const Filename: IPath): TVideoDecodeStream;
   end;
   *)
 

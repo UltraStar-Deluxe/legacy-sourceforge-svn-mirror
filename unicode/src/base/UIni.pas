@@ -256,65 +256,65 @@ const
   IMicBoost:      array[0..3] of UTF8String = ('Off', '+6dB', '+12dB', '+18dB');
 
 var
-  ILanguageTranslated:         array of string;
+  ILanguageTranslated:         array of UTF8String;
 
-  IDifficultyTranslated:       array[0..2] of string  = ('Easy', 'Medium', 'Hard');
-  ITabsTranslated:             array[0..1] of string  = ('Off', 'On');
+  IDifficultyTranslated:       array[0..2] of UTF8String  = ('Easy', 'Medium', 'Hard');
+  ITabsTranslated:             array[0..1] of UTF8String  = ('Off', 'On');
 
-  ISortingTranslated:          array[0..7] of string  = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2');
+  ISortingTranslated:          array[0..7] of UTF8String  = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2');
 
-  IDebugTranslated:            array[0..1] of string  = ('Off', 'On');
+  IDebugTranslated:            array[0..1] of UTF8String  = ('Off', 'On');
 
-  IFullScreenTranslated:       array[0..1] of string  = ('Off', 'On');
-  IVisualizerTranslated:       array[0..2] of string  = ('Off', 'WhenNoVideo','On');
+  IFullScreenTranslated:       array[0..1] of UTF8String  = ('Off', 'On');
+  IVisualizerTranslated:       array[0..2] of UTF8String  = ('Off', 'WhenNoVideo','On');
 
-  IBackgroundMusicTranslated:  array[0..1] of string  = ('Off', 'On');
-  ISingWindowTranslated:       array[0..1] of string  = ('Small', 'Big');
+  IBackgroundMusicTranslated:  array[0..1] of UTF8String  = ('Off', 'On');
+  ISingWindowTranslated:       array[0..1] of UTF8String  = ('Small', 'Big');
 
   //SingBar Mod
-  IOscilloscopeTranslated:     array[0..1] of string  = ('Off', 'On');
+  IOscilloscopeTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
 
-  ISpectrumTranslated:         array[0..1] of string  = ('Off', 'On');
-  ISpectrographTranslated:     array[0..1] of string  = ('Off', 'On');
-  IMovieSizeTranslated:        array[0..2] of string  = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
+  ISpectrumTranslated:         array[0..1] of UTF8String  = ('Off', 'On');
+  ISpectrographTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
+  IMovieSizeTranslated:        array[0..2] of UTF8String  = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
 
-  IClickAssistTranslated:      array[0..1] of string  = ('Off', 'On');
-  IBeatClickTranslated:        array[0..1] of string  = ('Off', 'On');
-  ISavePlaybackTranslated:     array[0..1] of string  = ('Off', 'On');
+  IClickAssistTranslated:      array[0..1] of UTF8String  = ('Off', 'On');
+  IBeatClickTranslated:        array[0..1] of UTF8String  = ('Off', 'On');
+  ISavePlaybackTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
 
-  IVoicePassthroughTranslated: array[0..1] of string  = ('Off', 'On');
+  IVoicePassthroughTranslated: array[0..1] of UTF8String  = ('Off', 'On');
 
   //Song Preview
-  IPreviewVolumeTranslated:    array[0..10] of string = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
+  IPreviewVolumeTranslated:    array[0..10] of UTF8String = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
 
-  IAudioOutputBufferSizeTranslated: array[0..9] of string  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
+  IAudioOutputBufferSizeTranslated: array[0..9] of UTF8String  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
 
-  IAudioInputBufferSizeTranslated:  array[0..9] of string  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
+  IAudioInputBufferSizeTranslated:  array[0..9] of UTF8String  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
 
-  IPreviewFadingTranslated:    array[0..5] of string  = ('Off', '1 Sec', '2 Secs', '3 Secs', '4 Secs', '5 Secs');
+  IPreviewFadingTranslated:    array[0..5] of UTF8String  = ('Off', '1 Sec', '2 Secs', '3 Secs', '4 Secs', '5 Secs');
 
-  ILyricsFontTranslated:       array[0..2] of string = ('Plain', 'OLine1', 'OLine2');
-  ILyricsEffectTranslated:     array[0..4] of string = ('Simple', 'Zoom', 'Slide', 'Ball', 'Shift');
-  ISolmizationTranslated:      array[0..3] of string = ('Off', 'Euro', 'Jap', 'American');
-  INoteLinesTranslated:        array[0..1] of string = ('Off', 'On');
+  ILyricsFontTranslated:       array[0..2] of UTF8String = ('Plain', 'OLine1', 'OLine2');
+  ILyricsEffectTranslated:     array[0..4] of UTF8String = ('Simple', 'Zoom', 'Slide', 'Ball', 'Shift');
+  ISolmizationTranslated:      array[0..3] of UTF8String = ('Off', 'Euro', 'Jap', 'American');
+  INoteLinesTranslated:        array[0..1] of UTF8String = ('Off', 'On');
 
-  IColorTranslated:            array[0..8] of string = ('Blue', 'Green', 'Pink', 'Red', 'Violet', 'Orange', 'Yellow', 'Brown', 'Black');
+  IColorTranslated:            array[0..8] of UTF8String = ('Blue', 'Green', 'Pink', 'Red', 'Violet', 'Orange', 'Yellow', 'Brown', 'Black');
 
   // Advanced
-  ILoadAnimationTranslated:    array[0..1] of string = ('Off', 'On');
-  IEffectSingTranslated:       array[0..1] of string = ('Off', 'On');
-  IScreenFadeTranslated:       array[0..1] of string = ('Off', 'On');
-  IAskbeforeDelTranslated:     array[0..1] of string = ('Off', 'On');
-  IOnSongClickTranslated:      array[0..2] of string = ('Sing', 'Select Players', 'Open Menu');
-  ILineBonusTranslated:        array[0..1] of string = ('Off', 'On');
-  IPartyPopupTranslated:       array[0..1] of string = ('Off', 'On');
+  ILoadAnimationTranslated:    array[0..1] of UTF8String = ('Off', 'On');
+  IEffectSingTranslated:       array[0..1] of UTF8String = ('Off', 'On');
+  IScreenFadeTranslated:       array[0..1] of UTF8String = ('Off', 'On');
+  IAskbeforeDelTranslated:     array[0..1] of UTF8String = ('Off', 'On');
+  IOnSongClickTranslated:      array[0..2] of UTF8String = ('Sing', 'Select Players', 'Open Menu');
+  ILineBonusTranslated:        array[0..1] of UTF8String = ('Off', 'On');
+  IPartyPopupTranslated:       array[0..1] of UTF8String = ('Off', 'On');
 
-  IJoypadTranslated:           array[0..1] of string = ('Off', 'On');
-  IMouseTranslated:            array[0..2] of string = ('Off', 'Hardware Cursor', 'Software Cursor');
+  IJoypadTranslated:           array[0..1] of UTF8String = ('Off', 'On');
+  IMouseTranslated:            array[0..2] of UTF8String = ('Off', 'Hardware Cursor', 'Software Cursor');
 
   // Recording options
-  IChannelPlayerTranslated:    array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
-  IMicBoostTranslated:         array[0..3] of string = ('Off', '+6dB', '+12dB', '+18dB');
+  IChannelPlayerTranslated:    array[0..6] of UTF8String = ('Off', '1', '2', '3', '4', '5', '6');
+  IMicBoostTranslated:         array[0..3] of UTF8String = ('Off', '+6dB', '+12dB', '+18dB');
 
 implementation
 
@@ -325,7 +325,6 @@ uses
   ULanguage,
   UPlatform,
   UMain,
-  UPath,
   URecord,
   USkins,
   UPathUtils,
@@ -546,14 +545,6 @@ begin
   IMicBoostTranslated[2]              := '+12dB';
   IMicBoostTranslated[3]              := '+18dB';
 
-end;
-
-(**
- * Returns the filename without its fileextension
- *)
-function TIni.RemoveFileExt(FullName: string): string;
-begin
-  Result := ChangeFileExt(FullName, '');
 end;
 
 (**
