@@ -284,26 +284,26 @@ end;
 
 procedure user_read_data(png_ptr: png_structp; data: png_bytep; length: png_size_t); cdecl;
 var
-  inFile: THandleStream;
+  inFile: TStream;
 begin
-  inFile := THandleStream(png_get_io_ptr(png_ptr));
+  inFile := TStream(png_get_io_ptr(png_ptr));
   inFile.Read(data^, length);
 end;
 
 procedure user_write_data(png_ptr: png_structp; data: png_bytep; length: png_size_t); cdecl;
 var
-  outFile: THandleStream;
+  outFile: TStream;
 begin
-  outFile := THandleStream(png_get_io_ptr(png_ptr));
+  outFile := TStream(png_get_io_ptr(png_ptr));
   outFile.Write(data^, length);
 end;
 
 procedure user_flush_data(png_ptr: png_structp); cdecl;
 //var
-//  outFile: TFileStream;
+//  outFile: TStream;
 begin
   // binary files are flushed automatically, Flush() works with Text-files only
-  //outFile := TFileStream(png_get_io_ptr(png_ptr));
+  //outFile := TStream(png_get_io_ptr(png_ptr));
   //outFile.Flush();
 end;
 
@@ -329,7 +329,7 @@ function WritePNGImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 var
   png_ptr:   png_structp;
   info_ptr:  png_infop;
-  pngFile:   THandleStream;
+  pngFile:   TStream;
   row:       integer;
   rowData:   array of png_bytep;
 //  rowStride: integer;
@@ -504,7 +504,7 @@ type
  *)
 function WriteBMPImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 var
-  bmpFile:    THandleStream;
+  bmpFile:    TStream;
   FileInfo:   BITMAPINFOHEADER;
   FileHeader: BITMAPFILEHEADER;
   Converted:  boolean;
@@ -721,7 +721,7 @@ begin
     try
       jpgFile := TBinaryFileStream.Create(FileName, fmCreate);
     except
-      Log.LogError('Could not open file: "' + FileName + '"', 'WriteJPGImage');
+      Log.LogError('Could not open file: "' + FileName.ToNative + '"', 'WriteJPGImage');
       Exit;
     end;
 
@@ -799,8 +799,7 @@ begin
   try
     SDLStream := SDLStreamSetup(TBinaryFileStream.Create(FilenameCaseAdj, fmOpenRead));
     Result := IMG_Load_RW(SDLStream, 1);
-    // Note: the TBinaryFileStream is freed by the SDL-stream. The SDL-stream in
-    // turn is freed automatically by IMG_Load_RW().
+    // Note: TBinaryFileStream is freed by SDLStream. SDLStream by IMG_Load_RW().
   except
     Log.LogError('Could not load from file "' + FilenameCaseAdj.ToNative + '"', 'LoadImage');
     Exit;

@@ -2600,7 +2600,7 @@ end;
 
 procedure TBitmapFont.LoadFontInfo(const InfoFile: IPath);
 var
-  Stream:  THandleStream;
+  Stream: TStream;
 begin
   FillChar(fWidths[0], Length(fWidths), 0);
 
