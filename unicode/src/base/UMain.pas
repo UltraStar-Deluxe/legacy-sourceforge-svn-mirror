@@ -468,6 +468,16 @@ begin
       end;
       SDL_KEYDOWN:
         begin
+          // translate CTRL-A (ASCII 1) - CTRL-Z (ASCII 26) to correct charcodes.
+          // keysyms (SDLK_A, ...) could be used instead but they ignore the
+          // current key mapping (if 'a' is pressed on a French keyboard the
+          // .unicode field will be 'a' and .sym SDLK_Q).
+          // IMPORTANT: if CTRL is pressed with a key different than 'A'-'Z' SDL
+          // will set .unicode to 0. There is no possibility to obtain a
+          // translated charcode. Use keysyms instead.
+          //if (Event.key.keysym.unicode in [1 .. 26]) then
+          //  Event.key.keysym.unicode := Ord('A') + Event.key.keysym.unicode - 1;
+
           // remap the "keypad enter" key to the "standard enter" key
           if (Event.key.keysym.sym = SDLK_KP_ENTER) then
             Event.key.keysym.sym := SDLK_RETURN;
