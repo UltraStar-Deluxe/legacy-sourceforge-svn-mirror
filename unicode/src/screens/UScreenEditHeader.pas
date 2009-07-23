@@ -106,10 +106,10 @@ begin
     
     // check special keys
     case PressedKey of
-      SDLK_ESCAPE :
+      SDLK_ESCAPE:
         begin
-//          Music.PlayBack;
-//          FadeTo(@MainScreen);
+          //Music.PlayBack;
+          //FadeTo(@MainScreen);
           Result := false;
         end;
 
@@ -117,7 +117,7 @@ begin
         begin
           if Interaction = 1 then
           begin
-//            Save;
+            //Save;
           end;
         end;
 
