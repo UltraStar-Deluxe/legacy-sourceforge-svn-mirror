@@ -140,7 +140,7 @@ type
       procedure FadeTo(Screen: PMenu); overload;
       procedure FadeTo(Screen: PMenu; aSound: TAudioPlaybackStream); overload;
       //popup hack
-      procedure CheckFadeTo(Screen: PMenu; msg: string);
+      procedure CheckFadeTo(Screen: PMenu; Msg: UTF8String);
 
       function DrawBG: boolean; virtual;
       function DrawFG: boolean; virtual;
@@ -934,11 +934,11 @@ var
   J: integer;
 begin
   // We don't forget about newly implemented static for nice skin ...
-  for J := 0 to Length(Static) - 1 do
+  for J := 0 to High(Static) do
     Static[J].Draw;
 
   // ... and slightly implemented menutext unit
-  for J := 0 to Length(Text) - 1 do
+  for J := 0 to High(Text) do
     Text[J].Draw;
 
   //  Draw all ButtonCollections
@@ -946,10 +946,10 @@ begin
     ButtonCollection[J].Draw;
 
   // Second, we draw all of our buttons
-  for J := 0 to Length(Button) - 1 do
+  for J := 0 to High(Button) do
     Button[J].Draw;
 
-  for J := 0 to Length(SelectsS) - 1 do
+  for J := 0 to High(SelectsS) do
     SelectsS[J].Draw;
 
   // Third, we draw all our widgets
@@ -1198,7 +1198,7 @@ begin
 end;
 
 //popup hack
-procedure TMenu.CheckFadeTo(Screen: PMenu; msg: string);
+procedure TMenu.CheckFadeTo(Screen: PMenu; Msg: UTF8String);
 begin
   Display.Fade := 0;
   Display.NextScreenWithCheck := Screen;

@@ -113,7 +113,7 @@ type
     Font:   integer;
     Size:   integer;
     Align:  integer;
-    Text:   string;
+    Text:   UTF8String;
     //Reflection
     Reflection:           boolean;
     ReflectionSpacing:    real;
@@ -183,7 +183,7 @@ type
     showArrows:boolean;
     oneItemOnly:boolean;
 
-    Text:   string;
+    Text:   UTF8String;
     ColR,  ColG,  ColB,  Int:     real;
     DColR, DColG, DColB, DInt:    real;
     TColR,  TColG,  TColB,  TInt:     real;
@@ -237,8 +237,8 @@ type
 
     TextDescription:      TThemeText;
     TextDescriptionLong:  TThemeText;
-    Description:          array[0..5] of string;
-    DescriptionLong:      array[0..5] of string;
+    Description:          array[0..5] of UTF8String;
+    DescriptionLong:      array[0..5] of UTF8String;
   end;
 
   TThemeName = class(TThemeBasic)
@@ -355,7 +355,7 @@ type
     TextP3RScore:     TThemeText;
 
     //Linebonus Translations
-    LineBonusText:    array [0..8] of string;
+    LineBonusText:    array [0..8] of UTF8String;
 
     //Pause Popup
      PausePopUp:      TThemeStatic;
@@ -422,7 +422,7 @@ type
     ButtonExit:       TThemeButton;
 
     TextDescription:      TThemeText;
-    Description:          array[0..7] of string;
+    Description:          array[0..7] of UTF8String;
   end;
 
   TThemeOptionsGame = class(TThemeBasic)
@@ -497,8 +497,8 @@ type
 
     TextDescription:      TThemeText;
     TextDescriptionLong:  TThemeText;
-    Description:          array[0..5] of string;
-    DescriptionLong:      array[0..5] of string;
+    Description:          array[0..5] of UTF8string;
+    DescriptionLong:      array[0..5] of UTF8string;
   end;
 
   //Error- and Check-Popup
@@ -701,15 +701,15 @@ type
     TextPage:         TThemeText;
     TextList:         AThemeText;
 
-    Description:      array[0..3] of string;
-    DescriptionR:     array[0..3] of string;
-    FormatStr:        array[0..3] of string;
-    PageStr:          string;
+    Description:      array[0..3] of UTF8String;
+    DescriptionR:     array[0..3] of UTF8String;
+    FormatStr:        array[0..3] of UTF8String;
+    PageStr:          UTF8String;
   end;
 
   //Playlist Translations
   TThemePlaylist = record
-    CatText:    string;
+    CatText:    UTF8String;
   end;
 
   TTheme = class
