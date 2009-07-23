@@ -166,9 +166,9 @@ function UTF8Copy(const str: UTF8String; Index: Integer = 1; Count: Integer = -1
 function UCS4Copy(const str: UCS4String; Index: Integer = 0; Count: Integer = -1): UCS4String;
 
 (*
- * Converts a WideString to its upper-case representation.
- * Wrapper for WideUpperCase. Needed because some plattforms have problems with
- * unicode support.
+ * Converts a WideString to its upper- or lower-case representation.
+ * Wrapper for WideUpper/LowerCase. Needed because some plattforms have
+ * problems with unicode support.
  *
  * Note that characters in UTF-16 might consist of one or two WideChar valus
  * (see surrogates). So instead of using WideStringUpperCase(ch)[1] for single
@@ -177,6 +177,8 @@ function UCS4Copy(const str: UCS4String; Index: Integer = 0; Count: Integer = -1
  *)
 function WideStringUpperCase(const str: WideString) : WideString; overload;
 function WideStringUpperCase(ch: WideChar): WideString; overload;
+function WideStringLowerCase(const str: WideString): WideString; overload;
+function WideStringLowerCase(ch: WideChar): WideString; overload;
 
 function StringReplaceW(const text : WideString; search, rep: WideChar): WideString;
 
@@ -501,8 +503,7 @@ end;
 
 function UTF8LowerCase(const str: UTF8String): UTF8String;
 begin
-  // FIXME
-  Result := UTF8Encode(WideLowerCase(UTF8Decode(str)));
+  Result := UTF8Encode(WideStringLowerCase(UTF8Decode(str)));
 end;
 
 function UCS4UpperCase(ch: UCS4Char): UCS4Char;
@@ -608,13 +609,29 @@ begin
   // Otherwise you will get an EIntOverflow exception (thrown by unimplementedwidestring()).
   // The Unicode manager cwstring does not work with MacOSX at the moment because
   // of missing references to iconv.
+  // Note: Should be fixed now
 
   {.$IFNDEF DARWIN}
-  {$IFDEF NOIGNORE}
+  {.$IFDEF NOIGNORE}
     Result := WideUpperCase(str)
-  {$ELSE}
-    Result := UTF8Decode(UpperCase(UTF8Encode(str)));
-  {$ENDIF}
+  {.$ELSE}
+    //Result := UTF8Decode(UpperCase(UTF8Encode(str)));
+  {.$ENDIF}
+end;
+
+function WideStringLowerCase(ch: WideChar): WideString;
+begin
+  // see WideStringUpperCase
+  if (ch = #0) then
+    Result := #0
+  else
+    Result := WideStringLowerCase(WideString(ch));
+end;
+
+function WideStringLowerCase(const str: WideString): WideString;
+begin
+  // see WideStringUpperCase
+  Result := WideLowerCase(str)
 end;
 
 function StringReplaceW(const text : WideString; search, rep: WideChar) : WideString;
