@@ -102,24 +102,23 @@ var
   i: Integer;
   TheDir  : pDir;
   ADirent : pDirent;
-  Entry   : Longint;
   lAttrib : integer;
 begin
   i := 0;
   Filter := LowerCase(Filter);
 
-  TheDir := FpOpenDir( Dir );
+  TheDir := FpOpenDir(Dir);
   if Assigned(TheDir) then
   begin
     repeat
-      ADirent :=  FpReadDir(TheDir^);
+      ADirent := FpReadDir(TheDir^);
 
       if Assigned(ADirent) and (ADirent^.d_name <> '.') and (ADirent^.d_name <> '..') then
       begin
         lAttrib := FileGetAttr(Dir + ADirent^.d_name);
         if ReturnAllSubDirs and ((lAttrib and faDirectory) <> 0) then
         begin
-          SetLength( Result, i + 1);
+          SetLength(Result, i + 1);
           Result[i].Name        := ADirent^.d_name;
           Result[i].IsDirectory := true;
           Result[i].IsFile      := false;
@@ -127,7 +126,7 @@ begin
         end
         else if (Length(Filter) = 0) or (Pos( Filter, LowerCase(ADirent^.d_name)) > 0) then
         begin
-          SetLength( Result, i + 1);
+          SetLength(Result, i + 1);
           Result[i].Name        := ADirent^.d_name;
           Result[i].IsDirectory := false;
           Result[i].IsFile      := true;

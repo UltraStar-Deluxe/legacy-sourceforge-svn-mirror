@@ -225,6 +225,7 @@ end;
 
 {$ENDIF}
 
+{ TODO: REMOVE }
 // Checks if a regular files or directory with the given name exists.
 // The comparison is case insensitive.
 function FileExistsInsensitive(var FileName: string): boolean;

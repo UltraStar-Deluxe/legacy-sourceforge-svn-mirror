@@ -288,6 +288,7 @@ begin
   Result := GetApplicationSupportPath;
 end;
 
+{ TODO: REMOVE }
 function TPlatformMacOSX.DirectoryFindFiles(Dir, Filter: WideString; ReturnAllSubDirs: boolean): TDirectoryEntryArray;
 var
   i       : integer;
@@ -298,10 +299,11 @@ begin
   i := 0;
   Filter := LowerCase(Filter);
 
-  TheDir := FPOpenDir(Dir);
+  TheDir := FpOpenDir(Dir);
   if Assigned(TheDir) then
+  begin
     repeat
-      ADirent := FPReadDir(TheDir);
+      ADirent := FpReadDir(TheDir^);
 
       if Assigned(ADirent) and (ADirent^.d_name <> '.') and (ADirent^.d_name <> '..') then
       begin
@@ -323,9 +325,10 @@ begin
           i := i + 1;
         end;
       end;
-    until ADirent = nil;
+    until (ADirent = nil);
 
-  FPCloseDir(TheDir);
+    FpCloseDir(TheDir^);
+  end;
 end;
 
 end.
