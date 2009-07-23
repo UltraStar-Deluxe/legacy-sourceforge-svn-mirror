@@ -246,16 +246,8 @@ begin
 end;
 
 procedure TText.DeleteLastLetter;
-var
-  Str: UCS4String;
-  Len: integer;
 begin
-  Str := UTF8ToUCS4String(TextString);
-  Len := Length(Str);
-  if (Len > 0) then
-    SetLength(Str, Len-1);
-
-  SetText(UCS4ToUTF8String(Str));
+  SetText(UTF8Copy(TextString, 1, LengthUTF8(TextString)-1));
 end;
 
 procedure TText.Draw;
