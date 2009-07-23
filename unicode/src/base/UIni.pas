@@ -157,9 +157,6 @@ type
       Joypad:         integer;
       Mouse:          integer;
 
-      // default encoding for texts (lyrics, song-name, ...)
-      EncodingDefault: TEncoding;
-
       procedure Load();
       procedure Save();
       procedure SaveNames;
@@ -731,10 +728,6 @@ begin
   // NoteLines
   NoteLines := GetArrayIndex(INoteLines, IniFile.ReadString('Lyrics', 'NoteLines', INoteLines[1]));
 
-  //Encoding default
-  // CP1252 is the USDX <1.1 default encoding
-  EncodingDefault := ParseEncoding(IniFile.ReadString('Lyrics', 'Encoding', ''), encCP1252);
-
   LoadThemes(IniFile);
 
   // Color
@@ -885,9 +878,6 @@ begin
 
   // NoteLines
   IniFile.WriteString('Lyrics', 'NoteLines', INoteLines[NoteLines]);
-
-  //Encoding default
-  IniFile.WriteString('Lyrics', 'Encoding', EncodingNames[EncodingDefault]);
 
   // Theme
   IniFile.WriteString('Themes', 'Theme', ITheme[Theme]);
