@@ -131,7 +131,21 @@ uses
   UNote,
   USkins,
   ULanguage,
+  UTextEncoding,
   UUnicodeUtils;
+
+
+procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
+var
+  SResult: TSaveSongResult;
+begin
+  if (Value) then
+  begin
+    CurrentSong.Encoding := encUTF8;
+    SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName,
+             boolean(Data));
+  end;
+end;
 
 // Method for input parsing. If false is returned, GetNextWindow
 // should be checked to know the next window to load;
@@ -139,6 +153,7 @@ function TScreenEditSub.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; Pre
 var
   SDL_ModState:  word;
   R:    real;
+  SResult: TSaveSongResult;
 begin
   Result := true;
 
@@ -153,7 +168,8 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   if (PressedDown) then  // Key Down
-  begin  // check normal keys
+  begin
+    // check normal keys
     case UCS4UpperCase(CharCode) of
       Ord('Q'):
         begin
@@ -163,15 +179,13 @@ begin
       Ord('S'):
         begin
           // Save Song
-          if SDL_ModState = KMOD_LSHIFT then
-            SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName, true)
-          else
-            SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName, false);
-
-          {if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL + KMOD_LALT then
-            // Save Song
-            SaveSongDebug(CurrentSong, Lines[0], 'C:\song.asm', false);}
-
+          SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName,
+                   (SDL_ModState = KMOD_LSHIFT));
+          if (SResult = ssrEncodingError) then
+          begin
+            ScreenPopupCheck.ShowPopup('Encoding error, save as UTF-8?', OnSaveEncodingError,
+                Pointer(SDL_ModState = KMOD_LSHIFT), true);
+          end;
           Exit;
         end;
       Ord('D'):
@@ -270,7 +284,7 @@ begin
           Exit;
         end;
       
-      // Golden Note Patch
+      // Golden Note
       Ord('G'):
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntGolden) then
@@ -281,7 +295,7 @@ begin
           Exit;
         end;
       
-      // Freestyle Note Patch
+      // Freestyle Note
       Ord('F'):
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntFreestyle) then
@@ -581,10 +595,11 @@ begin
 
           // skip to next sentence
           if SDL_ModState = 0 then
-          begin                       {$IFDEF UseMIDIPort}
+          begin
+            {$IFDEF UseMIDIPort}
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
-            {$endif}
+            {$ENDIF}
 
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
             Inc(Lines[0].Current);
@@ -654,7 +669,16 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   if (PressedDown) then
-  begin // Key Down
+  begin
+    // check normal keys
+    if (IsPrintableChar(CharCode)) then
+    begin
+      Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text :=
+        Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + UCS4ToUTF8String(CharCode);
+      Exit;
+    end;
+
+    // check special keys
     case PressedKey of
 
       SDLK_ESCAPE:
@@ -666,17 +690,10 @@ begin
           // Exit Text Edit Mode
           TextEditMode := false;
         end;
-      SDLK_0..SDLK_9,
-      SDLK_A..SDLK_Z,
-      SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
-        begin
-          Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text :=
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + UCS4ToUTF8String(CharCode);
-        end;
       SDLK_BACKSPACE:
         begin
-          Delete(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text,
-            Length(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text), 1);
+          UTF8Delete(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text,
+            LengthUTF8(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text), 1);
         end;
       SDLK_RIGHT:
         begin
@@ -761,9 +778,11 @@ var
   S:    string;
 begin
   // temporary
-{  for C := 0 to Lines[0].High do
+  {
+  for C := 0 to Lines[0].High do
     for N := 0 to Lines[0].Line[C].HighNut do
-      Lines[0].Line[C].Note[N].Text := UTF8LowerCase(Lines[0].Line[C].Note[N].Text);}
+      Lines[0].Line[C].Note[N].Text := UTF8LowerCase(Lines[0].Line[C].Note[N].Text);
+  }
 
   for C := 0 to Lines[0].High do
   begin
@@ -1088,14 +1107,16 @@ var
   N:      integer;
   NHigh:  integer;
 begin
-{  C := Lines[0].Current;
+  {
+  C := Lines[0].Current;
 
   for N := Lines[0].Line[C].HighNut downto 1 do
   begin
     Lines[0].Line[C].Note[N].Text := Lines[0].Line[C].Note[N-1].Text;
   end; // for
 
-  Lines[0].Line[C].Note[0].Text := '- ';}
+  Lines[0].Line[C].Note[0].Text := '- ';
+  }
 
   C := Lines[0].Current;
   NHigh := Lines[0].Line[C].HighNote;
