@@ -101,12 +101,29 @@ implementation
 uses
   SysUtils;
 
+function FFmpegStreamOpen(h: PURLContext; filename: PChar; flags: cint): cint; cdecl; forward;
+function FFmpegStreamRead(h: PURLContext; buf: PByteArray; size: cint): cint; cdecl; forward;
+function FFmpegStreamWrite(h: PURLContext; buf: PByteArray; size: cint): cint; cdecl; forward;
+function FFmpegStreamSeek(h: PURLContext; pos: int64; whence: cint): int64; cdecl; forward;
+function FFmpegStreamClose(h: PURLContext): cint; cdecl; forward;
+
+const
+  UTF8FileProtocol: TURLProtocol = (
+      name:      'ufile';
+      url_open:  FFmpegStreamOpen;
+      url_read:  FFmpegStreamRead;
+      url_write: FFmpegStreamWrite;
+      url_seek:  FFmpegStreamSeek;
+      url_close: FFmpegStreamClose;
+  );
+
 var
   Instance: TMediaCore_FFmpeg;
 
 constructor TMediaCore_FFmpeg.Create();
 begin
   inherited;
+  av_register_protocol(@UTF8FileProtocol);
   AVCodecLock := SDL_CreateMutex();
 end;
 
@@ -224,106 +241,102 @@ begin
   Result := true;
 end;
 
-function FFmpegStreamRead(Opaque: Pointer; Buffer: PByteArray; BufSize: cint): cint; cdecl;
+
+{**
+ * UTF-8 Filename wrapper based on:
+ * http://www.mail-archive.com/libav-user@mplayerhq.hu/msg02460.html
+ *}
+
+function FFmpegStreamOpen(h: PURLContext; filename: PChar; flags: cint): cint; cdecl;
+var
+  Stream: TStream;
+  Mode: word;
+  ProtPrefix: string;
+  FilePath: IPath;
+begin
+  // check for protocol prefix ('ufile:') and strip it
+  ProtPrefix := Format('%s:', [UTF8FileProtocol.name]);
+  if (StrLComp(filename, PChar(ProtPrefix), Length(ProtPrefix)) = 0) then
+  begin
+    Inc(filename, Length(ProtPrefix));
+  end;
+
+  FilePath := Path(filename);
+
+  if ((flags and URL_RDWR) <> 0) then
+    Mode := fmCreate
+  else if ((flags and URL_WRONLY) <> 0) then
+    Mode := fmCreate // TODO: fmCreate is Read+Write -> reopen with fmOpenWrite
+  else
+    Mode := fmOpenRead;
+
+  Result := 0;
+
+  try
+    Stream := TBinaryFileStream.Create(FilePath, Mode);
+    h.priv_data := Stream;
+  except
+    Result := AVERROR_NOENT;
+  end;
+end;
+
+function FFmpegStreamRead(h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
 var
   Stream: TStream;
 begin
-  Stream := TStream(Opaque);
+  Stream := TStream(h.priv_data);
   if (Stream = nil) then
     raise EInvalidContainer.Create('FFmpegStreamRead on nil');
   try
-    Result := Stream.Read(Buffer[0], BufSize);
+    Result := Stream.Read(buf[0], size);
   except
     Result := -1;
   end;
 end;
 
-function FFmpegStreamWrite(Opaque: Pointer; Buffer: PByteArray; BufSize: cint): cint; cdecl;
+function FFmpegStreamWrite(h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
 var
   Stream: TStream;
 begin
-  Stream := TStream(Opaque);
+  Stream := TStream(h.priv_data);
   if (Stream = nil) then
     raise EInvalidContainer.Create('FFmpegStreamWrite on nil');
   try
-    Result := Stream.Write(Buffer[0], BufSize);
+    Result := Stream.Write(buf[0], size);
   except
     Result := -1;
   end;
 end;
 
-function FFmpegStreamSeek(Opaque: Pointer; Offset: cint64; Whence: cint): cint64; cdecl;
+function FFmpegStreamSeek(h: PURLContext; pos: int64; whence: cint): int64; cdecl;
 var
   Stream : TStream;
-  Origin : Word;
+  Origin : TSeekOrigin;
 begin
-  Stream := TStream(opaque);
+  Stream := TStream(h.priv_data);
   if (Stream = nil) then
     raise EInvalidContainer.Create('FFmpegStreamSeek on nil');
   case whence of
-    0 : Origin := soFromBeginning;
-    1 : Origin := soFromCurrent;
-    2 : Origin := soFromEnd;
+    0 {SEEK_SET}: Origin := soBeginning;
+    1 {SEEK_CUR}: Origin := soCurrent;
+    2 {SEEK_END}: Origin := soEnd;
+    AVSEEK_SIZE: begin
+      Result := Stream.Size;
+      Exit;
+    end
   else
-    Origin := soFromBeginning;
+    Origin := soBeginning;
   end;
-  Result := Stream.Seek(offset,origin);
+  Result := Stream.Seek(pos, Origin);
 end;
 
-const
-  AVFileBufSize = 32768;
-
-type
-  PAVFile = ^TAVFile;
-  TAVFile = record
-    ByteIOCtx: TByteIOContext;
-    Buffer: array [0 .. AVFileBufSize-1] of byte;
-  end;
-
-function AVOpenInputFile(var ic_ptr: PAVFormatContext; filename: IPath;
-                     fmt: PAVInputFormat; buf_size: cint;
-                     ap: PAVFormatParameters): PAVFile;
+function FFmpegStreamClose(h: PURLContext): cint; cdecl;
 var
-  ProbeData: TAVProbeData;
-  FilenameStr: UTF8String;
-  FileStream: TBinaryFileStream;
-  AVFile: PAVFile;
+  Stream : TStream;
 begin
-  Result := nil;
-  New(AVFile);
-  
-  // copy UTF-8 string so ProbeData.filename will be valid at av_probe_input_format()
-  FilenameStr := Filename.ToUTF8;
-
-  if (fmt = nil) then
-  begin
-    ProbeData.filename := PChar(FilenameStr);
-    ProbeData.buf := @AVFile.Buffer;
-    ProbeData.buf_size := AVFileBufSize;
-
-    fmt := av_probe_input_format(@ProbeData, 1);
-    if (fmt = nil) then
-    begin
-      Dispose(AVFile);
-      Exit;
-    end;
-  end;
-
-  FileStream := TBinaryFileStream.Create(Filename, fmOpenReadWrite);
-  if (init_put_byte(@AVFile.ByteIOCtx, @AVFile.Buffer, AVFileBufSize, 0, FileStream,
-    FFmpegStreamRead, FFmpegStreamWrite, FFmpegStreamSeek) < 0) then
-  begin
-    Dispose(AVFile);
-    Exit;
-  end;
-
-  if (av_open_input_stream(ic_ptr, @AVFile.ByteIOCtx, PChar(FilenameStr), fmt, ap) < 0) then
-  begin
-    Dispose(AVFile);
-    Exit;
-  end;
-
-  Result := AVFile;
+  Stream := TStream(h.priv_data);
+  Stream.Free;
+  Result := 0;
 end;
 
 

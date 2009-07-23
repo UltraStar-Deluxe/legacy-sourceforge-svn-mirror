@@ -289,8 +289,8 @@ begin
 
   Self.Filename := Filename;
 
-  // open audio file (TODO: unicode support)
-  if (av_open_input_file(FormatCtx, PAnsiChar(Filename.ToNative), nil, 0, nil) <> 0) then
+  // use custom 'ufile' protocol for UTF-8 support
+  if (av_open_input_file(FormatCtx, PAnsiChar('ufile:'+FileName.ToUTF8), nil, 0, nil) <> 0) then
   begin
     Log.LogError('av_open_input_file failed: "' + Filename.ToNative + '"', 'UAudio_FFmpeg');
     Exit;

@@ -262,7 +262,8 @@ begin
 
   Reset();
 
-  errnum := av_open_input_file(fFormatContext, PChar(FileName.ToNative), nil, 0, nil);
+  // use custom 'ufile' protocol for UTF-8 support
+  errnum := av_open_input_file(fFormatContext, PAnsiChar('ufile:'+FileName.ToUTF8), nil, 0, nil);
   if (errnum <> 0) then
   begin
     Log.LogError('Failed to open file "'+ FileName.ToNative +'" ('+FFmpegCore.GetErrorString(errnum)+')');
@@ -435,7 +436,7 @@ begin
   fAVFrame     := nil;
   fAVFrameRGB  := nil;
   fFrameBuffer := nil;
-    
+
   if (fCodecContext <> nil) then
   begin
     // avcodec_close() is not thread-safe
