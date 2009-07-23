@@ -665,7 +665,11 @@ function TFileIterator.Next(): TFileInfo;
 begin
   if (not fHasNext) then
   begin
-    FillChar(Result, SizeOf(Result), 0);
+    // Note: do not use FillChar() on records with ref-counted fields
+    Result.Time := 0;
+    Result.Size := 0;
+    Result.Attr := 0;
+    Result.Name := nil;
     Exit;
   end;
 

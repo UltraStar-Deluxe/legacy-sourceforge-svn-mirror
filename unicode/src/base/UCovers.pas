@@ -385,6 +385,9 @@ begin
     end
     else
     begin
+      // FillChar() does not decrement the ref-count of ref-counted fields
+      // -> reset Name field manually
+      Result.Name := nil;
       FillChar(Result, SizeOf(TTexture), 0);
     end;
   except on E: Exception do
