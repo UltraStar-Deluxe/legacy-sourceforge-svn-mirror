@@ -20,7 +20,7 @@ function convertUTF8 {
   fi
 }
 
-convertUTF8 CP1252 Catalan
+#convertUTF8 UTF8 Catalan
 convertUTF8 CP1252 French 
 convertUTF8 CP1252 Italian 
 convertUTF8 CP1252 Spanish 
