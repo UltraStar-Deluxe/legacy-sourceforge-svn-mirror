@@ -140,6 +140,9 @@ uses
   TntWideStrUtils   in 'lib\TntUnicodeControls\TntWideStrUtils.pas',
   TntClasses        in 'lib\TntUnicodeControls\TntClasses.pas',
   TntFormatStrUtils in 'lib\TntUnicodeControls\TntFormatStrUtils.pas',
+  {$IFNDEF DELPHI_10_UP} // WideStrings for FPC and Delphi < 2006
+  TntWideStrings   in 'lib\TntUnicodeControls\TntWideStrings.pas',
+  {$ENDIF}
   {$ENDIF}
 
   //------------------------------
