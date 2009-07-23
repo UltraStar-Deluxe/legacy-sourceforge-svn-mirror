@@ -337,7 +337,6 @@ end;
 
 function TSong.ParseLyricFloatParam(const Line: RawByteString; var LinePos: integer): real;
 var
-
   Str: RawByteString;
   OldLinePos: integer;
 begin
@@ -438,7 +437,7 @@ begin
 
       if (not NotesFound) then
       begin //Song File Corrupted - No Notes
-        Log.LogError('Could not load txt File, no Notes found: ' + FileNamePath.ToNative);
+        Log.LogError('Could not load txt File, no notes found: ' + FileNamePath.ToNative);
         LastError := 'ERROR_CORRUPT_SONG_NO_NOTES';
         Exit;
       end;
@@ -482,7 +481,7 @@ begin
 
           //Check for ZeroNote
           if Param2 = 0 then
-            Log.LogError('Found ZeroNote at "'+Param0+' '+IntToStr(Param1)+' '+IntToStr(Param2)+' '+IntToStr(Param3)+ParamLyric+'" -> Note ignored!')
+            Log.LogError('Found zero-length note at "'+Param0+' '+IntToStr(Param1)+' '+IntToStr(Param2)+' '+IntToStr(Param3)+ParamLyric+'" -> Note ignored!')
           else
           begin
            // add notes
@@ -539,7 +538,7 @@ begin
   except
     on E: Exception do
     begin
-      Log.LogError(Format('Error Loading File: "%s" in Line %d,%d: %s',
+      Log.LogError(Format('Error loading file: "%s" in line %d,%d: %s',
                   [FileNamePath.ToNative, FileLineNo, LinePos, E.Message]));
       Exit;
     end;
@@ -552,7 +551,7 @@ begin
       if (Length(Lines[I].Line) < 2) then
       begin
         LastError := 'ERROR_CORRUPT_SONG_NO_BREAKS';
-        Log.LogError('Error Loading File, Can''t find any Linebreaks: "' + FileNamePath.ToNative + '"');
+        Log.LogError('Error loading file: Can''t find any linebreaks in "' + FileNamePath.ToNative + '"');
         exit;
       end;
 
@@ -703,7 +702,7 @@ begin
   end
   else
   begin
-    Log.LogError('Could not parse Inputfile: ' + FileNamePath.ToNative);
+    Log.LogError('Could not parse inputfile: ' + FileNamePath.ToNative);
     exit;
   end;
 
@@ -795,7 +794,7 @@ begin
     self.Language := Parser.SongInfo.Header.Language;
   end
   else
-    Log.LogError('File Incomplete or not SingStar XML (A): ' + aFileName.ToNative);
+    Log.LogError('File incomplete or not SingStar XML (A): ' + aFileName.ToNative);
 
   Parser.Free;
 
@@ -804,15 +803,15 @@ begin
   begin
     Result := false;
     if (Done and 8) = 0 then      //No BPM Flag
-      Log.LogError('BPM Tag Missing: ' + self.FileName.ToNative)
+      Log.LogError('BPM tag missing: ' + self.FileName.ToNative)
     else if (Done and 4) = 0 then //No MP3 Flag
-      Log.LogError('MP3 Tag/File Missing: ' + self.FileName.ToNative)
+      Log.LogError('MP3 tag/file missing: ' + self.FileName.ToNative)
     else if (Done and 2) = 0 then //No Artist Flag
-      Log.LogError('Artist Tag Missing: ' + self.FileName.ToNative)
+      Log.LogError('Artist tag missing: ' + self.FileName.ToNative)
     else if (Done and 1) = 0 then //No Title Flag
-      Log.LogError('Title Tag Missing: ' + self.FileName.ToNative)
+      Log.LogError('Title tag missing: ' + self.FileName.ToNative)
     else //unknown Error
-      Log.LogError('File Incomplete or not SingStar XML (B - '+ inttostr(Done) +'): ' + aFileName.ToNative);
+      Log.LogError('File incomplete or not SingStar XML (B - '+ inttostr(Done) +'): ' + aFileName.ToNative);
   end;
 
 end;
@@ -850,7 +849,7 @@ begin
   SongFile.ReadLine(Line);
   if (Length(Line) <= 0) then
   begin
-    Log.LogError('File Starts with Empty Line: ' + FullFileName,
+    Log.LogError('File starts with empty line: ' + FullFileName,
                  'TSong.ReadTXTHeader');
     Result := false;
     Exit;
@@ -878,7 +877,7 @@ begin
     //Check the Identifier (If Value is given)
     if (Length(Value) = 0) then
     begin
-      Log.LogError('Empty field "'+Identifier+'" in file ' + FullFileName,
+      Log.LogWarn('Empty field "'+Identifier+'" in file ' + FullFileName,
                    'TSong.ReadTXTHeader');
     end
     else
@@ -959,7 +958,7 @@ begin
         if (self.Path.Append(EncFile).IsFile) then
           self.Video := EncFile
         else
-          Log.LogError('Can''t find Video File in Song: ' + FullFileName);
+          Log.LogError('Can''t find video file in song: ' + FullFileName);
       end
 
       // Video Gap
@@ -1035,7 +1034,7 @@ begin
     if (not SongFile.ReadLine(Line)) then
     begin
       Result := false;
-      Log.LogError('File Incomplete or not Ultrastar TxT (A): ' + FullFileName);
+      Log.LogError('File incomplete or not Ultrastar txt (A): ' + FullFileName);
       Break;
     end;
   end; // while
@@ -1048,15 +1047,15 @@ begin
   begin
     Result := false;
     if (Done and 8) = 0 then      //No BPM Flag
-      Log.LogError('BPM Tag Missing: ' + FullFileName)
+      Log.LogError('BPM tag missing: ' + FullFileName)
     else if (Done and 4) = 0 then //No MP3 Flag
-      Log.LogError('MP3 Tag/File Missing: ' + FullFileName)
+      Log.LogError('MP3 tag/file missing: ' + FullFileName)
     else if (Done and 2) = 0 then //No Artist Flag
-      Log.LogError('Artist Tag Missing: ' + FullFileName)
+      Log.LogError('Artist tag missing: ' + FullFileName)
     else if (Done and 1) = 0 then //No Title Flag
-      Log.LogError('Title Tag Missing: ' + FullFileName)
+      Log.LogError('Title tag missing: ' + FullFileName)
     else //unknown Error
-      Log.LogError('File Incomplete or not Ultrastar TxT (B - '+ inttostr(Done) +'): ' + FullFileName);
+      Log.LogError('File incomplete or not Ultrastar txt (B - '+ inttostr(Done) +'): ' + FullFileName);
   end;
 end;
 
