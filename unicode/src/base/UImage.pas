@@ -613,7 +613,7 @@ var
   jpgFile:   TBinaryFileStream;
   rowPtr:    array[0..0] of JSAMPROW;
   {$ENDIF}
-  converted: boolean;
+  converted:  boolean;
 begin
   Result := false;
 
@@ -812,17 +812,13 @@ end;
 
 function PixelFormatEquals(fmt1, fmt2: PSDL_PixelFormat): boolean;
 begin
-  if (fmt1^.BitsPerPixel = fmt2^.BitsPerPixel) and
-     (fmt1^.BytesPerPixel = fmt2^.BytesPerPixel) and
-     (fmt1^.Rloss = fmt2^.Rloss) and (fmt1^.Gloss = fmt2^.Gloss) and
-     (fmt1^.Bloss = fmt2^.Bloss) and (fmt1^.Rmask = fmt2^.Rmask) and
-     (fmt1^.Gmask = fmt2^.Gmask) and (fmt1^.Bmask = fmt2^.Bmask) and
-     (fmt1^.Rshift = fmt2^.Rshift) and (fmt1^.Gshift = fmt2^.Gshift) and
-     (fmt1^.Bshift = fmt2^.Bshift)
-  then
-    Result := true
-  else
-    Result := false;
+  Result := 
+    (fmt1^.BitsPerPixel  = fmt2^.BitsPerPixel)  and
+    (fmt1^.BytesPerPixel = fmt2^.BytesPerPixel) and
+    (fmt1^.Rloss = fmt2^.Rloss)   and (fmt1^.Gloss = fmt2^.Gloss)   and (fmt1^.Bloss = fmt2^.Bloss)   and
+    (fmt1^.Rmask = fmt2^.Rmask)   and (fmt1^.Gmask = fmt2^.Gmask)   and (fmt1^.Bmask = fmt2^.Bmask)   and
+    (fmt1^.Rshift = fmt2^.Rshift) and (fmt1^.Gshift = fmt2^.Gshift) and (fmt1^.Bshift = fmt2^.Bshift)
+  ;
 end;
 
 procedure ScaleImage(var ImgSurface: PSDL_Surface; Width, Height: cardinal);
@@ -903,7 +899,7 @@ begin
 end;
 *)
 
-procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
+procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: longword);
 
   // First, the rgb colors are converted to hsv, second hue is replaced by
   // the NewColor, saturation and value remain unchanged, finally this
@@ -911,7 +907,7 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
   // For the conversion algorithms of colors from rgb to hsv space
   // and back simply check the wikipedia.
   // In order to speed up starting time of USDX the division of reals is 
-  // replaced by division of longwords, shifted by 10 bits to keep 
+  // replaced by division of longints, shifted by 10 bits to keep 
   // digits.
 
   // The use of longwards leeds to some type size mismatch warnings
@@ -922,8 +918,8 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
   function ColorToHue(const Color: longword): longword;
   // returns hue within the range [0.0-6.0] but shl 10, ie. times 1024
   var
-    Red, Green, Blue: longword;
-    Min, Max, Delta: longword;
+    Red, Green, Blue: longint;
+    Min, Max, Delta:  longint;
     Hue: double;
   begin
     // extract the colors
@@ -951,6 +947,8 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
       // The division by Delta is done separately afterwards.
       // Necessary because Delphi did not do the type conversion from
       // longword to double as expected.
+      // After the change to longint, we may not need it, but left for now
+      // Something to check
       if      (Max = Red  ) then Hue :=             Green - Blue
       else if (Max = Green) then Hue := 2.0*Delta + Blue  - Red
       else if (Max = Blue ) then Hue := 4.0*Delta + Red   - Green;
@@ -958,6 +956,8 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
       if (Hue < 0.0) then
         Hue := Hue + 6.0;
       Result := trunc(Hue*1024);           // '*1024' is shl 10
+ //     if NewColor = $000000 then
+ //       Log.LogError ('Hue: ' +  FloatToStr(Hue), 'ColorToHue');
     end;
   end;
 
@@ -970,6 +970,8 @@ var
   Min, Max, Delta: longword;
   HueInteger: longword;
   f, p, q, t: longword;
+  GreyReal: real;
+  Grey: byte;
 begin
 
   Pixel := ImgSurface^.Pixels;
@@ -983,8 +985,48 @@ begin
     Log.LogError ('ColorizeImage: The pixel size should be 4, but it is '
                    + IntToStr(ImgSurface^.format.BytesPerPixel));
 
+  // Check whether the new color is white, grey or black, 
+  // because a greyscale must be created in a different
+  // way.
+  
+  Red   := ((NewColor and $ff0000) shr 16); // R
+  Green := ((NewColor and   $ff00) shr  8); // G
+  Blue  :=  (NewColor and     $ff)        ; // B
+  
+  if (Red = Green) and (Green = Blue) then // greyscale image
+  begin
+    // According to these recommendations (ITU-R BT.709-5)
+    // the conversion parameters for rgb to greyscale are
+    // 0.299, 0.587, 0.114
+    for PixelIndex := 0 to (ImgSurface^.W * ImgSurface^.H)-1 do
+    begin
+      PixelColors := PByteArray(Pixel);
+      {$IFDEF FPC_BIG_ENDIAN}
+      GreyReal := 0.299*PixelColors[3] + 0.587*PixelColors[2] + 0.114*PixelColors[1];
+      //       PixelColors[0] is alpha and remains untouched
+      {$ELSE}
+      GreyReal := 0.299*PixelColors[0] + 0.587*PixelColors[1] + 0.114*PixelColors[2];
+      //       PixelColors[3] is alpha and remains untouched
+      {$ENDIF}
+      Grey := round(GreyReal);
+      {$IFDEF FPC_BIG_ENDIAN}
+      PixelColors[3] := Grey;
+      PixelColors[2] := Grey;
+      PixelColors[1] := Grey;
+      //       PixelColors[0] is alpha and remains untouched
+      {$ELSE}
+      PixelColors[0] := Grey;
+      PixelColors[1] := Grey;
+      PixelColors[2] := Grey;
+      //       PixelColors[3] is alpha and remains untouched
+      {$ENDIF}
+      Inc(Pixel, ImgSurface^.format.BytesPerPixel);
+    end;
+    exit; // we are done with a greyscale image.
+  end;
+
   Hue := ColorToHue(NewColor);   // Hue is shl 10
-  f := Hue and $3ff;             // f is the dezimal part of hue
+  f   := Hue and $3ff;           // f is the dezimal part of hue
   HueInteger := Hue shr 10;
 
   for PixelIndex := 0 to (ImgSurface^.W * ImgSurface^.H)-1 do
@@ -1054,9 +1096,9 @@ begin
         // shr 10 corrects that Sat and f are shl 10
         // the resulting p, q and t are unshifted
 
-        p := (Max*(1024-Sat)) shr 10;
-        q := (Max*(1024-(Sat*f) shr 10)) shr 10;
-        t := (Max*(1024-(Sat*(1024-f)) shr 10)) shr 10;
+        p := (Max * (1024 -  Sat                     )) shr 10;
+        q := (Max * (1024 - (Sat *  f        ) shr 10)) shr 10;
+        t := (Max * (1024 - (Sat * (1024 - f)) shr 10)) shr 10;
 
         // The above 3 lines give type size mismatch warning, but all variables are longword and the ranges should be ok.
 

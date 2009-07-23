@@ -300,7 +300,7 @@ begin
 
         // add slider
         SelectSlideChannelID[ChannelIndex] := AddSelectSlide(ChannelTheme^,
-          InputDeviceCfg.ChannelToPlayerMap[ChannelIndex], IChannelPlayer);
+          InputDeviceCfg.ChannelToPlayerMap[ChannelIndex], IChannelPlayerTranslated);
       end
       else
       begin
@@ -308,7 +308,7 @@ begin
 
         // add slider but hide it and assign a dummy variable to it
         SelectSlideChannelID[ChannelIndex] := AddSelectSlide(ChannelTheme^,
-          ChannelToPlayerMapDummy, IChannelPlayer);
+          ChannelToPlayerMapDummy, IChannelPlayerTranslated);
         SelectsS[SelectSlideChannelID[ChannelIndex]].Visible := false;
       end;
     end;
@@ -374,7 +374,7 @@ begin
 
         // show slider
         UpdateSelectSlideOptions(SelectSlideChannelTheme[ChannelIndex],
-          SelectSlideChannelID[ChannelIndex], IChannelPlayer,
+          SelectSlideChannelID[ChannelIndex], IChannelPlayerTranslated,
           InputDeviceCfg.ChannelToPlayerMap[ChannelIndex]);
         SelectsS[SelectSlideChannelID[ChannelIndex]].Visible := true;
       end
@@ -384,7 +384,7 @@ begin
 
         // hide slider and assign a dummy variable to it
         UpdateSelectSlideOptions(SelectSlideChannelTheme[ChannelIndex],
-          SelectSlideChannelID[ChannelIndex], IChannelPlayer,
+          SelectSlideChannelID[ChannelIndex], IChannelPlayerTranslated,
           ChannelToPlayerMapDummy);
         SelectsS[SelectSlideChannelID[ChannelIndex]].Visible := false;
       end;

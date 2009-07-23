@@ -132,23 +132,23 @@ begin
 
   Theme.OptionsGame.SelectDifficulty.showArrows  := true;
   Theme.OptionsGame.SelectDifficulty.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGame.SelectDifficulty, Ini.Difficulty, IDifficulty);
+  AddSelectSlide(Theme.OptionsGame.SelectDifficulty, Ini.Difficulty, IDifficultyTranslated);
 
   Theme.OptionsGame.SelectLanguage.showArrows  := true;
   Theme.OptionsGame.SelectLanguage.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGame.SelectLanguage,   Ini.Language,   ILanguage);
+  AddSelectSlide(Theme.OptionsGame.SelectLanguage,   Ini.Language,   ILanguageTranslated);
 
   Theme.OptionsGame.SelectTabs.showArrows  := true;
   Theme.OptionsGame.SelectTabs.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGame.SelectTabs,       Ini.Tabs,       ITabs);
+  AddSelectSlide(Theme.OptionsGame.SelectTabs,       Ini.Tabs,       ITabsTranslated);
 
   Theme.OptionsGame.SelectSorting.showArrows  := true;
   Theme.OptionsGame.SelectSorting.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGame.SelectSorting,    Ini.Sorting,    ISorting);
+  AddSelectSlide(Theme.OptionsGame.SelectSorting,    Ini.Sorting,    ISortingTranslated);
 
   Theme.OptionsGame.SelectDebug.showArrows  := true;
   Theme.OptionsGame.SelectDebug.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGame.SelectDebug,      Ini.Debug,      IDebug);
+  AddSelectSlide(Theme.OptionsGame.SelectDebug,      Ini.Debug,      IDebugTranslated);
 
 
 
