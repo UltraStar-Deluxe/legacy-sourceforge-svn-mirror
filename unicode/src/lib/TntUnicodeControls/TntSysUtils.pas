@@ -1041,22 +1041,15 @@ var
   Code: Cardinal;
 begin
   Code := WideFileGetAttr(Name);
-  Result := (Code <> INVALID_FILE_ATTRIBUTES) and (FILE_ATTRIBUTE_DIRECTORY and Code <> 0);
+  Result := (Code <> INVALID_FILE_ATTRIBUTES) and ((FILE_ATTRIBUTE_DIRECTORY and Code) <> 0);
 end;
 
 function WideFileExists(const Name: WideString): Boolean;
 var
-  Handle: THandle;
-  FindData: TWin32FindDataW;
+  Code: Cardinal;
 begin
-  Result := False;
-  Handle := Tnt_FindFirstFileW(PWideChar(Name), FindData);
-  if Handle <> INVALID_HANDLE_VALUE then
-  begin
-    Windows.FindClose(Handle);
-    if (FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then
-      Result := True;
-  end;
+  Code := WideFileGetAttr(Name);
+  Result := (Code <> INVALID_FILE_ATTRIBUTES) and ((FILE_ATTRIBUTE_DIRECTORY and Code) = 0);
 end;
 
 function WideFileGetAttr(const FileName: WideString): Cardinal;
