@@ -139,13 +139,26 @@ uses
 procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
 var
   SResult: TSaveSongResult;
+  FilePath: IPath;
+  Success: boolean;
 begin
+  Success := false;
   if (Value) then
   begin
     CurrentSong.Encoding := encUTF8;
-    SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path.Append(CurrentSong.FileName),
+    FilePath := CurrentSong.Path.Append(CurrentSong.FileName);
+    // create backup file
+    FilePath.CopyFile(Path(FilePath.ToUTF8 + '.ansi.bak'), false);
+    // store in UTF-8 encoding
+    SResult := SaveSong(CurrentSong, Lines[0], FilePath,
              boolean(Data));
+    Success := (SResult = ssrOK);
   end;
+
+  if (Success) then
+    ScreenPopupInfo.ShowPopup(Language.Translate('INFO_FILE_SAVED'))
+  else
+    ScreenPopupError.ShowPopup(Language.Translate('ERROR_SAVE_FILE_FAILED'));
 end;
 
 // Method for input parsing. If false is returned, GetNextWindow
@@ -182,10 +195,18 @@ begin
           // Save Song
           SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path.Append(CurrentSong.FileName),
                    (SDL_ModState = KMOD_LSHIFT));
-          if (SResult = ssrEncodingError) then
+          if (SResult = ssrOK) then
+          begin
+            ScreenPopupInfo.ShowPopup(Language.Translate('INFO_FILE_SAVED'));
+          end
+          else if (SResult = ssrEncodingError) then
           begin
             ScreenPopupCheck.ShowPopup(Language.Translate('ENCODING_ERROR_ASK_FOR_UTF8'), OnSaveEncodingError,
                 Pointer(SDL_ModState = KMOD_LSHIFT), true);
+          end
+          else
+          begin
+            ScreenPopupError.ShowPopup(Language.Translate('ERROR_SAVE_FILE_FAILED'));
           end;
           Exit;
         end;
