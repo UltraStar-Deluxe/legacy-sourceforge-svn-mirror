@@ -39,6 +39,7 @@ uses
   {$IFDEF MSWINDOWS}
   TntClasses,
   {$ENDIF}
+  UConfig,
   UUnicodeUtils;
 
 type
@@ -331,6 +332,12 @@ type
 
     // TODO: Dirwatch stuff
     // AddFileChangeListener(Listener: TFileChangeListener);
+
+    {**
+     * Internal string representation. For debugging only.
+     *}
+    function GetIntern: UTF8String;
+    property Intern: UTF8String READ GetIntern;
   end;
 
 {**
@@ -357,6 +364,89 @@ implementation
 uses
   RTLConsts,
   UFilesystem;
+
+{*
+ * Due to a compiler bug in FPC <= 2.2.4 reference counting does not work
+ * properly with interfaces (see http://bugs.freepascal.org/view.php?id=14019).
+ *
+ * There are two (probably more) scenarios causes a program to crash:
+ *
+ * 1. Assume we execute Path('fail').GetParent().ToUTF8(). The compiler will
+ * internally create a temporary variable to hold the result of Path('fail').
+ * This temporary var is then passed as Self to GetParent(). Unfortunately FPC
+ * does already decrement the ref-count of the temporary var at the end of the
+ * call to Path('fail') and the ref-count drops to zero and the temp object
+ * is destroyed as FPC erroneously assumes that the temp is not used anymore.
+ * As a result the Self variable in GetParent() will be invalid, the same
+ * applies to TPathImpl.fName which reference count dropped to zero when the
+ * temp was destroyed. Hence GetParent() will likely crash.
+ * If it does not, ToUTF8() will either return some random string
+ * (e.g. '' or stupid stuff like 'fhwkjehdk') or crash.
+ * Either way the result of ToUTF8() is messed up.
+ * This scenario applies whenever a function (or method) is called that returns
+ * an interfaced object (e.g. an IPath) and the result is used without storing
+ * a reference to it in a (temporary) variable first.
+ *
+ *  Tmp := Path('fail'); Tmp2 := Tmp.GetParent(); Tmp2.ToUTF8();
+ *
+ * will not crash but is very impractical and error-prone. Note that Tmp2 cannot
+ * be replaced with Tmp (see scenario 2).
+ *
+ * 2. Another situation this bug will ruin our lives is when a variable to an
+ * interfaced object is used at the left and right side of an assignment as in:
+ *   MyPath := MyPath.GetParent()
+ *
+ * Although the bug is already fixed in the FPC development version 2.3.1
+ * it will take quite some time till the next FPC release (> 2.2.4) in which
+ * this issue is fixed.
+ *
+ * To workaround this bug we use some very simple and stupid kind of garbage
+ * collection. New IPaths are stored in an IInterfaceList (call it GarbaegeList)
+ * to artificially increase the ref-count of the newly created object.
+ * This keeps the object alive when FPC's temporary variable comes to the end
+ * of its lifetime and the object's ref-count is decremented
+ * (and is now 1 instead of 0).
+ * Later on, the object is either garbage or referenced by another variable.
+ *
+ * Look at
+ *   MyPath := Path('SomeDir/SubDir').GetParent()
+ *
+ * (1) The result of Path('SomeDir/SubDir') is garbage as it is not used anymore.
+ * (2) The result of GetParent() is referenced by MyPath
+ * Object (1) has a reference count of 1 (as it is only referenced by the
+ * GarbageList). Object (2) is referenced twice (MyPath + GarbageList).
+ * When the reference to (2) is finally stored in MyPath we can safely remove
+ * (1) and (2) from the GarbageList so (1) will be freed and the ref-count of
+ * (2) will be decremented to 1.
+ *
+ * As we do not know when it is safe to remove an object from the GarbageList
+ * we assume that there are max. GarbageMaxCount IPath elements created until
+ * the execution of the expression is performed and a reference to the resulting
+ * object is assigned to a variable so all temps can be safely deleted.
+ *
+ * Worst-case scenarios are recursive calls or calls with large call stacks with
+ * functions that return an IPath. Also keep in mind that multiple threads might
+ * be executing such functions at the same time.
+ * A reasonable count might be a max. of 20.000 elements. With an average length
+ * of 40 UTF8 chars (maybe 60 byte with class info, pointer etc.) per IPath
+ * this will consume ~1.2MB.
+ *}
+{$IFDEF FPC}
+{$IF FPC_VERSION_INT <= 002002004} // <= 2.2.4
+  {$DEFINE HAVE_REFCNTBUG}
+{$IFEND}
+{$ENDIF}
+
+{$IFDEF HAVE_REFCNTBUG}
+const
+  // when GarbageList.Count reaches GarbageMaxCount the oldest references in
+  // GarbageList will be deleted until GarbageList.Count equals GarbageAfterCleanCount.
+  GarbageMaxCount = 20000;
+  GarbageAfterCleanCount = GarbageMaxCount-1000;
+
+var
+  GarbageList: IInterfaceList;
+{$ENDIF}
 
 type
   TPathImpl = class(TInterfacedObject, IPath)
@@ -437,6 +527,8 @@ type
       function DeleteEmptyDir(): boolean;
       function Rename(const NewName: IPath): boolean;
       function CopyFile(const Target: IPath; FailIfExists: boolean): boolean;
+
+      function GetIntern(): UTF8String;
   end;
 
 function Path(const PathName: RawByteString; DelimOption: TPathDelimOption): IPath;
@@ -458,7 +550,7 @@ end;
 
 procedure TPathImpl.AssertRefCount;
 begin
-  {$IFDEF FPC}
+  {$IFDEF HAVE_REFCNTBUG}
   if (FRefCount <= 0) then
     raise Exception.Create('RefCount error: ' + IntToStr(FRefCount));
   {$ENDIF}
@@ -469,6 +561,16 @@ begin
   inherited Create();
   fName := Name;
   Unify(DelimOption);
+  {$IFDEF HAVE_REFCNTBUG}
+  GarbageList.Lock;
+  if (GarbageList.Count > GarbageMaxCount) then
+  begin
+    while (GarbageList.Count > GarbageAfterCleanCount) do
+      GarbageList.Delete(0);
+  end;
+  GarbageList.Add(Self);
+  GarbageList.Unlock;
+  {$ENDIF}
 end;
 
 destructor TPathImpl.Destroy();
@@ -619,7 +721,6 @@ end;
 function TPathImpl.SplitDirs(): IPathDynArray;
 var
   CurPath: IPath;
-  TmpPath: IPath;
   Components: array of IPath;
   CurPathStr: UTF8String;
   DelimPos: integer;
@@ -639,9 +740,7 @@ begin
     DelimPos := LastDelimiter(PathDelim, SysUtils.ExcludeTrailingPathDelimiter(CurPathStr));
     Components[High(Components)] := Path(Copy(CurPathStr, DelimPos+1, Length(CurPathStr)));
 
-    // TODO: remove this workaround for FPC bug
-    TmpPath := CurPath;
-    CurPath := TmpPath.GetParent();
+    CurPath := CurPath.GetParent();
   until (CurPath = PATH_NONE);
 
   // reverse list
@@ -683,13 +782,9 @@ end;
 function TPathImpl.Equals(const Other: IPath; IgnoreCase: boolean): boolean;
 var
   SelfPath, OtherPath: UTF8String;
-  TmpPath: IPath;
 begin
-  // TODO: remove fpc refcount bug workaround
-  TmpPath := Self.GetAbsolutePath();
-  SelfPath := TmpPath.RemovePathDelim().ToUTF8();
-  TmpPath := Other.GetAbsolutePath();
-  OtherPath := TmpPath.RemovePathDelim().ToUTF8();
+  SelfPath := Self.GetAbsolutePath().RemovePathDelim().ToUTF8();
+  OtherPath := Other.GetAbsolutePath().RemovePathDelim().ToUTF8();
   if (FileSystem.IsCaseSensitive() and not IgnoreCase) then
     Result := (CompareStr(SelfPath, OtherPath) = 0)
   else
@@ -709,33 +804,21 @@ end;
 function TPathImpl.IsChildOf(const Parent: IPath; Direct: boolean): boolean;
 var
   SelfPath, ParentPath: UTF8String;
-  TmpPath, TmpPath2: IPath;
 begin
   Result := false;
 
   if (Direct) then
   begin
-    // TODO: remove workaround for fpc refcount bug
-    TmpPath := Self.GetParent();
-    TmpPath2 := TmpPath.GetAbsolutePath();
-    SelfPath := TmpPath2.AppendPathDelim().ToUTF8();
-
-    // TODO: remove workaround for fpc refcount bug
-    TmpPath := Parent.GetAbsolutePath();
-    ParentPath := TmpPath.AppendPathDelim().ToUTF8();
+    SelfPath := Self.GetParent().GetAbsolutePath().AppendPathDelim().ToUTF8();
+    ParentPath := Parent.GetAbsolutePath().AppendPathDelim().ToUTF8();
 
     // simply check if this paths parent path (SelfPath) equals ParentPath
     Result := (SelfPath = ParentPath);
   end
   else
   begin
-    // TODO: remove workaround for fpc refcount bug
-    TmpPath := Self.GetAbsolutePath();
-    SelfPath := TmpPath.AppendPathDelim().ToUTF8();
-
-    // TODO: remove workaround for fpc refcount bug
-    TmpPath := Parent.GetAbsolutePath();
-    ParentPath := TmpPath.AppendPathDelim().ToUTF8();
+    SelfPath := Self.GetAbsolutePath().AppendPathDelim().ToUTF8();
+    ParentPath := Parent.GetAbsolutePath().AppendPathDelim().ToUTF8();
 
     if (Length(SelfPath) <= Length(ParentPath)) then
       Exit;
@@ -751,7 +834,6 @@ end;
 function AdjustCaseRecursive(CurPath: IPath; AdjustAllLevels: boolean): IPath;
 var
   OldParent, AdjustedParent: IPath;
-  TmpPath: IPath;
   LocalName: IPath;
   PathFound: IPath;
   PathWithAdjParent: IPath;
@@ -766,10 +848,7 @@ begin
     Exit;
   end;
 
-  // extract name component of current path
-  // TODO: remove workaround for fpc refcount bug
-  TmpPath := CurPath.RemovePathDelim();
-  LocalName := TmpPath.GetName();
+  LocalName := CurPath.RemovePathDelim().GetName();
 
   // try to adjust parent
   OldParent := CurPath.GetParent();
@@ -973,6 +1052,11 @@ end;
 function TPathImpl.CopyFile(const Target: IPath; FailIfExists: boolean): boolean;
 begin
   Result := FileSystem.CopyFile(Self, Target, FailIfExists);
+end;
+
+function TPathImpl.GetIntern(): UTF8String;
+begin
+  Result := fName;
 end;
 
 
@@ -1238,6 +1322,10 @@ begin
 end;
 
 initialization
+  {$IFDEF HAVE_REFCNTBUG}
+  GarbageList := TInterfaceList.Create();
+  GarbageList.Capacity := GarbageMaxCount;
+  {$ENDIF}
   PATH_NONE_Singelton := Path('');
 
 finalization
