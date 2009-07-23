@@ -76,8 +76,7 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT);
 
     // check normal keys
-    if (IsAlphaNumericChar(CharCode) or
-        IsPunctuationChar(CharCode)) then
+    if (IsPrintableChar(CharCode)) then
     begin
       Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
                                           UCS4ToUTF8String(CharCode);
@@ -198,7 +197,7 @@ begin
 
       SDLK_BACKSPACE:
         begin
-          Button[Interaction].Text[0].DeleteLastLetter;
+          Button[Interaction].Text[0].DeleteLastLetter();
         end;
 
       SDLK_ESCAPE :
