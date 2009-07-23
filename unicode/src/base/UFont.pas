@@ -1574,9 +1574,9 @@ begin
   end;
 
   // if left or bottom bound was not set, set them to 0
-  if (Result.Left = Infinity) then
+  if (IsInfinite(Result.Left)) then
     Result.Left := 0.0;
-  if (Result.Bottom = Infinity) then
+  if (IsInfinite(Result.Bottom)) then
     Result.Bottom := 0.0;
 end;
 
