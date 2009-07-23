@@ -189,7 +189,7 @@ function WideStringReplaceChar(const text: WideString; search, rep: WideChar): W
 implementation
 
 {$IFDEF UNIX}
-{$IFNDEF APPLE}
+{$IFNDEF DARWIN}
 const
   LC_CTYPE = 0;
 
@@ -202,13 +202,13 @@ var
 
 procedure InitUnicodeUtils();
 {$IFDEF UNIX}
-{$IFNDEF APPLE}
+{$IFNDEF DARWIN}
 var
   localeName: PChar;
 {$ENDIF}
 {$ENDIF}
 begin
-  {$IF Defined(APPLE)}
+  {$IF Defined(DARWIN)}
     NativeUTF8 := true;
   {$ELSEIF Defined(MSWindows)}
     NativeUTF8 := false;
