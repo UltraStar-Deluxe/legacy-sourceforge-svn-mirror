@@ -464,7 +464,7 @@ type
        * The bitmap must be 2* pixels wider and higher than the
        * original glyph's bitmap with the latter centered in it.
        *}
-      procedure Extrude(var TexBuffer: TGLubyteDynArray; Outset: single);
+      procedure StrokeBorder(var Glyph: FT_Glyph);
 
       {**
        * Creates an OpenGL texture (and display list) for the glyph.
@@ -496,6 +496,8 @@ type
       property CharIndex: FT_UInt read fCharIndex;
   end;
 
+  TFontPart = ( fpNone, fpInner, fpOutline );
+
   {**
    * Freetype font class.
    *}
@@ -511,6 +513,7 @@ type
       fLoadFlags: FT_Int32;         //**< FT glpyh load-flags
       fFontUnitScale: TPositionDbl; //**< FT font-units to pixel ratio
       fUseDisplayLists: boolean;    //**< true: use display-lists, false: direct drawing
+      fPart: TFontPart;             //**< indicates the part of an outline font
 
       {** @seealso TCachedFont.LoadGlyph }
       function LoadGlyph(ch: UCS4Char): TGlyph; override;
@@ -1416,6 +1419,7 @@ begin
   fOutset := Outset;
   fLoadFlags := LoadFlags;
   fUseDisplayLists := true;
+  fPart := fpNone;
 
   // load font information
   if (FT_New_Face(TFreeType.GetLibrary(), PChar(Filename), 0, fFace) <> 0) then
@@ -1708,7 +1712,9 @@ begin
   fOutset := Outset;
 
   fInnerFont := TFTFont.Create(Filename, Size, 0.0, LoadFlags);
+  fInnerFont.fPart := fpInner;
   fOutlineFont := TFTFont.Create(Filename, Size, Outset, LoadFlags);
+  fOutlineFont.fPart := fpOutline;
 
   ResetIntern();
 end;
@@ -1970,82 +1976,113 @@ const
    *}
   cTexSmoothBorder = 1;
 
-procedure TFTGlyph.Extrude(var TexBuffer: TGLubyteDynArray; Outset: single);
-
-  procedure SetToMax(var Val1: GLubyte; Val2: GLubyte); {$IFDEF HasInline}inline;{$ENDIF}
-  begin
-    if (Val1 < Val2) then
-      Val1 := Val2;
-  end;
-
+procedure TFTGlyph.StrokeBorder(var Glyph: FT_Glyph);
 var
-  I, X, Y: integer;
-  SrcBuffer,TmpBuffer: TGLubyteDynArray;
-  TexLine, TexLinePrev, TexLineNext: PGLubyteArray;
-  SrcLine: PGLubyteArray;
-  AlphaScale: single;
-  Value, ValueNeigh, ValueDiag: GLubyte;
-const
-  // square-root of 2 used for diagonal neighbor pixels
-  cSqrt2 = 1.4142;
-  // number of ignored pixels on each edge of the bitmap. Consists of:
-  // - border used for font smoothing and
-  // - outer (extruded) bitmap pixel (because it is just written but never read)
-  cBorder = cTexSmoothBorder + 1;
+  Outline: PFT_Outline;
+  OuterStroker, InnerStroker:  FT_Stroker;
+  OuterNumPoints, InnerNumPoints, GlyphNumPoints: FT_UInt;
+  OuterNumContours, InnerNumContours, GlyphNumContours: FT_UInt;
+  OuterBorder, InnerBorder: FT_StrokerBorder;
+  OutlineFlags: FT_Int;
+  UseStencil: boolean;
 begin
-  // allocate memory for temporary buffer
-  SetLength(SrcBuffer, Length(TexBuffer));
-  FillChar(SrcBuffer[0], Length(TexBuffer), 0);
+  // It is possible to extrude the borders of a glyph with FT_Glyph_Stroke
+  // but it will extrude the border to the outside and the inside of a glyph
+  // although we just want to extrude to the outside.
+  // FT_Glyph_StrokeBorder extrudes to the outside but also fills the interior
+  // (this is what we need for bold fonts).
+  // In both cases the inner font and outline font (border) will overlap.
+  // Normally this does not matter but it does if alpha blending is active.
+  // In this case if e.g. the inner color is set to white, the outline to red
+  // and alpha to 0.5 the inner part will not be white it will be pink.
 
-  // extrude pixel by pixel
-  for I := 1 to Ceil(Outset) do
+  InnerStroker := nil;
+  OuterStroker := nil;
+
+  // If we are to create the interior of an outlined font (fInner = true)
+  // we have to create two borders:
+  // - one extruded to the outside by fOutset pixels and
+  // - one extruded to the inside by almost 0 zero pixels.
+  // The second one is used as a stencil for the first one, clearing the
+  // interiour of the glyph.
+  // The stencil is not needed to create bold fonts.
+  UseStencil := (fFont.fPart = fpInner);
+
+  Outline := @FT_OutlineGlyph(Glyph).outline;
+
+  OuterBorder := FT_Outline_GetOutsideBorder(Outline);
+  if (OuterBorder = FT_STROKER_BORDER_LEFT) then
+    InnerBorder := FT_STROKER_BORDER_RIGHT
+  else
+    InnerBorder := FT_STROKER_BORDER_LEFT;
+
+  { extrude outer border }
+
+  if (FT_Stroker_New(Glyph.library_, OuterStroker) <> 0) then
+    raise Exception.Create('FT_Stroker_New failed!');
+  FT_Stroker_Set(
+      OuterStroker,
+      Round(fOutset * 64),
+      FT_STROKER_LINECAP_ROUND,
+      FT_STROKER_LINEJOIN_BEVEL,
+      0);
+
+  // similar to FT_Glyph_StrokeBorder(inner = FT_FALSE) but it is possible to
+  // use FT_Stroker_ExportBorder() afterwards to combine inner and outer borders
+  if (FT_Stroker_ParseOutline(OuterStroker, Outline, FT_FALSE) <> 0) then
+    raise Exception.Create('FT_Stroker_ParseOutline failed!');
+
+  FT_Stroker_GetBorderCounts(OuterStroker, OuterBorder, OuterNumPoints, OuterNumContours);
+
+  { extrude inner border (= stencil) }
+
+  if (UseStencil) then
   begin
-    // swap arrays
-    TmpBuffer := TexBuffer;
-    TexBuffer := SrcBuffer;
-    SrcBuffer := TmpBuffer;
+    if (FT_Stroker_New(Glyph.library_, InnerStroker) <> 0) then
+      raise Exception.Create('FT_Stroker_New failed!');
+    FT_Stroker_Set(
+        InnerStroker,
+        63, // extrude at most one pixel to avoid a black border
+        FT_STROKER_LINECAP_ROUND,
+        FT_STROKER_LINEJOIN_BEVEL,
+        0);
 
-    // as long as we add an entire pixel of outset, use a solid color.
-    // If the fractional part is reached blend, e.g. outline=3.2 -> 3 solid
-    // pixels and one blended with alpha=0.2.
-    // For the fractional part I = Ceil(Outset) is always true.
-    if (I <= Outset) then
-      AlphaScale := 1
-    else
-      AlphaScale := Outset - Trunc(Outset);
+    if (FT_Stroker_ParseOutline(InnerStroker, Outline, FT_FALSE) <> 0) then
+      raise Exception.Create('FT_Stroker_ParseOutline failed!');
 
-    // copy data to the expanded bitmap.
-    for Y := cBorder to fTexSize.Height - 2*cBorder do
-    begin
-      TexLine     := @TexBuffer[Y*fTexSize.Width];
-      TexLinePrev := @TexBuffer[(Y-1)*fTexSize.Width];
-      TexLineNext := @TexBuffer[(Y+1)*fTexSize.Width];
-      SrcLine     := @SrcBuffer[Y*fTexSize.Width];
-
-      // expand current line's pixels
-      for X := cBorder to fTexSize.Width - 2*cBorder do
-      begin
-        Value := SrcLine[X];
-        ValueNeigh := Round(Value * AlphaScale);
-        ValueDiag := Round(ValueNeigh / cSqrt2);
-
-        SetToMax(TexLine[X],   Value);
-        SetToMax(TexLine[X-1], ValueNeigh);
-        SetToMax(TexLine[X+1], ValueNeigh);
-
-        SetToMax(TexLinePrev[X],   ValueNeigh);
-        SetToMax(TexLinePrev[X-1], ValueDiag);
-        SetToMax(TexLinePrev[X+1], ValueDiag);
-
-        SetToMax(TexLineNext[X],   ValueNeigh);
-        SetToMax(TexLineNext[X-1], ValueDiag);
-        SetToMax(TexLineNext[X+1], ValueDiag);
-      end;
-    end;
+    FT_Stroker_GetBorderCounts(InnerStroker, InnerBorder, InnerNumPoints, InnerNumContours);
+  end else begin
+    InnerNumPoints := 0;
+    InnerNumContours := 0;
   end;
 
-  TmpBuffer := nil;
-  SetLength(SrcBuffer, 0);
+  { combine borders (subtract: OuterBorder - InnerBorder) }
+
+  GlyphNumPoints := InnerNumPoints + OuterNumPoints;
+  GlyphNumContours := InnerNumContours + OuterNumContours;
+
+  // save flags before deletion (TODO: set them on the resulting outline)
+  OutlineFlags := Outline.flags;
+
+  // resize glyph outline to hold inner and outer border
+  FT_Outline_Done(Glyph.Library_, Outline);
+  if (FT_Outline_New(Glyph.Library_, GlyphNumPoints, GlyphNumContours, Outline) <> 0) then
+    raise Exception.Create('FT_Outline_New failed!');
+
+  Outline.n_points := 0;
+  Outline.n_contours := 0;
+
+  // add points to outline. The inner-border is used as a stencil.
+  FT_Stroker_ExportBorder(OuterStroker, OuterBorder, Outline);
+  if (UseStencil) then
+    FT_Stroker_ExportBorder(InnerStroker, InnerBorder, Outline);
+  if (FT_Outline_Check(outline) <> 0) then
+    raise Exception.Create('FT_Stroker_ExportBorder failed!');
+
+  if (InnerStroker <> nil) then
+    FT_Stroker_Done(InnerStroker);
+  if (OuterStroker <> nil) then
+    FT_Stroker_Done(OuterStroker);
 end;
 
 procedure TFTGlyph.CreateTexture(LoadFlags: FT_Int32);
@@ -2067,6 +2104,9 @@ begin
   // move the face's glyph into a Glyph object
   if (FT_Get_Glyph(fFont.Face^.glyph, Glyph) <> 0) then
     raise Exception.Create('FT_Get_Glyph failed');
+
+  if (fOutset > 0) then
+    StrokeBorder(Glyph);
 
   // store scaled advance width/height in glyph-object
   fAdvance.X := fFont.Face^.glyph^.advance.x / 64 + fOutset*2;
@@ -2148,9 +2188,6 @@ begin
       end;
     end;
   end;
-
-  if (fOutset > 0) then
-    Extrude(TexBuffer, fOutset);
 
   // allocate resources for textures and display lists
   glGenTextures(1, @fTexture);
