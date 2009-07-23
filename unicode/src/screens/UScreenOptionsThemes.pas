@@ -61,7 +61,7 @@ uses
   SysUtils,
   UGraphic,
   UMain,
-  UPath,
+  UPathUtils,
   UUnicodeUtils,
   USkins;
 

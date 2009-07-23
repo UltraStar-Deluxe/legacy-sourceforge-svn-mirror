@@ -79,7 +79,7 @@ uses
   Classes,
   SysUtils,
   ULog,
-  UPath;
+  UPathUtils;
 
 {**
  * LoadList, set default language, set standard implode glues

@@ -154,7 +154,7 @@ uses
   StrUtils,
   TextGL,
   UIni,
-  UPath,
+  UPathUtils,
   UMusic,  //needed for Lines
   UNote;   //needed for Player
 

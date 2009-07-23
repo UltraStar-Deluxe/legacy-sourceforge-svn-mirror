@@ -123,7 +123,7 @@ uses
   UMain,
   UTexture,
   UTime,
-  UPath;
+  UPathUtils;
 
 constructor TDisplay.Create;
 var

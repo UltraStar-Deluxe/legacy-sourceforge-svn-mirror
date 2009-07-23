@@ -163,7 +163,7 @@ uses
   UGraphic,
   UMain,
   UIni,
-  UPath,
+  UPathUtils,
   UNote,
   UUnicodeUtils;
 

@@ -176,7 +176,7 @@ uses
   Textgl,
   ULanguage,
   UCommon,
-  UPath;
+  UPathUtils;
 
 function TScreenCredits.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin

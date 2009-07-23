@@ -108,7 +108,7 @@ uses
   UGraphicClasses,
   ULanguage,
   UNote,
-  UPath,
+  UPathUtils,
   URecord, 
   USkins;
 

@@ -80,7 +80,7 @@ uses
   UJoystick,
   ULanguage,
   ULog,
-  UPath,
+  UPathUtils,
   UPlaylist,
   UMusic,
   UBeatTimer,

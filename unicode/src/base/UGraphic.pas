@@ -281,7 +281,7 @@ uses
   UIni,
   UDisplay,
   UCommandLine,
-  UPath;
+  UPathUtils;
 
 procedure LoadFontTextures;
 begin

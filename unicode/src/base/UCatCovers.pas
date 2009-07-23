@@ -66,7 +66,7 @@ uses
   // UFiles,
   ULog,
   UMain,
-  UPath;
+  UPathUtils;
 
 constructor TCatCovers.Create;
 begin

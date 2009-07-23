@@ -19,11 +19,11 @@
  * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  *
- * $URL: https://ultrastardx.svn.sourceforge.net/svnroot/ultrastardx/trunk/src/base/UPath.pas $
- * $Id: UPath.pas 1624 2009-03-06 23:45:10Z k-m_schindler $
+ * $URL$
+ * $Id$
  *}
 
-unit UPath;
+unit UPathUtils;
 
 interface
 

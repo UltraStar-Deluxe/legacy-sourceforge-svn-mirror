@@ -35,7 +35,7 @@ interface
 
 uses
   USong,
-  UPath;
+  UPathUtils;
 
 type
   TPlaylistItem = record

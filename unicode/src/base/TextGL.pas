@@ -73,7 +73,7 @@ uses
   IniFiles,
   UCommon,
   UMain,
-  UPath;
+  UPathUtils;
 
 function FindFontFile(FontIni: TCustomIniFile; Font: string): string;
 var

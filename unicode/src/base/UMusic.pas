@@ -533,7 +533,7 @@ uses
   UCommandLine,
   URecord,
   ULog,
-  UPath;
+  UPathUtils;
 
 var
   DefaultVideoPlayback : IVideoPlayback;

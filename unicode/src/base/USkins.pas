@@ -74,7 +74,7 @@ uses
   UIni,
   ULog,
   UMain,
-  UPath;
+  UPathUtils;
 
 constructor TSkin.Create;
 begin

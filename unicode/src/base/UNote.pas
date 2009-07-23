@@ -129,7 +129,7 @@ uses
   UCommon,
   UGraphic,
   UGraphicClasses,
-  UPath,
+  UPathUtils,
   UPlatform,
   UThemes;
 

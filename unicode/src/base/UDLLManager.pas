@@ -92,7 +92,7 @@ uses
   {$ELSE}
   dynlibs,
   {$ENDIF}
-  UPath,
+  UPathUtils,
   ULog,
   SysUtils;
 

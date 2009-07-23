@@ -264,7 +264,7 @@ uses
   USkins,
   URecord,
   UCommandLine,
-  UPath,
+  UPathUtils,
   UUnicodeUtils;
 
 (**

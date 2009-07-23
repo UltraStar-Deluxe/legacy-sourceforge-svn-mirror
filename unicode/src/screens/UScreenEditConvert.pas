@@ -141,7 +141,7 @@ uses
   UGraphic,
   UIni,
   UMain,
-  UPath,
+  UPathUtils,
   USkins,
   UTextEncoding,
   UUnicodeUtils;
