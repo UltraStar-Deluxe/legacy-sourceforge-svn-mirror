@@ -134,18 +134,14 @@ var
   I: Integer;
   FileStream: TBinaryFileStream;
 begin
-  {$message warn 'TODO: TParser.ParseSong'}
-
-(*
   Result := False;
   if Filename.IsFile() then
   begin
-    SSFile := TStringList.Create;
-
     ErrorMessage := 'Can''t open melody.xml file';
 
+    SSFile := TStringList.Create;
+    FileStream := TBinaryFileStream.Create(Filename, fmOpenRead);
     try
-      FileStream := TBinaryFileStream.Create(Filename);
       SSFile.LoadFromStream(FileStream);
 
       ErrorMessage := '';
@@ -176,25 +172,24 @@ begin
 
     finally
       SSFile.Free;
+      FileStream.Free;
     end;
   end;
-  *)
 end;
 
 function  TParser.ParseSongHeader (const Filename: IPath): Boolean;
-var I: Integer;
+var
+  I: Integer;
+  Stream: TBinaryFileStream;
 begin
   Result := False;
 
-  {$message warn 'TODO: TParser.ParseSong'}
-  (*
-  if FileExists(Filename) then
+  if Filename.IsFile() then
   begin
     SSFile := TStringList.Create;
-    SSFile.Clear;
-    
+    Stream := TBinaryFileStream.Create(Filename, fmOpenRead);
     try
-      SSFile.LoadFromFile(Filename);
+      SSFile.LoadFromStream(Stream);
 
       If (SSFile.Count > 0) then
       begin
@@ -225,11 +220,11 @@ begin
 
     finally
       SSFile.Free;
+      Stream.Free;
     end;
   end
   else
     ErrorMessage := 'Can''t find melody.xml file';
-    *)
 end;
 
 Function TParser.ParseLine(Line: String): Boolean;
@@ -591,19 +586,17 @@ end;
 Function  TParser.ParseConfigForEdition(const Filename: IPath): String;
 var
   txt: TStringlist;
+  Stream: TBinaryFileStream;
   I: Integer;
   J, K: Integer;
   S: String;
 begin
   Result := '';
-  txt := TStringlist.Create;
 
-  {$message warn 'TODO: TParser.ParseConfigForEdition'}
-
-  (*
+  Stream := TBinaryFileStream.Create(Filename, fmOpenRead);
   try
-    txt.LoadFromFile(Filename);
-
+    txt := TStringlist.Create;
+    txt.LoadFromStream(Stream);
     For I := 0 to txt.Count-1 do
     begin
       S := Trim(txt.Strings[I]);
@@ -623,8 +616,8 @@ begin
     Edition := Result;
   finally
     txt.Free;
+    Stream.Free;
   end;
-  *)
 end;
 
 end.

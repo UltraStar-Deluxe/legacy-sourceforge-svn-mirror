@@ -211,9 +211,11 @@ end;
 procedure TCoverDatabase.Open();
 var
   Version: integer;
-  Filename: IPath;
+  Filename, TmpPath: IPath;
 begin
-  Filename := Platform.GetGameUserPath().Append(COVERDB_FILENAME);
+  // TODO: remove fpc refcount workaround
+  TmpPath := Platform.GetGameUserPath();
+  Filename := TmpPath.Append(COVERDB_FILENAME);
 
   DB := TSQLiteDatabase.Create(Filename.ToUTF8());
   Version := GetVersion();

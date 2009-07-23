@@ -34,12 +34,16 @@ interface
 {$I switches.inc}
 
 uses
-  UMusic,
+  Classes,
+  ctypes,
+  sdl,
   avcodec,
   avformat,
   avutil,
+  avio,
+  UMusic,
   ULog,
-  sdl;
+  UPath;
 
 type
   PPacketQueue = ^TPacketQueue;
@@ -219,6 +223,109 @@ begin
   end;
   Result := true;
 end;
+
+function FFmpegStreamRead(Opaque: Pointer; Buffer: PByteArray; BufSize: cint): cint; cdecl;
+var
+  Stream: TStream;
+begin
+  Stream := TStream(Opaque);
+  if (Stream = nil) then
+    raise EInvalidContainer.Create('FFmpegStreamRead on nil');
+  try
+    Result := Stream.Read(Buffer[0], BufSize);
+  except
+    Result := -1;
+  end;
+end;
+
+function FFmpegStreamWrite(Opaque: Pointer; Buffer: PByteArray; BufSize: cint): cint; cdecl;
+var
+  Stream: TStream;
+begin
+  Stream := TStream(Opaque);
+  if (Stream = nil) then
+    raise EInvalidContainer.Create('FFmpegStreamWrite on nil');
+  try
+    Result := Stream.Write(Buffer[0], BufSize);
+  except
+    Result := -1;
+  end;
+end;
+
+function FFmpegStreamSeek(Opaque: Pointer; Offset: cint64; Whence: cint): cint64; cdecl;
+var
+  Stream : TStream;
+  Origin : Word;
+begin
+  Stream := TStream(opaque);
+  if (Stream = nil) then
+    raise EInvalidContainer.Create('FFmpegStreamSeek on nil');
+  case whence of
+    0 : Origin := soFromBeginning;
+    1 : Origin := soFromCurrent;
+    2 : Origin := soFromEnd;
+  else
+    Origin := soFromBeginning;
+  end;
+  Result := Stream.Seek(offset,origin);
+end;
+
+const
+  AVFileBufSize = 32768;
+
+type
+  PAVFile = ^TAVFile;
+  TAVFile = record
+    ByteIOCtx: TByteIOContext;
+    Buffer: array [0 .. AVFileBufSize-1] of byte;
+  end;
+
+function AVOpenInputFile(var ic_ptr: PAVFormatContext; filename: IPath;
+                     fmt: PAVInputFormat; buf_size: cint;
+                     ap: PAVFormatParameters): PAVFile;
+var
+  ProbeData: TAVProbeData;
+  FilenameStr: UTF8String;
+  FileStream: TBinaryFileStream;
+  AVFile: PAVFile;
+begin
+  Result := nil;
+  New(AVFile);
+  
+  // copy UTF-8 string so ProbeData.filename will be valid at av_probe_input_format()
+  FilenameStr := Filename.ToUTF8;
+
+  if (fmt = nil) then
+  begin
+    ProbeData.filename := PChar(FilenameStr);
+    ProbeData.buf := @AVFile.Buffer;
+    ProbeData.buf_size := AVFileBufSize;
+
+    fmt := av_probe_input_format(@ProbeData, 1);
+    if (fmt = nil) then
+    begin
+      Dispose(AVFile);
+      Exit;
+    end;
+  end;
+
+  FileStream := TBinaryFileStream.Create(Filename, fmOpenReadWrite);
+  if (init_put_byte(@AVFile.ByteIOCtx, @AVFile.Buffer, AVFileBufSize, 0, FileStream,
+    FFmpegStreamRead, FFmpegStreamWrite, FFmpegStreamSeek) < 0) then
+  begin
+    Dispose(AVFile);
+    Exit;
+  end;
+
+  if (av_open_input_stream(ic_ptr, @AVFile.ByteIOCtx, PChar(FilenameStr), fmt, ap) < 0) then
+  begin
+    Dispose(AVFile);
+    Exit;
+  end;
+
+  Result := AVFile;
+end;
+
 
 { TPacketQueue }
 

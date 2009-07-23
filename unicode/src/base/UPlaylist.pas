@@ -184,7 +184,7 @@ begin
   //Load File
   try
     FilenameAbs := PlaylistPath.Append(Filename);
-    TextStream := TTextFileStream.Create(FilenameAbs, fmOpenRead);
+    TextStream := TMemTextFileStream.Create(FilenameAbs, fmOpenRead);
   except
     begin
       Log.LogError('Could not load Playlist: ' + FilenameAbs.ToNative);
@@ -260,7 +260,7 @@ begin
     Exit;
 
   // open file for rewriting
-  TextStream := TTextFileStream.Create(PlaylistFile, fmCreate);
+  TextStream := TMemTextFileStream.Create(PlaylistFile, fmCreate);
   try
     // Write version (not nessecary but helpful)
     TextStream.WriteLine('######################################');

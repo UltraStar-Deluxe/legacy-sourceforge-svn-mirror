@@ -45,6 +45,15 @@ type
   IPath = interface;
 
   {**
+   * TUnicodeMemoryStream
+   *}
+  TUnicodeMemoryStream = class(TMemoryStream)
+  public
+    procedure LoadFromFile(const FileName: IPath);
+    procedure SaveToFile(const FileName: IPath);
+  end;
+  
+  {**
    * TBinaryFileStream (inherited from THandleStream)
    *}
   {$IFDEF MSWINDOWS}
@@ -60,20 +69,59 @@ type
   end;
 
   {**
-   * TUnicodeMemoryStream
+   * TTextFileStream
    *}
-  TUnicodeMemoryStream = class(TMemoryStream)
-  public
-    procedure LoadFromFile(const FileName: IPath);
-    procedure SaveToFile(const FileName: IPath);
-  end;
+  TTextFileStream = class(TStream)
+  protected
+    fLineBreak: RawByteString;
+    fFilename: IPath;
+    fMode: word;
 
-  TTextFileStream = class(TBinaryFileStream)
+    function ReadLine(var Success: boolean): RawByteString; overload; virtual; abstract;
+  public
+    constructor Create(Filename: IPath; Mode: Word);
+
+    function ReadString(): RawByteString; virtual; abstract;
     function ReadLine(var Line: UTF8String): boolean; overload;
     function ReadLine(var Line: AnsiString): boolean; overload;
-    procedure Write(Str: RawByteString);
-    procedure WriteLine(Line: RawByteString = '');
+
+    procedure WriteString(const Str: RawByteString); virtual;
+    procedure WriteLine(const Line: RawByteString); virtual;
+
+    property LineBreak: RawByteString read fLineBreak write fLineBreak;
+    property Filename: IPath read fFilename;
   end;
+
+  {**
+   * TMemTextStream
+   *}
+  TMemTextFileStream = class(TTextFileStream)
+  private
+    fStream: TMemoryStream;
+  protected
+    function GetSize: Int64; override;
+
+    {**
+     * Copies fStream.Memory from StartPos to EndPos-1 to the result string;
+     *}
+    function CopyMemString(StartPos: int64; EndPos: int64): RawByteString;
+  public
+    constructor Create(Filename: IPath; Mode: Word);
+    destructor Destroy(); override;
+
+    function Read(var Buffer; Count: Longint): Longint; override;
+    function Write(const Buffer; Count: Longint): Longint; override;
+    function Seek(Offset: Longint; Origin: Word): Longint; override;
+    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
+
+    function ReadLine(var Success: boolean): RawByteString; override;
+    function ReadString(): RawByteString; override;
+  end;
+
+  {**
+  TUnicodeIniStream = class()
+  end;
+  *}
 
   {**
    * pdKeep:   Keep path as is, neither remove or append a delimiter
@@ -85,8 +133,44 @@ type
   IPathDynArray = array of IPath;
 
   {**
-   * IPath
-   * The Path's pathname is immutable and cannot be changed after creation.
+   * An IPath represents a filename, a directory or a filesystem path in general.
+   * It hides some of the operating system's specifics like path delimiters
+   * and encodings and provides an easy to use interface to handle them.
+   * Internally all paths are stored with the same path delimiter (PathDelim)
+   * and encoding (UTF-8). The transformation is already done AT THE CREATION of
+   * the IPath and hence calls to e.g. IPath.Equal() will not distinguish between
+   * Unix and Windows style paths.
+   *
+   * Create new paths with one of the Path() functions.
+   * If you need a string representation use IPath.ToNative/ToUTF8/ToWide.
+   * Note that due to the path-delimiter and encoding transformation the string
+   * might have changed. Path('one\test/path').ToUTF8() might return 'one/test/path'.
+   *
+   * It is recommended to use an IPath as long as possible without a string
+   * conversion (IPath.To...()). The whole Delphi (< 2009) and FPC RTL is ANSI
+   * only on Windows. If you would use for example FileExists(MyPath.ToNative)
+   * it would not find a file which contains characters that are not in the
+   * current locale. Same applies to AssignFile(), TFileStream.Create() and
+   * everything else in the RTL that expects a filename.
+   * As a rule of thumb: NEVER use any of the Delphi/FPC RTL filename functions
+   * if the filename parameter is not of a UTF8String or WideString type.
+   *
+   * If you need to open a file use TBinaryStream or TFileStream instead. Many
+   * of the RTL classes offer a LoadFromStream() method so ANSI Open() methods
+   * can be workaround.
+   *
+   * If there is only a ANSI and no IPath/UTF-8/WideString version and you cannot
+   * even pass a stream instead of a filename be aware that even if you know that
+   * a filename is ASCII only, subdirectories in an absolute path might contain
+   * some non-ASCII characters (for example the user's name) and hence might
+   * fail (if the characters are not in the current locale).
+   * It is rare but it happens.
+   *
+   * IMPORTANT:
+   *   This interface needs the cwstring unit on Unix (Max OS X / Linux) systems.
+   *   Cwstring functions (WideUpperCase, ...) cannot be used by external threads
+   *   as FPC uses Thread-Local-Storage for the implementation. As a result do not
+   *   call IPath stuff by external threads (e.g. in C callbacks or by SDL-threads).
    *}
   IPath = interface
   ['{686BF103-CE43-4598-B85D-A2C3AF950897}']
@@ -271,6 +355,7 @@ function PATH_NONE(): IPath;
 implementation
 
 uses
+  RTLConsts,
   UFilesystem;
 
 type
@@ -426,6 +511,8 @@ end;
 
 function TPathImpl.ToUTF8(UseNativeDelim: boolean): UTF8String;
 begin
+  AssertRefCount;
+
   if (UseNativeDelim) then
     Result := fName
   else
@@ -583,20 +670,26 @@ end;
 
 function TPathImpl.Append(const Child: RawByteString; DelimOption: TPathDelimOption): IPath;
 begin
+  AssertRefCount;
   Result := Append(Path(Child), DelimOption);
 end;
 
 function TPathImpl.Append(const Child: WideString; DelimOption: TPathDelimOption): IPath;
 begin
+  AssertRefCount;
   Result := Append(Path(Child), DelimOption);
 end;
 
 function TPathImpl.Equals(const Other: IPath; IgnoreCase: boolean): boolean;
 var
   SelfPath, OtherPath: UTF8String;
+  TmpPath: IPath;
 begin
-  SelfPath := Self.GetAbsolutePath().RemovePathDelim().ToUTF8();
-  OtherPath := Other.GetAbsolutePath().RemovePathDelim().ToUTF8();
+  // TODO: remove fpc refcount bug workaround
+  TmpPath := Self.GetAbsolutePath();
+  SelfPath := TmpPath.RemovePathDelim().ToUTF8();
+  TmpPath := Other.GetAbsolutePath();
+  OtherPath := TmpPath.RemovePathDelim().ToUTF8();
   if (FileSystem.IsCaseSensitive() and not IgnoreCase) then
     Result := (CompareStr(SelfPath, OtherPath) = 0)
   else
@@ -894,26 +987,220 @@ begin
 {$ENDIF}
 end;
 
-{ TTextFileStream }
+{ TTextStream }
+
+constructor TTextFileStream.Create(Filename: IPath; Mode: Word);
+begin
+  inherited Create();
+  fMode := Mode;
+  fFilename := Filename;
+  fLineBreak := sLineBreak;
+end;
 
 function TTextFileStream.ReadLine(var Line: UTF8String): boolean;
 begin
-  // TODO
+  Line := ReadLine(Result);
 end;
 
 function TTextFileStream.ReadLine(var Line: AnsiString): boolean;
 begin
-  // TODO
+  Line := ReadLine(Result);
 end;
 
-procedure TTextFileStream.WriteLine(Line: RawByteString);
+procedure TTextFileStream.WriteString(const Str: RawByteString);
 begin
-  Self.WriteBuffer(Line[1], Length(Line));
+  WriteBuffer(Str[1], Length(Str));
 end;
 
-procedure TTextFileStream.Write(Str: RawByteString);
+procedure TTextFileStream.WriteLine(const Line: RawByteString);
 begin
-  Self.WriteBuffer(Str[1], Length(Str));
+  WriteBuffer(Line[1], Length(Line));
+  WriteBuffer(fLineBreak[1], Length(fLineBreak));
+end;
+
+{ TMemTextStream }
+
+constructor TMemTextFileStream.Create(Filename: IPath; Mode: Word);
+var
+  FileStream: TBinaryFileStream;
+begin
+  inherited Create(Filename, Mode);
+
+  fStream := TMemoryStream.Create();
+
+  // load data to memory in read mode
+  if ((Mode and 3) in [fmOpenRead, fmOpenReadWrite]) then
+  begin
+    FileStream := TBinaryFileStream.Create(Filename, fmOpenRead);
+    try
+      fStream.LoadFromStream(FileStream);
+    finally
+      FileStream.Free;
+    end;
+  end
+  // check if file exists for write-mode
+  else if ((Mode and 3) = fmOpenWrite) and (not Filename.IsFile) then
+  begin
+    raise EFOpenError.CreateResFmt(@SFOpenError,
+          [FileName.GetAbsolutePath.ToNative]);
+  end;
+end;
+
+destructor TMemTextFileStream.Destroy();
+var
+  FileStream: TBinaryFileStream;
+  SaveMode: word;
+begin
+  // save changes in write mode (= not read-only mode)
+  if ((fMode and 3) <> fmOpenRead) then
+  begin
+    if (fMode = fmCreate) then
+      SaveMode := fmCreate
+    else
+      SaveMode := fmOpenWrite;
+    FileStream := TBinaryFileStream.Create(fFilename, SaveMode);
+    try
+      fStream.SaveToStream(FileStream);
+    finally
+      FileStream.Free;
+    end;
+  end;
+
+  fStream.Free;
+  inherited;
+end;
+
+function TMemTextFileStream.GetSize: Int64;
+begin
+  Result := fStream.Size;
+end;
+
+function TMemTextFileStream.Read(var Buffer; Count: Longint): Longint;
+begin
+  Result := fStream.Read(Buffer, Count);
+end;
+
+function TMemTextFileStream.Write(const Buffer; Count: Longint): Longint;
+begin
+  Result := fStream.Write(Buffer, Count);
+end;
+
+function TMemTextFileStream.Seek(Offset: Longint; Origin: Word): Longint;
+begin
+  Result := fStream.Seek(Offset, Origin);
+end;
+
+function TMemTextFileStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+begin
+  Result := fStream.Seek(Offset, Origin);
+end;
+
+function TMemTextFileStream.CopyMemString(StartPos: int64; EndPos: int64): RawByteString;
+var
+  LineLength: cardinal;
+  Temp: RawByteString;
+begin
+  LineLength := EndPos - StartPos;
+  if (LineLength > 0) then
+  begin
+    // set string length to line-length (+ zero-terminator)
+    SetLength(Temp, LineLength);
+    StrLCopy(PAnsiChar(Temp),
+             @PAnsiChar(fStream.Memory)[StartPos],
+             LineLength);
+    Result := Temp;
+  end
+  else
+  begin
+    Result := '';
+  end;
+end;
+
+function TMemTextFileStream.ReadString(): RawByteString;
+var
+  TextPtr: PAnsiChar;
+  CurPos, StartPos, FileSize: Int64;
+begin
+  TextPtr := PAnsiChar(fStream.Memory);
+  CurPos := Position;
+  FileSize := Size;
+  StartPos := -1;
+
+  while (CurPos < FileSize) do
+  begin
+    // check for whitespace (tab, lf, cr, space)
+    if (TextPtr[CurPos] in [#9, #10, #13, ' ']) then
+    begin
+      // check if we are at the end of a string
+      if (StartPos > -1) then
+        Break;
+    end
+    else if (StartPos = -1) then // start of string found
+    begin
+      StartPos := CurPos;
+    end;
+    Inc(CurPos);
+  end;
+
+  if (StartPos = -1) then
+    Result := ''
+  else
+  begin
+    Result := CopyMemString(StartPos, CurPos);
+    fStream.Position := CurPos;
+  end;
+end;
+
+{*
+ * Implementation of ReadLine(). We need separate versions for UTF8String
+ * and AnsiString as "var" parameter types have to fit exactly.
+ * To avoid a var-parameter here, the internal version the Line parameter is
+ * used as return value.
+ *}
+function TMemTextFileStream.ReadLine(var Success: boolean): RawByteString;
+var
+  TextPtr: PAnsiChar;
+  CurPos, FileSize: int64;
+begin
+  TextPtr := PAnsiChar(fStream.Memory);
+  CurPos := fStream.Position;
+  FileSize := Size;
+
+  // check for EOF
+  if (CurPos >= FileSize) then
+  begin
+    Result := '';
+    Success := false;
+    Exit;
+  end;
+
+  Success := true;
+
+  while (CurPos < FileSize) do
+  begin
+    if (TextPtr[CurPos] in [#10, #13]) then
+    begin
+      // copy text line
+      Result := CopyMemString(fStream.Position, CurPos);
+
+      // handle windows style #13#10 (\r\n) newlines
+      if (TextPtr[CurPos] = #13) and
+         (CurPos+1 < FileSize) and
+         (TextPtr[CurPos+1] = #10) then
+      begin
+        Inc(CurPos);
+      end;
+
+      // update stream pos
+      fStream.Position := CurPos+1;
+
+      Exit;
+    end;
+    Inc(CurPos);
+  end;
+
+  Result := CopyMemString(fStream.Position, CurPos);
+  fStream.Position := FileSize;
 end;
 
 { TUnicodeMemoryStream }
