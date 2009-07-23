@@ -47,21 +47,20 @@ type
   TScreenStatDetail = class(TMenu)
     public
       Typ:  TStatType;
-      Page: Cardinal;
-      Count: Byte;
-      Reversed: Boolean;
+      Page: cardinal;
+      Count: byte;
+      Reversed: boolean;
 
-      TotEntrys: Cardinal;
-      TotPages:  Cardinal;
-
+      TotEntrys: cardinal;
+      TotPages:  cardinal;
 
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
 
       procedure SetTitle;
-      Procedure SetPage(NewPage: Cardinal);
+      Procedure SetPage(NewPage: cardinal);
   end;
 
 implementation
@@ -74,10 +73,10 @@ uses
   ULog,
   UUnicodeUtils;
 
-function TScreenStatDetail.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenStatDetail.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -98,24 +97,28 @@ begin
         end;
       SDLK_RETURN:
         begin
-          if Interaction = 0 then begin
+          if Interaction = 0 then
+          begin
             //Next Page
             SetPage(Page+1);
           end;
 
-          if Interaction = 1 then begin
+          if Interaction = 1 then
+          begin
             //Previous Page
             if (Page > 0) then
               SetPage(Page-1);
           end;
 
-          if Interaction = 2 then begin
+          if Interaction = 2 then
+          begin
             //Reverse Order
             Reversed := not Reversed;
             SetPage(Page);
           end;
 
-          if Interaction = 3 then begin
+          if Interaction = 3 then
+          begin
             AudioPlayback.PlaySound(SoundLib.Back);
             FadeTo(@ScreenStatMain);
           end;
@@ -188,7 +191,7 @@ begin
   SetTitle;
 
   //Show First Page
-  Reversed := False;
+  Reversed := false;
   SetPage(0);
 end;
 
@@ -200,12 +203,12 @@ begin
     Text[Count].Text := Theme.StatDetail.Description[Ord(Typ)];
 end;
 
-procedure TScreenStatDetail.SetPage(NewPage: Cardinal);
+procedure TScreenStatDetail.SetPage(NewPage: cardinal);
 var
   StatList: TList;
-  I: Integer;
-  FormatStr: String;
-  PerPage: Byte;
+  I: integer;
+  FormatStr: string;
+  PerPage: byte;
 begin
   // fetch statistics
   StatList := Database.GetStats(Typ, Count, NewPage, Reversed);
@@ -289,9 +292,9 @@ begin
   Database.FreeStats(StatList);
 end;
 
-
 procedure TScreenStatDetail.SetAnimationProgress(Progress: real);
-var I: Integer;
+var
+  I: integer;
 begin
   for I := 0 to High(Button) do
     Button[I].Texture.ScaleW := Progress;

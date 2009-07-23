@@ -58,9 +58,8 @@ type
 
 type
   TScreenSing = class(TMenu)
-  private
-    VideoLoaded: boolean;
   protected
+    VideoLoaded: boolean;
     Paused:     boolean; // pause mod
     LyricsSync: TLyricsSyncSource;
     NumEmptySentences: integer;
@@ -128,6 +127,7 @@ uses
   UNote,
   URecord,
   USong,
+  UDisplay,
   UUnicodeUtils;
 
 // method for input parsing. if false is returned, getnextwindow
@@ -255,6 +255,9 @@ constructor TScreenSing.Create;
 begin
   inherited Create;
 
+  //too dangerous, a mouse button is quickly pressed by accident
+  RightMbESC := false;
+
   fShowVisualization := false;
 
   fCurrentVideoPlaybackEngine := VideoPlayback;
@@ -299,8 +302,8 @@ begin
   Static[StaticPausePopup].Visible := false;
 
   Lyrics := TLyricEngine.Create(
-      Skin_LyricsUpperX, Skin_LyricsUpperY, Skin_LyricsUpperW, Skin_LyricsUpperH,
-      Skin_LyricsLowerX, Skin_LyricsLowerY, Skin_LyricsLowerW, Skin_LyricsLowerH);
+      Theme.LyricBar.UpperX, Theme.LyricBar.UpperY, Theme.LyricBar.UpperW, Theme.LyricBar.UpperH,
+      Theme.LyricBar.LowerX, Theme.LyricBar.LowerY, Theme.LyricBar.LowerW, Theme.LyricBar.LowerH);
 
   LyricsSync := TLyricsSyncSource.Create();
 end;
@@ -625,6 +628,9 @@ end;
 
 procedure TScreenSing.onShowFinish;
 begin
+  // hide cursor on singscreen show    
+  Display.SetCursor;
+  
   // start lyrics
   LyricsState.Resume();
 
@@ -645,6 +651,7 @@ begin
   end;
 
   Background.OnFinish;
+  Display.SetCursor;
 end;
 
 function TScreenSing.Draw: boolean;
@@ -745,9 +752,8 @@ begin
     begin
       // Just call this once
       // when Screens = 2
-      If (ScreenAct = 1) then
+      if (ScreenAct = 1) then
         fCurrentVideoPlaybackEngine.GetFrame(CurrentSong.VideoGAP + LyricsState.GetCurrentTime());
-
 
       fCurrentVideoPlaybackEngine.DrawGL(ScreenAct);
     end;

@@ -95,7 +95,7 @@ type
     public
       constructor Create; override;
       function    Draw: boolean; override;
-      function    ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function    ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure   onShow; override;
       procedure   onHide; override;
   end;
@@ -129,10 +129,10 @@ uses
   UUnicodeUtils,
   ULog;
 
-function TScreenOptionsRecord.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenOptionsRecord.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -245,6 +245,8 @@ begin
       InputDeviceNames[DeviceIndex] := AudioInputProcessor.DeviceList[DeviceIndex].Name;
     end;
     // add device-selection slider (InteractionID: 0)
+    Theme.OptionsRecord.SelectSlideCard.showArrows := true;
+    Theme.OptionsRecord.SelectSlideCard.oneItemOnly := true;
     AddSelectSlide(Theme.OptionsRecord.SelectSlideCard, CurrentDeviceIndex, InputDeviceNames);
 
     // init source-selection slider
@@ -253,6 +255,9 @@ begin
     begin
       InputSourceNames[SourceIndex] := InputDevice.Source[SourceIndex].Name;
     end;
+
+    Theme.OptionsRecord.SelectSlideInput.showArrows := true;
+    Theme.OptionsRecord.SelectSlideInput.oneItemOnly := true;
     // add source-selection slider (InteractionID: 1)
     SelectInputSourceID := AddSelectSlide(Theme.OptionsRecord.SelectSlideInput,
         InputDeviceCfg.Input, InputSourceNames);
@@ -484,7 +489,6 @@ begin
   end;
   PreviewDeviceIndex := -1;
 end;
-
 
 procedure TScreenOptionsRecord.DrawVolume(x, y, Width, Height: single);
 var
@@ -803,8 +807,7 @@ begin
     end;
   end;
 
-  Result := True;
+  Result := true;
 end;
-
 
 end.

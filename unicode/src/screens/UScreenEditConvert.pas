@@ -34,6 +34,7 @@ interface
 {$I switches.inc}
 
 uses
+  math,
   UMenu,
   SDL,
   {$IFDEF UseMIDIPort}
@@ -137,7 +138,7 @@ uses
 function TScreenEditConvert.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -180,15 +181,15 @@ begin
           end;
 
           if Interaction = 2 then
-	  begin
+          begin
             Selected := true;
             {$IFDEF UseMIDIPort}
             MidiFile.OnMidiEvent := nil;
             {$ENDIF}
             {for T := 0 to High(ATrack) do
-	    begin
+            begin
               if ATrack[T].Hear then
-	      begin
+              begin
                 MidiTrack := MidiFile.GetTrack(T);
                 MidiTrack.OnMidiEvent := MidiFile1MidiEvent;
               end;
@@ -197,9 +198,9 @@ begin
           end;
 
           if Interaction = 3 then
-	  begin
+          begin
             if SelectedNumber > 0 then
-	    begin
+            begin
               Extract;
               SaveSong(Song, Lines, ChangeFileExt(ConversionFileName, '.txt'), false);
             end;
@@ -210,16 +211,16 @@ begin
       SDLK_SPACE:
         begin
 //          ATrack[Sel].Hear := not ATrack[Sel].Hear;
-	  if Notes in ATrack[Sel].Status then
-	  begin
-	    ATrack[Sel].Status := ATrack[Sel].Status - [Notes];
-	    if Lyrics in ATrack[Sel].Status then
-	      ATrack[Sel].Status := ATrack[Sel].Status - [Lyrics]
-	    else
-	      ATrack[Sel].Status := ATrack[Sel].Status + [Lyrics];
-	  end
-	  else
-	    ATrack[Sel].Status := ATrack[Sel].Status + [Notes];
+          if Notes in ATrack[Sel].Status then
+          begin
+            ATrack[Sel].Status := ATrack[Sel].Status - [Notes];
+            if Lyrics in ATrack[Sel].Status then
+              ATrack[Sel].Status := ATrack[Sel].Status - [Lyrics]
+            else
+              ATrack[Sel].Status := ATrack[Sel].Status + [Lyrics];
+          end
+          else
+            ATrack[Sel].Status := ATrack[Sel].Status + [Notes];
 
 {          if Selected then
           begin
@@ -245,13 +246,13 @@ begin
         begin
           Inc(Sel);
           if Sel > High(ATrack) then
-	    Sel := 0;
+            Sel := 0;
         end;
       SDLK_UP:
         begin
           Dec(Sel);
           if Sel < 0 then
-	    Sel := High(ATrack);
+            Sel := High(ATrack);
         end;
     end;
   end;
@@ -313,7 +314,7 @@ begin
       for N := 0 to High(ATrack[T].Note) do
       begin
         if (ATrack[T].Note[N].EventType = 9) and (ATrack[T].Note[N].Data2 > 0) then
-	begin
+        begin
           Nu := Length(Note);
           SetLength(Note, Nu + 1);
           Note[Nu].Start := Round(ATrack[T].Note[N].Start / Ticks);
@@ -335,7 +336,7 @@ begin
       for N := 0 to High(ATrack[T].Note) do
       begin
         if (ATrack[T].Note[N].EventType = 15) then
-	begin
+        begin
 //          Log.LogStatus('<' + Track[T].Note[N].Str + '>', 'MIDI');
           AddLyric(Round(ATrack[T].Note[N].Start / Ticks), ATrack[T].Note[N].Str);
         end;
@@ -453,7 +454,6 @@ begin
   AddButton(500, 20, 100, 40, Skin.GetTextureFileName('ButtonF'));
   AddButtonText(20, 5, 0, 0, 0, 'Save');
 
-
 {  MidiOut := TMidiOutput.Create(nil);
 //  MidiOut.Close;
 //  MidiOut.DeviceID := 0;
@@ -493,12 +493,10 @@ begin
   Log.LogStatus(MidiOut.ProductName, 'MIDI');
   MidiOut.Open;
 
-
   if FileExists(ConversionFileName) then
   begin
     MidiFile.Filename := ConversionFileName;
     MidiFile.ReadFile;
-
 
     Len := 0;
     Sel := 0;
@@ -579,7 +577,7 @@ var
   Bottom: real;
   X:      real;
   Y:      real;
-  H:      real;
+  Height: real;
   YSkip:  real;
 begin
   // draw static menu
@@ -587,20 +585,24 @@ begin
 
   Y := 100;
 
-  H := Length(ATrack)*40;
-  if H > 480 then
-    H := 480;
-  Bottom := Y + H;
+  Height := min(480, 40 * Length(ATrack));
+  Bottom := Y + Height;
 
-  YSkip := H / Length(ATrack);
+  if Length(ATrack) = 0 then // prevent crash with uncomplete code. 
+  begin
+    Log.LogDebug ('UScreenEditConvert -> TScreenEditConvert.Draw:', 'Length(ATrack) = 0');
+    YSkip := 40;
+  end
+  else 
+    YSkip := Height / Length(ATrack);
 
   // select
-  DrawQuad(10, Y+Sel*YSkip, 780, YSkip, 0.8, 0.8, 0.8);
+  DrawQuad(10, Y + Sel*YSkip, 780, YSkip, 0.8, 0.8, 0.8);
 
   // selected - now me use Status System
   for Count := 0 to High(ATrack) do
     if ATrack[Count].Hear then
-      DrawQuad(10, Y+Count*YSkip, 50, YSkip, 0.8, 0.3, 0.3);
+      DrawQuad(10, Y + Count*YSkip, 50, YSkip, 0.8, 0.3, 0.3);
   glColor3f(0, 0, 0);
   for Count := 0 to High(ATrack) do
   begin
@@ -618,12 +620,12 @@ begin
     end;
   end;
 
-  DrawLine(10, Y,   10, Bottom, 0, 0, 0);
-  DrawLine(60, Y,   60, Bottom, 0, 0, 0);
+  DrawLine( 10, Y,  10, Bottom, 0, 0, 0);
+  DrawLine( 60, Y,  60, Bottom, 0, 0, 0);
   DrawLine(790, Y, 790, Bottom, 0, 0, 0);
 
   for Count := 0 to Length(ATrack) do
-    DrawLine(10, Y+Count*YSkip, 790, Y+Count*YSkip, 0, 0, 0);
+    DrawLine(10, Y + Count*YSkip, 790, Y + Count*YSkip, 0, 0, 0);
 
   for Count := 0 to High(ATrack) do
   begin
@@ -636,9 +638,21 @@ begin
     for Count2 := 0 to High(ATrack[Count].Note) do
     begin
       if ATrack[Count].Note[Count2].EventType = 9 then
-        DrawQuad(60 + ATrack[Count].Note[Count2].Start/Len * 725, Y + (Count+1)*YSkip - ATrack[Count].Note[Count2].Data1*35/127, 3, 3, ColR[Count], ColG[Count], ColB[Count]);
+        DrawQuad(60 + ATrack[Count].Note[Count2].Start/Len*725,
+                 Y + (Count+1)*YSkip - ATrack[Count].Note[Count2].Data1*35/127,
+                 3,
+                 3,
+                 ColR[Count],
+                 ColG[Count],
+                 ColB[Count]);
       if ATrack[Count].Note[Count2].EventType = 15 then
-        DrawLine(60 + ATrack[Count].Note[Count2].Start/Len * 725, Y + 0.75 * YSkip + Count*YSkip, 60 + ATrack[Count].Note[Count2].Start/Len * 725, Y + YSkip + Count*YSkip, ColR[Count], ColG[Count], ColB[Count]);
+        DrawLine(60 + ATrack[Count].Note[Count2].Start/Len*725,
+                 Y + 0.75*YSkip + Count*YSkip,
+                 60 + ATrack[Count].Note[Count2].Start/Len*725,
+                 Y + YSkip + Count*YSkip,
+                 ColR[Count],
+                 ColG[Count],
+                 ColB[Count]);
     end;
 
   // playing line

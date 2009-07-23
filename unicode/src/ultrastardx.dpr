@@ -203,6 +203,7 @@ uses
   USingNotes        in 'base\USingNotes.pas',
   UPath             in 'base\UPath.pas',
   UNote             in 'base\UNote.pas',
+  UBeatTimer        in 'base\UBeatTimer.pas',
 
   TextGL            in 'base\TextGL.pas',
   UUnicodeUtils     in 'base\UUnicodeUtils.pas',
@@ -215,22 +216,6 @@ uses
   //------------------------------
   //Includes - Plugin Support
   //------------------------------
-  {UPluginDefines    in 'pluginsupport\UPluginDefines.pas',
-  UPartyDefines     in 'pluginsupport\UPartyDefines.pas',
-
-  UPartyMode        in 'pluginsupport\UPartyMode.pas',
-  UPartyManager     in 'pluginsupport\UPartyManager.pas',
-  UPartyModePlugin  in 'pluginsupport\UPartyModePlugin.pas',
-  UPluginLoader     in 'pluginsupport\UPluginLoader.pas',    }
-
-  UModules          in 'base\UModules.pas',          //List of Modules to Load
-  UHooks            in 'base\UHooks.pas',            //Hook Managing
-  UServices         in 'base\UServices.pas',         //Service Managing
-  UCore             in 'base\UCore.pas',             //Core, Maybe remove this
-  UCoreModule       in 'base\UCoreModule.pas',       //^
-  UPluginInterface  in 'base\UPluginInterface.pas',  //Interface offered by Core to Plugins
-  UPluginLoader     in 'base\UPluginLoader.pas',     //New Plugin Loader Module
-
   UParty            in 'base\UParty.pas',            // TODO: rewrite Party Manager as Module, reomplent ability to offer party Mody by Plugin
 
   //------------------------------
@@ -254,7 +239,7 @@ uses
   UAudioPlaybackBase        in 'media\UAudioPlaybackBase.pas',
 {$IF Defined(UsePortaudioPlayback) or Defined(UseSDLPlayback)}
   UFFT                      in 'lib\fft\UFFT.pas',
-  UAudioPlayback_Softmixer  in 'media\UAudioPlayback_SoftMixer.pas',
+  UAudioPlayback_SoftMixer  in 'media\UAudioPlayback_SoftMixer.pas',
 {$IFEND}
   UAudioConverter           in 'media\UAudioConverter.pas',
 
@@ -342,8 +327,6 @@ uses
   //Includes - Modi SDK
   //------------------------------
   ModiSDK       in '..\plugins\SDK\ModiSDK.pas', //Old SDK, will be deleted soon
-  UPluginDefs   in '..\plugins\SDK\UPluginDefs.pas', //New SDK, not only Modis
-  UPartyDefs    in '..\plugins\SDK\UPartyDefs.pas', //Headers to register Party Modes
 
   SysUtils;
 

@@ -46,7 +46,7 @@ type
   TScreenOptionsAdvanced = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure onShow; override;
   end;
 
@@ -57,10 +57,10 @@ uses
   UUnicodeUtils,
   SysUtils;
 
-function TScreenOptionsAdvanced.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
+function TScreenOptionsAdvanced.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -85,7 +85,8 @@ begin
         begin
           //SelectLoadAnimation Hidden because it is useless atm
           //if SelInteraction = 7 then begin
-          if SelInteraction = 6 then begin
+          if SelInteraction = 6 then
+          begin
             Ini.Save;
             AudioPlayback.PlaySound(SoundLib.Back);
             FadeTo(@ScreenOptions);
@@ -99,7 +100,8 @@ begin
         begin
           //SelectLoadAnimation Hidden because it is useless atm
           //if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 5) then
+          begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractInc;
           end;
@@ -108,7 +110,8 @@ begin
         begin
           //SelectLoadAnimation Hidden because it is useless atm
           //if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 5) then
+          begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractDec;
           end;
@@ -127,11 +130,28 @@ begin
 
   //SelectLoadAnimation Hidden because it is useless atm
   //AddSelect(Theme.OptionsAdvanced.SelectLoadAnimation, Ini.LoadAnimation, ILoadAnimation);
+  Theme.OptionsAdvanced.SelectScreenFade.showArrows := true;
+  Theme.OptionsAdvanced.SelectScreenFade.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsAdvanced.SelectScreenFade, Ini.ScreenFade, IScreenFade);
+
+  Theme.OptionsAdvanced.SelectEffectSing.showArrows := true;
+  Theme.OptionsAdvanced.SelectEffectSing.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsAdvanced.SelectEffectSing, Ini.EffectSing, IEffectSing);
+
+  Theme.OptionsAdvanced.SelectLineBonus.showArrows := true;
+  Theme.OptionsAdvanced.SelectLineBonus.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsAdvanced.SelectLineBonus, Ini.LineBonus, ILineBonus);
+
+  Theme.OptionsAdvanced.SelectOnSongClick.showArrows := true;
+  Theme.OptionsAdvanced.SelectOnSongClick.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsAdvanced.SelectOnSongClick, Ini.OnSongClick, IOnSongClick);
+
+  Theme.OptionsAdvanced.SelectAskbeforeDel.showArrows := true;
+  Theme.OptionsAdvanced.SelectAskbeforeDel.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsAdvanced.SelectAskbeforeDel, Ini.AskBeforeDel, IAskbeforeDel);
+
+  Theme.OptionsAdvanced.SelectPartyPopup.showArrows := true;
+  Theme.OptionsAdvanced.SelectPartyPopup.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsAdvanced.SelectPartyPopup, Ini.PartyPopup, IPartyPopup);
 
   AddButton(Theme.OptionsAdvanced.ButtonExit);

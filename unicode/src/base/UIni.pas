@@ -155,6 +155,7 @@ type
 
       // Controller
       Joypad:         integer;
+      Mouse:          integer;
 
       // default encoding for texts (lyrics, song-name, ...)
       EncodingDefault: TEncoding;
@@ -198,14 +199,13 @@ const
 
   IBackgroundMusic:  array[0..1] of string  = ('Off', 'On');
 
-  ITextureSize:      array[0..2] of string  = ('128', '256', '512');
-  ITextureSizeVals:  array[0..2] of integer = ( 128,   256,   512);
+  ITextureSize:      array[0..3] of string  = ('64', '128', '256', '512');
+  ITextureSizeVals:  array[0..3] of integer = ( 64,   128,   256,   512);
 
   ISingWindow:       array[0..1] of string  = ('Small', 'Big');
 
   //SingBar Mod
-  IOscilloscope:     array[0..2] of string  = ('Off', 'Osci', 'Bar');
-//IOscilloscope:     array[0..1] of string  = ('Off', 'On');
+  IOscilloscope:     array[0..1] of string  = ('Off', 'On');
 
   ISpectrum:         array[0..1] of string  = ('Off', 'On');
   ISpectrograph:     array[0..1] of string  = ('Off', 'On');
@@ -246,10 +246,11 @@ const
   IScreenFade:    array[0..1] of string = ('Off', 'On');
   IAskbeforeDel:  array[0..1] of string = ('Off', 'On');
   IOnSongClick:   array[0..2] of string = ('Sing', 'Select Players', 'Open Menu');
-  ILineBonus:     array[0..2] of string = ('Off', 'At Score', 'At Notes');
+  ILineBonus:     array[0..1] of string = ('Off', 'On');
   IPartyPopup:    array[0..1] of string = ('Off', 'On');
 
   IJoypad:        array[0..1] of string = ('Off', 'On');
+  IMouse:         array[0..2] of string = ('Off', 'Hardware Cursor', 'Software Cursor');
 
   // Recording options
   IChannelPlayer: array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
@@ -686,7 +687,7 @@ begin
   SingWindow := GetArrayIndex(ISingWindow, IniFile.ReadString('Graphics', 'SingWindow', 'Big'));
 
   // Oscilloscope
-  Oscilloscope := GetArrayIndex(IOscilloscope, IniFile.ReadString('Graphics', 'Oscilloscope', 'Bar'));
+  Oscilloscope := GetArrayIndex(IOscilloscope, IniFile.ReadString('Graphics', 'Oscilloscope', IOscilloscope[0]));
 
   // Spectrum
   Spectrum := GetArrayIndex(ISpectrum, IniFile.ReadString('Graphics', 'Spectrum', 'Off'));
@@ -713,16 +714,16 @@ begin
   PreviewVolume := GetArrayIndex(IPreviewVolume, IniFile.ReadString('Sound', 'PreviewVolume', IPreviewVolume[7]));
 
   //Preview Fading
-  PreviewFading := GetArrayIndex(IPreviewFading, IniFile.ReadString('Sound', 'PreviewFading', IPreviewFading[1]));
+  PreviewFading := GetArrayIndex(IPreviewFading, IniFile.ReadString('Sound', 'PreviewFading', IPreviewFading[3]));
 
   //AudioRepeat aka VoicePassthrough
   VoicePassthrough := GetArrayIndex(IVoicePassthrough, IniFile.ReadString('Sound', 'VoicePassthrough', IVoicePassthrough[0]));
 
   // Lyrics Font
-  LyricsFont := GetArrayIndex(ILyricsFont, IniFile.ReadString('Lyrics', 'LyricsFont', ILyricsFont[1]));
+  LyricsFont := GetArrayIndex(ILyricsFont, IniFile.ReadString('Lyrics', 'LyricsFont', ILyricsFont[0]));
 
   // Lyrics Effect
-  LyricsEffect := GetArrayIndex(ILyricsEffect, IniFile.ReadString('Lyrics', 'LyricsEffect', ILyricsEffect[1]));
+  LyricsEffect := GetArrayIndex(ILyricsEffect, IniFile.ReadString('Lyrics', 'LyricsEffect', ILyricsEffect[2]));
 
   // Solmization
   Solmization := GetArrayIndex(ISolmization, IniFile.ReadString('Lyrics', 'Solmization', ISolmization[0]));
@@ -770,13 +771,16 @@ begin
   OnSongClick := GetArrayIndex(IOnSongClick, IniFile.ReadString('Advanced', 'OnSongClick', 'Sing'));
 
   // Linebonus
-  LineBonus := GetArrayIndex(ILineBonus, IniFile.ReadString('Advanced', 'LineBonus', 'At Score'));
+  LineBonus := GetArrayIndex(ILineBonus, IniFile.ReadString('Advanced', 'LineBonus', ILineBonus[1]));
 
   // PartyPopup
   PartyPopup := GetArrayIndex(IPartyPopup, IniFile.ReadString('Advanced', 'PartyPopup', 'On'));
 
   // Joypad
   Joypad := GetArrayIndex(IJoypad, IniFile.ReadString('Controller',    'Joypad',   IJoypad[0]));
+
+  // Mouse
+  Mouse := GetArrayIndex(IMouse, IniFile.ReadString('Controller',    'Mouse',   IMouse[2]));
 
   LoadPaths(IniFile);
 
@@ -919,6 +923,9 @@ begin
 
   // Joypad
   IniFile.WriteString('Controller', 'Joypad', IJoypad[Joypad]);
+
+  // Mouse
+  IniFile.WriteString('Controller', 'Mouse', IMouse[Mouse]);
 
   // Directories (add a template if section is missing)
   // Note: Value must be ' ' and not '', otherwise no key is generated on Linux
