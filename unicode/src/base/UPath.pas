@@ -65,7 +65,7 @@ type
     {**
      * @seealso TFileStream.Create for valid Mode parameters
      *}
-    constructor Create(const FileName: IPath; Mode: Word);
+    constructor Create(const FileName: IPath; Mode: word);
   end;
 
   {**
@@ -79,7 +79,7 @@ type
 
     function ReadLine(var Success: boolean): RawByteString; overload; virtual; abstract;
   public
-    constructor Create(Filename: IPath; Mode: Word);
+    constructor Create(Filename: IPath; Mode: word);
 
     function ReadString(): RawByteString; virtual; abstract;
     function ReadLine(var Line: UTF8String): boolean; overload;
@@ -99,20 +99,20 @@ type
   private
     fStream: TMemoryStream;
   protected
-    function GetSize: Int64; override;
+    function GetSize: int64; override;
 
     {**
      * Copies fStream.Memory from StartPos to EndPos-1 to the result string;
      *}
     function CopyMemString(StartPos: int64; EndPos: int64): RawByteString;
   public
-    constructor Create(Filename: IPath; Mode: Word);
+    constructor Create(Filename: IPath; Mode: word);
     destructor Destroy(); override;
 
-    function Read(var Buffer; Count: Longint): Longint; override;
-    function Write(const Buffer; Count: Longint): Longint; override;
-    function Seek(Offset: Longint; Origin: Word): Longint; override;
-    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
+    function Read(var Buffer; Count: longint): longint; override;
+    function Write(const Buffer; Count: longint): longint; override;
+    function Seek(Offset: longint; Origin: word): longint; override;
+    function Seek(const Offset: int64; Origin: TSeekOrigin): int64; override;
 
     function ReadLine(var Success: boolean): RawByteString; override;
     function ReadString(): RawByteString; override;
@@ -200,7 +200,7 @@ type
      * Note: File must be closed with FileClose(Handle) after usage
      * @seealso SysUtils.FileOpen()
      *}
-    function Open(Mode: LongWord): THandle;
+    function Open(Mode: longword): THandle;
 
     {** @seealso SysUtils.ExtractFileDrive() *}
     function GetDrive(): IPath;
@@ -383,7 +383,7 @@ type
       function ToWide(UseNativeDelim: boolean): WideString;
       function ToNative(): RawByteString;
 
-      function Open(Mode: LongWord): THandle;
+      function Open(Mode: longword): THandle;
 
       function GetDrive(): IPath;
       function GetPath(): IPath;
@@ -460,7 +460,7 @@ procedure TPathImpl.AssertRefCount;
 begin
   {$IFDEF FPC}
   if (FRefCount <= 0) then
-    raise Exception.Create('RefCount error: ' + inttostr(FRefCount));
+    raise Exception.Create('RefCount error: ' + IntToStr(FRefCount));
   {$ENDIF}
 end;
 
@@ -873,7 +873,7 @@ begin
     Result := FileSystem.DirectoryCreate(Self);
 end;
 
-function TPathImpl.Open(Mode: LongWord): THandle;
+function TPathImpl.Open(Mode: longword): THandle;
 begin
   Result := FileSystem.FileOpen(Self, Mode);
 end;
@@ -978,7 +978,7 @@ end;
 
 { TBinaryFileStream }
 
-constructor TBinaryFileStream.Create(const FileName: IPath; Mode: Word);
+constructor TBinaryFileStream.Create(const FileName: IPath; Mode: word);
 begin
 {$IFDEF MSWINDOWS}
   inherited Create(FileName.ToWide(), Mode);
@@ -989,7 +989,7 @@ end;
 
 { TTextStream }
 
-constructor TTextFileStream.Create(Filename: IPath; Mode: Word);
+constructor TTextFileStream.Create(Filename: IPath; Mode: word);
 begin
   inherited Create();
   fMode := Mode;
@@ -1020,7 +1020,7 @@ end;
 
 { TMemTextStream }
 
-constructor TMemTextFileStream.Create(Filename: IPath; Mode: Word);
+constructor TMemTextFileStream.Create(Filename: IPath; Mode: word);
 var
   FileStream: TBinaryFileStream;
 begin
@@ -1070,27 +1070,27 @@ begin
   inherited;
 end;
 
-function TMemTextFileStream.GetSize: Int64;
+function TMemTextFileStream.GetSize: int64;
 begin
   Result := fStream.Size;
 end;
 
-function TMemTextFileStream.Read(var Buffer; Count: Longint): Longint;
+function TMemTextFileStream.Read(var Buffer; Count: longint): longint;
 begin
   Result := fStream.Read(Buffer, Count);
 end;
 
-function TMemTextFileStream.Write(const Buffer; Count: Longint): Longint;
+function TMemTextFileStream.Write(const Buffer; Count: longint): longint;
 begin
   Result := fStream.Write(Buffer, Count);
 end;
 
-function TMemTextFileStream.Seek(Offset: Longint; Origin: Word): Longint;
+function TMemTextFileStream.Seek(Offset: longint; Origin: word): longint;
 begin
   Result := fStream.Seek(Offset, Origin);
 end;
 
-function TMemTextFileStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+function TMemTextFileStream.Seek(const Offset: int64; Origin: TSeekOrigin): int64;
 begin
   Result := fStream.Seek(Offset, Origin);
 end;
@@ -1119,7 +1119,7 @@ end;
 function TMemTextFileStream.ReadString(): RawByteString;
 var
   TextPtr: PAnsiChar;
-  CurPos, StartPos, FileSize: Int64;
+  CurPos, StartPos, FileSize: int64;
 begin
   TextPtr := PAnsiChar(fStream.Memory);
   CurPos := Position;

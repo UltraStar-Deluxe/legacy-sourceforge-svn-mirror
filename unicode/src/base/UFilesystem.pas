@@ -50,9 +50,9 @@ type
   {$ENDIF}
 
   TFileInfo = record
-    Time: Integer;  // timestamp
-    Size: Int64;    // file size (byte)
-    Attr: Integer;  // file attributes
+    Time: integer;  // timestamp
+    Size: int64;    // file size (byte)
+    Attr: integer;  // file attributes
     Name: IPath;    // basename with extension
   end;
 
@@ -63,7 +63,7 @@ type
    *     SearchRec := Iter.Next();
    *}
   IFileIterator = interface
-    function HasNext(): Boolean;
+    function HasNext(): boolean;
     function Next(): TFileInfo;
   end;
 
@@ -74,36 +74,36 @@ type
   IFileSystem = interface
     function ExpandFileName(const FileName: IPath): IPath;
     function FileCreate(const FileName: IPath): THandle;
-    function DirectoryCreate(const Dir: IPath): Boolean;
-    function FileOpen(const FileName: IPath; Mode: LongWord): THandle;
-    function FileAge(const FileName: IPath): Integer; overload;
-    function FileAge(const FileName: IPath; out FileDateTime: TDateTime): Boolean; overload;
+    function DirectoryCreate(const Dir: IPath): boolean;
+    function FileOpen(const FileName: IPath; Mode: longword): THandle;
+    function FileAge(const FileName: IPath): integer; overload;
+    function FileAge(const FileName: IPath; out FileDateTime: TDateTime): boolean; overload;
 
-    function DirectoryExists(const Name: IPath): Boolean;
+    function DirectoryExists(const Name: IPath): boolean;
 
     {**
      * On Windows: returns true only for files (not directories)
      * On Apple/Unix: returns true for all kind of files (even directories)
      * @seealso SysUtils.FileExists()
      *}
-    function FileExists(const Name: IPath): Boolean;
+    function FileExists(const Name: IPath): boolean;
 
     function FileGetAttr(const FileName: IPath): Cardinal;
-    function FileSetAttr(const FileName: IPath; Attr: Integer): Boolean;
-    function FileIsReadOnly(const FileName: IPath): Boolean;
-    function FileSetReadOnly(const FileName: IPath; ReadOnly: Boolean): Boolean;
-    function FileIsAbsolute(const FileName: IPath): Boolean;
-    function ForceDirectories(const Dir: IPath): Boolean;
-    function RenameFile(const OldName, NewName: IPath): Boolean;
-    function DeleteFile(const FileName: IPath): Boolean;
-    function RemoveDir(const Dir: IPath): Boolean;
+    function FileSetAttr(const FileName: IPath; Attr: integer): boolean;
+    function FileIsReadOnly(const FileName: IPath): boolean;
+    function FileSetReadOnly(const FileName: IPath; ReadOnly: boolean): boolean;
+    function FileIsAbsolute(const FileName: IPath): boolean;
+    function ForceDirectories(const Dir: IPath): boolean;
+    function RenameFile(const OldName, NewName: IPath): boolean;
+    function DeleteFile(const FileName: IPath): boolean;
+    function RemoveDir(const Dir: IPath): boolean;
 
     {**
      * Copies file Source to Target. If FailIfExists is true, the file is not
      * copied if it already exists.
      * Returns true if the file was successfully copied.
      *}
-    function CopyFile(const Source, Target: IPath; FailIfExists: Boolean): Boolean;
+    function CopyFile(const Source, Target: IPath; FailIfExists: boolean): boolean;
 
     function ExtractFileDrive(const FileName: IPath): IPath;
     function ExtractFilePath(const FileName: IPath): IPath;
@@ -125,17 +125,17 @@ type
     {**
      * More convenient version of FindFirst/Next/Close with iterator support.
      *}
-    function FileFind(const FilePattern: IPath; Attr: Integer): IFileIterator;
+    function FileFind(const FilePattern: IPath; Attr: integer): IFileIterator;
 
     {**
      * Old style search functions. Use FileFind() instead.
      *}
-    function FindFirst(const FilePattern: IPath; Attr: Integer; var F: TSytemSearchRec): Integer;
-    function FindNext(var F: TSytemSearchRec): Integer;
+    function FindFirst(const FilePattern: IPath; Attr: integer; var F: TSytemSearchRec): integer;
+    function FindNext(var F: TSytemSearchRec): integer;
     procedure FindClose(var F: TSytemSearchRec);
 
     function GetCurrentDir: IPath;
-    function SetCurrentDir(const Dir: IPath): Boolean;
+    function SetCurrentDir(const Dir: IPath): boolean;
 
     {**
      * Returns true if the filesystem is case-sensitive.
@@ -152,22 +152,22 @@ type
   public
     function ExpandFileName(const FileName: IPath): IPath;
     function FileCreate(const FileName: IPath): THandle;
-    function DirectoryCreate(const Dir: IPath): Boolean;
-    function FileOpen(const FileName: IPath; Mode: LongWord): THandle;
-    function FileAge(const FileName: IPath): Integer; overload;
-    function FileAge(const FileName: IPath; out FileDateTime: TDateTime): Boolean; overload;
-    function DirectoryExists(const Name: IPath): Boolean;
-    function FileExists(const Name: IPath): Boolean;
+    function DirectoryCreate(const Dir: IPath): boolean;
+    function FileOpen(const FileName: IPath; Mode: longword): THandle;
+    function FileAge(const FileName: IPath): integer; overload;
+    function FileAge(const FileName: IPath; out FileDateTime: TDateTime): boolean; overload;
+    function DirectoryExists(const Name: IPath): boolean;
+    function FileExists(const Name: IPath): boolean;
     function FileGetAttr(const FileName: IPath): Cardinal;
-    function FileSetAttr(const FileName: IPath; Attr: Integer): Boolean;
-    function FileIsReadOnly(const FileName: IPath): Boolean;
-    function FileSetReadOnly(const FileName: IPath; ReadOnly: Boolean): Boolean;
-    function FileIsAbsolute(const FileName: IPath): Boolean;
-    function ForceDirectories(const Dir: IPath): Boolean;
-    function RenameFile(const OldName, NewName: IPath): Boolean;
-    function DeleteFile(const FileName: IPath): Boolean;
-    function RemoveDir(const Dir: IPath): Boolean;
-    function CopyFile(const Source, Target: IPath; FailIfExists: Boolean): Boolean;
+    function FileSetAttr(const FileName: IPath; Attr: integer): boolean;
+    function FileIsReadOnly(const FileName: IPath): boolean;
+    function FileSetReadOnly(const FileName: IPath; ReadOnly: boolean): boolean;
+    function FileIsAbsolute(const FileName: IPath): boolean;
+    function ForceDirectories(const Dir: IPath): boolean;
+    function RenameFile(const OldName, NewName: IPath): boolean;
+    function DeleteFile(const FileName: IPath): boolean;
+    function RemoveDir(const Dir: IPath): boolean;
+    function CopyFile(const Source, Target: IPath; FailIfExists: boolean): boolean;
 
     function ExtractFileDrive(const FileName: IPath): IPath;
     function ExtractFilePath(const FileName: IPath): IPath;
@@ -180,27 +180,27 @@ type
     function ExcludeTrailingPathDelimiter(const FileName: IPath): IPath;
 
     function FileSearch(const Name: IPath; DirList: array of IPath): IPath;
-    function FileFind(const FilePattern: IPath; Attr: Integer): IFileIterator;
+    function FileFind(const FilePattern: IPath; Attr: integer): IFileIterator;
 
-    function FindFirst(const FilePattern: IPath; Attr: Integer; var F: TSytemSearchRec): Integer;
-    function FindNext(var F: TSytemSearchRec): Integer;
+    function FindFirst(const FilePattern: IPath; Attr: integer; var F: TSytemSearchRec): integer;
+    function FindNext(var F: TSytemSearchRec): integer;
     procedure FindClose(var F: TSytemSearchRec);
 
     function GetCurrentDir: IPath;
-    function SetCurrentDir(const Dir: IPath): Boolean;
+    function SetCurrentDir(const Dir: IPath): boolean;
 
     function IsCaseSensitive(): boolean;
   end;
 
   TFileIterator = class(TInterfacedObject, IFileIterator)
   private
-    fHasNext: Boolean;
+    fHasNext: boolean;
     fSearchRec: TSytemSearchRec;
   public
-    constructor Create(const FilePattern: IPath; Attr: Integer);
+    constructor Create(const FilePattern: IPath; Attr: integer);
     destructor Destroy(); override;
 
-    function HasNext(): Boolean;
+    function HasNext(): boolean;
     function Next(): TFileInfo;
   end;
 
@@ -213,7 +213,7 @@ begin
   Result := FileSystem_Singleton;
 end;
 
-function TFileSystemImpl.FileFind(const FilePattern: IPath; Attr: Integer): IFileIterator;
+function TFileSystemImpl.FileFind(const FilePattern: IPath; Attr: integer): IFileIterator;
 begin
   Result := TFileIterator.Create(FilePattern, Attr);
 end;
@@ -228,7 +228,7 @@ begin
   {$IFEND}
 end;
 
-function TFileSystemImpl.FileIsAbsolute(const FileName: IPath): Boolean;
+function TFileSystemImpl.FileIsAbsolute(const FileName: IPath): boolean;
 var
   NameStr: UTF8String;
 begin
@@ -264,32 +264,32 @@ begin
   Result := WideFileCreate(FileName.ToWide());
 end;
 
-function TFileSystemImpl.DirectoryCreate(const Dir: IPath): Boolean;
+function TFileSystemImpl.DirectoryCreate(const Dir: IPath): boolean;
 begin
   Result := WideCreateDir(Dir.ToWide());
 end;
 
-function TFileSystemImpl.FileOpen(const FileName: IPath; Mode: LongWord): THandle;
+function TFileSystemImpl.FileOpen(const FileName: IPath; Mode: longword): THandle;
 begin
   Result := WideFileOpen(FileName.ToWide(), Mode);
 end;
 
-function TFileSystemImpl.FileAge(const FileName: IPath): Integer;
+function TFileSystemImpl.FileAge(const FileName: IPath): integer;
 begin
   Result := WideFileAge(FileName.ToWide());
 end;
 
-function TFileSystemImpl.FileAge(const FileName: IPath; out FileDateTime: TDateTime): Boolean;
+function TFileSystemImpl.FileAge(const FileName: IPath; out FileDateTime: TDateTime): boolean;
 begin
   Result := WideFileAge(FileName.ToWide(), FileDateTime);
 end;
 
-function TFileSystemImpl.DirectoryExists(const Name: IPath): Boolean;
+function TFileSystemImpl.DirectoryExists(const Name: IPath): boolean;
 begin
   Result := WideDirectoryExists(Name.ToWide());
 end;
 
-function TFileSystemImpl.FileExists(const Name: IPath): Boolean;
+function TFileSystemImpl.FileExists(const Name: IPath): boolean;
 begin
   Result := WideFileExists(Name.ToWide());
 end;
@@ -299,22 +299,22 @@ begin
   Result := WideFileGetAttr(FileName.ToWide());
 end;
 
-function TFileSystemImpl.FileSetAttr(const FileName: IPath; Attr: Integer): Boolean;
+function TFileSystemImpl.FileSetAttr(const FileName: IPath; Attr: integer): boolean;
 begin
   Result := WideFileSetAttr(FileName.ToWide(), Attr);
 end;
 
-function TFileSystemImpl.FileIsReadOnly(const FileName: IPath): Boolean;
+function TFileSystemImpl.FileIsReadOnly(const FileName: IPath): boolean;
 begin
   Result := WideFileIsReadOnly(FileName.ToWide());
 end;
 
-function TFileSystemImpl.FileSetReadOnly(const FileName: IPath; ReadOnly: Boolean): Boolean;
+function TFileSystemImpl.FileSetReadOnly(const FileName: IPath; ReadOnly: boolean): boolean;
 begin
   Result := WideFileSetReadOnly(FileName.ToWide(), ReadOnly);
 end;
 
-function TFileSystemImpl.ForceDirectories(const Dir: IPath): Boolean;
+function TFileSystemImpl.ForceDirectories(const Dir: IPath): boolean;
 begin
   Result := WideForceDirectories(Dir.ToWide());
 end;
@@ -334,22 +334,22 @@ begin
   Result := Path(WideFileSearch(Name.ToWide(), DirListStr));
 end;
 
-function TFileSystemImpl.RenameFile(const OldName, NewName: IPath): Boolean;
+function TFileSystemImpl.RenameFile(const OldName, NewName: IPath): boolean;
 begin
   Result := WideRenameFile(OldName.ToWide(), NewName.ToWide());
 end;
 
-function TFileSystemImpl.DeleteFile(const FileName: IPath): Boolean;
+function TFileSystemImpl.DeleteFile(const FileName: IPath): boolean;
 begin
   Result := WideDeleteFile(FileName.ToWide());
 end;
 
-function TFileSystemImpl.RemoveDir(const Dir: IPath): Boolean;
+function TFileSystemImpl.RemoveDir(const Dir: IPath): boolean;
 begin
   Result := WideRemoveDir(Dir.ToWide());
 end;
 
-function TFileSystemImpl.CopyFile(const Source, Target: IPath; FailIfExists: Boolean): Boolean;
+function TFileSystemImpl.CopyFile(const Source, Target: IPath; FailIfExists: boolean): boolean;
 begin
   Result := WideCopyFile(Source.ToWide(), Target.ToWide(), FailIfExists);
 end;
@@ -399,12 +399,12 @@ begin
   Result := Path(WideExcludeTrailingPathDelimiter(FileName.ToWide()));
 end;
 
-function TFileSystemImpl.FindFirst(const FilePattern: IPath; Attr: Integer; var F: TSytemSearchRec): Integer;
+function TFileSystemImpl.FindFirst(const FilePattern: IPath; Attr: integer; var F: TSytemSearchRec): integer;
 begin
   Result := WideFindFirst(FilePattern.ToWide(), Attr, F);
 end;
 
-function TFileSystemImpl.FindNext(var F: TSytemSearchRec): Integer;
+function TFileSystemImpl.FindNext(var F: TSytemSearchRec): integer;
 begin
   Result := WideFindNext(F);
 end;
@@ -419,7 +419,7 @@ begin
   Result := Path(WideGetCurrentDir());
 end;
 
-function TFileSystemImpl.SetCurrentDir(const Dir: IPath): Boolean;
+function TFileSystemImpl.SetCurrentDir(const Dir: IPath): boolean;
 begin
   Result := WideSetCurrentDir(Dir.ToWide());
 end;
@@ -436,24 +436,24 @@ begin
   Result := SysUtils.FileCreate(FileName.ToNative());
 end;
 
-function TFileSystemImpl.DirectoryCreate(const Dir: IPath): Boolean;
+function TFileSystemImpl.DirectoryCreate(const Dir: IPath): boolean;
 begin
   Result := SysUtils.CreateDir(Dir.ToNative());
 end;
 
-function TFileSystemImpl.FileOpen(const FileName: IPath; Mode: LongWord): THandle;
+function TFileSystemImpl.FileOpen(const FileName: IPath; Mode: longword): THandle;
 begin
   Result := SysUtils.FileOpen(FileName.ToNative(), Mode);
 end;
 
-function TFileSystemImpl.FileAge(const FileName: IPath): Integer;
+function TFileSystemImpl.FileAge(const FileName: IPath): integer;
 begin
   Result := SysUtils.FileAge(FileName.ToNative());
 end;
 
-function TFileSystemImpl.FileAge(const FileName: IPath; out FileDateTime: TDateTime): Boolean;
+function TFileSystemImpl.FileAge(const FileName: IPath; out FileDateTime: TDateTime): boolean;
 var
-  FileDate: Integer;
+  FileDate: integer;
 begin
   FileDate := SysUtils.FileAge(FileName.ToNative());
   Result := (FileDate <> -1);
@@ -461,12 +461,12 @@ begin
     FileDateTime := FileDateToDateTime(FileDate);
 end;
 
-function TFileSystemImpl.DirectoryExists(const Name: IPath): Boolean;
+function TFileSystemImpl.DirectoryExists(const Name: IPath): boolean;
 begin
   Result := SysUtils.DirectoryExists(Name.ToNative());
 end;
 
-function TFileSystemImpl.FileExists(const Name: IPath): Boolean;
+function TFileSystemImpl.FileExists(const Name: IPath): boolean;
 begin
   Result := SysUtils.FileExists(Name.ToNative());
 end;
@@ -476,22 +476,22 @@ begin
   Result := SysUtils.FileGetAttr(FileName.ToNative());
 end;
 
-function TFileSystemImpl.FileSetAttr(const FileName: IPath; Attr: Integer): Boolean;
+function TFileSystemImpl.FileSetAttr(const FileName: IPath; Attr: integer): boolean;
 begin
   Result := (SysUtils.FileSetAttr(FileName.ToNative(), Attr) = 0);
 end;
 
-function TFileSystemImpl.FileIsReadOnly(const FileName: IPath): Boolean;
+function TFileSystemImpl.FileIsReadOnly(const FileName: IPath): boolean;
 begin
   Result := SysUtils.FileIsReadOnly(FileName.ToNative());
 end;
 
-function TFileSystemImpl.FileSetReadOnly(const FileName: IPath; ReadOnly: Boolean): Boolean;
+function TFileSystemImpl.FileSetReadOnly(const FileName: IPath; ReadOnly: boolean): boolean;
 begin
   Result := (SysUtils.FileSetAttr(FileName.ToNative(), faReadOnly) = 0);
 end;
 
-function TFileSystemImpl.ForceDirectories(const Dir: IPath): Boolean;
+function TFileSystemImpl.ForceDirectories(const Dir: IPath): boolean;
 begin
   Result := SysUtils.ForceDirectories(Dir.ToNative());
 end;
@@ -511,22 +511,22 @@ begin
   Result := Path(SysUtils.FileSearch(Name.ToNative(), DirListStr));
 end;
 
-function TFileSystemImpl.RenameFile(const OldName, NewName: IPath): Boolean;
+function TFileSystemImpl.RenameFile(const OldName, NewName: IPath): boolean;
 begin
   Result := SysUtils.RenameFile(OldName.ToNative(), NewName.ToNative());
 end;
 
-function TFileSystemImpl.DeleteFile(const FileName: IPath): Boolean;
+function TFileSystemImpl.DeleteFile(const FileName: IPath): boolean;
 begin
   Result := SysUtils.DeleteFile(FileName.ToNative());
 end;
 
-function TFileSystemImpl.RemoveDir(const Dir: IPath): Boolean;
+function TFileSystemImpl.RemoveDir(const Dir: IPath): boolean;
 begin
   Result := SysUtils.RemoveDir(Dir.ToNative());
 end;
 
-function TFileSystemImpl.CopyFile(const Source, Target: IPath; FailIfExists: Boolean): Boolean;
+function TFileSystemImpl.CopyFile(const Source, Target: IPath; FailIfExists: boolean): boolean;
 const
   COPY_BUFFER_SIZE = 4096; // a good tradeoff between speed and memory consumption
 var
@@ -614,12 +614,12 @@ begin
   Result := Path(SysUtils.ExcludeTrailingPathDelimiter(FileName.ToNative()));
 end;
 
-function TFileSystemImpl.FindFirst(const FilePattern: IPath; Attr: Integer; var F: TSytemSearchRec): Integer;
+function TFileSystemImpl.FindFirst(const FilePattern: IPath; Attr: integer; var F: TSytemSearchRec): integer;
 begin
   Result := SysUtils.FindFirst(FilePattern.ToNative(), Attr, F);
 end;
 
-function TFileSystemImpl.FindNext(var F: TSytemSearchRec): Integer;
+function TFileSystemImpl.FindNext(var F: TSytemSearchRec): integer;
 begin
   Result := SysUtils.FindNext(F);
 end;
@@ -634,7 +634,7 @@ begin
   Result := Path(SysUtils.GetCurrentDir());
 end;
 
-function TFileSystemImpl.SetCurrentDir(const Dir: IPath): Boolean;
+function TFileSystemImpl.SetCurrentDir(const Dir: IPath): boolean;
 begin
   Result := SysUtils.SetCurrentDir(Dir.ToNative());
 end;
@@ -644,7 +644,7 @@ end;
 
 { TFileIterator }
 
-constructor TFileIterator.Create(const FilePattern: IPath; Attr: Integer);
+constructor TFileIterator.Create(const FilePattern: IPath; Attr: integer);
 begin
   inherited Create();
   fHasNext := (FileSystem.FindFirst(FilePattern, Attr, fSearchRec) = 0);
@@ -656,7 +656,7 @@ begin
   inherited;
 end;
 
-function TFileIterator.HasNext(): Boolean;
+function TFileIterator.HasNext(): boolean;
 begin
   Result := fHasNext;
 end;
