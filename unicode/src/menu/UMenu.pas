@@ -1176,13 +1176,33 @@ begin
   AudioPlayback.PlaySound( aSound );
 end;
 
+procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
+begin
+  Display.CheckOK := Value;
+  if (Value) then
+  begin
+    //Hack to Finish Singscreen correct on Exit with Q Shortcut
+    if (Display.NextScreenWithCheck = nil) then
+    begin
+      if (Display.CurrentScreen = @ScreenSing) then
+        ScreenSing.Finish
+      else if (Display.CurrentScreen = @ScreenSingModi) then
+        ScreenSingModi.Finish;
+    end;
+  end
+  else
+  begin
+    Display.NextScreenWithCheck := nil;
+  end;
+end;
+
 //popup hack
 procedure TMenu.CheckFadeTo(Screen: PMenu; msg: string);
 begin
   Display.Fade := 0;
   Display.NextScreenWithCheck := Screen;
   Display.CheckOK := false;
-  ScreenPopupCheck.ShowPopup(msg);
+  ScreenPopupCheck.ShowPopup(msg, OnSaveEncodingError, nil, false);
 end;
 
 procedure TMenu.AddButtonText(AddX, AddY: real; const AddText: UTF8String);
