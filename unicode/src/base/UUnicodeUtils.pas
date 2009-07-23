@@ -31,14 +31,27 @@ interface
   {$MODE Delphi}
 {$ENDIF}
 
-{$I switches.inc}
-
 uses
 {$IFDEF MSWINDOWS}
   Windows,
 {$ENDIF}
+  StrUtils,
   SysUtils;
-  
+
+type
+  // String with unknown encoding. Introduced with Delphi 2009 and maybe soon
+  // with FPC.
+  RawByteString = AnsiString;
+
+{**
+ * Returns true if the system uses UTF-8 as default string type
+ * (filesystem or API calls).
+ * This is always true on Mac OS X and always false on Win32. On Unix it depends
+ * on the LC_CTYPE setting.
+ * Do not use AnsiToUTF8() or UTF8ToAnsi() if this function returns true.
+ *}
+function IsNativeUTF8(): boolean;
+
 (*
  * Character classes
  *)
@@ -67,7 +80,7 @@ function IsPrintableChar(ch: UCS4Char): boolean; overload;
  * function will most probably return false, as most ANSI strings sequences
  * are illegal in UTF-8.
  *}
-function IsUTF8String(const str: AnsiString): boolean;
+function IsUTF8String(const str: RawByteString): boolean;
 
 {**
  * Iterates over an UTF-8 encoded string.
@@ -87,7 +100,7 @@ procedure UCS4Delete(var Str: UCS4String; Index: Integer; Count: Integer);
 {**
  * Checks if the string is composed of ASCII characters.
  *}
-function IsASCIIString(const str: AnsiString): boolean;
+function IsASCIIString(const str: RawByteString): boolean;
 
 {*
  * String format conversion
@@ -163,6 +176,44 @@ function WideStringUpperCase(ch: WideChar): WideString; overload;
 function StringReplaceW(const text : WideString; search, rep: WideChar): WideString;
 
 implementation
+
+{$IFDEF UNIX}
+{$IFNDEF APPLE}
+const
+  LC_CTYPE = 0;
+
+function setlocale(category: integer; locale: PChar): PChar; cdecl; external 'c';
+{$ENDIF}
+{$ENDIF}
+
+var
+  NativeUTF8: boolean;
+
+procedure InitUnicodeUtils();
+{$IFDEF UNIX}
+{$IFNDEF APPLE}
+var
+  localeName: PChar;
+{$ENDIF}
+{$ENDIF}
+begin
+  {$IF Defined(APPLE)}
+    NativeUTF8 := true;
+  {$ELSEIF Defined(MSWindows)}
+    NativeUTF8 := false;
+  {$ELSEIF Defined(UNIX)}
+    // check if locale name contains UTF8 or UTF-8
+    localeName := setlocale(LC_CTYPE, nil);
+    NativeUTF8 := Pos('UTF8', UpperCase(AnsiReplaceStr(localeName, '-', ''))) > 0;
+  {$ELSE}
+    raise Exception.Create('Unknown system');
+  {$IFEND}
+end;
+
+function IsNativeUTF8(): boolean;
+begin
+  Result := NativeUTF8;
+end;
 
 function IsAlphaChar(ch: WideChar): boolean;
 begin
@@ -344,7 +395,7 @@ begin
     Ch := Ord('?');
 end;
 
-function IsUTF8String(const str: AnsiString): boolean;
+function IsUTF8String(const str: RawByteString): boolean;
 var
   Ch: UCS4Char;
   StrPtr: PAnsiChar;
@@ -361,7 +412,7 @@ begin
   end;
 end;
 
-function IsASCIIString(const str: AnsiString): boolean;
+function IsASCIIString(const str: RawByteString): boolean;
 var
   I: integer;
 begin
@@ -514,7 +565,7 @@ begin
     Exit;
   if (Index + Count > Len) then
     Count := Len-Index;
-
+  
   OldStr := Str;
   SetLength(Str, Len-Count+1);
   for I := 0 to Index-1 do
@@ -582,5 +633,8 @@ begin
       result[iPos] := rep;
   end;
 end;
+
+initialization
+  InitUnicodeUtils;
 
 end.
