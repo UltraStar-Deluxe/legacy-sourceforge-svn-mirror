@@ -138,12 +138,6 @@ type
     function SetCurrentDir(const Dir: IPath): Boolean;
 
     {**
-     * Opens a file stream for FileName with Mode. Close the stream after usage
-     * with THandleStream.Free().
-     *}
-    function CreateFileStream(const FileName: IPath; Mode: Word): THandleStream;
-
-    {**
      * Returns true if the filesystem is case-sensitive.
      *}
     function IsCaseSensitive(): boolean;
@@ -195,8 +189,6 @@ type
     function GetCurrentDir: IPath;
     function SetCurrentDir(const Dir: IPath): Boolean;
 
-    function CreateFileStream(const FileName: IPath; Mode: Word): THandleStream;
-
     function IsCaseSensitive(): boolean;
   end;
 
@@ -219,11 +211,6 @@ var
 function FileSystem(): IFileSystem;
 begin
   Result := FileSystem_Singleton;
-end;
-
-function TFileSystemImpl.CreateFileStream(const FileName: IPath; Mode: Word): THandleStream;
-begin
-  Result := TBinaryFileStream.Create(FileName, Mode);
 end;
 
 function TFileSystemImpl.FileFind(const FilePattern: IPath; Attr: Integer): IFileIterator;
