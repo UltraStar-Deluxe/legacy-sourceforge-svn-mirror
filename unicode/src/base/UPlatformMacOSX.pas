@@ -143,8 +143,7 @@ type
 implementation
 
 uses
-  SysUtils,
-  BaseUnix;
+  SysUtils;
 
 procedure TPlatformMacOSX.Init;
 begin
@@ -152,115 +151,102 @@ begin
 end;
 
 procedure TPlatformMacOSX.CreateUserFolders();
-const
-  // used to construct the @link(UserPathName)
-  PathName: string = '/Library/Application Support/UltraStarDeluxe';
 var
-  RelativePath: string;
+  RelativePath: IPath;
   // BaseDir contains the path to the folder, where a search is performed.
   // It is set to the entries in @link(DirectoryList) one after the other.
   BaseDir: IPath;
   // OldBaseDir contains the path to the folder, where the search started.
   // It is used to return to it, when the search is completed in all folders.
   OldBaseDir: IPath;
-  // This record contains the result of a file search with FindFirst or FindNext
-  SearchInfo: TSearchRec;
+  Iter: IFileIterator;
+  FileInfo: TFileInfo;
+  CurPath: IPath;
   // These two lists contain all folder and file names found
   // within the folder @link(BaseDir).
-  DirectoryList, FileList: TStringList;
+  DirectoryList, FileList: IInterfaceList;
   // DirectoryIsFinished contains the index of the folder in @link(DirectoryList),
   // which is the last one completely searched. Later folders are still to be
   // searched for additional files and folders.
   DirectoryIsFinished: longint;
-  Counter: longint;
+  I: longint;
   // These three are for creating directories, due to possible symlinks
   CreatedDirectory: boolean;
   FileAttrs:        integer;
   DirectoryPath:    IPath;
-
-  UserHome: IPath;
   UserPath: IPath;
-
   SrcFile, TgtFile: IPath;
 begin
   // Get the current folder and save it in OldBaseDir for returning to it, when
   // finished.
   OldBaseDir := FileSystem.GetCurrentDir();
 
-  // UltraStarDeluxe.app/Contents contains all the default files and
-  // folders.
+  // UltraStarDeluxe.app/Contents contains all the default files and folders.
   BaseDir := OldBaseDir.Append('UltraStarDeluxe.app/Contents');
   FileSystem.SetCurrentDir(BaseDir);
 
-  // Right now, only $HOME/Library/Application Support/UltraStarDeluxe
-  // is used.
-  UserHome := Path(GetEnvironmentVariable('HOME'));
-  UserPath := UserHome.Append(PathName);
+  // Right now, only $HOME/Library/Application Support/UltraStarDeluxe is used.
+  UserPath := GetGameUserPath();
 
   DirectoryIsFinished := 0;
   // replace with IInterfaceList
-  DirectoryList := TStringList.Create();
-  FileList := TStringList.Create();
-  DirectoryList.Add('.');
+  DirectoryList := TInterfaceList.Create();
+  FileList := TInterfaceList.Create();
+  DirectoryList.Add(Path('.'));
 
   // create the folder and file lists
   repeat
-
-    RelativePath := DirectoryList[DirectoryIsFinished];
+    RelativePath := (DirectoryList[DirectoryIsFinished] as IPath);
     FileSystem.SetCurrentDir(BaseDir.Append(RelativePath));
-    // TODO: replace with IFileIterator
-    if (FindFirst('*', faAnyFile, SearchInfo) = 0) then
+    Iter := FileSystem.FileFind(Path('*'), faAnyFile);
+    while (Iter.HasNext) do    
     begin
-      repeat
-        if DirectoryExists(SearchInfo.Name) then
-        begin
-          if (SearchInfo.Name <> '.') and (SearchInfo.Name <> '..') then
-            DirectoryList.Add(RelativePath + '/' + SearchInfo.Name);
-        end
-        else
-          Filelist.Add(RelativePath + '/' + SearchInfo.Name);
-      until (FindNext(SearchInfo) <> 0);
+      FileInfo := Iter.Next;
+      CurPath := FileInfo.Name;
+      if CurPath.IsDirectory() then
+      begin
+        if (not CurPath.Equals('.')) and (not CurPath.Equals('..')) then
+          DirectoryList.Add(RelativePath.Append(CurPath));
+      end
+      else
+        Filelist.Add(RelativePath.Append(CurPath));
     end;
-    FindClose(SearchInfo);
     Inc(DirectoryIsFinished);
   until (DirectoryIsFinished = DirectoryList.Count);
 
   // create missing folders
   UserPath.CreateDirectory(true); // should not be necessary since (UserPathName+'/.') is created.
-  for Counter := 0 to DirectoryList.Count-1 do
+  for I := 0 to DirectoryList.Count-1 do
   begin
-    DirectoryPath    := UserPath.Append(DirectoryList[Counter]);
+    CurPath          := DirectoryList[I] as IPath;
+    DirectoryPath    := UserPath.Append(CurPath);
     CreatedDirectory := DirectoryPath.CreateDirectory();
     FileAttrs        := DirectoryPath.GetAttr();
     // Maybe analyse the target of the link with FpReadlink().
     // Let's assume the symlink is pointing to an existing directory.
     if (not CreatedDirectory) and (FileAttrs and faSymLink > 0) then
-      Log.LogError('Failed to create the folder "'+ UserPath.ToNative + '/' + DirectoryList[Counter] +'"',
+      Log.LogError('Failed to create the folder "'+ DirectoryPath.ToNative +'"',
                    'TPlatformMacOSX.CreateUserFolders');
   end;
-  DirectoryList.Free();
 
   // copy missing files
-  for Counter := 0 to Filelist.Count-1 do
+  for I := 0 to Filelist.Count-1 do
   begin
-    SrcFile := BaseDir.Append(Filelist[Counter]);
-    TgtFile := UserPath.Append(Filelist[Counter]);
+    CurPath := Filelist[I] as IPath;
+    SrcFile := BaseDir.Append(CurPath);
+    TgtFile := UserPath.Append(CurPath);
     SrcFile.CopyFile(TgtFile, true);
   end;
-  FileList.Free();
 
   // go back to the initial folder
   FileSystem.SetCurrentDir(OldBaseDir);
 end;
 
 function TPlatformMacOSX.GetBundlePath: IPath;
-var
-  TmpPath: IPath;
 begin
   // Mac applications are packaged in folders.
   // Cutting the last two folders yields the application folder.
-  TmpPath := GetExecutionDir().GetParent;
-  Result := TmpPath.GetParent;
+  Result := GetExecutionDir().GetParent().GetParent();
 end;
 
 function TPlatformMacOSX.GetApplicationSupportPath: IPath;
