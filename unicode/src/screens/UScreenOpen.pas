@@ -54,19 +54,26 @@ uses
 type
   TScreenOpen = class(TMenu)
     private
-      TextF:          array[0..1] of integer;
-      TextN:          integer;
-      fPath:          IPath;
-    public
-      Tex_Background: TTexture;
-      FadeOut:        boolean;
-      BackScreen:     pointer;
+      //fTextF:      array[0..1] of integer;
+      fTextN:      integer; // text-box ID of filename
+      fFilename:   IPath;
+      fBackScreen: PMenu;
+
       procedure AddBox(X, Y, W, H: real);
+    public
       constructor Create; override;
       procedure OnShow; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      //function Draw: boolean; override;
-      //procedure Finish;
+
+      {**
+       * Set by the caller to provide a default filename.
+       * Set to the selected filename after calling this screen or to PATH_NONE
+       * if the screen was aborted.
+       * TODO: maybe pass this value with a callback OnValueChanged()
+       *}
+      property Filename: IPath READ fFilename WRITE fFilename;
+      {** The screen that is shown after this screen is closed (set by the caller) *}
+      property BackScreen: PMenu READ fBackScreen WRITE fBackScreen;
   end;
 
 implementation
@@ -90,7 +97,7 @@ begin
     begin
       if (Interaction = 0) then
       begin
-        Text[TextN].Text := Text[TextN].Text + UCS4ToUTF8String(CharCode);
+        Text[fTextN].Text := Text[fTextN].Text + UCS4ToUTF8String(CharCode);
         Exit;
       end;
     end;
@@ -101,16 +108,16 @@ begin
         begin
           if Interaction = 0 then
           begin
-            Text[TextN].DeleteLastLetter;
+            Text[fTextN].DeleteLastLetter;
           end;
         end;
 
       SDLK_ESCAPE:
         begin
           //Empty Filename and go to last Screen
-          ConversionFileName := PATH_NONE;
+          fFileName := PATH_NONE;
           AudioPlayback.PlaySound(SoundLib.Back);
-          FadeTo(BackScreen);
+          FadeTo(fBackScreen);
         end;
 
       SDLK_RETURN:
@@ -118,16 +125,16 @@ begin
           if (Interaction = 2) then
           begin
             //Update Filename and go to last Screen
-            ConversionFileName := Path(Text[TextN].Text);
+            fFileName := Path(Text[fTextN].Text);
             AudioPlayback.PlaySound(SoundLib.Back);
-            FadeTo(BackScreen);
+            FadeTo(fBackScreen);
           end
           else if (Interaction = 1) then
           begin
             //Empty Filename and go to last Screen
-            ConversionFileName := PATH_NONE;
+            fFileName := PATH_NONE;
             AudioPlayback.PlaySound(SoundLib.Back);
-            FadeTo(BackScreen);
+            FadeTo(fBackScreen);
           end;
         end;
 
@@ -162,6 +169,8 @@ constructor TScreenOpen.Create;
 begin
   inherited Create;
 
+  fFilename := PATH_NONE;
+
   // line
   {
   AddStatic(20, 10, 80, 30, 0, 0, 0, 'MainBar', 'JPG', TEXTURE_TYPE_COLORIZED);
@@ -177,8 +186,8 @@ begin
 
   // file name
   AddBox(20, 540, 500, 40);
-  TextN := AddText(50, 548, 0, 24, 0, 0, 0, ConversionFileName.ToUTF8);
-  AddInteraction(iText, TextN);
+  fTextN := AddText(50, 548, 0, 24, 0, 0, 0, fFileName.ToUTF8);
+  AddInteraction(iText, fTextN);
 
   // buttons
   {AddButton(540, 540, 100, 40, Skin.SkinPath + Skin.ButtonF);
@@ -200,6 +209,7 @@ begin
   inherited;
 
   Interaction := 0;
+  Text[fTextN].Text := fFilename.ToUTF8();
 end;
 
 (*

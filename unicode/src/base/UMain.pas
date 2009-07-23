@@ -437,6 +437,8 @@ begin
 
           if (ScreenPopupError <> nil) and (ScreenPopupError.Visible) then
             done := not ScreenPopupError.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
+          else if (ScreenPopupInfo <> nil) and (ScreenPopupInfo.Visible) then
+            done := not ScreenPopupInfo.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
           else if (ScreenPopupCheck <> nil) and (ScreenPopupCheck.Visible) then
             done := not ScreenPopupCheck.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
           else
@@ -511,6 +513,8 @@ begin
           // shoud be done in a way to be sure the topmost popup has preference (maybe error, then check)
           else if (ScreenPopupError <> nil) and (ScreenPopupError.Visible) then
             Done := not ScreenPopupError.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
+          else if (ScreenPopupInfo <> nil) and (ScreenPopupInfo.Visible) then
+            Done := not ScreenPopupInfo.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
           else if (ScreenPopupCheck <> nil) and (ScreenPopupCheck.Visible) then
             Done := not ScreenPopupCheck.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
           else

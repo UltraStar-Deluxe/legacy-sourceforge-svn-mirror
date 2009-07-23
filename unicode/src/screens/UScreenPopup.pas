@@ -61,7 +61,7 @@ type
   end;
 
 type
-  TScreenPopupError = class(TMenu)
+  TScreenPopup = class(TMenu)
     {
     private
       CurMenu: byte; //Num of the cur. Shown Menu
@@ -75,6 +75,16 @@ type
       procedure OnHide; override;
       procedure ShowPopup(const Msg: UTF8String);
       function Draw: boolean; override;
+  end;
+
+  TScreenPopupError = class(TScreenPopup)
+    public
+      constructor Create;
+  end;
+
+  TScreenPopupInfo = class(TScreenPopup)
+    public
+      constructor Create;
   end;
 
 var
@@ -93,6 +103,8 @@ uses
   UPlaylist,
   UDisplay,
   UUnicodeUtils;
+
+{ TScreenPopupCheck }
 
 function TScreenPopupCheck.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
@@ -187,9 +199,9 @@ begin
   Background.OnShow
 end;
 
-// error popup
+{ TScreenPopup }
 
-function TScreenPopupError.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenPopup.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
   if (PressedDown) then
@@ -223,7 +235,7 @@ begin
   end;
 end;
 
-constructor TScreenPopupError.Create;
+constructor TScreenPopup.Create;
 begin
   inherited Create;
 
@@ -238,22 +250,22 @@ begin
   Interaction := 0;
 end;
 
-function TScreenPopupError.Draw: boolean;
+function TScreenPopup.Draw: boolean;
 begin
   Draw := inherited Draw;
 end;
 
-procedure TScreenPopupError.OnShow;
+procedure TScreenPopup.OnShow;
 begin
   inherited;
 
 end;
 
-procedure TScreenPopupError.OnHide;
+procedure TScreenPopup.OnHide;
 begin
 end;
 
-procedure TScreenPopupError.ShowPopup(const Msg: UTF8String);
+procedure TScreenPopup.ShowPopup(const Msg: UTF8String);
 begin
   Interaction := 0; //Reset Interaction
   Visible := true;  //Set Visible
@@ -275,6 +287,22 @@ begin
   Button[0].Visible := true;
 
   Button[0].Text[0].Text := 'OK';
+end;
+
+{ TScreenPopupError }
+
+constructor TScreenPopupError.Create;
+begin
+  inherited;
+  Text[1].Text := Language.Translate('MSG_ERROR_TITLE');
+end;
+
+{ TScreenPopupInfo }
+
+constructor TScreenPopupInfo.Create;
+begin
+  inherited;
+  Text[1].Text := Language.Translate('MSG_INFO_TITLE');
 end;
 
 end.

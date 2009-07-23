@@ -124,6 +124,7 @@ uses
   UMain,
   UTexture,
   UTime,
+  ULanguage,
   UPathUtils;
 
 constructor TDisplay.Create;
@@ -220,6 +221,8 @@ begin
       //popup mod
       if (ScreenPopupError <> nil) and ScreenPopupError.Visible then
         ScreenPopupError.Draw
+      else if (ScreenPopupInfo <> nil) and ScreenPopupInfo.Visible then
+        ScreenPopupInfo.Draw
       else if (ScreenPopupCheck <> nil) and ScreenPopupCheck.Visible then
         ScreenPopupCheck.Draw;
 
@@ -545,9 +548,9 @@ begin
   //  Success := WriteBMPImage(FileName, Surface);
   Success := WritePNGImage(FileName, Surface);
   if Success then
-    ScreenPopupError.ShowPopup('Screenshot saved: ' + FileName.GetName.ToUTF8())
+    ScreenPopupInfo.ShowPopup(Format(Language.Translate('SCREENSHOT_SAVED'), [FileName.GetName.ToUTF8()]))
   else
-    ScreenPopupError.ShowPopup('Screenshot failed');
+    ScreenPopupError.ShowPopup(Language.Translate('SCREENSHOT_FAILED'));
 
   SDL_FreeSurface(Surface);
   FreeMem(ScreenData);

@@ -150,6 +150,7 @@ var
   //popup mod
   ScreenPopupCheck: TScreenPopupCheck;
   ScreenPopupError: TScreenPopupError;
+  ScreenPopupInfo:  TScreenPopupInfo;
 
   //Notes
   Tex_Left:        array[0..6] of TTexture;   //rename to tex_note_left
@@ -743,6 +744,8 @@ begin
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Popup (Check)', 3); Log.BenchmarkStart(3);
   ScreenPopupError := TScreenPopupError.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Popup (Error)', 3); Log.BenchmarkStart(3);
+  ScreenPopupInfo := TScreenPopupInfo.Create;
+  Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Popup (Info)', 3); Log.BenchmarkStart(3);
   ScreenPartyNewRound :=    TScreenPartyNewRound.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen PartyNewRound', 3); Log.BenchmarkStart(3);
   ScreenPartyScore :=       TScreenPartyScore.Create;
@@ -794,6 +797,7 @@ begin
   ScreenSongJumpto.Destroy;
   ScreenPopupCheck.Destroy;
   ScreenPopupError.Destroy;
+  ScreenPopupInfo.Destroy;
   ScreenPartyNewRound.Destroy;
   ScreenPartyScore.Destroy;
   ScreenPartyWin.Destroy;

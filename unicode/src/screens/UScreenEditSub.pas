@@ -184,7 +184,7 @@ begin
                    (SDL_ModState = KMOD_LSHIFT));
           if (SResult = ssrEncodingError) then
           begin
-            ScreenPopupCheck.ShowPopup('Encoding error, save as UTF-8?', OnSaveEncodingError,
+            ScreenPopupCheck.ShowPopup(Language.Translate('ENCODING_ERROR_ASK_FOR_UTF8'), OnSaveEncodingError,
                 Pointer(SDL_ModState = KMOD_LSHIFT), true);
           end;
           Exit;
