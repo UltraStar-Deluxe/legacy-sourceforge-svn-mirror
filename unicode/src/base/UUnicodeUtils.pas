@@ -58,6 +58,9 @@ function IsPunctuationChar(ch: UCS4Char): boolean; overload;
 function IsControlChar(ch: WideChar): boolean; overload;
 function IsControlChar(ch: UCS4Char): boolean; overload;
 
+function IsPrintableChar(ch: WideChar): boolean; overload;
+function IsPrintableChar(ch: UCS4Char): boolean; overload;
+
 {**
  * Checks if the given string is a valid UTF-8 string.
  * If an ANSI encoded string (with char codes >= 128) is passed, the
@@ -65,6 +68,21 @@ function IsControlChar(ch: UCS4Char): boolean; overload;
  * are illegal in UTF-8.
  *}
 function IsUTF8String(const str: AnsiString): boolean;
+
+{**
+ * Iterates over an UTF-8 encoded string.
+ * StrPtr will be  increased to the beginning of the next character on each
+ * call.
+ * Results true if the given string starts with an UTF-8 encoded char.
+ *}
+function NextCharUTF8(var StrPtr: PAnsiChar; out Ch: UCS4Char): boolean;
+
+{**
+ * Deletes Count chars (not bytes) beginning at position Index.
+ * Index values start with 1.
+ *}
+procedure UTF8Delete(var Str: UTF8String; Index: Integer; Count: Integer);
+procedure UCS4Delete(var Str: UCS4String; Index: Integer; Count: Integer);
 
 {**
  * Checks if the string is composed of ASCII characters.
@@ -118,9 +136,14 @@ function UCS4UpperCase(const str: UCS4String): UCS4String; overload;
 function UCS4CharToString(ch: UCS4Char): UCS4String;
 
 {**
- * Copies a segment of str starting with Index with Count characters.
+ * Copies a segment of str starting with Index (1-based) with Count characters (not bytes).
+ *}
+function UTF8Copy(const str: UTF8String; Index: Integer = 1; Count: Integer = -1): UTF8String;
+
+{**
+ * Copies a segment of str starting with Index (0-based) with Count characters.
  * Note: Do not use Copy() to copy UCS4Strings as the result will not contain
- * a trailing #0 character and hence is invalid.  
+ * a trailing #0 character and hence is invalid.
  *}
 function UCS4Copy(const str: UCS4String; Index: Integer = 0; Count: Integer = -1): UCS4String;
 
@@ -225,8 +248,18 @@ begin
   Result := IsControlChar(WideChar(Ord(ch)));
 end;
 
+function IsPrintableChar(ch: WideChar): boolean;
+begin
+  Result := not IsControlChar(ch);
+end;
 
-function IsUTF8String(const str: AnsiString): boolean;
+function IsPrintableChar(ch: UCS4Char): boolean;
+begin
+  Result := IsPrintableChar(WideChar(Ord(ch)));
+end;
+
+
+function NextCharUTF8(var StrPtr: PAnsiChar; out Ch: UCS4Char): boolean;
 
   // find the most significant zero bit (Result: [7..-1])
   function FindZeroMSB(b: byte): integer;
@@ -243,42 +276,89 @@ function IsUTF8String(const str: AnsiString): boolean;
   end;
 
 var
-  I: integer;
   ZeroBit: integer;
   SeqCount: integer; // number of trailing bytes to follow
+const
+  Mask: array[1..3] of byte = ($1F, $0F, $07);
 begin
   Result := false;
   SeqCount := 0;
+  Ch := 0;
 
-  for I := 1 to Length(str) do
+  while (StrPtr^ <> #0) do
   begin
-    if (str[I] >= #128) then
+    if (StrPtr^ < #128) then
     begin
-      ZeroBit := FindZeroMSB(Ord(str[I]));
+      // check that no more trailing bytes are expected
+      if (SeqCount = 0) then
+      begin
+        Ch := Ord(StrPtr^);
+        Inc(StrPtr);
+        Result := true;
+      end;
+      Break;
+    end
+    else
+    begin
+      ZeroBit := FindZeroMSB(Ord(StrPtr^));
       // trailing byte expected
       if (SeqCount > 0) then
       begin
         // check if trailing byte has pattern 10xxxxxx
         if (ZeroBit <> 6) then
-          Exit;
+        begin
+          Inc(StrPtr);
+          Break;
+        end;
+
         Dec(SeqCount);
+        Ch := (Ch shl 6) or (Ord(StrPtr^) and $3F);
+
+        // check if char is finished
+        if (SeqCount = 0) then
+        begin
+          Inc(StrPtr);
+          Result := true;
+          Break;
+        end;
       end
       else // leading byte expected
       begin
         // check if pattern is one of 110xxxxx/1110xxxx/11110xxx
         if (ZeroBit > 5) or (ZeroBit < 3) then
-          Exit;
+        begin
+          Inc(StrPtr);
+          Break;
+        end;
         // calculate number of trailing bytes (1, 2 or 3)
         SeqCount := 6 - ZeroBit;
+        // extract first part of char
+        Ch := Ord(StrPtr^) and Mask[SeqCount];
       end;
     end;
+
+    Inc(StrPtr);
   end;
 
-  // trailing bytes missing?
-  if (SeqCount > 0) then
-    Exit;
+  if (not Result) then
+    Ch := Ord('?');
+end;
 
+function IsUTF8String(const str: AnsiString): boolean;
+var
+  Ch: UCS4Char;
+  StrPtr: PAnsiChar;
+begin
   Result := true;
+  StrPtr := PChar(str);
+  while (StrPtr^ <> #0) do
+  begin
+    if (not NextCharUTF8(StrPtr, Ch)) then
+    begin
+      Result := false;
+      Exit;
+    end;
+  end;
 end;
 
 function IsASCIIString(const str: AnsiString): boolean;
@@ -314,12 +394,14 @@ end;
 
 function LengthUTF8(const str: UTF8String): integer;
 begin
-  Result := Length(UTF8ToUCS4String(str));
+  Result := LengthUCS4(UTF8ToUCS4String(str));
 end;
 
 function LengthUCS4(const str: UCS4String): integer;
 begin
   Result := High(str);
+  if (Result = -1) then
+    Result := 0;
 end;
 
 function UTF8CompareStr(const S1, S2: UTF8String): integer;
@@ -387,6 +469,11 @@ begin
   Result[1] := 0;
 end;
 
+function UTF8Copy(const str: UTF8String; Index: Integer; Count: Integer): UTF8String;
+begin
+  Result := UCS4ToUTF8String(UCS4Copy(UTF8ToUCS4String(str), Index-1, Count));
+end;
+
 function UCS4Copy(const str: UCS4String; Index: Integer; Count: Integer): UCS4String;
 var
   I: integer;
@@ -405,6 +492,36 @@ begin
   for I := 0 to Count-1 do
     Result[I] := str[Index+I];
   Result[Count] := 0;
+end;
+
+procedure UTF8Delete(var Str: UTF8String; Index: Integer; Count: Integer);
+var
+  StrUCS4: UCS4String;
+begin
+  StrUCS4 := UTF8ToUCS4String(str);
+  UCS4Delete(StrUCS4, Index-1, Count);
+  Str := UCS4ToUTF8String(StrUCS4);
+end;
+
+procedure UCS4Delete(var Str: UCS4String; Index: Integer; Count: Integer);
+var
+  Len: integer;
+  OldStr: UCS4String;
+  I: integer;
+begin
+  Len := LengthUCS4(Str);
+  if (Count <= 0) or (Index < 0) or (Index >= Len) then
+    Exit;
+  if (Index + Count > Len) then
+    Count := Len-Index;
+
+  OldStr := Str;
+  SetLength(Str, Len-Count+1);
+  for I := 0 to Index-1 do
+    Str[I] := OldStr[I];
+  for I := Index+Count to Len-1 do
+    Str[I-Count] := OldStr[I];
+  Str[High(Str)] := 0;
 end;
 
 function WideStringUpperCase(ch: WideChar): WideString;
