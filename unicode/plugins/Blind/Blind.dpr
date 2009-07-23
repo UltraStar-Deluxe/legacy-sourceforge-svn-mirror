@@ -7,75 +7,72 @@ library Blind;
 uses
   ModiSDK in '..\SDK\ModiSDK.pas';
 
-// give the plugin's info
-procedure PluginInfo (var Info: TPluginInfo); {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
+//Gave the Plugins Info
+procedure PluginInfo (var Info: TPluginInfo); stdcall;
 begin
-  Info.Name       := 'PLUGIN_BLIND_NAME';
+  Info.Name    := 'PLUGIN_BLIND_NAME';
+
   Info.Creator    := 'Whiteshark';
   Info.PluginDesc := 'PLUGIN_BLIND_DESC';
 
-  // set to party modus plugin
-  Info.Typ        := 8;
+  //Set to Party Modi Plugin
+  Info.Typ := 8;
 
   Info.NumPlayers := 31;
 
-  // options
-  Info.LoadSong  := true;  // whether or not a song should be loaded
-  // only when song is loaded:
-  Info.ShowScore := true;  // whether or not the score should be shown
-  Info.ShowNotes := false; // whether the note lines should be displayed
-  Info.LoadVideo := true;  // should the video be loaded?
-  Info.LoadBack  := true;  // should the background be loaded?
+  //Options
+  Info.LoadSong := True;  //Whether or not a Song should be Loaded
+  //Only When Song is Loaded:
+  Info.ShowScore := True; //Whether or not the Score should be shown
+  Info.ShowNotes := False; //Whether the Note Lines should be displayed
+  Info.LoadVideo := True; //Should the Video be loaded ?
+  Info.LoadBack  := True; //Should the Background be loaded ?
 
-  Info.BGShowFull   := false;  // whether the background or the video should be shown in full size
-  Info.BGShowFull_O := true;   // whether the background or the video should be shown in full size
+  Info.BGShowFull := False;   //Whether the Background or the Video should be shown Fullsize
+  Info.BGShowFull_O := True;  //Whether the Background or the Video should be shown Fullsize
 
-  Info.ShowRateBar   := false; // whether the bar that shows how good the player was should be displayed
-  Info.ShowRateBar_O := true;  // load from ini whether the bar should be displayed
+  Info.ShowRateBar:= False;   //Whether the Bar that shows how good the player was sould be displayed
+  Info.ShowRateBar_O := True; //Load from Ini whether the Bar should be Displayed
 
-  Info.EnLineBonus   := false; // whether line bonus should be enabled
-  Info.EnLineBonus_O := true;  // load from ini whether line bonus should be enabled
+  Info.EnLineBonus := False;  //Whether LineBonus Should be enabled
+  Info.EnLineBonus_O := True; //Load from Ini whether LineBonus Should be enabled
 
-  //  options even when song is not loaded
-  Info.ShowBars     := false;  // whether the white bars on top and bottom should be drawn
-  Info.TeamModeOnly := false;  // if true the plugin can only be played in team mode
-  Info.GetSoundData := false;  // if true the rdata procedure is called when new sound data is available
-  Info.Dummy        := false;  // should be set to false... for updating plugin interface
+  //Options even when song is Not loaded
+  Info.ShowBars := False; //Whether the White Bars on Top and Bottom should be Drawn
+  Info.TeamModeOnly := False;  //If True the Plugin can only be Played in Team Mode
+  Info.GetSoundData := False;  //If True the RData Procedure is called when new SoundData is available
+  Info.Dummy := False;         //Should be Set to False... for Updateing Plugin Interface
 end;
 
-// executed on game start. if true game begins, else failure
-function Init (const TeamInfo:   TTeamInfo;
-               var   Playerinfo: TPlayerinfo;
-	       const Sentences:  TSentences;
-	       const Methods:    TMethodRec)
-	      : boolean; {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
+//Executed on Game Start //If True Game begins, else Failure
+function Init (const TeamInfo: TTeamInfo; var Playerinfo: TPlayerinfo; const Sentences: TSentences; const Methods: TMethodRec): boolean; stdcall;
 begin
-  Result := true;
+Result := True;
 end;
 
-// executed every time the screen is drawn. if false the game finishes
-function Draw (var   Playerinfo:  TPlayerinfo; 
-               const CurSentence: cardinal)
-	      : boolean; {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
-begin
-  Result := true;
-end;
-
-// is executed on finish, returns the player number of the winner
-function Finish (var Playerinfo: TPlayerinfo): byte; {$IFDEF MSWINDOWS} stdcall; {$ELSE} cdecl; {$ENDIF}
+//Executed everytime the Screen is Drawed //If False The Game finishes
+function Draw (var Playerinfo: TPlayerinfo; const CurSentence: Cardinal): boolean; stdcall;
 var
-  Index:    integer;
-  MaxScore: word;
+I: Integer;
 begin
-  Result   := 0;
+Result := True;
+end;
+
+//Is Executed on Finish, Returns the Playernum of the Winner
+function Finish (var Playerinfo: TPlayerinfo): byte; stdcall;
+var
+  I:Integer;
+  MaxScore: Word;
+begin
+  Result := 0;
   MaxScore := 0;
-  for Index := 0 to PlayerInfo.NumPlayers - 1 do
+  for I := 0 to PlayerInfo.NumPlayers-1 do
   begin
-    PlayerInfo.Playerinfo[Index].Percentage := PlayerInfo.Playerinfo[Index].Score div 9999;
-    if (PlayerInfo.Playerinfo[Index].Score > MaxScore) then
+    PlayerInfo.Playerinfo[I].Percentage := PlayerInfo.Playerinfo[I].Score div 9999;
+    if (PlayerInfo.Playerinfo[I].Score > MaxScore) then
     begin
-      MaxScore := PlayerInfo.Playerinfo[Index].Score;
-      case Index of
+      MaxScore := PlayerInfo.Playerinfo[I].Score;
+      Case I of
         0: Result :=  1;
         1: Result :=  2;
         2: Result :=  4;
@@ -84,20 +81,20 @@ begin
         5: Result := 32;
       end;
     end
-    else if (PlayerInfo.Playerinfo[Index].Score = MaxScore) and (PlayerInfo.Playerinfo[Index].Score <> 0) then
+    else if (PlayerInfo.Playerinfo[I].Score = MaxScore) AND (PlayerInfo.Playerinfo[I].Score <> 0) then
     begin
-      case Index of
-        0: Result := Result or 1;
-        1: Result := Result or 2;
-        2: Result := Result or 4;
-        3: Result := Result or 8;
-        4: Result := Result or 16;
-        5: Result := Result or 32;
+      Case I of
+        0: Result := Result OR 1;
+        1: Result := Result OR 2;
+        2: Result := Result OR 4;
+        3: Result := Result OR 8;
+        4: Result := Result OR 16;
+        5: Result := Result OR 32;
       end;
     end;
   end;
-  // if everybody has 0 points nobody wins
-  if (MaxScore = 0) then
+  //If everybody has 0 Points nobody Wins
+  If (MaxScore = 0) then
     Result := 0;
 end;
 

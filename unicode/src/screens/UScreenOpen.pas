@@ -92,7 +92,7 @@ begin
       Ord(' '), Ord('-'), Ord('.'), Ord(':'), Ord('\'):
         begin
           if Interaction = 0 then
-          begin
+	  begin
             Text[TextN].Text := Text[TextN].Text + UCS4ToUTF8String(CharCode);
           end;
         end;
@@ -123,7 +123,7 @@ begin
       SDLK_RETURN:
         begin
           if (Interaction = 2) then
-          begin
+	  begin
             //Update Filename and go to last Screen
             ConversionFileName := Text[TextN].Text;
             AudioPlayback.PlaySound(SoundLib.Back);
@@ -207,8 +207,7 @@ begin
   Interaction := 0;
 end;
 
-(*
-function TScreenEditSub.Draw: boolean;
+(*function TScreenEditSub.Draw: boolean;
 var
   Min:     integer;
   Sec:     integer;
@@ -220,7 +219,6 @@ end;
 procedure TScreenEditSub.Finish;
 begin
 //
-end;
-*)
+end;*)
 
 end.

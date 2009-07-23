@@ -40,7 +40,7 @@ uses
   UTexture;
 
 type
-  TAlignmentType = (atLeft, atCenter, atRight);
+  alignment = (left, center, right);
 
   TWord = record
     X:         real;
@@ -58,7 +58,7 @@ type
 
   TEditorLyrics = class
     private
-      AlignI:     TAlignmentType;
+      AlignI:     alignment;
       XR:         real;
       YR:         real;
       SizeR:      real;
@@ -69,7 +69,7 @@ type
       procedure SetX(Value: real);
       procedure SetY(Value: real);
       function GetClientX: real;
-      procedure SetAlign(Value: TAlignmentType);
+      procedure SetAlign(Value: alignment);
       function GetSize: real;
       procedure SetSize(Value: real);
       procedure SetSelected(Value: integer);
@@ -96,7 +96,7 @@ type
       property X: real write SetX;
       property Y: real write SetY;
       property ClientX: real read GetClientX;
-      property Align: TAlignmentType write SetAlign;
+      property Align: alignment write SetAlign;
       property Size: real read GetSize write SetSize;
       property Selected: integer read SelectedI write SetSelected;
       property FontStyle: integer write SetFontStyle;
@@ -137,7 +137,7 @@ begin
   Result := Word[0].X;
 end;
 
-procedure TEditorLyrics.SetAlign(Value: TAlignmentType);
+procedure TEditorLyrics.SetAlign(Value: alignment);
 begin
   AlignI := Value;
 end;
@@ -229,7 +229,7 @@ var
   WordIndex:  integer;
   TotalWidth: real;
 begin
-  if AlignI = atCenter then
+  if AlignI = center then
   begin
     TotalWidth := 0;
     for WordIndex := 0 to High(Word) do

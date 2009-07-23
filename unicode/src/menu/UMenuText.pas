@@ -34,29 +34,29 @@ interface
 {$I switches.inc}
 
 uses
+  TextGL,
+  UTexture,
+  gl, 
   math,
   SysUtils,
-  gl, 
-  SDL,
-  TextGL,
-  UTexture;
+  SDL;
 
 type
   TText = class
     private
-      SelectBool:  boolean;
-      TextString:  UTF8String;
-      TextTiles:   array of UTF8String;
+      SelectBool:   boolean;
+      TextString:   UTF8String;
+      TextTiles:    array of UTF8String;
 
-      STicks:      cardinal;
-      SelectBlink: boolean;
+      STicks:       Cardinal;
+      SelectBlink:  boolean;
     public
       X:      real;
       Y:      real;
       Z:      real;
-      MoveX:  real;       // some modifier for x - position that don't affect the real Y
-      MoveY:  real;       // some modifier for y - position that don't affect the real Y
-      W:      real;       // text wider than W is broken
+      MoveX:  real;       //Some Modifier for X - Position that don't affect the real Y
+      MoveY:  real;       //Some Modifier for Y - Position that don't affect the real Y
+      W:      real;       //text wider than W is broken
 //      H:      real;
       Size:   real;
       ColR:   real;
@@ -64,13 +64,13 @@ type
       ColB:   real;
       Alpha:  real;
       Int:    real;
-      Style:   integer;
-      Visible: boolean;
-      Align:   integer; // 0 = left, 1 = center, 2 = right
+      Style:  integer;
+      Visible:  boolean;
+      Align:    integer; // 0 = left, 1 = center, 2 = right
 
-      // reflection
-      Reflection:        boolean;
-      ReflectionSpacing: real;
+      //Reflection
+      Reflection:           boolean;
+      ReflectionSpacing:    real;
 
       procedure SetSelect(Value: boolean);
       property Selected: boolean read SelectBool write SetSelect;
@@ -97,36 +97,35 @@ procedure TText.SetSelect(Value: boolean);
 begin
   SelectBool := Value;
   
-  // set cursor visible
-  SelectBlink := true;
+  //Set Cursor Visible
+  SelectBlink := True;
   STicks := SDL_GetTicks() div 550;
 end;
 
 procedure TText.SetText(Value: UTF8String);
 var
-  NextPos:   cardinal;  // next pos of a space etc.
-  LastPos:   cardinal;  // last pos "
-  LastBreak: cardinal;  // last break
-  isBreak:   boolean;   // true if the break is not caused because the text is out of the area
-  FirstWord: word;      // is first word after break?
-  Len:       word;      // length of the tiles array
+  NextPos:   Cardinal;  //NextPos of a Space etc.
+  LastPos:   Cardinal;  //LastPos "
+  LastBreak: Cardinal;  //Last Break
+  isBreak:   boolean;   //True if the Break is not Caused because the Text is out of the area
+  FirstWord: Word;      //Is First Word after Break?
+  Len:       Word;      //Length of the Tiles Array
 
   function GetNextPos: boolean;
   var
-    T1, {T2,} T3: cardinal;
+    T1, {T2,} T3: Cardinal;
   begin
     LastPos := NextPos;
 
-    // next space (if width is given)
+    //Next Space (If Width is given)
     if (W > 0) then
       T1 := PosEx(' ', Value, LastPos + 1)
-    else
-      T1 := Length(Value);
+    else T1 := Length(Value);
 
-    {// next -
+    {//Next -
     T2 := PosEx('-', Value, LastPos + 1);}
 
-    // next break
+    //Next Break
     T3 := PosEx('\n', Value, LastPos + 1);
 
     if T1 = 0 then
@@ -136,19 +135,19 @@ var
     if T3 = 0 then
       T3 := Length(Value);
 
-    // get nearest pos
+    //Get Nearest Pos
     NextPos := min(T1, T3{min(T2, T3)});
 
-    if (LastPos = cardinal(Length(Value))) then
+    if (LastPos = Length(Value)) then
       NextPos := 0;
 
-    isBreak := (NextPos = T3) and (NextPos <> cardinal(Length(Value)));
+    isBreak := (NextPos = T3) AND (NextPos <> Length(Value));
     Result := (NextPos <> 0);
   end;
 
-  procedure AddBreak(const From, bTo: cardinal);
+  procedure AddBreak(const From, bTo: Cardinal);
   begin
-    if (isBreak) or (bTo - From >= 1) then
+    if (isBreak) OR (bTo - From >= 1) then
     begin
       Inc(Len);
       SetLength (TextTiles, Len);
@@ -163,14 +162,14 @@ var
   end;
 
 begin
-  // set TextString
+  //Set TExtstring
   TextString := Value;
 
-  // set cursor visible
-  SelectBlink := true;
+  //Set Cursor Visible
+  SelectBlink := True;
   STicks := SDL_GetTicks() div 550;
 
-  // exit if there is no need to create tiles
+  //Exit if there is no Need to Create Tiles
   if (W <= 0) and (Pos('\n', Value) = 0) then
   begin
     SetLength (TextTiles, 1);
@@ -178,12 +177,12 @@ begin
     Exit;
   end;
 
-  // create tiles
-  // reset text array
+  //Create Tiles
+  //Reset Text Array
   SetLength (TextTiles, 0);
   Len := 0;
 
-  // reset counter vars
+  //Reset Counter Vars
   LastPos := 1;
   NextPos := 1;
   LastBreak := 1;
@@ -191,57 +190,57 @@ begin
 
   if (W > 0) then
   begin
-    // set font properties
+    //Set Font Properties
     SetFontStyle(Style);
     SetFontSize(Size);
   end;
 
-  // go through text
+  //go Through Text
   while (GetNextPos) do
   begin
-      // break in text
+      //Break in Text
       if isBreak then
       begin
-        // look for break before the break
+        //Look for Break before the Break
         if (glTextWidth(Copy(Value, LastBreak, NextPos - LastBreak + 1)) > W) AND (NextPos-LastPos > 1) then
         begin
-          isBreak := false;
-          // not the first word after break, so we don't have to break within a word
+          isBreak := False;
+          //Not the First word after Break, so we don't have to break within a word
           if (FirstWord > 1) then
           begin
-            // add break before actual position, because there the text fits the area
+            //Add Break before actual Position, because there the Text fits the Area
             AddBreak(LastBreak, LastPos);
           end
-          else // first word after break break within the word
+          else //First Word after Break Break within the Word
           begin
-            // to do
-            // AddBreak(LastBreak, LastBreak + 155);
+            //ToDo
+            //AddBreak(LastBreak, LastBreak + 155);
           end;
         end;
 
-        isBreak := true;
-        // add break from text
+        isBreak := True;
+        //Add Break from Text
         AddBreak(LastBreak, NextPos);
       end
-      // text comes out of the text area -> createbreak
+      //Text comes out of the Text Area -> CreateBreak
       else if (glTextWidth(Copy(Value, LastBreak, NextPos - LastBreak + 1)) > W) then
       begin
-        // not the first word after break, so we don't have to break within a word
+        //Not the First word after Break, so we don't have to break within a word
         if (FirstWord > 1) then
         begin
-          // add break before actual position, because there the  text fits the area
+          //Add Break before actual Position, because there the  Text fits the Area
           AddBreak(LastBreak, LastPos);
         end
-        else // first word after break -> break within the word
+        else //First Word after Break -> Break within the Word
         begin
-          // to do
-          // AddBreak(LastBreak, LastBreak + 155);
+          //ToDo
+          //AddBreak(LastBreak, LastBreak + 155);
         end;
       end;
     //end;
     Inc(FirstWord)
   end;
-  // add ending
+  //Add Ending
   AddBreak(LastBreak, Length(Value)+1);
 end;
 
@@ -263,34 +262,33 @@ var
   X2, Y2: real;
   Text2:  UTF8String;
   I:      integer;
-  Ticks:  cardinal;
 begin
-  if Visible and (Size > 0) then
+  if Visible then
   begin
     SetFontStyle(Style);
     SetFontSize(Size);
-    SetFontItalic(false);
+    SetFontItalic(False);
 
     glColor4f(ColR*Int, ColG*Int, ColB*Int, Alpha);
 
-    // reflection
-    if Reflection then
+    //Reflection
+    if Reflection = true then
       SetFontReflection(true, ReflectionSpacing)
     else
       SetFontReflection(false,0);
 
-    // if selected set blink...
+    //if selected set blink...
     if SelectBool then
     begin
-      Ticks := SDL_GetTicks() div 550;
-      if Ticks <> STicks then
-      begin // change visability
-        STicks := Ticks;
+      I := SDL_GetTicks() div 550;
+      if I <> STicks then
+      begin //Change Visability
+        STicks := I;
         SelectBlink := Not SelectBlink;
       end;
     end;
 
-    {if (false) then // no width set draw as one long string
+    {if (False) then //no width set draw as one long string
     begin
       if not (SelectBool AND SelectBlink) then
         Text2 := Text
@@ -309,20 +307,20 @@ begin
     end
     else
     begin}
-    // now use always:
-    // draw text as many strings
+    //now use allways:
+    //draw text as many strings
       Y2 := Y + MoveY;
-      for I := 0 to High(TextTiles) do
+      for I := 0 to high(TextTiles) do
       begin
-        if (not (SelectBool and SelectBlink)) or (I <> High(TextTiles)) then
+        if (not (SelectBool and SelectBlink)) or (I <> high(TextTiles)) then
           Text2 := TextTiles[I]
         else
           Text2 := TextTiles[I] + '|';
 
         case Align of
-          1: X2 := X + MoveX - glTextWidth(Text2)/2; { centered }
-          2: X2 := X + MoveX - glTextWidth(Text2); { right aligned }
-          else X2 := X + MoveX; { left aligned (default) }
+          0: X2 := X + MoveX;
+          1: X2 := X + MoveX - glTextWidth(Text2)/2;
+          2: X2 := X + MoveX - glTextWidth(Text2);
         end;
 
         SetFontPos(X2, Y2);
@@ -355,14 +353,7 @@ begin
   Create(X, Y, 0, 0, 30, 0, 0, 0, 0, Text, false, 0, 0);
 end;
 
-constructor TText.Create(ParX, ParY, ParW: real;
-                         ParStyle: integer;
-			 ParSize, ParColR, ParColG, ParColB: real;
-			 ParAlign: integer;
-			 const ParText: UTF8String;
-			 ParReflection: boolean;
-			 ParReflectionSpacing: real;
-			 ParZ: real);
+constructor TText.Create(ParX, ParY, ParW: real; ParStyle: integer; ParSize, ParColR, ParColG, ParColB: real; ParAlign: integer; const ParText: UTF8String; ParReflection: boolean; ParReflectionSpacing: real; ParZ:real);
 begin
   inherited Create;
   Alpha := 1;
@@ -380,8 +371,8 @@ begin
   Align := ParAlign;
   SelectBool := false;
   Visible := true;
-  Reflection := ParReflection;
-  ReflectionSpacing := ParReflectionSpacing;
+  Reflection:= ParReflection;
+  ReflectionSpacing:= ParReflectionSpacing;
 end;
 
 end.

@@ -48,7 +48,7 @@ type
     public
       TextDescription:    integer;
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure InteractNext; override;
       procedure InteractPrev; override;
@@ -63,10 +63,10 @@ uses
   UGraphic,
   UUnicodeUtils;
 
-function TScreenOptions.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenOptions.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
-  if (PressedDown) then
+  If (PressedDown) Then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of

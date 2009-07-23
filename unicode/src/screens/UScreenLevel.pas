@@ -34,37 +34,30 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu,
-  SDL,
-  UDisplay,
-  UMusic,
-  UFiles,
-  SysUtils,
-  UThemes;
+  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
 
 type
   TScreenLevel = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
 
-uses
-  UGraphic,
-  UMain,
-  UIni,
-  USong,
-  UTexture,
-  UUnicodeUtils;
+uses UGraphic,
+     UMain,
+     UIni,
+     USong,
+     UTexture,
+     UUnicodeUtils;
 
-function TScreenLevel.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenLevel.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
-  if (PressedDown) then
+  If (PressedDown) Then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of

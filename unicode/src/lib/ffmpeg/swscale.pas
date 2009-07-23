@@ -45,13 +45,12 @@ interface
 uses
   ctypes,
   avutil,
-  avcodec,
   UConfig;
 
 const
   (* Max. supported version by this header *)
   LIBSWSCALE_MAX_VERSION_MAJOR   = 0;
-  LIBSWSCALE_MAX_VERSION_MINOR   = 7;
+  LIBSWSCALE_MAX_VERSION_MINOR   = 6;
   LIBSWSCALE_MAX_VERSION_RELEASE = 1;
   LIBSWSCALE_MAX_VERSION = (LIBSWSCALE_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                            (LIBSWSCALE_MAX_VERSION_MINOR * VERSION_MINOR) +
@@ -79,7 +78,7 @@ function swscale_version(): cuint;
 {$IFEND}
 
 const
-  (* values for the flags, the stuff on the command line is different *)
+  {* values for the flags, the stuff on the command line is different *}
   SWS_FAST_BILINEAR =    1;
   SWS_BILINEAR      =    2;
   SWS_BICUBIC       =    4;
@@ -99,10 +98,10 @@ const
 
   SWS_PRINT_INFO           = $1000;
 
-  // the following 3 flags are not completely implemented
-  // internal chrominace subsampling info
+  //the following 3 flags are not completely implemented
+  //internal chrominace subsampling info
   SWS_FULL_CHR_H_INT    = $2000;
-  // input subsampling info
+  //input subsampling info
   SWS_FULL_CHR_H_INP    = $4000;
   SWS_DIRECT_BGR        = $8000;
   SWS_ACCURATE_RND      = $40000;
@@ -124,14 +123,15 @@ const
   SWS_CS_SMPTE240M      = 7;
   SWS_CS_DEFAULT        = 5;
 
+
 type
 
   // when used for filters they must have an odd number of elements
   // coeffs cannot be shared between vectors
   PSwsVector = ^TSwsVector;
   TSwsVector = record
-    coeff: PCdouble;    // pointer to the list of coefficients
-    length: cint;       // number of coefficients in the vector
+    coeff: PCdouble;
+    length: cint;
   end;
 
   // vectors can be shared
@@ -148,179 +148,63 @@ type
     {internal structure}
   end;
 
+
 procedure sws_freeContext(swsContext: PSwsContext);
   cdecl; external sw__scale;
 
-(**
- * Allocates and returns a SwsContext. You need it to perform
- * scaling/conversion operations using sws_scale().
- *
- * @param srcW the width of the source image
- * @param srcH the height of the source image
- * @param srcFormat the source image format
- * @param dstW the width of the destination image
- * @param dstH the height of the destination image
- * @param dstFormat the destination image format
- * @param flags specify which algorithm and options to use for rescaling
- * @return a pointer to an allocated context, or NULL in case of error
- *)
 function sws_getContext(srcW: cint; srcH: cint; srcFormat: TAVPixelFormat;
-                        dstW: cint; dstH: cint; dstFormat: TAVPixelFormat;
-	                flags: cint; srcFilter: PSwsFilter;
-	                dstFilter: PSwsFilter; param: PCdouble): PSwsContext;
+              dstW: cint; dstH: cint; dstFormat: TAVPixelFormat; flags: cint;
+              srcFilter: PSwsFilter; dstFilter: PSwsFilter; param: PCdouble): PSwsContext;
   cdecl; external sw__scale;
-
-(**
- * Scales the image slice in srcSlice and puts the resulting scaled
- * slice in the image in dst. A slice is a sequence of consecutive
- * rows in an image.
- *
- * @param context   the scaling context previously created with
- *                  sws_getContext()
- * @param srcSlice  the array containing the pointers to the planes of
- *                  the source slice
- * @param srcStride the array containing the strides for each plane of
- *                  the source image
- * @param srcSliceY the position in the source image of the slice to
- *                  process, that is the number (counted starting from
- *                  zero) in the image of the first row of the slice
- * @param srcSliceH the height of the source slice, that is the number
- *                  of rows in the slice
- * @param dst       the array containing the pointers to the planes of
- *                  the destination image
- * @param dstStride the array containing the strides for each plane of
- *                  the destination image
- * @return          the height of the output slice
- *)
-function sws_scale(context: PSwsContext; srcSlice: PPCuint8Array; srcStride: PCintArray;
-              srcSliceY: cint; srcSliceH: cint; dst: PPCuint8Array; dstStride: PCintArray): cint;
+function sws_scale(context: PSwsContext; src: PPCuint8Array; srcStride: PCintArray; srcSliceY: cint; srcSliceH: cint;
+              dst: PPCuint8Array; dstStride: PCintArray): cint;
   cdecl; external sw__scale;
-
-{$IF  LIBSWSCALE_VERSION_MAJOR < 1}
-// deprecated. Use sws_scale() instead.
-function sws_scale_ordered(context: PSwsContext; src: PPCuint8Array; srcStride: PCintArray;
-              srcSliceY: cint; srcSliceH: cint; dst: PPCuint8Array; dstStride: PCintArray): cint;
+function sws_scale_ordered(context: PSwsContext; src: PPCuint8Array; srcStride: PCintArray; srcSliceY: cint;
+              srcSliceH: cint; dst: PPCuint8Array; dstStride: PCintArray): cint;
   cdecl; external sw__scale; deprecated;
-{$IFEND}
 
-(**
- * @param inv_table the yuv2rgb coefficients, normally ff_yuv2rgb_coeffs[x]
- * @param fullRange if 1 then the luma range is 0..255 if 0 it is 16..235
- * @return -1 if not supported
- *)
-function sws_setColorspaceDetails(c: PSwsContext; inv_table: PQuadCintArray; 
-              srcRange: cint; table: PQuadCintArray; dstRange: cint;
+function sws_setColorspaceDetails(c: PSwsContext; inv_table: PQuadCintArray; srcRange: cint; table: PQuadCintArray; dstRange: cint;
               brightness: cint; contrast: cint; saturation: cint): cint;
   cdecl; external sw__scale;
-
-(**
- * @return -1 if not supported
- *)
-function sws_getColorspaceDetails(c: PSwsContext; var inv_table: PQuadCintArray;
-              var srcRange: cint; var table: PQuadCintArray; var dstRange: cint;
+function sws_getColorspaceDetails(c: PSwsContext; var inv_table: PQuadCintArray; var srcRange: cint; var table: PQuadCintArray; var dstRange: cint;
               var brightness: cint; var contrast: cint; var saturation: cint): cint;
   cdecl; external sw__scale;
-
-(**
- * Returns a normalized Gaussian curve used to filter stuff
- * quality=3 is high quality, lower is lower quality.
- *)
 function sws_getGaussianVec(variance: cdouble; quality: cdouble): PSwsVector;
   cdecl; external sw__scale;
-
-(**
- * Allocates and returns a vector with length coefficients, all
- * with the same value c.
- *)
 function sws_getConstVec(c: cdouble; length: cint): PSwsVector;
   cdecl; external sw__scale;
-  
-(**
- * Allocates and returns a vector with just one coefficient, with
- * value 1.0.
- *)
 function sws_getIdentityVec: PSwsVector;
   cdecl; external sw__scale;
-
-(**
- * Scales all the coefficients of a by the scalar value.
- *)
 procedure sws_scaleVec(a: PSwsVector; scalar: cdouble);
   cdecl; external sw__scale;
-
-(**
- * Scales all the coefficients of a so that their sum equals height.
- *)
 procedure sws_normalizeVec(a: PSwsVector; height: cdouble);
   cdecl; external sw__scale;
-
 procedure sws_convVec(a: PSwsVector; b: PSwsVector);
   cdecl; external sw__scale;
-
 procedure sws_addVec(a: PSwsVector; b: PSwsVector);
   cdecl; external sw__scale;
-
 procedure sws_subVec(a: PSwsVector; b: PSwsVector);
   cdecl; external sw__scale;
-
 procedure sws_shiftVec(a: PSwsVector; shift: cint);
   cdecl; external sw__scale;
-
-(**
- * Allocates and returns a clone of the vector a, that is a vector
- * with the same coefficients as a.
- *)
 function sws_cloneVec(a: PSwsVector): PSwsVector;
   cdecl; external sw__scale;
 
-{$IF LIBSWSCALE_VERSION_MAJOR < 1}
-// deprecated Use sws_printVec2() instead.
-
 procedure sws_printVec(a: PSwsVector);
-  cdecl; external sw__scale; deprecated;
-{$IFEND}
-
-{$IF LIBSWSCALE_VERSION >= 000007000} // >= 0.7.0
-(**
- * Prints with av_log() a textual representation of the vector a
- * if log_level <= av_log_level.
- *)
-procedure sws_printVec2(a:         PSwsVector;
-                        log_ctx:   PAVClass; // PAVClass is declared in avcodec.pas
-			log_level: cint);
   cdecl; external sw__scale;
-{$IFEND}
-
 procedure sws_freeVec(a: PSwsVector);
   cdecl; external sw__scale;
 
-function sws_getDefaultFilter(lumaGBlur: cfloat; chromaGBlur: cfloat; 
-                              lumaSharpen: cfloat; chromaSharpen: cfloat;
-			      chromaHShift: cfloat; chromaVShift: cfloat;
-			      verbose: cint): PSwsFilter;
+function sws_getDefaultFilter(lumaGBlur: cfloat; chromaGBlur: cfloat; lumaSarpen: cfloat; chromaSharpen: cfloat; chromaHShift: cfloat;
+              chromaVShift: cfloat; verbose: cint): PSwsFilter;
   cdecl; external sw__scale;
-
 procedure sws_freeFilter(filter: PSwsFilter);
   cdecl; external sw__scale;
 
-(**
- * Checks if context can be reused, otherwise reallocates a new
- * one.
- * 
- * If context is NULL, just calls sws_getContext() to get a new
- * context. Otherwise, checks if the parameters are the ones already
- * saved in context. If that is the case, returns the current
- * context. Otherwise, frees context and gets a new context with
- * the new parameters.
- * 
- * Be warned that srcFilter and dstFilter are not checked, they
- * are assumed to remain the same.
- *)
 function sws_getCachedContext(context: PSwsContext;
-              srcW: cint; srcH: cint; srcFormat: TAVPixelFormat;
-              dstW: cint; dstH: cint; dstFormat: TAVPixelFormat;
-	      flags: cint; srcFilter: PSwsFilter; 
-	      dstFilter: PSwsFilter; param: PCdouble): PSwsContext;
+              srcW: cint; srcH: cint; srcFormat: cint;
+              dstW: cint; dstH: cint; dstFormat: cint; flags: cint;
+              srcFilter: PSwsFilter; dstFilter: PSwsFilter; param: PCdouble): PSwsContext;
   cdecl; external sw__scale;
 
 implementation

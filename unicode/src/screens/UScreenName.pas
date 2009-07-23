@@ -45,9 +45,9 @@ uses
 type
   TScreenName = class(TMenu)
     public
-      Goto_SingScreen: boolean; //If true then next Screen in SingScreen
+      Goto_SingScreen: Boolean; //If True then next Screen in SingScreen
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
@@ -63,13 +63,13 @@ uses
   UUnicodeUtils;
 
 
-function TScreenName.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenName.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 var
-  I: integer;
-  SDL_ModState: word;
+  I:    integer;
+SDL_ModState:  Word;
 begin
   Result := true;
-  if (PressedDown) then
+  If (PressedDown) Then
   begin // Key Down
 
     SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
@@ -196,6 +196,7 @@ begin
            Button[Interaction].Text[0].Text := Ini.NameTemplate[11];
          end;
 
+
       SDLK_BACKSPACE:
         begin
           Button[Interaction].Text[0].DeleteLastLetter;
@@ -223,7 +224,7 @@ begin
           else
             FadeTo(@ScreenLevel);
 
-          GoTo_SingScreen := false;
+          GoTo_SingScreen := False;
         end;
 
       // Up and Down could be done at the same time,
@@ -245,6 +246,7 @@ begin
 
   LoadFromTheme(Theme.Name);
 
+
   for I := 1 to 6 do
     AddButton(Theme.Name.ButtonPlayer[I]);
 
@@ -260,14 +262,12 @@ begin
   for I := 1 to 6 do
     Button[I-1].Text[0].Text := Ini.Name[I-1];
 
-  for I := 1 to PlayersPlay do
-  begin
+  for I := 1 to PlayersPlay do begin
     Button[I-1].Visible := true;
     Button[I-1].Selectable := true;
   end;
 
-  for I := PlayersPlay+1 to 6 do
-  begin
+  for I := PlayersPlay+1 to 6 do begin
     Button[I-1].Visible := false;
     Button[I-1].Selectable := false;
   end;

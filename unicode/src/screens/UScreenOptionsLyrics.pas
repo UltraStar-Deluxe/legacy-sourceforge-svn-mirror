@@ -46,7 +46,7 @@ type
   TScreenOptionsLyrics = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
   end;
 
@@ -57,10 +57,10 @@ uses
   UUnicodeUtils,
   SysUtils;
 
-function TScreenOptionsLyrics.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenOptionsLyrics.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
-  if (PressedDown) then
+  If (PressedDown) Then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -83,8 +83,7 @@ begin
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 3 then
-          begin
+          if SelInteraction = 3 then begin
             Ini.Save;
             AudioPlayback.PlaySound(SoundLib.Back);
             FadeTo(@ScreenOptions);
@@ -96,16 +95,14 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 3) then
-          begin
+          if (SelInteraction >= 0) and (SelInteraction <= 3) then begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractInc;
           end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 3) then
-          begin
+          if (SelInteraction >= 0) and (SelInteraction <= 3) then begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractDec;
           end;
@@ -120,17 +117,11 @@ begin
 
   LoadFromTheme(Theme.OptionsLyrics);
 
-  Theme.OptionsLyrics.SelectLyricsFont.showArrows := true;
-  Theme.OptionsLyrics.SelectLyricsFont.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsFont, Ini.LyricsFont, ILyricsFontTranslated);
+  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsFont, Ini.LyricsFont, ILyricsFont);
+  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsEffect, Ini.LyricsEffect, ILyricsEffect);
+  //AddSelect(Theme.OptionsLyrics.SelectSolmization, Ini.Solmization, ISolmization); GAH!!!!11 DIE!!!
+  AddSelectSlide(Theme.OptionsLyrics.SelectNoteLines, Ini.NoteLines, INoteLines);
 
-  Theme.OptionsLyrics.SelectLyricsEffect.showArrows := true;
-  Theme.OptionsLyrics.SelectLyricsEffect.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsEffect, Ini.LyricsEffect, ILyricsEffectTranslated);
-
-  Theme.OptionsLyrics.SelectNoteLines.showArrows := true;
-  Theme.OptionsLyrics.SelectNoteLines.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsLyrics.SelectNoteLines, Ini.NoteLines, INoteLinesTranslated);
 
   AddButton(Theme.OptionsLyrics.ButtonExit);
   if (Length(Button[0].Text)=0) then

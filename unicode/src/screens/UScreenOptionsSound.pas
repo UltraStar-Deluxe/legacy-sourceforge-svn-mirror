@@ -34,8 +34,8 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu,
   SDL,
+  UMenu,
   UDisplay,
   UMusic,
   UFiles,
@@ -46,7 +46,7 @@ type
   TScreenOptionsSound = class(TMenu)
   public
     constructor Create; override;
-    function ParseInput(PressedKey: cardinal; CharCode: UCS4Char;
+    function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
       PressedDown: boolean): boolean; override;
     procedure onShow; override;
   end;
@@ -61,14 +61,14 @@ uses
 function TScreenOptionsSound.ParseInput(PressedKey: cardinal;
   CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
-  Result := true;
+  Result := True;
   if (PressedDown) then
   begin // Key Down
         // check normal keys
     case UCS4UpperCase(CharCode) of
       Ord('Q'):
       begin
-        Result := false;
+        Result := False;
         Exit;
       end;
     end;
@@ -137,39 +137,19 @@ begin
 
   LoadFromTheme(Theme.OptionsSound);
 
-  Theme.OptionsSound.SelectSlideVoicePassthrough.showArrows := true;
-  Theme.OptionsSound.SelectSlideVoicePassthrough.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsSound.SelectSlideVoicePassthrough, Ini.VoicePassthrough, IVoicePassthroughTranslated);
-
-  Theme.OptionsSound.SelectBackgroundMusic.showArrows := true;
-  Theme.OptionsSound.SelectBackgroundMusic.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsSound.SelectBackgroundMusic, Ini.BackgroundMusicOption, IBackgroundMusicTranslated);
-
+  AddSelectSlide(Theme.OptionsSound.SelectSlideVoicePassthrough,
+    Ini.VoicePassthrough, IVoicePassthrough);
+  AddSelectSlide(Theme.OptionsSound.SelectBackgroundMusic,
+    Ini.BackgroundMusicOption, IBackgroundMusic);
+  AddSelectSlide(Theme.OptionsSound.SelectMicBoost, Ini.MicBoost, IMicBoost);
   // TODO: - MicBoost needs to be moved to ScreenOptionsRecord
-  Theme.OptionsSound.SelectMicBoost.showArrows := true;
-  Theme.OptionsSound.SelectMicBoost.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsSound.SelectMicBoost, Ini.MicBoost, IMicBoostTranslated);
-
-
-  Theme.OptionsSound.SelectClickAssist.showArrows := true;
-  Theme.OptionsSound.SelectClickAssist.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsSound.SelectClickAssist, Ini.ClickAssist, IClickAssistTranslated);
-
-  Theme.OptionsSound.SelectBeatClick.showArrows := true;
-  Theme.OptionsSound.SelectBeatClick.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsSound.SelectBeatClick, Ini.BeatClick, IBeatClickTranslated);
-
-  Theme.OptionsSound.SelectThreshold.showArrows := true;
-  Theme.OptionsSound.SelectThreshold.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsSound.SelectClickAssist, Ini.ClickAssist, IClickAssist);
+  AddSelectSlide(Theme.OptionsSound.SelectBeatClick, Ini.BeatClick, IBeatClick);
   AddSelectSlide(Theme.OptionsSound.SelectThreshold, Ini.ThresholdIndex, IThreshold);
-
-  Theme.OptionsSound.SelectSlidePreviewVolume.showArrows := true;
-  Theme.OptionsSound.SelectSlidePreviewVolume.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsSound.SelectSlidePreviewVolume, Ini.PreviewVolume, IPreviewVolumeTranslated);
-
-  Theme.OptionsSound.SelectSlidePreviewFading.showArrows := true;
-  Theme.OptionsSound.SelectSlidePreviewFading.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsSound.SelectSlidePreviewFading, Ini.PreviewFading, IPreviewFadingTranslated);
+  AddSelectSlide(Theme.OptionsSound.SelectSlidePreviewVolume,
+    Ini.PreviewVolume, IPreviewVolume);
+  AddSelectSlide(Theme.OptionsSound.SelectSlidePreviewFading,
+    Ini.PreviewFading, IPreviewFading);
 
   AddButton(Theme.OptionsSound.ButtonExit);
   if (Length(Button[0].Text) = 0) then

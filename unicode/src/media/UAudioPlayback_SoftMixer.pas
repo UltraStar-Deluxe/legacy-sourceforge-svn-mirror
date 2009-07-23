@@ -51,7 +51,7 @@ type
       SampleBuffer:      PByteArray;
       SampleBufferSize:  integer;
       SampleBufferCount: integer; // number of available bytes in SampleBuffer
-      SampleBufferPos:   integer;
+      SampleBufferPos:   cardinal;
 
       SourceBuffer:      PByteArray;
       SourceBufferSize:  integer;
@@ -564,8 +564,9 @@ var
   ConversionOutputSize: integer;   // max. number of converted data (= buffer size)
   ConversionOutputCount: integer;  // actual number of converted data
   SourceSize: integer;
+  RequestedSourceSize: integer;
   NeededSampleBufferSize: integer;
-  BytesNeeded: integer;
+  BytesNeeded, BytesAvail: integer;
   SourceFormatInfo, OutputFormatInfo: TAudioFormatInfo;
   SourceFrameSize, OutputFrameSize: integer;
   SkipOutputCount: integer;  // number of output-data bytes to skip
@@ -573,6 +574,7 @@ var
   FillCount: integer;  // number of bytes to fill with padding data
   CopyCount: integer;
   PadFrame: PByteArray;
+  i: integer;
 begin
   Result := -1;
 

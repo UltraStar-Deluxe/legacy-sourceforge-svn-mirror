@@ -116,7 +116,7 @@ begin
       SDLK_RETURN:
         begin
           if Interaction = 1 then
-          begin
+	  begin
 //            Save;
           end;
         end;
@@ -159,7 +159,7 @@ begin
         begin
           T := Interaction - 2 + TextTitle;
           if (Interaction >= 2) and (Interaction <= 13) and (Length(Text[T].Text) >= 1) then
-          begin
+	  begin
             Text[T].DeleteLastLetter;
             SetRoundButtons;            
           end;
@@ -170,7 +170,7 @@ begin
       32..255:
         begin
           if (Interaction >= 2) and (Interaction <= 13) then
-          begin
+	  begin
             Text[Interaction - 2 + TextTitle].Text :=
               Text[Interaction - 2 + TextTitle].Text + UCS4ToUTF8String(CharCode);
             SetRoundButtons;

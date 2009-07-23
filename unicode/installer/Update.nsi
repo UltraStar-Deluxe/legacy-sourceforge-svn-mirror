@@ -46,9 +46,9 @@ OutFile "ultrastardx-update.exe"
 
 InstallDir "$PROGRAMFILES\${name}"
 
-; Windows Vista / Windows 7:
+; Windows Vista:
 
-RequestExecutionLevel admin
+RequestExecutionLevel user
 
 ; ~+~ ~+~ ~+~ ~+~ ~+~ ~+~ ~+~ ~+~ ~+~ ~+~ ~+~ ~+~
 ; Interface Settings

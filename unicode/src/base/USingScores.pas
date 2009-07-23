@@ -34,211 +34,211 @@ interface
 {$I switches.inc}
 
 uses
-  gl,
   UThemes,
+  gl,
   UTexture;
 
 //////////////////////////////////////////////////////////////
 //                        ATTENTION:                        //
-// Enabled flag does not work atm. This should cause popups //
-// not to move and scores to stay until re-enabling.        //
-// To use e.g. in pause mode                                //
-// also invisible flag causes attributes not to change.     //
-// This should be fixed after next draw when visible = true,//
-// but not tested yet                                       //
+// Enabled Flag does not Work atm. This should cause Popups //
+// Not to Move and Scores to stay until Renenabling.        //
+// To use e.g. in Pause Mode                                //
+// Also InVisible Flag causes Attributes not to change.     //
+// This should be fixed after next Draw when Visible = True,//
+// but not testet yet                                       //
 //////////////////////////////////////////////////////////////
 
-// some constants containing options that could change by time
+//Some constants containing options that could change by time
 const
-  MaxPlayers = 6;   // maximum of players that could be added
-  MaxPositions = 6; // maximum of score positions that could be added
+  MaxPlayers = 6;   //Maximum of Players that could be added
+  MaxPositions = 6; //Maximum of Score Positions that could be added
 
 type
   //-----------
-  // TScorePlayer - record containing information about a players score
+  // TScorePlayer - Record Containing Information about a Players Score
   //-----------
   TScorePlayer = record
-    Position:       byte;     // index of the position where the player should be drawn
-    Enabled:        boolean;  // is the score display enabled
-    Visible:        boolean;  // is the score display visible
-    Score:          word;     // current score of the player
-    ScoreDisplayed: word;     // score cur. displayed (for counting up)
-    ScoreBG:        TTexture; // texture of the players scores bg
-    Color:          TRGB;     // the players color
-    RBPos:          real;     // cur. percentille of the rating bar
-    RBTarget:       real;     // target position of rating bar
-    RBVisible:      boolean;  // is rating bar drawn
+    Position: Byte;    //Index of the Position where the Player should be Drawn
+    Enabled:  Boolean; //Is the Score Display Enabled
+    Visible:  Boolean; //Is the Score Display Visible
+    Score:    Word;    //Current Score of the Player
+    ScoreDisplayed: Word; //Score cur. Displayed(for counting up)
+    ScoreBG:  TTexture;//Texture of the Players Scores BG
+    Color:    TRGB;    //Teh Players Color
+    RBPos:    Real;    //Cur. Percentille of the Rating Bar
+    RBTarget: Real;    //Target Position of Rating Bar
+    RBVisible:Boolean; //Is Rating bar Drawn
   end;
-  aScorePlayer = array [0..MaxPlayers-1] of TScorePlayer;
+  aScorePlayer = array[0..MaxPlayers-1] of TScorePlayer;
 
   //-----------
-  // TScorePosition - record containing information about a score position, that can be used
+  // TScorePosition - Record Containing Information about a Score Position, that can be used
   //-----------
   PScorePosition = ^TScorePosition;
   TScorePosition = record
-    // the position is used for which playercount
-    PlayerCount: byte;
-    // 1 - 1 player per screen
-    // 2 - 2 players per screen
-    // 4 - 3 players per screen
-    // 6 would be 2 and 3 players per screen
+    //The Position is Used for Which Playercount
+    PlayerCount: Byte;
+    // 1 - One Player per Screen
+    // 2 - 2 Players per Screen
+    // 4 - 3 Players per Screen
+    // 6 would be 2 and 3 Players per Screen
 
-    BGX: real;     // x position of the score bg
-    BGY: real;     // y position of the score bg
-    BGW: real;     // width of the score bg
-    BGH: real;     // height of the score bg
+    BGX: Real;     //X Position of the Score BG
+    BGY: Real;     //Y Position of the Score BG
+    BGW: Real;     //Width of the Score BG
+    BGH: Real;     //Height of the Score BG
 
-    RBX: real;     // x position of the rating bar
-    RBY: real;     // y position of the rating bar
-    RBW: real;     // width of the rating bar
-    RBH: real;     // height of the rating bar
+    RBX: Real;     //X Position of the Rating Bar
+    RBY: Real;     //Y Position of the Rating Bar
+    RBW: Real;     //Width of the Rating Bar
+    RBH: Real;     //Height of the Rating Bar
 
-    TextX: real;         // x position of the score text
-    TextY: real;         // y position of the score text
-    TextFont: byte;      // font of the score text
-    TextSize: integer;   // size of the score text
+    TextX: Real;         //X Position of the Score Text
+    TextY: Real;         //Y Position of the Score Text
+    TextFont: Byte;      //Font of the Score Text
+    TextSize: integer;   //Size of the Score Text
 
-    PUW:        real;     // width of the line bonus popup
-    PUH:        real;     // height of the line bonus popup
-    PUFont:     byte;     // font for the popups
-    PUFontSize: integer;  // font size for the popups
-    PUStartX:   real;     // x start position of the line bonus popup
-    PUStartY:   real;     // y start position of the line bonus popup
-    PUTargetX:  real;     // x target position of the line bonus popup
-    PUTargetY:  real;     // y target position of the line bonus popup
+    PUW: Real;           //Width of the LineBonus Popup
+    PUH: Real;           //Height of the LineBonus Popup
+    PUFont: Byte;        //Font for the PopUps
+    PUFontSize: integer; //FontSize for the PopUps
+    PUStartX: Real;      //X Start Position of the LineBonus Popup
+    PUStartY: Real;      //Y Start Position of the LineBonus Popup
+    PUTargetX: Real;     //X Target Position of the LineBonus Popup
+    PUTargetY: Real;     //Y Target Position of the LineBonus Popup
   end;
-  aScorePosition = array [0..MaxPositions-1] of TScorePosition;
+  aScorePosition = array[0..MaxPositions-1] of TScorePosition;
 
   //-----------
-  // TScorePopUp - record containing information about a line bonus popup
-  // list, next item is saved in next attribute
+  // TScorePopUp - Record Containing Information about a LineBonus Popup
+  // List, Next Item is Saved in Next attribute
   //-----------
   PScorePopUp = ^TScorePopUp;
   TScorePopUp = record
-    Player:     byte;        // index of the popups player
-    TimeStamp:  cardinal;    // timestamp of popups spawn
-    Rating:     byte;        // 0 to 8, type of rating (cool, bad, etc.)
-    ScoreGiven: word;        // score that has already been given to the player
-    ScoreDiff:  word;        // difference between cur score at spawn and old score
-    Next:       PScorePopUp; // next item in list
+    Player:  Byte;          //Index of the PopUps Player
+    TimeStamp: Cardinal;    //Timestamp of Popups Spawn
+    Rating:    Byte;        //0 to 8, Type of Rating (Cool, bad, etc.)
+    ScoreGiven:Word;        //Score that has already been given to the Player
+    ScoreDiff: Word;        //Difference Between Cur Score at Spawn and Old Score
+    Next:      PScorePopUp; //Next Item in List
   end;
   aScorePopUp = array of TScorePopUp;
 
   //-----------
-  // TSingScores - class containing scores positions and drawing scores, rating bar + popups
+  // TSingScores - Class containing Scores Positions and Drawing Scores, Rating Bar + Popups
   //-----------
   TSingScores = class
     private
       Positions: aScorePosition;
-      aPlayers:  aScorePlayer;
-      oPositionCount: byte;
-      oPlayerCount:   byte;
+      aPlayers: aScorePlayer;
+      oPositionCount: Byte;
+      oPlayerCount: Byte;
 
-      // saves the first and last popup of the list
+      //Saves the First and Last Popup of the List
       FirstPopUp: PScorePopUp;
       LastPopUp:  PScorePopUp;
 
-      // draws a popup by pointer
+      // Draws a Popup by Pointer
       procedure DrawPopUp(const PopUp: PScorePopUp);
 
-      // draws a score by playerindex
-      procedure DrawScore(const Index: integer);
+      // Draws a Score by Playerindex
+      procedure DrawScore(const Index: Integer);
 
-      // draws the rating bar by playerindex
-      procedure DrawRatingBar(const Index: integer);
+      // Draws the RatingBar by Playerindex
+      procedure DrawRatingBar(const Index: Integer);
 
-      // removes a popup w/o destroying the list
+      // Removes a PopUp w/o destroying the List
       procedure KillPopUp(const last, cur: PScorePopUp);
     public
-      Settings: record // Record containing some Displaying Options
-        Phase1Time: real;     // time for phase 1 to complete (in msecs)
-                              // the plop up of the popup
-        Phase2Time: real;     // time for phase 2 to complete (in msecs)
-                              // the moving (mainly upwards) of the popup
-        Phase3Time: real;     // time for phase 3 to complete (in msecs)
-                              // the fade out and score adding
+      Settings: record //Record containing some Displaying Options
+        Phase1Time: Real;     //time for Phase 1 to complete (in msecs)
+                              //The Plop Up of the PopUp
+        Phase2Time: Real;     //time for Phase 2 to complete (in msecs)
+                              //The Moving (mainly Upwards) of the Popup
+        Phase3Time: Real;     //time for Phase 3 to complete (in msecs)
+                              //The Fade out and Score adding
 
-        PopUpTex:   array [0..8] of TTexture; // textures for every popup rating
+        PopUpTex:  array [0..8] of TTexture; //Textures for every Popup Rating
 
-        RatingBar_BG_Tex:  TTexture; // rating bar texs
-        RatingBar_FG_Tex:  TTexture;
-        RatingBar_Bar_Tex: TTexture;
+        RatingBar_BG_Tex:   TTexture; //Rating Bar Texs
+        RatingBar_FG_Tex:   TTexture;
+        RatingBar_Bar_Tex:  TTexture;
 
       end;
 
-      Visible:   boolean;  // visibility of all scores
-      Enabled:   boolean;  // scores are changed, popups are moved etc.
-      RBVisible: boolean;  // visibility of all rating bars
+      Visible: Boolean;    //Visibility of all Scores
+      Enabled: Boolean;    //Scores are changed, PopUps are Moved etc.
+      RBVisible: Boolean;  //Visibility of all Rating Bars
 
-      // properties for reading position and playercount
-      property PositionCount: byte         read oPositionCount;
-      property PlayerCount:   byte         read oPlayerCount;
-      property Players:       aScorePlayer read aPlayers;
+      //Propertys for Reading Position and Playercount
+      property PositionCount: Byte read oPositionCount;
+      property PlayerCount: Byte read oPlayerCount;
+      property Players: aScorePlayer read aPlayers;
 
-      // constructor just sets some standard settings
+      //Constructor just sets some standard Settings
       constructor Create;
 
-      // adds a position to array and increases position count
+      // Adds a Position to Array and Increases Position Count
       procedure AddPosition(const pPosition: PScorePosition);
 
-      // adds a player to array and increases player count
-      procedure AddPlayer(const ScoreBG: TTexture; const Color: TRGB; const Score: word = 0; const Enabled: boolean = true; const Visible: boolean = true);
+      // Adds a Player to Array and Increases Player Count
+      procedure AddPlayer(const ScoreBG: TTexture; const Color: TRGB; const Score: Word = 0; const Enabled: Boolean = True; const Visible: Boolean = True);
 
-      // change a players visibility, enable
-      procedure ChangePlayerVisibility(const Index: byte; const pVisible: boolean);
-      procedure ChangePlayerEnabled(const Index: byte; const pEnabled: boolean);
+      //Change a Players Visibility, Enable
+      procedure ChangePlayerVisibility(const Index: Byte; const pVisible: Boolean);
+      procedure ChangePlayerEnabled(const Index: Byte; const pEnabled: Boolean);
 
-      // deletes all player information
+      // Deletes all Player Information
       procedure ClearPlayers;
 
-      // deletes positions and playerinformation
+      // Deletes Positions and Playerinformation
       procedure Clear;
 
-      // loads some settings and the positions from theme
+      // Loads some Settings and the Positions from Theme
       procedure LoadfromTheme;
 
-      // has to be called after positions and players have been added, before first call of draw
-      // it gives every player a score position
+      // has to be called after Positions and Players have been added, before first call of Draw
+      //It gives every Player a Score Position
       procedure Init;
 
-      // spawns a new line bonus popup for the player
-      procedure SpawnPopUp(const PlayerIndex: byte; const Rating: byte; const Score: word);
+      //Spawns a new Line Bonus PopUp for the Player
+      procedure SpawnPopUp(const PlayerIndex: Byte; const Rating: Byte; const Score: Word);
 
-      // removes all popups from mem
+      //Removes all PopUps from Mem
       procedure KillAllPopUps;
 
-      // draws scores and line bonus popups
+      // Draws Scores and Linebonus PopUps
       procedure Draw;
   end;
 
+
 implementation
 
-uses
-  SysUtils,
-  SDL,
-  TextGL,
-  ULog,
-  UGraphic;
+uses SDL,
+     SysUtils,
+     ULog,
+     UGraphic,
+     TextGL;
 
 {**
- * sets some standard settings
+ * Sets some standard Settings
  *}
-constructor TSingScores.Create;
+Constructor TSingScores.Create;
 begin
   inherited;
 
-  // clear popuplist pointers
+  //Clear PopupList Pointers
   FirstPopUp := nil;
   LastPopUp  := nil;
 
-  // clear variables
-  Visible   := true;
-  Enabled   := true;
-  RBVisible := true;
+  //Clear Variables
+  Visible := True;
+  Enabled := True;
+  RBVisible := True;
   
-  // clear position index
-  oPositionCount := 0;
-  oPlayerCount   := 0;
+  //Clear Position Index
+  oPositionCount  := 0;
+  oPlayerCount    := 0;
 
   Settings.Phase1Time := 350;  // plop it up     . -> [   ]
   Settings.Phase2Time := 550;  // shift it up        ^[   ]^
@@ -260,21 +260,22 @@ begin
 end;
 
 {**
- * adds a position to array and increases position count
+ * Adds a Position to Array and Increases Position Count
  *}
-procedure TSingScores.AddPosition(const pPosition: PScorePosition);
+Procedure TSingScores.AddPosition(const pPosition: PScorePosition);
 begin
   if (PositionCount < MaxPositions) then
   begin
     Positions[PositionCount] := pPosition^;
+
     Inc(oPositionCount);
   end;
 end;
 
 {**
- * adds a player to array and increases player count
+ * Adds a Player to Array and Increases Player Count
  *}
-procedure TSingScores.AddPlayer(const ScoreBG: TTexture; const Color: TRGB; const Score: word; const Enabled: boolean; const Visible: boolean);
+Procedure TSingScores.AddPlayer(const ScoreBG: TTexture; const Color: TRGB; const Score: Word; const Enabled: Boolean; const Visible: Boolean);
 begin
   if (PlayerCount < MaxPlayers) then
   begin
@@ -282,48 +283,48 @@ begin
     aPlayers[PlayerCount].Enabled   := Enabled;
     aPlayers[PlayerCount].Visible   := Visible;
     aPlayers[PlayerCount].Score     := Score;
-    aPlayers[PlayerCount].ScoreDisplayed := Score;
+    aPlayers[PlayerCount].ScoreDisplayed     := Score;
     aPlayers[PlayerCount].ScoreBG   := ScoreBG;
     aPlayers[PlayerCount].Color     := Color;
     aPlayers[PlayerCount].RBPos     := 0.5;
     aPlayers[PlayerCount].RBTarget  := 0.5;
-    aPlayers[PlayerCount].RBVisible := true;
+    aPlayers[PlayerCount].RBVisible := True;
 
     Inc(oPlayerCount);
   end;
 end;
 
 {**
- * change a players visibility
+ * Change a Players Visibility
  *}
-procedure TSingScores.ChangePlayerVisibility(const Index: byte; const pVisible: boolean);
+Procedure TSingScores.ChangePlayerVisibility(const Index: Byte; const pVisible: Boolean);
 begin
   if (Index < MaxPlayers) then
     aPlayers[Index].Visible := pVisible;
 end;
 
 {**
- * change player enabled
+ * Change Player Enabled
  *}
-procedure TSingScores.ChangePlayerEnabled(const Index: byte; const pEnabled: boolean);
+Procedure TSingScores.ChangePlayerEnabled(const Index: Byte; const pEnabled: Boolean);
 begin
   if (Index < MaxPlayers) then
     aPlayers[Index].Enabled := pEnabled;
 end;
 
 {**
- * procedure deletes all player information
+ * Procedure Deletes all Player Information
  *}
-procedure TSingScores.ClearPlayers;
+Procedure TSingScores.ClearPlayers;
 begin
   KillAllPopUps;
   oPlayerCount := 0;
 end;
 
 {**
- * procedure deletes positions and playerinformation
+ * Procedure Deletes Positions and Playerinformation
  *}
-procedure TSingScores.Clear;
+Procedure TSingScores.Clear;
 begin
   KillAllPopUps;
   oPlayerCount    := 0;
@@ -331,16 +332,14 @@ begin
 end;
 
 {**
- * procedure loads some settings and the positions from theme
+ * Procedure Loads some Settings and the Positions from Theme
  *}
-procedure TSingScores.LoadfromTheme;
-var
-  I: integer;
-  procedure AddbyStatics(const PC: byte; const ScoreStatic, SingBarStatic: TThemeStatic; ScoreText: TThemeText);
-  var
-    nPosition: TScorePosition;
+Procedure TSingScores.LoadfromTheme;
+var I: Integer;
+  Procedure AddbyStatics(const PC: Byte; const ScoreStatic, SingBarStatic: TThemeStatic; ScoreText: TThemeText);
+    var nPosition: TScorePosition;
   begin
-    nPosition.PlayerCount := PC; // only for one player playing
+    nPosition.PlayerCount := PC; //Only for one Player Playing
 
     nPosition.BGX := ScoreStatic.X;
     nPosition.BGY := ScoreStatic.Y;
@@ -374,55 +373,54 @@ var
 begin
   Clear;
 
-  // set textures
-  // popup tex
-  for I := 0 to 8 do
+  //Set Textures
+  //Popup Tex
+  For I := 0 to 8 do
     Settings.PopUpTex[I] := Tex_SingLineBonusBack[I];
 
-  // rating bar tex  
+  //Rating Bar Tex  
   Settings.RatingBar_BG_Tex   :=  Tex_SingBar_Back;
   Settings.RatingBar_FG_Tex   :=  Tex_SingBar_Front;
   Settings.RatingBar_Bar_Tex  :=  Tex_SingBar_Bar;
 
-  // load positions from theme
+  //Load Positions from Theme
 
-  // player 1:
+  // Player1:
   AddByStatics(1, Theme.Sing.StaticP1ScoreBG, Theme.Sing.StaticP1SingBar, Theme.Sing.TextP1Score);
   AddByStatics(2, Theme.Sing.StaticP1TwoPScoreBG, Theme.Sing.StaticP1TwoPSingBar, Theme.Sing.TextP1TwoPScore);
   AddByStatics(4, Theme.Sing.StaticP1ThreePScoreBG, Theme.Sing.StaticP1ThreePSingBar, Theme.Sing.TextP1ThreePScore);
 
-  // player 2:
+  // Player2:
   AddByStatics(2, Theme.Sing.StaticP2RScoreBG, Theme.Sing.StaticP2RSingBar, Theme.Sing.TextP2RScore);
   AddByStatics(4, Theme.Sing.StaticP2MScoreBG, Theme.Sing.StaticP2MSingBar, Theme.Sing.TextP2MScore);
 
-  // player 3:
+  // Player3:
   AddByStatics(4, Theme.Sing.StaticP3RScoreBG, Theme.Sing.StaticP3SingBar, Theme.Sing.TextP3RScore);
 end;
 
 {**
- * spawns a new line bonus popup for the player
+ * Spawns a new Line Bonus PopUp for the Player
  *}
-procedure TSingScores.SpawnPopUp(const PlayerIndex: byte; const Rating: byte; const Score: word);
-var
-  Cur: PScorePopUp;
+Procedure TSingScores.SpawnPopUp(const PlayerIndex: Byte; const Rating: Byte; const Score: Word);
+var Cur: PScorePopUp;
 begin
   if (PlayerIndex < PlayerCount) then
   begin
-    // get memory and add data
+    //Get Memory and Add Data
     GetMem(Cur, SizeOf(TScorePopUp));
 
-    Cur.Player    := PlayerIndex;
+    Cur.Player  := PlayerIndex;
     Cur.TimeStamp := SDL_GetTicks;
 
-    // limit rating value to 8
-    // a higher value would cause a crash when selecting the bg texture
+    //limit rating value to 8
+    //a higher value would cause a crash when selecting the bg textur
     if (Rating > 8) then
       Cur.Rating := 8
     else
       Cur.Rating := Rating;
 
     Cur.ScoreGiven:= 0;
-    if (Players[PlayerIndex].Score < Score) then
+    If (Players[PlayerIndex].Score < Score) then
     begin
       Cur.ScoreDiff := Score - Players[PlayerIndex].Score;
       aPlayers[PlayerIndex].Score := Score;
@@ -431,77 +429,77 @@ begin
       Cur.ScoreDiff := 0;
     Cur.Next := nil;
 
-    // Log.LogError('TSingScores.SpawnPopUp| Player: ' + InttoStr(PlayerIndex) + ', Score: ' + InttoStr(Score) + ', ScoreDiff: ' + InttoStr(Cur.ScoreDiff));
+    //Log.LogError('TSingScores.SpawnPopUp| Player: ' + InttoStr(PlayerIndex) + ', Score: ' + InttoStr(Score) + ', ScoreDiff: ' + InttoStr(Cur.ScoreDiff));
 
-    // add it to the chain
+    //Add it to the Chain
     if (FirstPopUp = nil) then
-      // the first popup in the list
+      //the first PopUp in the List
       FirstPopUp := Cur
     else
-    // second or earlier popup
+    //second or earlier popup
       LastPopUp.Next := Cur;
 
-    // set new popup to last popup in the list
+    //Set new Popup to Last PopUp in the List
     LastPopUp := Cur;
   end
   else
-    Log.LogError('TSingScores: Try to add popup for non-existing player');
+    Log.LogError('TSingScores: Try to add PopUp for not existing player');
 end;
 
 {**
- * removes a popup w/o destroying the list
+ * Removes a PopUp w/o destroying the List
  *}
-procedure TSingScores.KillPopUp(const last, cur: PScorePopUp);
+Procedure TSingScores.KillPopUp(const last, cur: PScorePopUp);
 begin
-  // give player the last points that missing till now
+  //Give Player the Last Points that missing till now
   aPlayers[Cur.Player].ScoreDisplayed := aPlayers[Cur.Player].ScoreDisplayed + Cur.ScoreDiff - Cur.ScoreGiven;
 
-  // change bars position
+  //Change Bars Position
   if (Cur.ScoreDiff > 0) THEN
-  begin // popup w/ scorechange -> give missing percentille
+  begin //Popup w/ scorechange -> give missing Percentille
     aPlayers[Cur.Player].RBTarget := aPlayers[Cur.Player].RBTarget +
                                      (Cur.ScoreDiff - Cur.ScoreGiven) / Cur.ScoreDiff
                                      * (Cur.Rating / 20 - 0.26);
   end
   else
-  begin // popup w/o scorechange -> give complete percentille
+  begin //Popup w/o scorechange -> give complete Percentille
     aPlayers[Cur.Player].RBTarget := aPlayers[Cur.Player].RBTarget +
                                      (Cur.Rating / 20 - 0.26);
   end;
 
-  if (aPlayers[Cur.Player].RBTarget > 1) then
+  If (aPlayers[Cur.Player].RBTarget > 1) then
     aPlayers[Cur.Player].RBTarget := 1
   else
-  if (aPlayers[Cur.Player].RBTarget < 0) then
+  If (aPlayers[Cur.Player].RBTarget < 0) then
     aPlayers[Cur.Player].RBTarget := 0;
 
-  // if this is the first popup => make next popup the first
-  if (Cur = FirstPopUp) then
+  //If this is the First PopUp => Make Next PopUp the First
+  If (Cur = FirstPopUp) then
     FirstPopUp := Cur.Next
-  // else => remove curent popup from chain
+  //Else => Remove Curent Popup from Chain
   else
     Last.Next := Cur.Next;
 
-  // if this is the last popup, make popup before the last
-  if (Cur = LastPopUp) then
+  //If this is the Last PopUp, Make PopUp before the Last
+  If (Cur = LastPopUp) then
     LastPopUp := Last;
 
-  // free the memory
+  //Free the Memory
   FreeMem(Cur, SizeOf(TScorePopUp));
 end;
 
 {**
- * removes all popups from mem
+ * Removes all PopUps from Mem
  *}
-procedure TSingScores.KillAllPopUps;
+Procedure TSingScores.KillAllPopUps;
 var
   Cur:  PScorePopUp;
   Last: PScorePopUp;
 begin
   Cur := FirstPopUp;
 
-  // remove all popups:
-  while (Cur <> nil) do
+  //Remove all PopUps:
+  While (Cur <> nil) do
   begin
     Last := Cur;
     Cur  := Cur.Next;
@@ -513,42 +511,40 @@ begin
 end;
 
 {**
- * has to be called after positions and players have been added, before first call of draw
- * it gives each player a score position
+ * Has to be called after Positions and Players have been added, before first call of Draw
+ * It gives every Player a Score Position
  *}
-procedure TSingScores.Init;
+Procedure TSingScores.Init;
 var
-  PlC:                 array [0..1] of byte; // playercount first screen and second screen
-  I, J:                integer;
-  MaxPlayersperScreen: byte;
-  CurPlayer:           byte;
+  PlC: Array [0..1] of Byte; //Playercount First Screen and Second Screen
+  I, J: Integer;
+  MaxPlayersperScreen: Byte;
+  CurPlayer:           Byte;
 
-  function GetPositionCountbyPlayerCount(bPlayerCount: byte): byte;
-  var
-    I: integer;
+  Function GetPositionCountbyPlayerCount(bPlayerCount: Byte): Byte;
+  var I: Integer;
   begin
     Result := 0;
     bPlayerCount := 1 shl (bPlayerCount - 1);
 
-    for I := 0 to PositionCount - 1 do
+    For I := 0 to PositionCount-1 do
     begin
-      if ((Positions[I].PlayerCount and bPlayerCount) <> 0) then
+      If ((Positions[I].PlayerCount AND bPlayerCount) <> 0) then
         Inc(Result);
     end;
   end;
 
-  function GetPositionbyPlayernum(bPlayerCount, bPlayer: byte): byte;
-  var
-    I: integer;
+  Function GetPositionbyPlayernum(bPlayerCount, bPlayer: Byte): Byte;
+  var I: Integer;
   begin
     bPlayerCount := 1 shl (bPlayerCount - 1);
-    Result := High(byte);
+    Result := High(Byte);
 
-    for I := 0 to PositionCount - 1 do
+    For I := 0 to PositionCount-1 do
     begin
-      if ((Positions[I].PlayerCount and bPlayerCount) <> 0) then
+      If ((Positions[I].PlayerCount AND bPlayerCount) <> 0) then
       begin
-        if (bPlayer = 0) then
+        If (bPlayer = 0) then
         begin
           Result := I;
           Break;
@@ -562,16 +558,17 @@ var
 begin
   MaxPlayersPerScreen := 0;
 
-  for I := 1 to 6 do
+  For I := 1 to 6 do
   begin
-    // if there are enough positions -> write to maxplayers
-    if (GetPositionCountbyPlayerCount(I) = I) then
+    //If there are enough Positions -> Write to MaxPlayers
+    If (GetPositionCountbyPlayerCount(I) = I) then
       MaxPlayersPerScreen := I
     else
       Break;
   end;
 
-  // split players to both screens or display on one screen
+
+  //Split Players to both Screen or Display on One Screen
   if (Screens = 2) and (MaxPlayersPerScreen < PlayerCount) then
   begin
     PlC[0] := PlayerCount div 2 + PlayerCount mod 2;
@@ -583,8 +580,9 @@ begin
     PlC[1] := 0;
   end;
 
-  // check if there are enough positions for all players
-  for I := 0 to Screens - 1 do
+
+  //Check if there are enough Positions for all Players
+  For I := 0 to Screens - 1 do
   begin
     if (PlC[I] > MaxPlayersperScreen) then
     begin
@@ -594,34 +592,34 @@ begin
   end;
   
   CurPlayer := 0;
-  // give every player a position
-  for I := 0 to Screens - 1 do
-    for J := 0 to PlC[I]-1 do
+  //Give every Player a Position
+  For I := 0 to Screens - 1 do
+    For J := 0 to PlC[I]-1 do
     begin
-      aPlayers[CurPlayer].Position := GetPositionbyPlayernum(PlC[I], J) or (I shl 7);
-      // Log.LogError('Player ' + InttoStr(CurPlayer) + ' gets Position: ' + InttoStr(aPlayers[CurPlayer].Position));
+      aPlayers[CurPlayer].Position := GetPositionbyPlayernum(PlC[I], J) OR (I shl 7);
+      //Log.LogError('Player ' + InttoStr(CurPlayer) + ' gets Position: ' + InttoStr(aPlayers[CurPlayer].Position));
       Inc(CurPlayer);
     end;
 end;
 
 {**
- * draws scores and linebonus popups
+ * Draws Scores and Linebonus PopUps
  *}
-procedure TSingScores.Draw;
+Procedure TSingScores.Draw;
 var
-  I: integer;
-  CurTime: cardinal;
+  I: Integer;
+  CurTime: Cardinal;
   CurPopUp, LastPopUp: PScorePopUp;
 begin
   CurTime := SDL_GetTicks;
 
-  if Visible then
+  If Visible then
   begin
-    // draw popups
+    //Draw Popups
     LastPopUp := nil;
     CurPopUp  := FirstPopUp;
 
-    while (CurPopUp <> nil) do
+    While (CurPopUp <> nil) do
     begin
       if (CurTime - CurPopUp.TimeStamp > Settings.Phase1Time + Settings.Phase2Time + Settings.Phase3Time) then
       begin
@@ -640,64 +638,64 @@ begin
     end;
 
 
-    if (RBVisible) then
-      // draw players w/ rating bar
-      for I := 0 to PlayerCount-1 do
+    IF (RBVisible) then
+      //Draw Players w/ Rating Bar
+      For I := 0 to PlayerCount-1 do
       begin
         DrawScore(I);
         DrawRatingBar(I);
       end
     else
-      // draw players w/o rating bar
-      for I := 0 to PlayerCount-1 do
+      //Draw Players w/o Rating Bar
+      For I := 0 to PlayerCount-1 do
       begin
         DrawScore(I);
       end;
 
-  end; // eo visible
+  end; //eo Visible
 end;
 
 {**
- * draws a popup by pointer
+ * Draws a Popup by Pointer
  *}
-procedure TSingScores.DrawPopUp(const PopUp: PScorePopUp);
+Procedure TSingScores.DrawPopUp(const PopUp: PScorePopUp);
 var
-  Progress:          real;
-  CurTime:           cardinal;
-  X, Y, W, H, Alpha: real;
-  FontSize:          real;
-  FontOffset:        real;
-  TimeDiff:          cardinal;
-  PIndex:            byte;
-  TextLen:           real;
-  ScoretoAdd:        word;
-  PosDiff:           real;
+  Progress: Real;
+  CurTime:  Cardinal;
+  X, Y, W, H, Alpha: Real;
+  FontSize: integer;
+  FontOffset: Real;
+  TimeDiff: Cardinal;
+  PIndex:   Byte;
+  TextLen:  Real;
+  ScoretoAdd: Word;
+  PosDiff:  Real;
 begin
   if (PopUp <> nil) then
   begin
-    // only draw if player has a position
+    //Only Draw if Player has a Position
     PIndex := Players[PopUp.Player].Position;
-    if PIndex <> High(byte) then
+    If PIndex <> high(byte) then
     begin
-      // only draw if player is on cur screen
-      if ((Players[PopUp.Player].Position and 128) = 0) = (ScreenAct = 1) then
+      //Only Draw if Player is on Cur Screen
+      If ((Players[PopUp.Player].Position AND 128) = 0) = (ScreenAct = 1) then
       begin
         CurTime := SDL_GetTicks;
-        if not (Enabled and Players[PopUp.Player].Enabled) then
-        // increase timestamp with tiem where there is no movement ...
+        If Not (Enabled AND Players[PopUp.Player].Enabled) then
+        //Increase Timestamp with TIem where there is no Movement ...
         begin
-          // Inc(PopUp.TimeStamp, LastRender);
+          //Inc(PopUp.TimeStamp, LastRender);
         end;
         TimeDiff := CurTime - PopUp.TimeStamp;
 
-        // get position of popup
-        PIndex := PIndex and 127;
+        //Get Position of PopUp
+        PIndex := PIndex AND 127;
 
     
-        // check for phase ...
-        if (TimeDiff <= Settings.Phase1Time) then
+        //Check for Phase ...
+        If (TimeDiff <= Settings.Phase1Time) then
         begin
-          // phase 1 - the ploping up
+          //Phase 1 - The Ploping up
           Progress := TimeDiff / Settings.Phase1Time;
 
 
@@ -707,26 +705,26 @@ begin
           X := Positions[PIndex].PUStartX + (Positions[PIndex].PUW - W)/2;
           Y := Positions[PIndex].PUStartY + (Positions[PIndex].PUH - H)/2;
 
-          FontSize   := Progress * Positions[PIndex].PUFontSize;
-          FontOffset := (H - FontSize) / 2;
+          FontSize   := Round(Progress * Positions[PIndex].PUFontSize);
+          FontOffset := (H  - FontSize) / 2;
           Alpha := 1;
         end
 
-        else if (TimeDiff <= Settings.Phase2Time + Settings.Phase1Time) then
+        Else If (TimeDiff <= Settings.Phase2Time + Settings.Phase1Time) then
         begin
-          // phase 2 - the moving
+          //Phase 2 - The Moving
           Progress := (TimeDiff - Settings.Phase1Time) / Settings.Phase2Time;
 
           W := Positions[PIndex].PUW;
           H := Positions[PIndex].PUH;
 
           PosDiff := Positions[PIndex].PUTargetX - Positions[PIndex].PUStartX;
-          if PosDiff > 0 then
+          If PosDiff > 0 then
             PosDiff := PosDiff + W;
           X := Positions[PIndex].PUStartX + PosDiff * sqr(Progress);
 
           PosDiff := Positions[PIndex].PUTargetY - Positions[PIndex].PUStartY;
-          if PosDiff < 0 then
+          If PosDiff < 0 then
             PosDiff := PosDiff + Positions[PIndex].BGH;
           Y := Positions[PIndex].PUStartY + PosDiff * sqr(Progress);
 
@@ -737,67 +735,65 @@ begin
 
         else
         begin
-          // phase 3 - the fading out + score adding
+          //Phase 3 - The Fading out + Score adding
           Progress := (TimeDiff - Settings.Phase1Time - Settings.Phase2Time) / Settings.Phase3Time;
 
-          if (PopUp.Rating > 0) then
+          If (PopUp.Rating > 0) then
           begin
-            // add scores if player enabled
-            if (Enabled and Players[PopUp.Player].Enabled) then
+            //Add Scores if Player Enabled
+            If (Enabled AND Players[PopUp.Player].Enabled) then
             begin
               ScoreToAdd := Round(PopUp.ScoreDiff * Progress) - PopUp.ScoreGiven;
               Inc(PopUp.ScoreGiven, ScoreToAdd);
               aPlayers[PopUp.Player].ScoreDisplayed := Players[PopUp.Player].ScoreDisplayed + ScoreToAdd;
 
-              // change bar positions
-	      if PopUp.ScoreDiff = 0 then
-		Log.LogError('TSingScores.DrawPopUp', 'PopUp.ScoreDiff is 0 and we want to divide by it. No idea how this happens.')
-	      else
-                aPlayers[PopUp.Player].RBTarget := aPlayers[PopUp.Player].RBTarget + ScoreToAdd/PopUp.ScoreDiff * (PopUp.Rating / 20 - 0.26);
-              if (aPlayers[PopUp.Player].RBTarget > 1) then
+              //Change Bars Position
+              aPlayers[PopUp.Player].RBTarget := aPlayers[PopUp.Player].RBTarget + ScoreToAdd/PopUp.ScoreDiff * (PopUp.Rating / 20 - 0.26);
+              If (aPlayers[PopUp.Player].RBTarget > 1) then
                 aPlayers[PopUp.Player].RBTarget := 1
-              else if (aPlayers[PopUp.Player].RBTarget < 0) then
+              else If (aPlayers[PopUp.Player].RBTarget < 0) then
                 aPlayers[PopUp.Player].RBTarget := 0;
             end;
 
-            // set positions etc.
-            Alpha := 0.7 - 0.7 * Progress;
+            //Set Positions etc.
+            Alpha    := 0.7 - 0.7 * Progress;
 
             W := Positions[PIndex].PUW;
             H := Positions[PIndex].PUH;
 
             PosDiff := Positions[PIndex].PUTargetX - Positions[PIndex].PUStartX;
-            if (PosDiff > 0) then
+            If (PosDiff > 0) then
               PosDiff := W
             else
               PosDiff := 0;
             X := Positions[PIndex].PUTargetX + PosDiff * Progress;
 
             PosDiff := Positions[PIndex].PUTargetY - Positions[PIndex].PUStartY;
-            if (PosDiff < 0) then
+            If (PosDiff < 0) then
               PosDiff := -Positions[PIndex].BGH
             else
               PosDiff := 0;
-            Y := Positions[PIndex].PUTargetY - PosDiff * (1 - Progress);
+            Y := Positions[PIndex].PUTargetY - PosDiff * (1-Progress);
 
             FontSize   := Positions[PIndex].PUFontSize;
             FontOffset := (H - FontSize) / 2;
           end
           else
           begin
-            // here the effect that should be shown if a popup without score is drawn
-            // and or spawn with the graphicobjects etc.
-            // some work for blindy to do :p
+            //Here the Effect that Should be shown if a PopUp without Score is Drawn
+            //And or Spawn with the GraphicObjects etc.
+            //Some Work for Blindy to do :P
 
-            // atm: just let it slide in the scores just like the normal popup
+            //ATM: Just Let it Slide in the Scores just like the Normal PopUp
             Alpha := 0;
           end;
         end;
 
-        // draw popup
-        if (Alpha > 0) and (FontSize > 0) and (Players[PopUp.Player].Visible) then
+        //Draw PopUp
+
+        if (Alpha > 0) AND (Players[PopUp.Player].Visible) then
         begin
-          // draw bg:
+          //Draw BG:
           glEnable(GL_TEXTURE_2D);
           glEnable(GL_BLEND);
           glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -815,46 +811,45 @@ begin
           glDisable(GL_TEXTURE_2D);
           glDisable(GL_BLEND);
 
-          // set font style and size
+          //Set FontStyle and Size
           SetFontStyle(Positions[PIndex].PUFont);
-          SetFontItalic(false);
+          SetFontItalic(False);
           SetFontSize(FontSize);
-          SetFontReflection(false, 0);
 
-          // draw text
+          //Draw Text
           TextLen := glTextWidth(Theme.Sing.LineBonusText[PopUp.Rating]);
 
-          // color and pos
+          //Color and Pos
           SetFontPos (X + (W - TextLen) / 2, Y + FontOffset);
           glColor4f(1, 1, 1, Alpha);
 
-          // draw
+          //Draw
           glPrint(Theme.Sing.LineBonusText[PopUp.Rating]);
-        end; // eo alpha check
-      end; // eo right screen
-    end; // eo player has position
+        end; //eo Alpha check
+      end; //eo Right Screen
+    end; //eo Player has Position
   end
   else
-    Log.LogError('TSingScores: Try to draw a non-existing popup');
+    Log.LogError('TSingScores: Try to Draw a not existing PopUp');
 end;
 
 {**
- * draws a score by playerindex
+ * Draws a Score by Playerindex
  *}
-procedure TSingScores.DrawScore(const Index: integer);
+Procedure TSingScores.DrawScore(const Index: Integer);
 var
   Position: PScorePosition;
   ScoreStr: String;
 begin
-  // only draw if player has a position
-  if Players[Index].Position <> High(byte) then
+  //Only Draw if Player has a Position
+  If Players[Index].Position <> high(byte) then
   begin
-    // only draw if player is on cur screen
-    if (((Players[Index].Position and 128) = 0) = (ScreenAct = 1)) and Players[Index].Visible then
+    //Only Draw if Player is on Cur Screen
+    If (((Players[Index].Position AND 128) = 0) = (ScreenAct = 1)) AND Players[Index].Visible then
     begin
       Position := @Positions[Players[Index].Position and 127];
 
-      // draw scorebg
+      //Draw ScoreBG
       glEnable(GL_TEXTURE_2D);
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -872,51 +867,50 @@ begin
       glDisable(GL_TEXTURE_2D);
       glDisable(GL_BLEND);
 
-      // draw score text
+      //Draw Score Text
       SetFontStyle(Position.TextFont);
-      SetFontItalic(false);
+      SetFontItalic(False);
       SetFontSize(Position.TextSize);
       SetFontPos(Position.TextX, Position.TextY);
-      SetFontReflection(false, 0);
 
       ScoreStr := InttoStr(Players[Index].ScoreDisplayed div 10) + '0';
-      while (Length(ScoreStr) < 5) do
+      While (Length(ScoreStr) < 5) do
         ScoreStr := '0' + ScoreStr;
 
       glPrint(ScoreStr);
 
-    end; // eo right screen
-  end; // eo player has position
+    end; //eo Right Screen
+  end; //eo Player has Position
 end;
 
 
-procedure TSingScores.DrawRatingBar(const Index: integer);
+Procedure TSingScores.DrawRatingBar(const Index: Integer);
 var
-  Position:   PScorePosition;
-  R, G, B:    real;
-  Size, Diff: real;
+  Position: PScorePosition;
+  R,G,B, Size: Real;
+  Diff: Real;
 begin
-  // only draw if player has a position
-  if Players[Index].Position <> High(byte) then
+  //Only Draw if Player has a Position
+  if Players[Index].Position <> high(byte) then
   begin
-    // only draw if player is on cur screen
+    //Only Draw if Player is on Cur Screen
     if (((Players[Index].Position and 128) = 0) = (ScreenAct = 1) and
         Players[index].RBVisible and
         Players[index].Visible) then
     begin
       Position := @Positions[Players[Index].Position and 127];
 
-      if (Enabled and Players[Index].Enabled) then
+      if (Enabled AND Players[Index].Enabled) then
       begin
-        // move position if enabled
+        //Move Position if Enabled
         Diff := Players[Index].RBTarget - Players[Index].RBPos;
-        if (Abs(Diff) < 0.02) then
+        If(Abs(Diff) < 0.02) then
           aPlayers[Index].RBPos := aPlayers[Index].RBTarget
         else
           aPlayers[Index].RBPos := aPlayers[Index].RBPos + Diff*0.1;
       end;
 
-      // get colors for rating bar
+      //Get Colors for RatingBar
       if (Players[index].RBPos <= 0.22) then
       begin
         R := 1;
@@ -926,7 +920,7 @@ begin
       else if (Players[index].RBPos <= 0.42) then
       begin
         R := 1;
-        G := Players[index].RBPos * 5;
+        G := Players[index].RBPos*5;
         B := 0;
       end
       else if (Players[index].RBPos <= 0.57) then
@@ -937,7 +931,7 @@ begin
       end
       else if (Players[index].RBPos <= 0.77) then
       begin
-        R := 1 - (Players[index].RBPos - 0.57) * 5;
+        R := 1-(Players[index].RBPos-0.57)*5;
         G := 1;
         B := 0;
       end
@@ -948,12 +942,12 @@ begin
         B := 0;
       end;
 
-      // enable all glfuncs needed
+      //Enable all glFuncs Needed
       glEnable(GL_TEXTURE_2D);
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-      // draw rating bar bg
+      //Draw RatingBar BG
       glColor4f(1, 1, 1, 0.8);
       glBindTexture(GL_TEXTURE_2D, Settings.RatingBar_BG_Tex.TexNum);
 
@@ -971,7 +965,7 @@ begin
         glVertex2f(Position.RBX+Position.RBW, Position.RBY);
       glEnd;
 
-      // draw rating bar itself
+      //Draw Rating bar itself
       Size := Position.RBX + Position.RBW * Players[Index].RBPos;
       glColor4f(R, G, B, 1);
       glBindTexture(GL_TEXTURE_2D, Settings.RatingBar_Bar_Tex.TexNum);
@@ -989,7 +983,7 @@ begin
         glVertex2f(Size, Position.RBY);
       glEnd;
 
-      // draw rating bar fg (the thing with the 3 lines to get better readability)
+      //Draw Ratingbar FG (Teh thing with the 3 lines to get better readability)
       glColor4f(1, 1, 1, 0.6);
       glBindTexture(GL_TEXTURE_2D, Settings.RatingBar_FG_Tex.TexNum);
       glBegin(GL_QUADS);
@@ -1006,11 +1000,11 @@ begin
         glVertex2f(Position.RBX + Position.RBW, Position.RBY);
       glEnd;
 
-      // disable all enabled glfuncs
+      //Disable all Enabled glFuncs
       glDisable(GL_TEXTURE_2D);
       glDisable(GL_BLEND);
-    end; // eo Right Screen
-  end; // eo Player has Position
+    end; //eo Right Screen
+  end; //eo Player has Position
 end;
 
 end.

@@ -42,13 +42,13 @@ uses
 
 type
   TRGB = record
-    R: single;
-    G: single;
-    B: single;
+    R:    single;
+    G:    single;
+    B:    single;
   end;
 
   TRGBA = record
-    R, G, B, A: double;
+    R, G, B, A: Double;
   end;
 
 type
@@ -175,12 +175,11 @@ type
     W:      integer;
     H:      integer;
     Z:      real;
-    SBGW:   integer;
 
     TextSize: integer;
 
-    showArrows:boolean;
-    oneItemOnly:boolean;
+    //SBGW Mod
+    SBGW:   integer;
 
     Text:   string;
     ColR,  ColG,  ColB,  Int:     real;
@@ -358,11 +357,6 @@ type
 
     //Pause Popup
      PausePopUp:      TThemeStatic;
-  end;
-
-  TThemeLyricBar = record
-     IndicatorYOffset, UpperX, UpperW, UpperY, UpperH,
-     LowerX, LowerW, LowerY, LowerH  : integer;
   end;
 
   TThemeScore = class(TThemeBasic)
@@ -729,7 +723,6 @@ type
     Level:            TThemeLevel;
     Song:             TThemeSong;
     Sing:             TThemeSing;
-    LyricBar:         TThemeLyricBar;
     Score:            TThemeScore;
     Top5:             TThemeTop5;
     Options:          TThemeOptions;
@@ -1038,19 +1031,9 @@ begin
       ThemeLoadStatic(Song.StaticTeam3Joker5, 'SongStaticTeam3Joker5');
 
 
-      //LyricBar      asd
-      LyricBar.UpperX := ThemeIni.ReadInteger('SingLyricsUpperBar', 'X', 0);
-      LyricBar.UpperW := ThemeIni.ReadInteger('SingLyricsUpperBar', 'W', 0);
-      LyricBar.UpperY := ThemeIni.ReadInteger('SingLyricsUpperBar', 'Y', 0);
-      LyricBar.UpperH := ThemeIni.ReadInteger('SingLyricsUpperBar', 'H', 0);
-      LyricBar.IndicatorYOffset := ThemeIni.ReadInteger('SingLyricsUpperBar', 'IndicatorYOffset', 0);
-      LyricBar.LowerX := ThemeIni.ReadInteger('SingLyricsLowerBar', 'X', 0);
-      LyricBar.LowerW := ThemeIni.ReadInteger('SingLyricsLowerBar', 'W', 0);
-      LyricBar.LowerY := ThemeIni.ReadInteger('SingLyricsLowerBar', 'Y', 0);
-      LyricBar.LowerH := ThemeIni.ReadInteger('SingLyricsLowerBar', 'H', 0);
-
       // Sing
       ThemeLoadBasic(Sing, 'Sing');
+
       //TimeBar mod
        ThemeLoadStatic(Sing.StaticTimeProgress, 'SingTimeProgress');
        ThemeLoadText(Sing.TextTimeText, 'SingTimeText');
@@ -1786,7 +1769,7 @@ begin
 
   ThemeSelectS.SkipX := ThemeIni.ReadInteger(Name, 'SkipX', 0);
 
-  ThemeSelectS.SBGW := ThemeIni.ReadInteger(Name, 'SBGW', 400);
+  ThemeSelectS.SBGW := ThemeIni.ReadInteger(Name, 'SBGW', 450);
 
   LoadColor(ThemeSelectS.ColR, ThemeSelectS.ColG,  ThemeSelectS.ColB, ThemeIni.ReadString(Name, 'Color', ''));
   ThemeSelectS.Int :=  ThemeIni.ReadFloat(Name, 'Int', 1);

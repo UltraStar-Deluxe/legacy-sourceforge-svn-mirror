@@ -4,25 +4,24 @@
 
 ; Create Directories:
 
-CreateDirectory $INSTDIR\Plugins
-CreateDirectory $INSTDIR\Songs
-CreateDirectory $INSTDIR\Screenshots
-CreateDirectory $INSTDIR\Playlists
-CreateDirectory $INSTDIR\Covers
+CreateDirectory $INSTDIR\plugins
+CreateDirectory $INSTDIR\songs
+CreateDirectory $INSTDIR\screenshots
+CreateDirectory $INSTDIR\playlists
 
 SetOutPath "$INSTDIR"
 
-; themes, languages, sounds, fonts, visuals dir
+; themes, languages, sounds, visuals dir
 
 File /r ..\game\themes
 File /r ..\game\languages
 File /r ..\game\sounds
-File /r ..\game\fonts
 File /r ..\installerdependencies\visuals
 
 ; Root dir:
 
 File ..\installerdependencies\dll\*.dll
+
 
 File ..\ChangeLog.txt
 File ..\ChangeLog.german.txt
@@ -35,7 +34,7 @@ File "..\${exe}.exe"
 
 ; Covers dir:
 
-SetOutPath "$INSTDIR\Covers"
+SetOutPath "$INSTDIR\covers"
 
 IfFileExists $INSTDIR\covers\covers.ini +2 0
 File ..\game\covers\Covers.ini

@@ -66,6 +66,11 @@ implementation
 uses
   Math,
   gl,
+{
+  SDL_ttf,
+  UParty,
+  UCore,
+}
   UCatCovers,
   UCommandLine,
   UCommon,
@@ -83,12 +88,10 @@ uses
   UPath,
   UPlaylist,
   UMusic,
-  UBeatTimer,
   UPlatform,
   USkins,
   USongs,
   UThemes,
-  UParty,
   UTime;
 
 procedure Main;
@@ -233,12 +236,14 @@ begin
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading PluginManager', 1);
 
+{
     // Party Mode Manager
     Log.BenchmarkStart(1);
     Log.LogStatus('PartySession Manager', 'Initialization');
     PartySession := TPartySession.Create;   //Load PartySession
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading PartySession Manager', 1);
+}
 
     // Graphics
     Log.BenchmarkStart(1);
@@ -359,11 +364,9 @@ begin
     CountMidTime;
 
     Delay := Floor(1000 / MAX_FPS - 1000 * TimeMid);
-    Log.LogError ('MainLoop', 'Delay: ' + intToStr(Delay));
 
     if Delay >= 1 then
       SDL_Delay(Delay); // dynamic, maximum is 100 fps
-    Log.LogError ('MainLoop', 'Delay: ok ' + intToStr(Delay));
 
     CountSkipTime;
 
@@ -377,26 +380,9 @@ begin
   end;
 end;
 
-procedure DoQuit;
-begin
-  // if question option is enabled then show exit popup
-  if (Ini.AskbeforeDel = 1) then
-  begin
-    Display.CurrentScreen^.CheckFadeTo(nil,'MSG_QUIT_USDX');
-  end
-  else // if ask-for-exit is disabled then simply exit
-  begin
-    Display.Fade := 0;
-    Display.NextScreenWithCheck := nil;
-    Display.CheckOK := true;
-  end;
-end;
-
 procedure CheckEvents;
 var
-  Event:     TSDL_event;
-  mouseDown: boolean;
-  mouseBtn:  integer;
+  Event: TSDL_event;
 begin
   if Assigned(Display.NextScreen) then
     Exit;
@@ -410,46 +396,17 @@ begin
         Display.NextScreenWithCheck := nil;
         Display.CheckOK := true;
       end;
-
-      SDL_MOUSEMOTION, SDL_MOUSEBUTTONDOWN, SDL_MOUSEBUTTONUP:
+      SDL_MOUSEBUTTONDOWN:
       begin
-        if (Ini.Mouse > 0) then
+{
+        with Event.button do
         begin
-          case Event.type_ of
-            SDL_MOUSEMOTION:
-            begin
-              mouseDown := false;
-              mouseBtn  := 0;
-            end;
-            SDL_MOUSEBUTTONDOWN:
-            begin
-              mouseDown := true;
-              mouseBtn  := Event.button.button;
-            end;
-            SDL_MOUSEBUTTONUP:
-            begin
-              mouseDown := false;
-              mouseBtn  := Event.button.button;
-            end;
-          end;
-
-          Display.MoveCursor(Event.button.X * 800 / Screen.w,
-                             Event.button.Y * 600 / Screen.h,
-                             mouseDown and ((mouseBtn <> SDL_BUTTON_WHEELDOWN) or (mouseBtn <> SDL_BUTTON_WHEELUP)));
-
-          if (ScreenPopupError <> nil) and (ScreenPopupError.Visible) then
-            done := not ScreenPopupError.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
-          else if (ScreenPopupCheck <> nil) and (ScreenPopupCheck.Visible) then
-            done := not ScreenPopupCheck.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
-          else
+          if State = SDL_BUTTON_LEFT then
           begin
-            done := not Display.CurrentScreen^.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y);
-
-            // if screen wants to exit
-            if done then
-              DoQuit;
+            //
           end;
         end;
+}
       end;
       SDL_VIDEORESIZE:
       begin
@@ -485,13 +442,13 @@ begin
             if boolean( Ini.FullScreen ) then
             begin
               SDL_SetVideoMode(ScreenW, ScreenH, (Ini.Depth+1) * 16, SDL_OPENGL or SDL_FULLSCREEN);
+              SDL_ShowCursor(0);
             end
             else
             begin
               SDL_SetVideoMode(ScreenW, ScreenH, (Ini.Depth+1) * 16, SDL_OPENGL or SDL_RESIZABLE);
+              SDL_ShowCursor(1);
             end;
-
-            Display.SetCursor;
 
             glViewPort(0, 0, ScreenW, ScreenH);
             {$IFEND}
@@ -512,7 +469,19 @@ begin
 
             // if screen wants to exit
             if Done then
-              DoQuit;
+            begin
+              // if question option is enabled then show exit popup
+              if (Ini.AskbeforeDel = 1) then
+              begin
+                Display.CurrentScreen^.CheckFadeTo(nil,'MSG_QUIT_USDX');
+              end
+              else // if ask-for-exit is disabled then simply exit
+              begin
+                Display.Fade := 0;
+                Display.NextScreenWithCheck := nil;
+                Display.CheckOK := true;
+              end;
+            end;
 
           end;
         end;

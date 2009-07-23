@@ -336,8 +336,8 @@ begin
     X := 0;
     Y := 0;
     Z := 0;
-    W := oldWidth;
-    H := oldHeight;
+    W := 0;
+    H := 0;
     ScaleW := 1;
     ScaleH := 1;
     Rot := 0;

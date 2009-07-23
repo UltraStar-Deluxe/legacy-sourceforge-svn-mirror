@@ -52,7 +52,10 @@ type
     function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
       PressedDown: boolean): boolean; override;
     procedure onShow; override;
-    procedure SetInteraction(Num: integer); override;
+    procedure InteractNext; override;
+    procedure InteractPrev; override;
+    procedure InteractInc; override;
+    procedure InteractDec; override;
     procedure SetAnimationProgress(Progress: real); override;
   end;
 
@@ -77,7 +80,7 @@ function TScreenMain.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
 var
   SDL_ModState: word;
 begin
-  Result := true;
+  Result := True;
 
   SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT +
     KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT + KMOD_RALT);
@@ -87,7 +90,7 @@ begin
         // check normal keys
     case UCS4UpperCase(CharCode) of
       Ord('Q'): begin
-        Result := false;
+        Result := False;
         Exit;
       end;
       Ord('C'): begin
@@ -121,7 +124,7 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE:
       begin
-        Result := false;
+        Result := False;
       end;
 
       SDLK_RETURN:
@@ -136,7 +139,7 @@ begin
             if (Ini.Players = 4) then
               PlayersPlay := 6;
 
-            ScreenName.Goto_SingScreen := false;
+            ScreenName.Goto_SingScreen := False;
             FadeTo(@ScreenName, SoundLib.Start);
           end
           else //show error message
@@ -180,7 +183,7 @@ begin
         //Exit
         if Interaction = 5 then
         begin
-          Result := false;
+          Result := False;
         end;
       end;
       {**
@@ -231,19 +234,36 @@ end;
 procedure TScreenMain.onShow;
 begin
   inherited;
-
-  { display cursor (on moved) }
-  Display.SetCursor;
-
 {**
  * Start background music
  *}
   SoundLib.StartBgMusic;
 end;
 
-procedure TScreenMain.SetInteraction(Num: integer);
+procedure TScreenMain.InteractNext;
 begin
-  inherited SetInteraction(Num);
+  inherited InteractNext;
+  Text[TextDescription].Text     := Theme.Main.Description[Interaction];
+  Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
+end;
+
+procedure TScreenMain.InteractPrev;
+begin
+  inherited InteractPrev;
+  Text[TextDescription].Text     := Theme.Main.Description[Interaction];
+  Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
+end;
+
+procedure TScreenMain.InteractDec;
+begin
+  inherited InteractDec;
+  Text[TextDescription].Text     := Theme.Main.Description[Interaction];
+  Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
+end;
+
+procedure TScreenMain.InteractInc;
+begin
+  inherited InteractInc;
   Text[TextDescription].Text     := Theme.Main.Description[Interaction];
   Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
 end;

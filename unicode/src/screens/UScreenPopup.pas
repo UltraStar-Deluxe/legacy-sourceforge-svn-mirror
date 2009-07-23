@@ -34,43 +34,44 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu,
   SDL,
+  SysUtils,
+  UMenu,
   UMusic,
   UFiles,
-  SysUtils,
   UThemes;
 
 type
   TScreenPopupCheck = class(TMenu)
     public
-      Visible: boolean; //Whether the Menu should be Drawn
+      Visible: Boolean; //Whether the Menu should be Drawn
 
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
-      procedure ShowPopup(msg: string);
+      procedure ShowPopup(msg: String);
       function Draw: boolean; override;
   end;
 
 type
   TScreenPopupError = class(TMenu)
 {    private
-      CurMenu: byte; //Num of the cur. Shown Menu}
+      CurMenu: Byte; //Num of the cur. Shown Menu}
     public
-      Visible: boolean; //Whether the Menu should be Drawn
+      Visible: Boolean; //Whether the Menu should be Drawn
 
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure onHide; override;
-      procedure ShowPopup(msg: string);
+      procedure ShowPopup(msg: String);
       function Draw: boolean; override;
   end;
 
 var
-//  ISelections: array of string;
-  SelectValue: integer;
+//  ISelections: Array of String;
+  SelectValue: Integer;
+
 
 implementation
 
@@ -85,10 +86,10 @@ uses
   UDisplay,
   UUnicodeUtils;
 
-function TScreenPopupCheck.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenPopupCheck.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
-  if (PressedDown) then
+  If (PressedDown) Then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -104,9 +105,9 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          Display.CheckOK := false;
-          Display.NextScreenWithCheck := NIL;
-          Visible := false;
+          Display.CheckOK:=False;
+          Display.NextScreenWithCheck:=NIL;
+          Visible:=False;
           Result := false;
         end;
 
@@ -123,14 +124,14 @@ begin
                    ScreenSingModi.Finish;
                end;
 
-               Display.CheckOK := true;
+               Display.CheckOK:=True;
              end;
           1: begin
-               Display.CheckOK := false;
-               Display.NextScreenWithCheck := NIL;
+               Display.CheckOK:=False;
+               Display.NextScreenWithCheck:=NIL;
              end;
           end;
-          Visible := false;
+          Visible:=False;
           Result := false;
         end;
 
@@ -172,15 +173,15 @@ begin
   inherited;
 end;
 
-procedure TScreenPopupCheck.ShowPopup(msg: string);
+procedure TScreenPopupCheck.ShowPopup(msg: String);
 begin
   Interaction := 0; //Reset Interaction
-  Visible := true;  //Set Visible
+  Visible := True;  //Set Visible
 
   Text[0].Text := Language.Translate(msg);
 
-  Button[0].Visible := true;
-  Button[1].Visible := true;
+  Button[0].Visible := True;
+  Button[1].Visible := True;
 
   Button[0].Text[0].Text := Language.Translate('SONG_MENU_YES');
   Button[1].Text[0].Text := Language.Translate('SONG_MENU_NO');
@@ -190,10 +191,10 @@ end;
 
 // error popup
 
-function TScreenPopupError.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenPopupError.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
-  if (PressedDown) then
+  If (PressedDown) Then
   begin // Key Down
 
     case PressedKey of
@@ -205,13 +206,13 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          Visible := false;
+          Visible:=False;
           Result := false;
         end;
 
       SDLK_RETURN:
         begin
-          Visible := false;
+          Visible:=False;
           Result := false;
         end;
 
@@ -241,7 +242,7 @@ end;
 
 function TScreenPopupError.Draw: boolean;
 begin
-  Draw := inherited Draw;
+  Draw:=inherited Draw;
 end;
 
 procedure TScreenPopupError.onShow;
@@ -254,26 +255,26 @@ procedure TScreenPopupError.onHide;
 begin
 end;
 
-procedure TScreenPopupError.ShowPopup(msg: string);
+procedure TScreenPopupError.ShowPopup(msg: String);
 begin
   Interaction := 0; //Reset Interaction
-  Visible := true;  //Set Visible
+  Visible := True;  //Set Visible
   Background.OnShow;
 
 {  //dirty hack... Text[0] is invisible for some strange reason
   for i:=1 to high(Text) do
     if i-1 <= high(msg) then
     begin
-      Text[i].Visible := true;
+      Text[i].Visible:=True;
       Text[i].Text := msg[i-1];
     end
     else
     begin
-      Text[i].Visible := false;
+      Text[i].Visible:=False;
     end;}
-  Text[0].Text := msg;
+  Text[0].Text:=msg;
 
-  Button[0].Visible := true;
+  Button[0].Visible := True;
 
   Button[0].Text[0].Text := 'OK';
 end;

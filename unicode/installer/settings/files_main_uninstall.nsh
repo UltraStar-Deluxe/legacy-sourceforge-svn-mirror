@@ -18,7 +18,6 @@
 
  RMDir /r "$INSTDIR\plugins"
  RMDir /r "$INSTDIR\themes"
- RMDir /r "$INSTDIR\fonts"
  RMDir /r "$INSTDIR\languages"
  RMDir /r "$INSTDIR\visuals"
  RMDir /r "$INSTDIR\sounds"
@@ -35,7 +34,6 @@
  Delete "$INSTDIR\README.txt"
  Delete "$INSTDIR\Error.log"
  Delete "$INSTDIR\covers.cache"
- Delete "$INSTDIR\cover.db"
 
  Delete "$INSTDIR\avcodec-51.dll"
  Delete "$INSTDIR\avformat-50.dll"

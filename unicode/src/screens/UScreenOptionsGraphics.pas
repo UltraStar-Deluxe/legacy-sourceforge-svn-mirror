@@ -46,7 +46,7 @@ type
   TScreenOptionsGraphics = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
   end;
 
@@ -58,10 +58,10 @@ uses
   UUnicodeUtils,
   SysUtils;
 
-function TScreenOptionsGraphics.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenOptionsGraphics.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
-  if (PressedDown) then
+  If (PressedDown) Then
   begin // Key Down
     // check normal keys
     case UCS4UpperCase(CharCode) of
@@ -84,12 +84,10 @@ begin
         end;
       SDLK_RETURN:
         begin
-{          if SelInteraction <= 1 then
-          begin
+{          if SelInteraction <= 1 then begin
             Restart := true;
           end;}
-          if SelInteraction = 6 then
-          begin
+          if SelInteraction = 6 then begin
             Ini.Save;
             AudioPlayback.PlaySound(SoundLib.Back);
             // FIXME: changing the video mode does not work this way in windows
@@ -107,16 +105,14 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction < 6) then
-          begin
+          if (SelInteraction >= 0) and (SelInteraction < 6) then begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractInc;
           end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction < 6) then
-          begin
+          if (SelInteraction >= 0) and (SelInteraction < 6) then begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractDec;
           end;
@@ -132,29 +128,13 @@ begin
   inherited Create;
   LoadFromTheme(Theme.OptionsGraphics);
 
-  Theme.OptionsGraphics.SelectResolution.showArrows := true;
-  Theme.OptionsGraphics.SelectResolution.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGraphics.SelectResolution,   Ini.Resolution, IResolution);
+  AddSelectSlide(Theme.OptionsGraphics.SelectResolution, Ini.Resolution, IResolution);
+  AddSelectSlide(Theme.OptionsGraphics.SelectFullscreen, Ini.Fullscreen, IFullscreen);
+  AddSelectSlide(Theme.OptionsGraphics.SelectDepth,      Ini.Depth, IDepth);
+  AddSelectSlide(Theme.OptionsGraphics.SelectVisualizer, Ini.VisualizerOption, IVisualizer);
+  AddSelectSlide(Theme.OptionsGraphics.SelectOscilloscope, Ini.Oscilloscope, IOscilloscope);
+  AddSelectSlide(Theme.OptionsGraphics.SelectMovieSize, Ini.MovieSize, IMovieSize);
 
-  Theme.OptionsGraphics.SelectFullscreen.showArrows := true;
-  Theme.OptionsGraphics.SelectFullscreen.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGraphics.SelectFullscreen,   Ini.Fullscreen, IFullScreenTranslated);
-
-  Theme.OptionsGraphics.SelectDepth.showArrows := true;
-  Theme.OptionsGraphics.SelectDepth.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGraphics.SelectDepth,        Ini.Depth, IDepth);
-
-  Theme.OptionsGraphics.SelectVisualizer.showArrows := true;
-  Theme.OptionsGraphics.SelectVisualizer.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGraphics.SelectVisualizer,   Ini.VisualizerOption, IVisualizerTranslated);
-
-  Theme.OptionsGraphics.SelectOscilloscope.showArrows := true;
-  Theme.OptionsGraphics.SelectOscilloscope.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGraphics.SelectOscilloscope, Ini.Oscilloscope, IOscilloscopeTranslated);
-
-  Theme.OptionsGraphics.SelectMovieSize.showArrows := true;
-  Theme.OptionsGraphics.SelectMovieSize.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGraphics.SelectMovieSize,    Ini.MovieSize, IMovieSizeTranslated);
 
   AddButton(Theme.OptionsGraphics.ButtonExit);
   if (Length(Button[0].Text)=0) then

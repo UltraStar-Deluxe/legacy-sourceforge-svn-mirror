@@ -34,10 +34,7 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu,
-  SDL,
-  SysUtils,
-  UThemes;
+  UMenu, SDL, SysUtils, UThemes;
 
 type
   TScreenWelcome = class(TMenu)
@@ -45,29 +42,24 @@ type
       Animation:    real;
       Fadeout:      boolean;
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean; override;
       function Draw: boolean; override;
       procedure onShow; override;
   end;
 
 implementation
 
-uses
-  UGraphic,
-  UTime,
-  USkins,
-  UTexture;
+uses UGraphic, UTime, USkins, UTexture;
 
-function TScreenWelcome.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+function TScreenWelcome.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char; PressedDown: Boolean): Boolean;
 begin
   Result := true;
-  if (PressedDown) then
-  begin
+  If (PressedDown) Then begin
     case PressedKey of
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          Result := false;
+          Result := False;
         end;
       SDLK_RETURN:
         begin
@@ -110,14 +102,12 @@ begin
 
   // draw nothing
   Min := 0; Max := 1000;
-  if (Animation >= Min) and (Animation < Max) then
-  begin
+  if (Animation >= Min) and (Animation < Max) then begin
   end;
 
   // popup
   Min := 1000; Max := 1120;
-  if (Animation >= Min) and (Animation < Max) then
-  begin
+  if (Animation >= Min) and (Animation < Max) then begin
     Factor := (Animation - Min) / (Max - Min);
     Static[0].Texture.X := 600;
     Static[0].Texture.Y := 600 - Factor * 230;
@@ -127,8 +117,7 @@ begin
 
   // bounce
   Min := 1120; Max := 1200;
-  if (Animation >= Min) and (Animation < Max) then
-  begin
+  if (Animation >= Min) and (Animation < Max) then begin
     Factor := (Animation - Min) / (Max - Min);
     Static[0].Texture.Y := 370 + Factor * 50;
     Static[0].Texture.H := 230 - Factor * 50;
@@ -136,15 +125,14 @@ begin
 
   // run
   Min := 1500; Max := 3500;
-  if (Animation >= Min) and (Animation < Max) then
-  begin
+  if (Animation >= Min) and (Animation < Max) then begin
     Factor := (Animation - Min) / (Max - Min);
 
     Static[0].Texture.X := 600 - Factor * 1400;
     Static[0].Texture.H := 180;
 
-    for Count := 1 to 5 do
-    begin
+
+    for Count := 1 to 5 do begin
       Static[Count].Texture.X := 770 - Factor * 1400;
       Static[Count].Texture.W := 150 + Factor * 200;
       Static[Count].Texture.Alpha := Factor * 0.5;
@@ -152,8 +140,7 @@ begin
   end;
 
   Min := 3500;
-  if (Animation >= Min) and (not Fadeout) then
-  begin
+  if (Animation >= Min) and (not Fadeout) then begin
     FadeTo(@ScreenMain);
     Fadeout := true;
   end;

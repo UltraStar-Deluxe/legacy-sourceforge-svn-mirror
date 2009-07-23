@@ -25,5 +25,4 @@ Patches contributed by:
 "jekatt"
 Benedikt Krueger
 Holger Kuhn "hawkear"
-Florian Küpper "flokuep"
 Wesley Stessens "profoX"
