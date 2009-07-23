@@ -36,7 +36,8 @@ interface
 uses
   Classes,
   UPlatform,
-  UConfig;
+  UConfig,
+  UPath;
 
 type
   TPlatformLinux = class(TPlatform)
