@@ -27,7 +27,7 @@ convertUTF8 CP1252 Spanish
 convertUTF8 CP1250 Croatian
 convertUTF8 CP1252 Euskara 
 convertUTF8 CP1252 German 
-#convertUTF8 UTF-8 Japanese 
+#convertUTF8 UCS-2LE Japanese 
 convertUTF8 CP1252 Swedish 
 convertUTF8 CP1252 Dutch 
 convertUTF8 CP1252 Finnish 

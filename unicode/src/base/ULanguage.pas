@@ -161,12 +161,12 @@ end;
  *}
 procedure TLanguage.ChangeLanguage(const Language: AnsiString);
 var
-  IniFile:    TIniFile;
+  IniFile:    TUnicodeMemIniFile;
   E:          integer; // entry
   S:          TStringList;
 begin
   SetLength(Entry, 0);
-  IniFile := TIniFile.Create(LanguagesPath.Append(Language + '.ini').ToNative);
+  IniFile := TUnicodeMemIniFile.Create(LanguagesPath.Append(Language + '.ini'));
   S := TStringList.Create;
 
   IniFile.ReadSectionValues('Text', S);
