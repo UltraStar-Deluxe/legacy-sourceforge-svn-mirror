@@ -71,6 +71,7 @@ uses
   sdl                    in 'lib\JEDI-SDL\SDL\Pas\sdl.pas',
   sdl_image              in 'lib\JEDI-SDL\SDL_Image\Pas\sdl_image.pas',
   sdlutils               in 'lib\JEDI-SDL\SDL\Pas\sdlutils.pas',
+  sdlstreams             in 'lib\JEDI-SDL\SDL\Pas\sdlstreams.pas',
   UMediaCore_SDL         in 'media\UMediaCore_SDL.pas',
 
   zlib                   in 'lib\zlib\zlib.pas',

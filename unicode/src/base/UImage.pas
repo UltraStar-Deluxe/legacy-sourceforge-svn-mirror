@@ -182,6 +182,7 @@ uses
   zlib,
   sdl_image,
   sdlutils,
+  sdlstreams,
   UCommon,
   ULog;
 
@@ -601,14 +602,15 @@ end;
 function WriteJPGImage(const FileName: IPath; Surface: PSDL_Surface; Quality: integer): boolean;
 var
   {$IFDEF Delphi}
-  Bitmap:    TBitmap;
+  Bitmap:     TBitmap;
   BitmapInfo: TBitmapInfo;
-  Jpeg:      TJpegImage;
-  row:       integer;
+  Jpeg:       TJpegImage;
+  row:        integer;
+  FileStream: TBinaryFileStream;
   {$ELSE}
   cinfo:     jpeg_compress_struct;
   jerr :     jpeg_error_mgr;
-  jpgFile:   TFileStream;
+  jpgFile:   TBinaryFileStream;
   rowPtr:    array[0..0] of JSAMPROW;
   {$ENDIF}
   converted: boolean;
@@ -670,19 +672,32 @@ begin
       SDL_UnlockSurface(Surface);
 
     // assign Bitmap to JPEG and store the latter
-    Jpeg := TJPEGImage.Create;
-    Jpeg.Assign(Bitmap);
-    Bitmap.Free;
-    Jpeg.CompressionQuality := Quality;
     try
-      // compress image (don't forget this line, otherwise it won't be compressed)
-      Jpeg.Compress();
-      Jpeg.SaveToFile(FileName.ToNative);
+      // init with nil so Free() will not fail if an exception occurs
+      Jpeg := nil;
+      Bitmap := nil;
+      FileStream := nil;
+
+      try
+        Jpeg := TJPEGImage.Create;
+        Jpeg.Assign(Bitmap);
+
+        // compress image (don't forget this line, otherwise it won't be compressed)
+        Jpeg.CompressionQuality := Quality;
+        Jpeg.Compress();
+
+        // Note: FileStream needed for unicode filename support
+        FileStream := TBinaryFileStream.Create(Filename, fmCreate);
+        Jpeg.SaveToStream(FileStream);
+      finally
+        FileStream.Free;
+        Bitmap.Free;
+        Jpeg.Free;
+      end;
     except
       Log.LogError('Could not save file: "' + FileName.ToNative + '"', 'WriteJPGImage');
       Exit;
     end;
-    Jpeg.Free;
   {$ELSE}
     // based on example.pas in FPC's packages/base/pasjpeg directory
 
@@ -704,7 +719,7 @@ begin
 
     // open file for writing
     try
-      jpgFile := TFileStream.Create(FileName, fmCreate);
+      jpgFile := TBinaryFileStream.Create(FileName, fmCreate);
     except
       Log.LogError('Could not open file: "' + FileName + '"', 'WriteJPGImage');
       Exit;
@@ -767,6 +782,8 @@ end;
 function LoadImage(const Filename: IPath): PSDL_Surface;
 var
   FilenameCaseAdj: IPath;
+  FileStream: TBinaryFileStream;
+  SDLStream: PSDL_RWops;
 begin
   Result := nil;
 
@@ -780,7 +797,10 @@ begin
 
   // load from file
   try
-    Result := IMG_Load(PChar(FilenameCaseAdj.ToNative));
+    SDLStream := SDLStreamSetup(TBinaryFileStream.Create(FilenameCaseAdj, fmOpenRead));
+    Result := IMG_Load_RW(SDLStream, 1);
+    // Note: the TBinaryFileStream is freed by the SDL-stream. The SDL-stream in
+    // turn is freed automatically by IMG_Load_RW().
   except
     Log.LogError('Could not load from file "' + FilenameCaseAdj.ToNative + '"', 'LoadImage');
     Exit;
