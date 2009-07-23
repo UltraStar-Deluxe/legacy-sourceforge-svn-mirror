@@ -123,8 +123,8 @@ type
       function ParseMouse(MouseButton: integer; BtnDown: boolean; X, Y: integer): boolean; override;
       function Draw: boolean; override;
       procedure GenerateThumbnails();
-      procedure onShow; override;
-      procedure onHide; override;
+      procedure OnShow; override;
+      procedure OnHide; override;
       procedure SelectNext;
       procedure SelectPrev;
       procedure SkipTo(Target: cardinal);
@@ -352,24 +352,24 @@ begin
               begin 
                 if CatSongs.CatNumShow = -3 then
                 begin
-                  ScreenSongMenu.onShow;
+                  ScreenSongMenu.OnShow;
                   ScreenSongMenu.MenuShow(SM_Playlist);
                 end
                 else
                 begin
-                  ScreenSongMenu.onShow;
+                  ScreenSongMenu.OnShow;
                   ScreenSongMenu.MenuShow(SM_Main);
                 end;
               end
               else
               begin
-                ScreenSongMenu.onShow;
+                ScreenSongMenu.OnShow;
                 ScreenSongMenu.MenuShow(SM_Playlist_Load);
               end;
             end //Party Mode -> Show Party Menu
             else
             begin
-              ScreenSongMenu.onShow;
+              ScreenSongMenu.OnShow;
               ScreenSongMenu.MenuShow(SM_Party_Main);
             end;
           end;
@@ -380,7 +380,7 @@ begin
         begin
           if (Songs.SongList.Count > 0) and (Mode = smNormal) then
           begin
-            ScreenSongMenu.onShow;
+            ScreenSongMenu.OnShow;
             ScreenSongMenu.MenuShow(SM_Playlist_Load);
           end;
           Exit;
@@ -1407,7 +1407,7 @@ begin
   end;
 end;
 
-procedure TScreenSong.onShow;
+procedure TScreenSong.OnShow;
 begin
   inherited;
 {**
@@ -1464,7 +1464,7 @@ begin
   SetStatics;
 end;
 
-procedure TScreenSong.onHide;
+procedure TScreenSong.OnHide;
 begin
   // turn music volume to 100%
   AudioPlayback.SetVolume(1.0);

@@ -50,7 +50,7 @@ type
       SkinSelect: integer;
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure InteractInc; override;
       procedure InteractDec; override;
   end;
@@ -179,7 +179,7 @@ begin
     AddButtonText(14, 20, Theme.Options.Description[7]);
 end;
 
-procedure TScreenOptionsThemes.onShow;
+procedure TScreenOptionsThemes.OnShow;
 begin
   inherited;
 

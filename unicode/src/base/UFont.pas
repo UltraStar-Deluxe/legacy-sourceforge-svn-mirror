@@ -818,7 +818,7 @@ var
   LineLength: integer;
   EOT: boolean; // End-Of-Text
 begin
-  // split lines on newline (there is no UCS4String version of ExtractStrings)
+  // split lines on newline
   SetLength(Lines, 0);
   EOT := false;
   LineStart := 0;

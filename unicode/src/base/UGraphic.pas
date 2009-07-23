@@ -466,7 +466,7 @@ begin
   // load icon image (must be 32x32 for win32)
   Icon := LoadImage(ResourcesPath.Append(WINDOW_ICON));
   if (Icon <> nil) then
-    SDL_WM_SetIcon(Icon, 0);
+    SDL_WM_SetIcon(Icon, nil);
 
   SDL_WM_SetCaption(PChar(Title), nil);
 
@@ -667,7 +667,7 @@ end;
 procedure LoadLoadingScreen;
 begin
   ScreenLoading := TScreenLoading.Create;
-  ScreenLoading.onShow;
+  ScreenLoading.OnShow;
   
   Display.CurrentScreen := @ScreenLoading;
 
@@ -682,7 +682,7 @@ end;
 procedure LoadScreens;
 begin
 {  ScreenLoading := TScreenLoading.Create;
-  ScreenLoading.onShow;
+  ScreenLoading.OnShow;
   Display.CurrentScreen := @ScreenLoading;
   ScreenLoading.Draw;
   Display.Draw;

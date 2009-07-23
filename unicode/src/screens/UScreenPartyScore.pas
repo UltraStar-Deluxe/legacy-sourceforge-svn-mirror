@@ -70,7 +70,7 @@ type
       
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
@@ -201,7 +201,7 @@ begin
   LoadFromTheme(Theme.PartyScore);
 end;
 
-procedure TScreenPartyScore.onShow;
+procedure TScreenPartyScore.OnShow;
 var
   I, J: integer;
   Placings: array [0..5] of byte;

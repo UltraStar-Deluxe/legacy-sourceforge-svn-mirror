@@ -46,7 +46,7 @@ type
       Fadeout: boolean;
 
       constructor Create; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
   end;
 
@@ -70,7 +70,7 @@ begin
   Fadeout := false;
 end;
 
-procedure TScreenLoading.onShow;
+procedure TScreenLoading.OnShow;
 begin
   inherited;
 end;

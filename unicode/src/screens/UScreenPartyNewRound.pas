@@ -100,7 +100,7 @@ type
 
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
@@ -216,7 +216,7 @@ begin
   LoadFromTheme(Theme.PartyNewRound);
 end;
 
-procedure TScreenPartyNewRound.onShow;
+procedure TScreenPartyNewRound.OnShow;
 var
   I: integer;
   function GetTeamPlayers(const Num: byte): string;

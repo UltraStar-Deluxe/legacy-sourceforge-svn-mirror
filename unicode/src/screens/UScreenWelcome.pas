@@ -47,7 +47,7 @@ type
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function Draw: boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
   end;
 
 implementation
@@ -91,7 +91,7 @@ begin
   Fadeout := false;
 end;
 
-procedure TScreenWelcome.onShow;
+procedure TScreenWelcome.OnShow;
 begin
   inherited;
 

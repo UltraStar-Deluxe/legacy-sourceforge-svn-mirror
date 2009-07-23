@@ -102,9 +102,9 @@ type
     fCurrentVideoPlaybackEngine: IVideoPlayback;
 
     constructor Create; override;
-    procedure onShow; override;
-    procedure onShowFinish; override;
-    procedure onHide; override;
+    procedure OnShow; override;
+    procedure OnShowFinish; override;
+    procedure OnHide; override;
 
     function ParseInput(PressedKey: cardinal; CharCode: UCS4Char;
       PressedDown: boolean): boolean; override;
@@ -311,7 +311,7 @@ begin
   LyricsSync := TLyricsSyncSource.Create();
 end;
 
-procedure TScreenSing.onShow;
+procedure TScreenSing.OnShow;
 var
   Index:  integer;
   V1:     boolean;
@@ -326,7 +326,7 @@ var
 begin
   inherited;
 
-  Log.LogStatus('Begin', 'onShow');
+  Log.LogStatus('Begin', 'OnShow');
   FadeOut := false;
 
   // reset video playback engine, to play video clip ...
@@ -629,7 +629,7 @@ begin
     if Lines[0].Line[Index].TotalNotes = 0 then
       Inc(NumEmptySentences);
 
-  Log.LogStatus('End', 'onShow');
+  Log.LogStatus('End', 'OnShow');
 end;
 
 procedure TScreenSing.onShowFinish;
@@ -647,7 +647,7 @@ begin
   CountSkipTimeSet;
 end;
 
-procedure TScreenSing.onHide;
+procedure TScreenSing.OnHide;
 begin
   // background texture
   if (Tex_Background.TexNum > 0) then

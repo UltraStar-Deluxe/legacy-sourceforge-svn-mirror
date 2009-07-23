@@ -58,7 +58,7 @@ type
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function ParseMouse(MouseButton: integer; BtnDown: boolean; X, Y: integer): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function Draw: boolean; override;
   end;
 
@@ -137,7 +137,7 @@ begin
 
 end;
 
-procedure TScreenTop5.onShow;
+procedure TScreenTop5.OnShow;
 var
   I:    integer;
   PMax: integer;

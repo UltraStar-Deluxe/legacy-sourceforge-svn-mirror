@@ -49,7 +49,7 @@ type
       old_Tabs, old_Sorting: integer;
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure RefreshSongs;
   end;
 
@@ -165,7 +165,7 @@ begin
     ScreenSong.Refresh;
 end;
 
-procedure TScreenOptionsGame.onShow;
+procedure TScreenOptionsGame.OnShow;
 begin
   inherited;
 

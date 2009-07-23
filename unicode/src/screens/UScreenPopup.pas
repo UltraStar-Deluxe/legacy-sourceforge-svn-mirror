@@ -243,13 +243,13 @@ begin
   Draw := inherited Draw;
 end;
 
-procedure TScreenPopupError.onShow;
+procedure TScreenPopupError.OnShow;
 begin
   inherited;
 
 end;
 
-procedure TScreenPopupError.onHide;
+procedure TScreenPopupError.OnHide;
 begin
 end;
 

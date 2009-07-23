@@ -47,7 +47,7 @@ type
     public
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
   end;
 
 implementation
@@ -162,7 +162,7 @@ begin
 
 end;
 
-procedure TScreenOptionsGraphics.onShow;
+procedure TScreenOptionsGraphics.OnShow;
 begin
   inherited;
 

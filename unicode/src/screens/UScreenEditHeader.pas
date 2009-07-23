@@ -73,7 +73,7 @@ type
       procedure SetRoundButtons;
 
       constructor Create; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
 {      function Draw: boolean; override;
       procedure Finish;}
@@ -252,7 +252,7 @@ begin
   AddInteraction(iText, TextBPM);
 end;
 
-procedure TScreenEditHeader.onShow;
+procedure TScreenEditHeader.OnShow;
 begin
   inherited;
 

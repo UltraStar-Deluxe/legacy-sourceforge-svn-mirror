@@ -96,8 +96,8 @@ type
       constructor Create; override;
       function    Draw: boolean; override;
       function    ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure   onShow; override;
-      procedure   onHide; override;
+      procedure   OnShow; override;
+      procedure   OnHide; override;
   end;
 
 const
@@ -419,7 +419,7 @@ begin
   NextVolumePollTime := 0;
 end;
 
-procedure TScreenOptionsRecord.onShow;
+procedure TScreenOptionsRecord.OnShow;
 var
   ChannelIndex: integer;
 begin
@@ -437,7 +437,7 @@ begin
   StartPreview();
 end;
 
-procedure TScreenOptionsRecord.onHide;
+procedure TScreenOptionsRecord.OnHide;
 var
   ChannelIndex: integer;
 begin

@@ -49,7 +49,7 @@ type
       TextDescription:    integer;
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure InteractNext; override;
       procedure InteractPrev; override;
       procedure InteractNextRow; override;
@@ -190,7 +190,7 @@ begin
   Interaction := 0;
 end;
 
-procedure TScreenOptions.onShow;
+procedure TScreenOptions.OnShow;
 begin
   inherited;
 end;

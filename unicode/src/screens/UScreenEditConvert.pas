@@ -122,10 +122,10 @@ type
 
     public
       constructor Create; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function Draw: boolean; override;
-      procedure onHide; override;
+      procedure OnHide; override;
   end;
 
 var
@@ -691,7 +691,7 @@ begin
   Result := true;
 end;
 
-procedure TScreenEditConvert.onHide;
+procedure TScreenEditConvert.OnHide;
 begin
 {$IFDEF UseMIDIPort}
   MidiFile.Free;

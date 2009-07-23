@@ -62,7 +62,7 @@ type
 
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
       procedure SetPlaylist2;
   end;
@@ -302,7 +302,7 @@ begin
   UpdateSelectSlideOptions(Theme.PartyOptions.SelectPlayList2, 2, IPlaylist2, Playlist2);
 end;
 
-procedure TScreenPartyOptions.onShow;
+procedure TScreenPartyOptions.OnShow;
 begin
   inherited;
 

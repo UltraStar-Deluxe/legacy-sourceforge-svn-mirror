@@ -63,7 +63,7 @@ type
       BackScreen:     pointer;
       procedure AddBox(X, Y, W, H: real);
       constructor Create; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       //function Draw: boolean; override;
       //procedure Finish;
@@ -195,7 +195,7 @@ begin
 
 end;
 
-procedure TScreenOpen.onShow;
+procedure TScreenOpen.OnShow;
 begin
   inherited;
 

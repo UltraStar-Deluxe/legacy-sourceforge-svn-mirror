@@ -63,7 +63,7 @@ type
 
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
@@ -137,7 +137,7 @@ begin
   LoadFromTheme(Theme.PartyWin);
 end;
 
-procedure TScreenPartyWin.onShow;
+procedure TScreenPartyWin.OnShow;
 var
   I: integer;
   Placing: TeamOrderArray;

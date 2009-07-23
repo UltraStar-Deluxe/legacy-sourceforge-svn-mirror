@@ -51,7 +51,7 @@ type
 
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function Draw: boolean; override;
       procedure MenuShow(sMenu: byte);
       procedure HandleReturn;
@@ -226,7 +226,7 @@ begin
   Result := inherited Draw;
 end;
 
-procedure TScreenSongMenu.onShow;
+procedure TScreenSongMenu.OnShow;
 begin
   inherited;
 end;

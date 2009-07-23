@@ -48,7 +48,7 @@ type
       Goto_SingScreen: boolean; //If true then next Screen in SingScreen
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
@@ -250,7 +250,7 @@ begin
   Interaction := 0;
 end;
 
-procedure TScreenName.onShow;
+procedure TScreenName.OnShow;
 var
   I:    integer;
 begin

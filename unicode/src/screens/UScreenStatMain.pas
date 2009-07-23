@@ -54,7 +54,7 @@ type
       TextOverview:    integer;
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
 
       procedure SetOverview;
@@ -170,7 +170,7 @@ begin
       Inc(SongsWithVid);
 end;
 
-procedure TScreenStatMain.onShow;
+procedure TScreenStatMain.OnShow;
 begin
   inherited;
 

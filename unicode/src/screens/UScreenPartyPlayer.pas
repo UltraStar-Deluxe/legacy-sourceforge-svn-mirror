@@ -65,7 +65,7 @@ type
 
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
@@ -300,7 +300,7 @@ begin
   Interaction := 0;
 end;
 
-procedure TScreenPartyPlayer.onShow;
+procedure TScreenPartyPlayer.OnShow;
 var
   I:    integer;
 begin

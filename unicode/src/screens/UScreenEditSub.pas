@@ -116,11 +116,11 @@ type
       Tex_Background:     TTexture;
       FadeOut:            boolean;
       constructor Create; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function ParseInputEditText(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
       function Draw: boolean; override;
-      procedure onHide; override;
+      procedure OnHide; override;
   end;
 
 implementation
@@ -1258,13 +1258,13 @@ begin
 
 end;
 
-procedure TScreenEditSub.onShow;
+procedure TScreenEditSub.OnShow;
 var
   FileExt: IPath;
 begin
   inherited;
 
-  Log.LogStatus('Initializing', 'TEditScreen.onShow');
+  Log.LogStatus('Initializing', 'TEditScreen.OnShow');
   Lyric := TEditorLyrics.Create;
 
   ResetSingTemp;
@@ -1440,7 +1440,7 @@ begin
   Result := true;
 end;
 
-procedure TScreenEditSub.onHide;
+procedure TScreenEditSub.OnHide;
 begin
   {$IFDEF UseMIDIPort}
   MidiOut.Close;

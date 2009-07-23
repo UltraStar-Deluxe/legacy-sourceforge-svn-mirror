@@ -150,9 +150,9 @@ type
       function InRegion(X1, Y1, W, H, X, Y: real): boolean;
       function InteractAt(X, Y: real): integer;
       function CollectionAt(X, Y: real): integer;
-      procedure onShow; virtual;
-      procedure onShowFinish; virtual;
-      procedure onHide; virtual;
+      procedure OnShow; virtual;
+      procedure OnShowFinish; virtual;
+      procedure OnHide; virtual;
 
       procedure SetAnimationProgress(Progress: real); virtual;
 
@@ -1580,7 +1580,7 @@ begin
   AddStatic(X+2, Y+2, W-4, H-4, 1, 1, 1, Skin.GetTextureFileName('MainBar'), TEXTURE_TYPE_COLORIZED);
 end;
 
-procedure TMenu.onShow;
+procedure TMenu.OnShow;
 begin
   // FIXME: this needs some work. First, there should be a variable like
   // VideoBackground so we can check whether a video-background is enabled or not.
@@ -1609,12 +1609,12 @@ begin
   Background.OnShow;
 end;
 
-procedure TMenu.onShowFinish;
+procedure TMenu.OnShowFinish;
 begin
   // nothing
 end;
 
-procedure TMenu.onHide;
+procedure TMenu.OnHide;
 begin
   // nothing
   Background.OnFinish;

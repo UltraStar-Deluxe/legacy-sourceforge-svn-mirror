@@ -62,7 +62,7 @@ type
       TeamInfo:   TTeamInfo;
 
       constructor Create; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       //procedure onShowFinish; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function Draw: boolean; override;
@@ -176,7 +176,7 @@ begin
   end;
 end;
 
-procedure TScreenSingModi.onShow;
+procedure TScreenSingModi.OnShow;
 var
   I: integer;
 begin

@@ -61,7 +61,7 @@ type
       constructor Create; override;
 
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      procedure OnShow; override;
       function Draw: boolean; override;
 
       property Visible: boolean read fVisible write SetVisible;
@@ -181,7 +181,7 @@ begin
   fVisible := Value;
 end;
 
-procedure TScreenSongJumpto.onShow;
+procedure TScreenSongJumpto.OnShow;
 begin
   inherited;
 

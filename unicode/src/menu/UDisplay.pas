@@ -269,7 +269,7 @@ begin
 
           // blackscreen-hack
           if not BlackScreen then
-            NextScreen.onShow;
+            NextScreen.OnShow;
 
           // update fade state
           LastFadeTime := SDL_GetTicks();
@@ -329,7 +329,7 @@ begin
         NextScreen := nil;
         if not BlackScreen then
         begin
-          CurrentScreen.onShowFinish;
+          CurrentScreen.OnShowFinish;
           CurrentScreen.ShowFinish := true;
         end
         else

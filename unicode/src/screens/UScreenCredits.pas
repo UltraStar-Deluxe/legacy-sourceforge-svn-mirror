@@ -101,8 +101,8 @@ type
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function Draw: boolean; override;
-      procedure onShow; override;
-      procedure onHide; override;
+      procedure OnShow; override;
+      procedure OnHide; override;
       procedure DrawCredits;
       procedure Draw_FunkyText;
    end;
@@ -247,7 +247,7 @@ begin
   Draw := true;
 end;
 
-procedure TScreenCredits.onShow;
+procedure TScreenCredits.OnShow;
 begin
   inherited;
 
@@ -262,7 +262,7 @@ begin
 //  setlength(CTime_hold,0);
 end;
 
-procedure TScreenCredits.onHide;
+procedure TScreenCredits.OnHide;
 begin
   AudioPlayback.Stop;
 end;

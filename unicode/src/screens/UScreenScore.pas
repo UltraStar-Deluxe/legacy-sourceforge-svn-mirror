@@ -130,8 +130,8 @@ type
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       function ParseMouse(MouseButton: Integer; BtnDown: Boolean; X, Y: integer): boolean; override;
-      procedure onShow; override;
-      procedure onShowFinish; override;
+      procedure OnShow; override;
+      procedure OnShowFinish; override;
       function Draw: boolean; override;
       procedure FillPlayer(Item, P: integer);
 
@@ -263,7 +263,7 @@ begin
 
 end;
 
-procedure TScreenScore.onShow;
+procedure TScreenScore.OnShow;
 var
   P: integer;  // player
   I: integer;
