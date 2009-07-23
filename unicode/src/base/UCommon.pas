@@ -44,6 +44,25 @@ uses
   UPath;
 
 type
+  TStringDynArray = array of string;
+
+const
+  SepWhitespace = [#9, #10, #13, ' ']; // tab, lf, cr, space
+
+{**
+ * Splits a string into pieces separated by Separators.
+ * MaxCount specifies the max. number of pieces. If it is <= 0 the number is
+ * not limited. If > 0 the last array element will hold the rest of the string
+ * (with leading separators removed).
+ *
+ * Examples:
+ *   SplitString(' split  me now ', 0) -> ['split', 'me', 'now']
+ *   SplitString(' split  me now ', 1) -> ['split', 'me now']
+ *}
+function SplitString(const Str: string; MaxCount: integer = 0; Separators: TSysCharSet = SepWhitespace): TStringDynArray;
+
+
+type
   TMessageType = (mtInfo, mtError);
 
 procedure ShowMessage(const msg: string; msgType: TMessageType = mtInfo);
@@ -93,6 +112,58 @@ uses
   UMain,
   UUnicodeUtils;
 
+function SplitString(const Str: string; MaxCount: integer; Separators: TSysCharSet): TStringDynArray;
+
+  {*
+   * Adds Str[StartPos..Endpos-1] to the result array.
+   *}
+  procedure AddSplit(StartPos, EndPos: integer);
+  begin
+    SetLength(Result, Length(Result)+1);
+    Result[High(Result)] := Copy(Str, StartPos, EndPos-StartPos);
+  end;
+
+var
+  I: integer;
+  Start: integer;
+  Last: integer;
+begin
+  Start := 0;
+  SetLength(Result, 0);
+
+  for I := 1 to Length(Str) do
+  begin
+    if (Str[I] in Separators) then
+    begin
+      // end of component found
+      if (Start > 0) then
+      begin
+        AddSplit(Start, I);
+        Start := 0;
+      end;
+    end
+    else if (Start = 0) then
+    begin
+      // mark beginning of component
+      Start := I;
+      // check if this is the last component
+      if (Length(Result) = MaxCount-1) then
+      begin
+        // find last non-separator char
+        Last := Length(Str);
+        while (Str[Last] in Separators) do
+          Dec(Last);
+        // add component up to last non-separator
+        AddSplit(Start, Last);
+        Exit;
+      end;
+    end;
+  end;
+
+  // last component
+  if (Start > 0) then
+    AddSplit(Start, Length(Str)+1);
+end;
 
 // data used by the ...Locale() functions
 {$IF Defined(Linux) or Defined(FreeBSD)}
