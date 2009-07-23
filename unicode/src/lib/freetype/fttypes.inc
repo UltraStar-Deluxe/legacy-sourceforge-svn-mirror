@@ -86,7 +86,13 @@
   (*    values 1 and 0 represent true and false, respectively.             *)
   (*                                                                       *)
   FT_Bool    = cuchar;
-
+{$ENDIF TYPE_DECL}
+{$IFNDEF TYPE_DECL}
+const
+  FT_FALSE = 0;
+  FT_TRUE  = 1;
+{$ENDIF !TYPE_DECL}
+{$IFDEF TYPE_DECL}
 
   (*************************************************************************)
   (*                                                                       *)
@@ -123,6 +129,8 @@
   FT_Short   = csshort;
   PFT_Short  = ^FT_Short;
 
+  PFT_ShortArray = ^FT_ShortArray;
+  FT_ShortArray = array[0 .. (MaxInt div SizeOf(FT_Short))-1] of FT_Short;
 
   (*************************************************************************)
   (*                                                                       *)

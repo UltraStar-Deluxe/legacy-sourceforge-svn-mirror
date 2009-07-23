@@ -214,6 +214,29 @@
              out aglyph: FT_Glyph ): FT_Error;
     cdecl; external ft_lib name 'FT_Get_Glyph';
 
+  (*************************************************************************)
+  (*                                                                       *)
+  (* <Function>                                                            *)
+  (*    FT_Glyph_Copy                                                      *)
+  (*                                                                       *)
+  (* <Description>                                                         *)
+  (*    A function used to copy a glyph image.  Note that the created      *)
+  (*    @FT_Glyph object must be released with @FT_Done_Glyph.             *)
+  (*                                                                       *)
+  (* <Input>                                                               *)
+  (*    source :: A handle to the source glyph object.                     *)
+  (*                                                                       *)
+  (* <Output>                                                              *)
+  (*    target :: A handle to the target glyph object.  0~in case of       *)
+  (*              error.                                                   *)
+  (*                                                                       *)
+  (* <Return>                                                              *)
+  (*    FreeType error code.  0~means success.                             *)
+  (*                                                                       *)
+  function FT_Glyph_Copy(source: FT_Glyph;
+                 var target: FT_Glyph ): FT_Error;
+    cdecl; external ft_lib name 'FT_Glyph_Copy';
+
 {$ENDIF TYPE_DECL}
 {$IFDEF TYPE_DECL}
 

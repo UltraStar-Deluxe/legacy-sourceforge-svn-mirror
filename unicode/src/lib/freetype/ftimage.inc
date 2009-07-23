@@ -61,6 +61,8 @@
     y : FT_Pos;
   end;
 
+  PFT_VectorArray = ^FT_VectorArray;
+  FT_VectorArray = array[0 .. (MaxInt div SizeOf(FT_Vector))-1] of FT_Vector;
 
   (*************************************************************************)
   (*                                                                       *)
@@ -261,14 +263,14 @@ const
   (*                                                                       *)
   PFT_Outline = ^FT_Outline;
   FT_Outline = record
-    n_contours: FT_Short;    (* number of contours in glyph        *)
-    n_points:   FT_Short;    (* number of points in the glyph      *)
+    n_contours: FT_Short;        (* number of contours in glyph        *)
+    n_points:   FT_Short;        (* number of points in the glyph      *)
 
-    points:     PFT_Vector;  (* the outline's points               *)
-    tags:       PChar;       (* the points flags                   *)
-    contours:   PFT_Short;   (* the contour end points             *)
+    points:     PFT_VectorArray; (* the outline's points               *)
+    tags:       PByteArray;      (* the points flags                   *)
+    contours:   PFT_ShortArray;  (* the contour end points             *)
 
-    flags:      FT_Int;      (* outline masks                      *)
+    flags:      FT_Int;          (* outline masks                      *)
   end;
 
 {$ELSE TYPE_DECL}

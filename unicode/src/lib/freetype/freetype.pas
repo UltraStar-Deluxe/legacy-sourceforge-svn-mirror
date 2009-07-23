@@ -55,7 +55,7 @@ uses
 
 const
 {$IF Defined(MSWINDOWS)}
-  ft_lib = 'libfreetype-6.dll';
+  ft_lib = 'freetype6.dll';
 {$ELSEIF Defined(DARWIN)}
   ft_lib = 'libfreetype.dylib';
   {$LINKLIB libfreetype}
@@ -1812,6 +1812,12 @@ const
             pixel_width ,
             pixel_height : FT_UInt ) : FT_Error;
     cdecl; external ft_lib name 'FT_Set_Pixel_Sizes';
+
+const
+  FT_ANGLE_PI  = 180 shl 16;
+  FT_ANGLE_2PI = FT_ANGLE_PI * 2;
+  FT_ANGLE_PI2 = FT_ANGLE_PI div 2;
+  FT_ANGLE_PI4 = FT_ANGLE_PI div 4;
 
 
 implementation
