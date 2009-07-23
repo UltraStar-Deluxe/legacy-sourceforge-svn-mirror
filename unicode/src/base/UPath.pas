@@ -582,7 +582,7 @@ begin
   Unify(DelimOption);
   {$IFDEF HAVE_REFCNTBUG}
   GarbageList.Lock;
-  if (GarbageList.Count > GarbageMaxCount) then
+  if (GarbageList.Count >= GarbageMaxCount) then
   begin
     while (GarbageList.Count > GarbageAfterCleanCount) do
       GarbageList.Delete(0);
