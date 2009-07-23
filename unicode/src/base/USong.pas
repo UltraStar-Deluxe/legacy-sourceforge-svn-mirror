@@ -158,6 +158,10 @@ uses
   UMusic,  //needed for Lines
   UNote;   //needed for Player
 
+const
+  // use USDX < 1.1 encoding for backward compatibility
+  DEFAULT_ENCODING = encCP1252;
+
 constructor TSong.Create();
 begin
   inherited;
@@ -245,7 +249,6 @@ function TSong.LoadSong(): boolean;
 var
   TempC:    char;
   Text:     UTF8String;
-  CP:       integer; // Current Player (0 or 1)
   Count:    integer;
   Both:     boolean;
   Param1:   integer;
@@ -267,7 +270,6 @@ begin
   MultBPM           := 4; // multiply beat-count of note by 4
   Mult              := 1; // accuracy of measurement of note
   Rel[0]            := 0;
-  CP                := 0;
   Both              := false;
 
   if Length(Player) = 2 then
@@ -433,9 +435,6 @@ end;
 //Load XML Song
 function TSong.LoadXMLSong(): boolean;
 var
-  //TempC:     char;
-  Text:      string;
-  CP:        integer; // Current Player (0 or 1)
   Count:     integer;
   Both:      boolean;
   Param1:    integer;
@@ -463,7 +462,6 @@ begin
   Lines[0].ScoreValue := 0;
   self.Relative     := false;
   Rel[0]            := 0;
-  CP                := 0;
   Both              := false;
 
   if Length(Player) = 2 then
@@ -744,16 +742,14 @@ begin
 
       if (Identifier = 'TITLE') then
       begin
-        self.Title := RecodeStringUTF8(Value, Encoding);
-
+        DecodeStringUTF8(Value, Title, Encoding);
         //Add Title Flag to Done
         Done := Done or 1;
       end
 
       else if (Identifier = 'ARTIST') then
       begin
-        self.Artist := RecodeStringUTF8(Value, Encoding);
-
+        DecodeStringUTF8(Value, Artist, Encoding);
         //Add Artist Flag to Done
         Done := Done or 2;
       end
@@ -827,25 +823,25 @@ begin
       //Genre Sorting
       else if (Identifier = 'GENRE') then
       begin
-        self.Genre := RecodeStringUTF8(Value, Encoding)
+        DecodeStringUTF8(Value, Genre, Encoding)
       end
 
       //Edition Sorting
       else if (Identifier = 'EDITION') then
       begin
-        self.Edition := RecodeStringUTF8(Value, Encoding)
+        DecodeStringUTF8(Value, Edition, Encoding)
       end
 
       //Creator Tag
       else if (Identifier = 'CREATOR') then
       begin
-        self.Creator := RecodeStringUTF8(Value, Encoding)
+        DecodeStringUTF8(Value, Creator, Encoding)
       end
 
       //Language Sorting
       else if (Identifier = 'LANGUAGE') then
       begin
-        self.Language := RecodeStringUTF8(Value, Encoding)
+        DecodeStringUTF8(Value, Language, Encoding)
       end
 
       // Song Start
@@ -882,7 +878,7 @@ begin
       // File encoding
       else if (Identifier = 'ENCODING') then
       begin
-        self.Encoding := ParseEncoding(Value, Ini.EncodingDefault);
+        self.Encoding := ParseEncoding(Value, DEFAULT_ENCODING);
       end;
       
     end; // End check for non-empty Value
@@ -1018,7 +1014,7 @@ begin
     //that seperate the words of the lyrics, too.
     Delete(LyricS, 1, 1);
 
-    Note[HighNote].Text := RecodeStringUTF8(LyricS, Encoding);
+    DecodeStringUTF8(LyricS, Note[HighNote].Text, Encoding);
     Lyric := Lyric + Note[HighNote].Text;
 
     End_ := Note[HighNote].Start + Note[HighNote].Length;
@@ -1065,8 +1061,7 @@ begin
   Lines[LineNumberP].Line[Lines[LineNumberP].High].LastLine := false;
 end;
 
-procedure TSong.clear();
-
+procedure TSong.Clear();
 begin
   //Main Information
   Title  := '';
@@ -1078,15 +1073,11 @@ begin
   Language := 'Unknown'; //Language Patch
 
   // set to default encoding
-  Encoding := Ini.EncodingDefault;
+  Encoding := DEFAULT_ENCODING;
 
   //Required Information
   Mp3    := '';
-  {$IFDEF FPC}
-  setlength( BPM, 0 );
-  {$ELSE}
-  BPM    := nil;
-  {$ENDIF}
+  SetLength(BPM, 0);
 
   GAP    := 0;
   Start  := 0;
