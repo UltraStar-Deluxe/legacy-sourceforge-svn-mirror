@@ -91,7 +91,7 @@ function IsUTF8String(const str: RawByteString): boolean;
 function NextCharUTF8(var StrPtr: PAnsiChar; out Ch: UCS4Char): boolean;
 
 {**
- * Deletes Count chars (not bytes) beginning at position Index.
+ * Deletes Count chars (not bytes) beginning at char- (not byte-) position Index.
  * Index values start with 1.
  *}
 procedure UTF8Delete(var Str: UTF8String; Index: Integer; Count: Integer);
@@ -121,7 +121,9 @@ function LengthUTF8(const str: UTF8String): integer;
  *}
 function LengthUCS4(const str: UCS4String): integer;
 
+{** @seealso WideCompareStr *}
 function UTF8CompareStr(const S1, S2: UTF8String): integer;
+{** @seealso WideCompareText *}
 function UTF8CompareText(const S1, S2: UTF8String): integer;
 
 function UTF8StartsText(const SubText, Text: UTF8String): boolean;
@@ -129,7 +131,9 @@ function UTF8StartsText(const SubText, Text: UTF8String): boolean;
 function UTF8ContainsStr(const Text, SubText: UTF8String): boolean;
 function UTF8ContainsText(const Text, SubText: UTF8String): boolean;
 
+{** @seealso WideUpperCase *}
 function UTF8UpperCase(const str: UTF8String): UTF8String;
+{** @seealso WideCompareText *}
 function UTF8LowerCase(const str: UTF8String): UTF8String;
 
 {**
@@ -180,7 +184,7 @@ function WideStringUpperCase(ch: WideChar): WideString; overload;
 function WideStringLowerCase(const str: WideString): WideString; overload;
 function WideStringLowerCase(ch: WideChar): WideString; overload;
 
-function StringReplaceW(const text : WideString; search, rep: WideChar): WideString;
+function WideStringReplaceChar(const text: WideString; search, rep: WideChar): WideString;
 
 implementation
 
@@ -227,7 +231,7 @@ begin
   {$IFDEF MSWINDOWS}
     Result := IsCharAlphaW(ch);
   {$ELSE}
-    // TODO: add chars > 255
+    // TODO: add chars > 255 (or replace with libxml2 functions?)
     case ch of
       'A'..'Z',  // A-Z
       'a'..'z',  // a-z
@@ -249,6 +253,7 @@ end;
 
 function IsNumericChar(ch: WideChar): boolean;
 begin
+  // TODO: replace with libxml2 functions?
   // ignore non-arabic numerals as we do not want to handle them
   case ch of
     '0'..'9':
@@ -275,7 +280,7 @@ end;
 
 function IsPunctuationChar(ch: WideChar): boolean;
 begin
-  // TODO: add chars > 255?
+  // TODO: add chars > 255 (or replace with libxml2 functions?)
   case ch of
     ' '..'/',':'..'@','['..'`','{'..'~',
     #160..#191,#215,#247:
@@ -464,25 +469,23 @@ end;
 
 function UTF8CompareStr(const S1, S2: UTF8String): integer;
 begin
-  // FIXME
   Result := WideCompareStr(UTF8Decode(S1), UTF8Decode(S2));
 end;
 
 function UTF8CompareText(const S1, S2: UTF8String): integer;
 begin
-  // FIXME
   Result := WideCompareText(UTF8Decode(S1), UTF8Decode(S2));
 end;
 
 function UTF8StartsStr(const SubText, Text: UTF8String): boolean;
 begin
-  // TODO: use WideSameStr ()?
+  // TODO: use WideSameStr (slower but handles different representations of the same char)?
   Result := (Pos(SubText, Text) = 1);
 end;
 
 function UTF8StartsText(const SubText, Text: UTF8String): boolean;
 begin
-  // TODO: use WideSameText?
+  // TODO: use WideSameText (slower but handles different representations of the same char)?
   Result := (Pos(UTF8UpperCase(SubText), UTF8UpperCase(Text)) = 1);
 end;
 
@@ -634,7 +637,7 @@ begin
   Result := WideLowerCase(str)
 end;
 
-function StringReplaceW(const text : WideString; search, rep: WideChar) : WideString;
+function WideStringReplaceChar(const text: WideString; search, rep: WideChar): WideString;
 var
   iPos  : integer;
 //  sTemp : WideString;
