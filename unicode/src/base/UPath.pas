@@ -482,7 +482,7 @@ type
        *}
       function GetPortableString(): UTF8String;
 
-      procedure AssertRefCount; inline;
+      procedure AssertRefCount; {$IFDEF HasInline}inline;{$ENDIF}
 
     public
       constructor Create(const Name: UTF8String; DelimOption: TPathDelimOption);

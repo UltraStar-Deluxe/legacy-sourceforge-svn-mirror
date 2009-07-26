@@ -401,7 +401,7 @@ implementation
 uses
   ActiveX, ComObj, SysConst,
   {$IFDEF COMPILER_9_UP} WideStrUtils, {$ENDIF} TntWideStrUtils,
-  TntSystem;//, TntFormatStrUtils;
+  TntSystem, TntFormatStrUtils;
 
 //---------------------------------------------------------------------------------------------
 //                                 Tnt - SysUtils
