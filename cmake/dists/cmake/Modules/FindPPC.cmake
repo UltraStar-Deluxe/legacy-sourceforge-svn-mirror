@@ -88,7 +88,7 @@ foreach(once 1)
     "$ENV{SystemDrive}/lazarus/fpc/*/bin/*"
     "$ENV{ProgramFiles}/lazarus/fpc/*/bin/*"
   )
-  find_program(PASCAL_COMPILER fpc PATHS ${ppc_bin_path})
+  find_program(PASCAL_COMPILER NAMES fpc ppc386 ppc PATHS ${ppc_bin_path})
   if(NOT PASCAL_COMPILER)
     set(ppc_error "Executable not found")
     break()
@@ -102,6 +102,7 @@ foreach(once 1)
   execute_process(COMMAND ${PASCAL_COMPILER} -iV
                   OUTPUT_VARIABLE FPC_VERSION 
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(FPC_VERSION ${FPC_VERSION} CACHE INTERNAL "")
 
   # check version
   if(${current_pkg}_FIND_VERSION_EXACT)
@@ -121,16 +122,20 @@ foreach(once 1)
   execute_process(COMMAND ${PASCAL_COMPILER} -iTO
                   OUTPUT_VARIABLE FPC_PLATFORM
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(FPC_PLATFORM ${FPC_PLATFORM} CACHE INTERNAL "")
   execute_process(COMMAND ${PASCAL_COMPILER} -iTP
                   OUTPUT_VARIABLE FPC_PROCESSOR
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(FPC_PROCESSOR ${FPC_PROCESSOR} CACHE INTERNAL "")
   execute_process(COMMAND ${PASCAL_COMPILER} -iSO
                   OUTPUT_VARIABLE FPC_CPLATFORM
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(FPC_CPLATFORM ${FPC_CPLATFORM} CACHE INTERNAL "")
   execute_process(COMMAND ${PASCAL_COMPILER} -iSP
                   OUTPUT_VARIABLE FPC_CPROCESSOR
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(FPC_TARGET "${FPC_PROCESSOR}-${FPC_PLATFORM}")
+  set(FPC_CPROCESSOR ${FPC_CPROCESSOR} CACHE INTERNAL "")
+  set(FPC_TARGET "${FPC_PROCESSOR}-${FPC_PLATFORM}" CACHE INTERNAL "")
 
   ##
   # Compiler checks

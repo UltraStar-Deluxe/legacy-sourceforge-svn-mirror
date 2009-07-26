@@ -34,7 +34,7 @@ set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "1")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 
-set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}_alpha1")
 
 set(PACKAGE_WEBSITE "http://www.ultrastardeluxe.org/")
 set(PACKAGE_IRC "#ultrastardx at quakenet.org")
@@ -161,14 +161,28 @@ endif(NOT WIN32)
 add_subdirectory(src)
 add_subdirectory(plugins)
 
+macro(add_configuration_target target build_type)
+ADD_CUSTOM_TARGET(${target}
+  COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_BINARY_DIR}
+    ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE:STRING=${build_type} ${PROJECT_SOURCE_DIR}
+  COMMAND ${CMAKE_BUILD_TOOL}
+  COMMAND ${CMAKE_COMMAND} -E echo "Configuration switched: ${build_type}"
+)
+endmacro()
+
+# convenience targets to switch between debug and release configuration
+add_configuration_target(debug Debug)
+add_configuration_target(release Release)
+
 ##
 # INSTALLATION
 ##
 
-get_target_property(usdx_exe ultrastardx PASCAL_LOCATION)
-install(PROGRAMS ${usdx_exe} DESTINATION bin)
+set(BINDIR "bin" CACHE STRING "Where to install binaries. Either relative to CMAKE_INSTALL_PREFIX or absolute.")
+set(DATADIR "share/ultrastardx" CACHE STRING "Where to install game content. Either relative to CMAKE_INSTALL_PREFIX or absolute.")
 
-set(USDX_INSTALL_DATA_DIR share/ultrastardx)
+get_target_property(usdx_exe ultrastardx PASCAL_LOCATION)
+install(PROGRAMS ${usdx_exe} DESTINATION ${BINDIR})
 
 install(
   DIRECTORY 
@@ -179,44 +193,26 @@ install(
     game/resources
     game/sounds
     game/themes
-  DESTINATION ${USDX_INSTALL_DATA_DIR}
+  DESTINATION ${DATADIR}
   PATTERN .svn EXCLUDE
+  PATTERN .PLACEHOLDER EXCLUDE
 )
 install(
   DIRECTORY ${USDX_PLUGIN_DIR}
-  DESTINATION ${USDX_INSTALL_DATA_DIR}
+  DESTINATION ${DATADIR}
   USE_SOURCE_PERMISSIONS
   PATTERN .svn EXCLUDE
+  PATTERN .PLACEHOLDER EXCLUDE
 )
 install(
   FILES
     COPYING.txt
-  DESTINATION ${USDX_INSTALL_DATA_DIR}
+  DESTINATION ${DATADIR}
 )
-# install fink libs
-if(APPLE)
-  if(EXISTS ${usdx_exe})
-    include(AnalyzeDylibDeps)
-    analyze_dylib_deps(${usdx_exe} libdeps)
-    set(USDX_DYLIB_DIR ${CMAKE_CURRENT_BINARY_DIR}/dylib)
 
-    # install() does not follow symlinks so we have to copy the libs at cmake time
-    file(MAKE_DIRECTORY ${USDX_DYLIB_DIR})
-    foreach(dylib ${libdeps})
-      get_filename_component(dylib_name ${dylib} NAME)
-      file_copy_if_different(${dylib} ${USDX_DYLIB_DIR}/${dylib_name})
-    endforeach()
-
-    install(DIRECTORY ${USDX_DYLIB_DIR}/ DESTINATION dylib USE_SOURCE_PERMISSIONS)
-  else()
-    message("
-!! To create a Mac OS X bundle, first compile with 
-!!   \"make\" then 
-!!   reconfigure with cmake (e.g. \"cmake ..\") and finally call 
-!!   \"cpack -G Bundle\"
-")
-  endif()
-endif(APPLE)
+#if(APPLE)
+  include(MacOSXBundle)
+#endif(APPLE)
 
 # add "uninstall" target
 # See: http://www.vtk.org/Wiki/CMake_FAQ#Can_I_do_.22make_uninstall.22_with_CMake.3F
@@ -233,71 +229,62 @@ ADD_CUSTOM_TARGET(uninstall
 # CPACK
 ##
 
-#if(DEFINED DATA_INSTALL_DIR)
-#	set(SHAREPATH ${DATA_INSTALL_DIR}/ultrastardx/)
-#else(DEFINED DATA_INSTALL_DIR)
-#	set(SHAREPATH share/ultrastardx/)
-#endif(DEFINED DATA_INSTALL_DIR)
-#set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-
 # CPack vars
 
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Karaoke program that evaluates your performance")
 set(CPACK_PACKAGE_VENDOR "UltraStar Deluxe Team")
 set(CPACK_PACKAGE_FILE_NAME "ultrastardx-${CPACK_PACKAGE_VERSION}")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "ultrastardx-src-${CPACK_PACKAGE_VERSION}")
-set(CPACK_SOURCE_GENERATOR "TBZ2")
 set(CPACK_PACKAGE_EXECUTABLES "ultrastardx" "ultrastardx")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "ultrastardx ${CPACK_PACKAGE_VERSION}")
-
-if(APPLE)
-  set(CPACK_BUNDLE_NAME UltraStarDeluxe)
-  set(CPACK_BUNDLE_ICON ${CMAKE_CURRENT_SOURCE_DIR}/icons/ultrastardx.icns)
-  set(CPACK_BUNDLE_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/macosx/Info.plist)
-  set(CPACK_BUNDLE_STARTUP_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dists/bundle-startup.sh)
-  #CPACK_PACKAGE_ICON
-endif(APPLE)
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "ultrastardx-${CPACK_PACKAGE_VERSION}-src")
+set(CPACK_SOURCE_GENERATOR "TGZ")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING.txt")
 
 if(WIN32 AND NOT UNIX)
-  set(CPACK_NSIS_DISPLAY_NAME "Ultrastar Deluxe") 
+  set(CPACK_NSIS_DISPLAY_NAME "UltraStar Deluxe") 
   set(CPACK_NSIS_HELP_LINK ${PACKAGE_WEBSITE})
   set(CPACK_NSIS_URL_INFO_ABOUT ${PACKAGE_WEBSITE})
   set(CPACK_NSIS_CONTACT "help@ultrastardx.org")
   set(CPACK_NSIS_MODIFY_PATH OFF)
   set(CPACK_GENERATOR "ZIP;NSIS")
 else(WIN32 AND NOT UNIX)
-  set(CPACK_STRIP_FILES "bin/ultrastardx")
+  set(CPACK_STRIP_FILES TRUE)
 endif(WIN32 AND NOT UNIX)
+
 
 set(CPACK_SOURCE_IGNORE_FILES
   "~"
   "\\\\.svn"
+  "\\\\.history"
   "\\\\.exe$"
   "\\\\.a$"
   "\\\\.dll$"
   "\\\\.dof$"
-  "\\\\.cmake$"
   "\\\\.zip$"
   "\\\\.gz$"
   "\\\\.bz2$"
   "\\\\.tmp$"
-  "\\\\.sh$"
   "\\\\.dcu$"
   "\\\\.ppu$"
   "\\\\.o$"
-  "Makefile"
+  "\\\\.obj$"
+  "link\\\\.res$"
   "CMakeFiles"
-  "debug"
-  "release$"
-  "Debug$"
-  "Release$"
+  "Makefile$"
   "CPack"
-  "^${PROJECT_SOURCE_DIR}/bin/[a-z]"
-  "^${PROJECT_SOURCE_DIR}/install_manifest.txt"
-  "^${PROJECT_SOURCE_DIR}/CMakeCache.txt"
-  "^${PROJECT_SOURCE_DIR}/ultrastardx\\\\."
+  "install_manifest\\\\.txt$"
+  "CMakeCache\\\\.txt$"
+  "^${PROJECT_SOURCE_DIR}/[^/]*\\\\.cmake$"
+  "^${PROJECT_SOURCE_DIR}/src/.*\\\\.cmake$"
+  "^${PROJECT_SOURCE_DIR}/plugins/.*\\\\.cmake$"
+  "^${PROJECT_SOURCE_DIR}/game/ultrastardx$"
+  "^${PROJECT_SOURCE_DIR}/src/paths\\\\.inc$"
+  "^${PROJECT_SOURCE_DIR}/src/config-[^w].*\\\\.inc$"
+  "^${PROJECT_SOURCE_DIR}/build/[^d]"
 )
+if(NOT ${PROJECT_SOURCE_DIR} STREQUAL ${PROJECT_BINARY_DIR})
+  list(APPEND CPACK_SOURCE_IGNORE_FILES "^${PROJECT_BINARY_DIR}")
+endif()
 
 include(CPack)
 

@@ -9,7 +9,7 @@ SONGS_VER=01
 
 DESCRIPTION="An open-source karaoke game"
 HOMEPAGE="http://www.ultrastardeluxe.org/"
-ESVN_REPO_URI="https://ultrastardx.svn.sourceforge.net/svnroot/ultrastardx/trunk"
+ESVN_REPO_URI="https://ultrastardx.svn.sourceforge.net/svnroot/ultrastardx/branches/experimental/cmake"
 ESVN_PROJECT="ultrastardx"
 SRC_URI="songs? ( mirror://sourceforge/${PN}/${SONGS_PKG}-${SONGS_VER}.zip )"
 
@@ -20,7 +20,7 @@ LICENSE="GPL-2
 	)"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="projectm debug songs"
+IUSE="projectm debug songs plugins"
 
 RDEPEND="virtual/opengl
 	virtual/glu
@@ -39,45 +39,48 @@ DEPEND="${RDEPEND}
 S=${WORKDIR}/${P}-src
 
 pkg_setup() {
-    games_pkg_setup
-    built_with_use media-libs/libsdl opengl \
-        || die "You need to compile media-libs/libsdl with USE=opengl."
+	games_pkg_setup
+	built_with_use media-libs/libsdl opengl \
+		|| die "You need to compile media-libs/libsdl with USE=opengl."
 }
 
 src_unpack() {
-	unpack ${A}
+	if use songs; then
+		unpack ${A}
+	fi
 	subversion_src_unpack
 }
 
 src_compile() {
-	if use projectm ; then
-		enable_projectm="ON"
-	else
-		enable_projectm="OFF"
-	fi
+	# set build-type as the "Gentoo" build-type does not work with
+	# Pascal (no optimization, etc.)
 	if use debug ; then
-		build_type="Debug"
+		CMAKE_BUILD_TYPE="Debug"
 	else
-		build_type="Release"
+		CMAKE_BUILD_TYPE="Release"
 	fi
-	cmake \
-		-DCMAKE_BUILD_TYPE=$build_type \
-		-DENABLE_PROJECTM=$enable_projectm \
-		-DCMAKE_INSTALL_PREFIX="/usr" \
-		. \
-		|| die "cmake failed"
-	emake || die "emake failed"
+
+	# set PREFIX so that CMAKE_INSTALL_PREFIX will be set to GAMES_PREFIX
+	PREFIX="${GAMES_PREFIX}"
+
+	# configure flags
+	local mycmakeargs="$(cmake-utils_use_enable projectm PROJECTM) \
+		$(cmake-utils_use_build plugins PLUGINS) \
+		-DBINDIR=${GAMES_BINDIR} \
+		-DDATADIR=${GAMES_DATADIR}/${PN}"
+
+	cmake-utils_src_compile
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "emake install failed"
+	cmake-utils_src_install
 
 	if use songs; then
 		insinto "${GAMES_DATADIR}"/${PN}/songs
 		doins -r ${WORKDIR}/Songs/* || die "doins songs failed"
 	fi
 
-	dodoc AUTHORS.txt ChangeLog.german.txt ChangeLog.txt README.txt
+	dodoc AUTHORS.txt ChangeLog.GERMAN.txt ChangeLog.txt README.txt
 
 	doicon icons/${PN}-icon.svg
 	make_desktop_entry ${PN} "UltraStar Deluxe"
