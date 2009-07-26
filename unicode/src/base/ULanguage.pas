@@ -52,9 +52,9 @@ type
     private
       List:   array of TLanguageList;
 
-      Entry:  TLanguageEntryArray; //**< Entrys of Chosen Language
-      SEntry: TLanguageEntryArray; //**< Entrys of Standard Language
-      CEntry: TLanguageEntryArray; //**< Constant Entrys e.g. Version
+      Entry:        TLanguageEntryArray; //**< Entrys of Chosen Language
+      EntryDefault: TLanguageEntryArray; //**< Entrys of Standard Language
+      EntryConst:   TLanguageEntryArray; //**< Constant Entrys e.g. Version
 
       Implode_Glue1, Implode_Glue2: UTF8String;
 
@@ -113,9 +113,9 @@ begin
     begin
       ChangeLanguage('English');
 
-      SetLength(SEntry, Length(Entry));
+      SetLength(EntryDefault, Length(Entry));
       for J := 0 to high(Entry) do
-        SEntry[J] := Entry[J];
+        EntryDefault[J] := Entry[J];
 
       SetLength(Entry, 0);
       
@@ -226,10 +226,10 @@ begin
   // Check if ID exists
 
   //Const Mod
-  EntryIndex := FindID(ID, CEntry);
+  EntryIndex := FindID(ID, EntryConst);
   if (EntryIndex >= 0) then
   begin
-    Result := CEntry[EntryIndex].Text;
+    Result := EntryConst[EntryIndex].Text;
     Exit;
   end;
 
@@ -242,10 +242,10 @@ begin
 
   //Standard Language (If a Language File is Incomplete)
   //Then use Standard Language
-  EntryIndex := FindID(ID, SEntry);
+  EntryIndex := FindID(ID, EntryDefault);
   if (EntryIndex >= 0) then
   begin
-    Result := SEntry[EntryIndex].Text;
+    Result := EntryDefault[EntryIndex].Text;
     Exit;
   end;
 end;
@@ -255,9 +255,9 @@ end;
  *}
 procedure TLanguage.AddConst(const ID: AnsiString; const Text: UTF8String);
 begin
-  SetLength (CEntry, Length(CEntry) + 1);
-  CEntry[high(CEntry)].ID := ID;
-  CEntry[high(CEntry)].Text := Text;
+  SetLength (EntryConst, Length(EntryConst) + 1);
+  EntryConst[high(EntryConst)].ID := ID;
+  EntryConst[high(EntryConst)].Text := Text;
 end;
 
 {**
@@ -267,11 +267,11 @@ procedure TLanguage.ChangeConst(const ID: AnsiString; const Text: UTF8String);
 var
   I: Integer;
 begin
-  for I := 0 to high(CEntry) do
+  for I := 0 to high(EntryConst) do
   begin
-    if CEntry[I].ID = ID then
+    if EntryConst[I].ID = ID then
     begin
-     CEntry[I].Text := Text;
+     EntryConst[I].Text := Text;
      Break;
     end;
   end;
