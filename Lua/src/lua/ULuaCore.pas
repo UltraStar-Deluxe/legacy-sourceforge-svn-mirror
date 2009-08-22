@@ -181,6 +181,15 @@ function TLuaCore_LoadModule (L: Plua_State): Integer; cdecl;
   that may be caught }
 function TLua_CustomPanic (L: Plua_State): Integer; cdecl;
 
+{ replacement for luas require function
+  can be called with more than one parameter to require
+  some modules at once. e.g.: require('math', 'Usdx.Log')
+  modules are loaded from right to left
+  unlike standard require the module tables are not returned
+  the standard require function in _require is called by
+  this function }
+function TLua_CustomRequire(L: PLua_State): Integer; cdecl;
+
 
 var
   LuaCore: TLuaCore;
@@ -379,7 +388,9 @@ begin
   end;
 end;
 
-{ tries to find the event w/ the given name in the list }
+{ tries to find the event w/ the given name in the list
+  to-do : use binary search algorithm instead of linear search here
+          check whether this is possible (events are saved in a pointer list) }
 function TLuaCore.GetEventbyName(Name: String): THookableEvent;
   var
     Cur: PEventListItem;
@@ -525,6 +536,15 @@ begin
   //pop both package and package.loaders tables from stack
   lua_pop(L, 2);
 
+  {**** replace the standard require w/ our custom require function }
+  // first move standard require function to _require
+  lua_getfield(L, LUA_GLOBALSINDEX, PChar('require'));
+  lua_setfield(L, LUA_GLOBALSINDEX, PChar('_require'));
+
+  // then save custom require function to require
+  lua_pushcfunction(L, TLua_CustomRequire);
+  lua_setfield(L, LUA_GLOBALSINDEX, PChar('require'));
+
   {**** now we create the usdx table }
   //at first functions from ULuaUsdx
   luaL_register(L, 'Usdx', @ULuaUsdx_Lib_f[0]);
@@ -570,7 +590,7 @@ begin
 
       //we need at least 6 letters
       //and first 5 letters have to be usdx.
-      if (Length(Name) > 5) and (copy(Name, 1, 5)='Usdx.') then
+      if (Length(Name) > 5) and (lowercase(copy(Name, 1, 5))='usdx.') then
       begin
         ID := LuaCore.GetModuleIdByName(copy(Name, 6, Length(Name) - 5));
         If (ID >= 0) then
@@ -947,6 +967,30 @@ begin
   Result := 0;
 end;
 
+{ replacement for luas require function
+  can be called with more than one parameter to require
+  some modules at once. e.g.: require('math', 'Usdx.Log')
+  modules are loaded from right to left
+  unlike standard require the module tables are not returned
+  the standard require function in _require is called by
+  this function }
+function TLua_CustomRequire(L: PLua_State): Integer; cdecl;
+begin
+  // no results
+  Result := 0;
 
+  // move through parameters
+  while (lua_getTop(L) >= 1) do
+  begin
+    // get luas require function
+    lua_getfield(L, LUA_GLOBALSINDEX, PChar('_require'));
+
+    // move it under the top param
+    lua_insert(L, -2);
+
+    // call it w/ next param (function + param are poped from stack)
+    lua_call(L, 1, 0);
+  end;
+end;
 
 end.
