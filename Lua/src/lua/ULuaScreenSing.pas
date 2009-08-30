@@ -218,7 +218,7 @@ begin
   if (CurrentSong = nil) or (Length(CurrentSong.BPM) = 0) or (Display.CurrentScreen <> @ScreenSing) then
     lua_PushNumber(L, 0)
   else if (Length(CurrentSong.BPM) = 1) then
-    lua_PushNumber(L, luaL_CheckNumber(L, 1) * CurrentSong.BPM[0].BPM / 60
+    lua_PushNumber(L, luaL_CheckNumber(L, 1) * CurrentSong.BPM[0].BPM / 60)
   else
   begin
     // to-do: do this for songs w/ BPM changes
