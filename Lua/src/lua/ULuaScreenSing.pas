@@ -414,7 +414,7 @@ function ULuaScreenSing_GetSongLines(L: Plua_State): Integer; cdecl;
     I, J: Integer;
 begin
   Result := 1;
-  if (Display.CurrentScreen = @ScreenSing) and (Length(Lines) >= 1) then
+  if  (Length(Lines) >= 1) then
   begin
     lua_ClearStack(L);
 
