@@ -141,8 +141,8 @@ type
       procedure Refresh; //Refresh Song Sorting
       procedure ChangeMusic;
 
-      function  getVisibleMedleyArr(): TVisArr;
-      procedure StartMedley(num: integer);
+      function  getVisibleMedleyArr(MinSource: TMedleySource): TVisArr;
+      procedure StartMedley(num: integer; MinSource: TMedleySource);
       //Party Mode
       procedure SelectRandomSong;
       procedure SetJoker;
@@ -291,7 +291,7 @@ begin
         I2 := Length(CatSongs.Song);
 
         //Jump To Titel
-        if (SDL_ModState = (KMOD_LALT or KMOD_LSHIFT)) then
+        if (SDL_ModState = KMOD_LALT) then
         begin
           for I := 1 to High(CatSongs.Song) do
           begin
@@ -352,18 +352,21 @@ begin
 
       Ord('S'):
         begin
-          if (Length(getVisibleMedleyArr()) > 0) and (Mode = smNormal) and
-            (CatSongs.Song[Interaction].Medley.Source = msTag) then
-          begin
-            StartMedley(0);
-          end;
+          if (SDL_ModState = KMOD_LSHIFT) and
+            (CatSongs.Song[Interaction].Medley.Source>=msCalculated) and
+            (Mode = smNormal)then
+            StartMedley(0, msCalculated)
+          else if (CatSongs.Song[Interaction].Medley.Source>=msTag) and
+            (Mode = smNormal) then
+            StartMedley(0, msTag);
         end;
       Ord('D'):
         begin
-          if (Length(getVisibleMedleyArr()) > 0) and (Mode = smNormal) then
-          begin
-            StartMedley(5);
-          end;
+          if (SDL_ModState = KMOD_LSHIFT) and
+            (Length(getVisibleMedleyArr(msCalculated)) > 0) and (Mode = smNormal)then
+            StartMedley(5, msCalculated)
+          else if (Length(getVisibleMedleyArr(msTag)) > 0) and (Mode = smNormal) then
+            StartMedley(5, msTag);
         end;
       Ord('M'): //Show SongMenu
         begin
@@ -1025,7 +1028,10 @@ begin
 
     //medley mod
     if CatSongs.Song[Interaction].Medley.Source = msTag then
-      Text[TextTitle].Text := Text[TextTitle].Text + '[M]';
+      Text[TextTitle].Text := Text[TextTitle].Text + ' [M]';
+
+    if CatSongs.Song[Interaction].Medley.Source = msCalculated then
+      Text[TextTitle].Text := Text[TextTitle].Text + ' [C]';
 
     if (Ini.TabsAtStartup = 1) and (CatSongs.CatNumShow = -1) then
     begin
@@ -1838,7 +1844,7 @@ begin
   end;
 end;
 
-function TScreenSong.getVisibleMedleyArr(): TVisArr;
+function TScreenSong.getVisibleMedleyArr(MinSource: TMedleySource): TVisArr;
 var
   I: integer;
   res: TVisArr;
@@ -1846,7 +1852,7 @@ begin
   SetLength(res, 0);
   for I := 0 to Length(CatSongs.Song) - 1 do
   begin
-    if CatSongs.Song[I].Visible and (CatSongs.Song[I].Medley.Source = msTag) then
+    if CatSongs.Song[I].Visible and (CatSongs.Song[I].Medley.Source >= MinSource) then
     begin
       SetLength(res, Length(res)+1);
       res[Length(res)-1] := I;
@@ -1856,7 +1862,7 @@ begin
 end;
 
 //start Medley round
-procedure TScreenSong.StartMedley(num: integer);
+procedure TScreenSong.StartMedley(num: integer; MinSource: TMedleySource);
   procedure AddSong(SongNr: integer);
   begin
     SetLength(PlaylistMedley.Song, Length(PlaylistMedley.Song)+1);
@@ -1892,7 +1898,7 @@ procedure TScreenSong.StartMedley(num: integer);
     visible_arr: TVisArr;
   begin
     SetLength(unused_arr, 0);
-    visible_arr := getVisibleMedleyArr();
+    visible_arr := getVisibleMedleyArr(MinSource);
     for I := 0 to Length(visible_arr) - 1 do
     begin
       if (not SongAdded(visible_arr[I])) then
@@ -1916,7 +1922,7 @@ begin
 
   if num>0 then
   begin
-    VS := Length(getVisibleMedleyArr());
+    VS := Length(getVisibleMedleyArr(MinSource));
     if VS < num then
       PlaylistMedley.NumMedleySongs := VS
     else

@@ -62,6 +62,10 @@ uses
   UFilesystem,
   UPath;
 
+Const
+  DEFAULT_FADE_IN_TIME = 10;
+  DEFAULT_FADE_OUT_TIME = 4;
+
 type
 
   TSingMode = ( smNormal, smPartyMode, smPlaylistRandom, smMedley );
@@ -608,6 +612,7 @@ begin
       Lines[Count].Line[High(Lines[Count].Line)].LastLine := true;
   end;
   Result := true;
+  FindRefrainStart;
 end;
 
 //Load XML Song
@@ -1358,8 +1363,12 @@ end;
 
 
 {* new procedure for preview
-   tries find out the beginning of a refrain *}
+   tries find out the beginning of a refrain
+   and the end... *}
 procedure TSong.FindRefrainStart();
+Const
+  MEDLEY_MIN_DURATION = 25;   //minimum duration of a medley in seconds
+
 Type
   TSeries = record
     start:    integer; //Start sentence of series
@@ -1373,7 +1382,8 @@ var
   series:               array of TSeries;
   temp_series:          TSeries;
   max:                  integer;
-
+  len_lines, len_notes: integer;
+  found_end:            boolean;
 begin
   if Medley.Source = msTag then
     Exit;
@@ -1435,8 +1445,56 @@ begin
 
   if (Length(series)>0) and (series[max].len > 3) then
   begin
-    Medley.Source := msCalculated;
     Medley.StartBeat := Lines[0].Line[series[max].start].Note[0].Start;
+    Medley.EndBeat := Lines[0].Line[series[max].end_].Note[0].Start +
+      Lines[0].Line[series[max].end_].Note[0].Length;
+
+    CurrentSong := self;
+    found_end := false;
+
+    //set end if duration > MEDLEY_MIN_DURATION
+    if GetTimeFromBeat(Medley.StartBeat)+ MEDLEY_MIN_DURATION >
+      GetTimeFromBeat(Medley.EndBeat) then
+    begin
+      found_end := true;
+    end;
+
+    //estimate the end: just go MEDLEY_MIN_DURATION
+    //ahead an set to a line end (if possible)
+    if not found_end then
+    begin
+      len_lines := length(Lines[0].Line);
+      for I := series[max].start+1 to len_lines-1 do
+      begin
+        len_notes := length(Lines[0].Line[I].Note);
+        for J := 0 to len_notes - 1 do
+        begin
+          if GetTimeFromBeat(Medley.StartBeat)+ MEDLEY_MIN_DURATION >
+            GetTimeFromBeat(Lines[0].Line[I].Note[J].Start+
+            Lines[0].Line[I].Note[J].Length) then
+          begin
+            found_end := true;
+            Medley.EndBeat := Lines[0].Line[I].Note[len_notes-1].Start+
+              Lines[0].Line[I].Note[len_notes-1].Length;
+            break;
+          end;
+        end;
+      end;
+    end;
+
+    
+    if found_end then
+    begin
+      Medley.Source := msCalculated;
+      Medley.FadeIn := Medley.StartBeat - round(GetMidBeat(DEFAULT_FADE_IN_TIME));
+      Medley.FadeOut := Medley.EndBeat + round(GetMidBeat(DEFAULT_FADE_OUT_TIME));
+
+      //calculate fade time
+
+      Medley.FadeIn_time := GetTimeFromBeat(Medley.StartBeat) - GetTimeFromBeat(Medley.FadeIn);
+      Medley.FadeOut_time := GetTimeFromBeat(Medley.FadeOut) - GetTimeFromBeat(Medley.EndBeat);
+    end else
+      Medley.Source := msNone;
   end else
     Medley.Source := msNone;
 end;
@@ -1487,9 +1545,6 @@ end;
 //            FADE_OUT-> MEDLEY_FADE_OUT
 //TODO: write a tool to convert existing txtm
 function TSong.ReadMedleyFile(MedleyFilePath: IPath): boolean;
-const
-  DEFAULT_FADE_IN_TIME = 10;
-  DEFAULT_FADE_OUT_TIME = 4;
 var
   Line, Identifier: string;
   Value: string;
