@@ -1367,7 +1367,7 @@ end;
    and the end... *}
 procedure TSong.FindRefrainStart();
 Const
-  MEDLEY_MIN_DURATION = 25;   //minimum duration of a medley in seconds
+  MEDLEY_MIN_DURATION = 30;   //minimum duration of a medley-song in seconds
 
 Type
   TSeries = record
@@ -1446,8 +1446,9 @@ begin
   if (Length(series)>0) and (series[max].len > 3) then
   begin
     Medley.StartBeat := Lines[0].Line[series[max].start].Note[0].Start;
-    Medley.EndBeat := Lines[0].Line[series[max].end_].Note[0].Start +
-      Lines[0].Line[series[max].end_].Note[0].Length;
+    len_notes := length(Lines[0].Line[series[max].end_].Note);
+    Medley.EndBeat := Lines[0].Line[series[max].end_].Note[len_notes-1].Start +
+      Lines[0].Line[series[max].end_].Note[len_notes-1].Length;
 
     CurrentSong := self;
     found_end := false;
