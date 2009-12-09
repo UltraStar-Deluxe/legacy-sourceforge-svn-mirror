@@ -53,6 +53,8 @@ uses
   UTime;
 
 type
+  TVisArr = array of integer;
+
   TScreenSong = class(TMenu)
     private
       Equalizer: Tms_Equalizer;
@@ -138,6 +140,9 @@ type
       procedure HideCatTL;// Show Cat in Tob left
       procedure Refresh; //Refresh Song Sorting
       procedure ChangeMusic;
+
+      function  getVisibleMedleyArr(): TVisArr;
+      procedure StartMedley(num: integer);
       //Party Mode
       procedure SelectRandomSong;
       procedure SetJoker;
@@ -345,6 +350,21 @@ begin
           Exit;
         end;
 
+      Ord('S'):
+        begin
+          if (Length(getVisibleMedleyArr()) > 0) and (Mode = smNormal) and
+            (CatSongs.Song[Interaction].Medley.Source = msTag) then
+          begin
+            StartMedley(0);
+          end;
+        end;
+      Ord('D'):
+        begin
+          if (Length(getVisibleMedleyArr()) > 0) and (Mode = smNormal) then
+          begin
+            StartMedley(5);
+          end;
+        end;
       Ord('M'): //Show SongMenu
         begin
           if (Songs.SongList.Count > 0) then
@@ -1002,6 +1022,11 @@ begin
     // Set texts
     Text[TextArtist].Text := CatSongs.Song[Interaction].Artist;
     Text[TextTitle].Text  :=  CatSongs.Song[Interaction].Title;
+
+    //medley mod
+    if CatSongs.Song[Interaction].Medley.Source = msTag then
+      Text[TextTitle].Text := Text[TextTitle].Text + '[M]';
+
     if (Ini.TabsAtStartup = 1) and (CatSongs.CatNumShow = -1) then
     begin
       Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].OrderNum) + '/' + IntToStr(CatSongs.CatCount);
@@ -1496,6 +1521,9 @@ begin
 
   AudioPlayback.Stop;
 
+  if Mode = smMedley then
+    Mode := smNormal;
+
   if Ini.Players <= 3 then PlayersPlay := Ini.Players + 1;
   if Ini.Players  = 4 then PlayersPlay := 6;
 
@@ -1725,19 +1753,29 @@ end;
 
 procedure TScreenSong.StartMusicPreview();
 var
-  Song: TSong;
+  Song:         TSong;
+  success:      boolean;
 begin
   AudioPlayback.Close();
 
+  if CatSongs.Song[Interaction].Main then
+    Exit;
+
   Song := CatSongs.Song[Interaction];
-  if not assigned(Song) then
+  if not assigned(Song) or Song.Main then
     Exit;
 
   if AudioPlayback.Open(Song.Path.Append(Song.Mp3)) then
   begin
     PreviewOpened := Interaction;
-    
-    AudioPlayback.Position := AudioPlayback.Length / 4;
+
+    if Song.Medley.Source <> msNone then
+    begin
+      CurrentSong := Song;
+      AudioPlayback.Position := GetTimeFromBeat(Song.Medley.StartBeat);
+    end else
+      AudioPlayback.Position := AudioPlayback.Length / 4;
+
     // set preview volume
     if (Ini.PreviewFading = 0) then
     begin
@@ -1747,6 +1785,10 @@ begin
     end
     else
     begin
+      AudioPlayback.Position := AudioPlayback.Position - Ini.PreviewFading;
+      if AudioPlayback.Position<0 then
+        AudioPlayback.Position := 0;
+      
       // music fade enabled: start muted and fade-in
       AudioPlayback.SetVolume(0);
       AudioPlayback.FadeIn(Ini.PreviewFading, IPreviewVolumeVals[Ini.PreviewVolume]);
@@ -1794,6 +1836,106 @@ begin
     // Delay song fading to prevent the song from being played while scrolling
     MusicPreviewTimer := SDL_AddTimer(200, MusicPreviewTimerCallback, Self);
   end;
+end;
+
+function TScreenSong.getVisibleMedleyArr(): TVisArr;
+var
+  I: integer;
+  res: TVisArr;
+begin
+  SetLength(res, 0);
+  for I := 0 to Length(CatSongs.Song) - 1 do
+  begin
+    if CatSongs.Song[I].Visible and (CatSongs.Song[I].Medley.Source = msTag) then
+    begin
+      SetLength(res, Length(res)+1);
+      res[Length(res)-1] := I;
+    end;
+  end;
+  Result := res;
+end;
+
+//start Medley round
+procedure TScreenSong.StartMedley(num: integer);
+  procedure AddSong(SongNr: integer);
+  begin
+    SetLength(PlaylistMedley.Song, Length(PlaylistMedley.Song)+1);
+    PlaylistMedley.Song[Length(PlaylistMedley.Song)-1] := SongNr;
+  end;
+
+  function SongAdded(SongNr: integer): boolean;
+  var
+    i: integer;
+    skipped :boolean;
+  begin
+    skipped := false;
+    for i := 0 to Length(PlaylistMedley.Song) - 1 do
+    begin
+      if (SongNr=PlaylistMedley.Song[i]) then
+      begin
+        skipped:=true;
+        break;
+      end;
+    end;
+    Result:=skipped;
+  end;
+
+  function NumSongsAdded(): Integer;
+  begin
+    Result := Length(PlaylistMedley.Song);
+  end;
+
+  function GetNextSongNr: integer;
+  var
+    I, num: integer;
+    unused_arr: array of integer;
+    visible_arr: TVisArr;
+  begin
+    SetLength(unused_arr, 0);
+    visible_arr := getVisibleMedleyArr();
+    for I := 0 to Length(visible_arr) - 1 do
+    begin
+      if (not SongAdded(visible_arr[I])) then
+      begin
+        SetLength(unused_arr, Length(unused_arr)+1);
+        unused_arr[Length(unused_arr)-1] := visible_arr[I];
+      end;
+    end;
+
+    num := random(Length(unused_arr));
+    Result := unused_arr[num];
+end;
+
+var
+  I: integer;
+  VS: integer;
+
+begin
+  StopMusicPreview();
+  Mode := smMedley;
+
+  if num>0 then
+  begin
+    VS := Length(getVisibleMedleyArr());
+    if VS < num then
+      PlaylistMedley.NumMedleySongs := VS
+    else
+    PlaylistMedley.NumMedleySongs := num;
+
+    Randomize;
+    //set up Playlist Medley
+    SetLength(PlaylistMedley.Song, 0);
+    for I := 0 to PlaylistMedley.NumMedleySongs - 1 do
+    begin
+      AddSong(GetNextSongNr);
+    end;
+  end else
+  begin
+    SetLength(PlaylistMedley.Song, 1);
+    PlaylistMedley.Song[0] := Interaction;
+    PlaylistMedley.NumMedleySongs := 1;
+  end;
+  FadeTo(@ScreenSing);
 end;
 
 procedure TScreenSong.SkipTo(Target: cardinal);

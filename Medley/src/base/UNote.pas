@@ -88,13 +88,30 @@ type
     Note:           array of TPlayerNote;
   end;
 
+  TStats = record
+    Player: array of TPlayer;
+    SongArtist:   UTF8String;
+    SongTitle:    UTF8String;
+  end;
+
+  TMedleyPlaylist = record
+    Song:               array of integer;
+    NumMedleySongs:     integer;
+    CurrentMedleySong:  integer;
+    ApplausePlayed:     boolean;
+    Stats:              array of TStats;
+    NumPlayer:          integer;
+  end;
+
 var
 
   // player and music info
   Player:      array of TPlayer;
   PlayersPlay: integer;
-
+  PlaylistMedley: TMedleyPlaylist;
   CurrentSong: TSong;
+  max_song_score_medley: integer;
+  max_song_line_bonus_medley: integer;
 
 const
   MAX_SONG_SCORE = 10000;     // max. achievable points per song
@@ -463,10 +480,19 @@ begin
             // half size notes patch
             NoteHit := true;
 
-            if (Ini.LineBonus > 0) then
-              MaxSongPoints := MAX_SONG_SCORE - MAX_SONG_LINE_BONUS
-            else
-              MaxSongPoints := MAX_SONG_SCORE;
+            if ScreenSong.Mode <> smMedley then
+            begin
+              if (Ini.LineBonus > 0) then
+                MaxSongPoints := MAX_SONG_SCORE - MAX_SONG_LINE_BONUS
+              else
+                MaxSongPoints := MAX_SONG_SCORE;
+            end else
+            begin
+              if (Ini.LineBonus > 0) then
+                MaxSongPoints := max_song_score_medley - max_song_line_bonus_medley
+              else
+                MaxSongPoints := max_song_score_medley;
+            end;
 
             // Note: ScoreValue is the sum of all note values of the song
             // (MaxSongPoints / ScoreValue) is the points that a player

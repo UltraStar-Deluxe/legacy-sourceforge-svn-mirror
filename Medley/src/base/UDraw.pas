@@ -97,6 +97,7 @@ uses
   URecord,
   UScreenSing,
   UScreenSingModi,
+  USong,
   UTexture;
 
 procedure SingDrawBackground;
@@ -1387,7 +1388,13 @@ begin
     if (CurLyricsTime > 0) and
        (LyricsState.TotalTime > 0) then
     begin
-      LyricsProgress := CurLyricsTime / LyricsState.TotalTime;
+      if ScreenSong.Mode <> smMedley then
+        LyricsProgress := CurLyricsTime / LyricsState.TotalTime
+      else
+        LyricsProgress := (CurLyricsTime - GetTimeFromBeat(CurrentSong.Medley.StartBeat) +
+          CurrentSong.Medley.FadeIn_time) / (GetTimeFromBeat(CurrentSong.Medley.EndBeat) +
+          CurrentSong.Medley.FadeOut_time - GetTimeFromBeat(CurrentSong.Medley.StartBeat) +
+          CurrentSong.Medley.FadeIn_time);
       glTexCoord2f((width * LyricsProgress) / 8, 0);
       glVertex2f(x + width * LyricsProgress, y);
 

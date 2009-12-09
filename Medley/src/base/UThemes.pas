@@ -306,6 +306,9 @@ type
   end;
 
    TThemeSing = class(TThemeBasic)
+    //Show actual SongName
+    StaticSongName  :   TThemeStatic;
+    TextSongName    :   TThemeText;
 
     //TimeBar mod
     StaticTimeProgress:   TThemeStatic;
@@ -358,7 +361,7 @@ type
     LineBonusText:    array [0..8] of UTF8String;
 
     //Pause Popup
-     PausePopUp:      TThemeStatic;
+    PausePopUp:      TThemeStatic;
   end;
 
   TThemeLyricBar = record
@@ -1051,10 +1054,13 @@ begin
 
       // Sing
       ThemeLoadBasic(Sing, 'Sing');
-      //TimeBar mod
-       ThemeLoadStatic(Sing.StaticTimeProgress, 'SingTimeProgress');
-       ThemeLoadText(Sing.TextTimeText, 'SingTimeText');
-      //eoa TimeBar mod
+      ThemeLoadStatic(Sing.StaticSongName, 'SingSongNameStatic');
+      ThemeLoadText(Sing.TextSongName, 'SingSongNameText');
+
+    //TimeBar mod
+      ThemeLoadStatic(Sing.StaticTimeProgress, 'SingTimeProgress');
+      ThemeLoadText(Sing.TextTimeText, 'SingTimeText');
+    //eoa TimeBar mod
 
     //moveable singbar mod
       ThemeLoadStatic(Sing.StaticP1SingBar, 'SingP1SingBar');

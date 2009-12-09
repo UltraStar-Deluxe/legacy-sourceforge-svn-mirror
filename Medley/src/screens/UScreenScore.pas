@@ -39,6 +39,7 @@ uses
   SysUtils,
   UDisplay,
   UMusic,
+  USong,
   USongs,
   UThemes,
   gl,
@@ -74,9 +75,17 @@ type
     BarGolden_ActualHeight: real;
   end;
 
+  TPlayerScoreData = record
+    Data: array[1..6] of TPlayerScoreScreenData;
+  end;
+
   TPlayerScoreRatingPics = record               // a fine array of the rating pictures
     RateEaseStep:  integer;
     RateEaseValue: real;
+  end;
+
+  TPLayerScorePics = record
+    Data: array[1..6] of TPlayerScoreRatingPics;
   end;
 
   TScreenScore = class(TMenu)
@@ -84,9 +93,12 @@ type
       BarTime:            cardinal;
       ArrayStartModifier: integer;
     public
+      //TeamInfo:   TTeamInfo;
       aPlayerScoreScreenTextures: array[1..6] of TPlayerScoreScreenTexture;
-      aPlayerScoreScreenDatas:    array[1..6] of TPlayerScoreScreenData;
-      aPlayerScoreScreenRatings:  array[1..6] of TPlayerScoreRatingPics;
+      aPlayerScoreScreenDatas:    array of TPlayerScoreData;
+      aPlayerScoreScreenRatings:  array of TPlayerScorePics;
+
+      ActualRound: integer;
 
       BarScore_EaseOut_Step:  real;
       BarPhrase_EaseOut_Step: real;
@@ -133,6 +145,7 @@ type
       procedure OnShow; override;
       procedure OnShowFinish; override;
       function Draw: boolean; override;
+      procedure RefreshTexts;
       procedure FillPlayer(Item, P: integer);
 
       procedure EaseBarIn(PlayerNumber: integer; BarType: string);
@@ -190,6 +203,22 @@ begin
         begin
           Display.SaveScreenShot;
         end;
+      SDLK_RIGHT:
+        begin
+          if ActualRound<Length(PlaylistMedley.Stats)-1 then
+          begin
+            inc(ActualRound);
+            RefreshTexts;
+          end;
+        end;
+      SDLK_LEFT:
+        begin
+          if ActualRound>0 then
+          begin
+            dec(ActualRound);
+            RefreshTexts;
+          end;
+        end;
     end;
   end;
 end;
@@ -200,6 +229,37 @@ begin
   if (MouseButton = SDL_BUTTON_LEFT) and BtnDown then begin
     //left-click anywhere sends return
     ParseInput(SDLK_RETURN, 0, true);
+  end;
+end;
+
+procedure TScreenScore.RefreshTexts;
+begin
+  if (ActualRound < Length(PlaylistMedley.Stats)-1) then
+  begin
+    Text[TextArtist].Text      := IntToStr(ActualRound+1) + '/' +
+      IntToStr(Length(PlaylistMedley.Stats)-1) + ': ' +
+      PlaylistMedley.Stats[ActualRound].SongArtist;
+    Text[TextTitle].Text       := PlaylistMedley.Stats[ActualRound].SongTitle;
+    Text[TextTitle].Visible    := true;
+    Text[TextArtistTitle].Text := IntToStr(ActualRound+1) + '/' +
+      IntToStr(Length(PlaylistMedley.Stats)-1) + ': ' +
+      PlaylistMedley.Stats[ActualRound].SongArtist +
+      ' - ' + PlaylistMedley.Stats[ActualRound].SongTitle;
+  end else
+  begin
+    if (ScreenSong.Mode = smMedley) then
+    begin
+      Text[TextArtist].Text      := Language.Translate('SING_TOTAL');
+      Text[TextTitle].Visible    := false;
+      Text[TextArtistTitle].Text := Language.Translate('SING_TOTAL');
+    end else
+    begin
+      Text[TextArtist].Text      := PlaylistMedley.Stats[ActualRound].SongArtist;
+      Text[TextTitle].Text       := PlaylistMedley.Stats[ActualRound].SongTitle;
+      Text[TextTitle].Visible    := true;
+      Text[TextArtistTitle].Text := PlaylistMedley.Stats[ActualRound].SongArtist + ' - ' +
+        PlaylistMedley.Stats[ActualRound].SongTitle;
+    end;
   end;
 end;
 
@@ -293,20 +353,21 @@ begin
   else
     ArrayStartModifier := 0; //this should never happen
   end;
+  ActualRound:=0;
+  SetLength(aPlayerScoreScreenDatas, Length(PlaylistMedley.Stats));
+  SetLength(aPlayerScoreScreenRatings, Length(PlaylistMedley.Stats));
 
-  for P := 1 to PlayersPlay do
+  for I := 0 to Length(PlaylistMedley.Stats) - 1 do
   begin
-    // data
-    aPlayerScoreScreenDatas[P].Bar_Y                  := Theme.Score.StaticBackLevel[P + ArrayStartModifier].Y;
-
-    // ratings
-    aPlayerScoreScreenRatings[P].RateEaseStep         := 1;
-    aPlayerScoreScreenRatings[P].RateEaseValue        := 20;
+    for P := 1 to PlayersPlay do
+    begin
+      aPlayerScoreScreenDatas[I].Data[P].Bar_Y :=
+        Theme.Score.StaticBackLevel[P + ArrayStartModifier].Y;
+      aPlayerScoreScreenRatings[I].Data[P].RateEaseStep := 1;
+      aPlayerScoreScreenRatings[I].Data[P].RateEaseValue := 20;
+    end;
   end;
-
-  Text[TextArtist].Text      := CurrentSong.Artist;
-  Text[TextTitle].Text       := CurrentSong.Title;
-  Text[TextArtistTitle].Text := CurrentSong.Artist + ' - ' + CurrentSong.Title;
+  RefreshTexts;
 
   // set visibility
   case PlayersPlay of
@@ -405,18 +466,6 @@ var
   PStart:        integer;
   PHigh:         integer;
 begin
-{*
-  player[0].ScoreInt       := 7000;
-  player[0].ScoreLineInt   := 2000;
-  player[0].ScoreGoldenInt := 1000;
-  player[0].ScoreTotalInt  := 10000;
-
-  player[1].ScoreInt       := 2500;
-  player[1].ScoreLineInt   := 1100;
-  player[1].ScoreGoldenInt :=  900;
-  player[1].ScoreTotalInt  := 4500;
-*}
-
   //Draw the Background
   DrawBG;
 
@@ -548,7 +597,8 @@ begin
   Text[TextNotesScore[ThemeIndex]].Alpha              := (BarScore_EaseOut_Step / 100);
 
   // total score
-  Text[TextTotalScore[ThemeIndex]].Text               := IntToStr(TextScore_ActualValue[PlayerNumber] + TextPhrase_ActualValue[PlayerNumber] + TextGolden_ActualValue[PlayerNumber]);
+  Text[TextTotalScore[ThemeIndex]].Text               := IntToStr(TextScore_ActualValue[PlayerNumber] +
+    TextPhrase_ActualValue[PlayerNumber] + TextGolden_ActualValue[PlayerNumber]);
   Text[TextTotalScore[ThemeIndex]].Alpha              := (BarScore_EaseOut_Step / 100);
 
   Text[TextTotal[ThemeIndex]].Alpha                   := (BarScore_EaseOut_Step / 100);
@@ -562,9 +612,13 @@ begin
 end;
 
 procedure TScreenScore.ShowRating(PlayerNumber: integer);
+const
+  rate_factor: array[0..7] of real = (2.0, 4.0, 5.0, 6.0, 7.5, 8.5, 9.0, 10.0);
 var
   Rating: integer;
   ThemeIndex: integer;
+  rate_max: array[0..7] of integer;
+  max, I: integer;
 begin
 
   // We have to do this here because we use the same Theme Object
@@ -575,55 +629,57 @@ begin
     6: ThemeIndex := ((PlayerNumber-1) mod 3) + 1 + ArrayStartModifier;
   end;
 
-  case (Player[PlayerNumber-1].ScoreTotalInt) of
-   0..2009:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_TONE_DEAF');
-       Rating := 0;
-     end;
-   2010..4009:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_AMATEUR');
-       Rating := 1;
-     end;
-   4010..5009:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_WANNABE');
-       Rating := 2;
-     end;
-   5010..6009:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_HOPEFUL');
-       Rating := 3;
-     end;
-   6010..7509:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_RISING_STAR');
-       Rating := 4;
-     end;
-   7510..8509:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_LEAD_SINGER');
-       Rating := 5;
-     end;
-   8510..9009:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_SUPERSTAR');
-       Rating := 6;
-     end;
-   9010..10000:
-     begin
-       Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_ULTRASTAR');
-       Rating := 7;
-     end;
+  //build rating scores
+  if ActualRound = Length(PlaylistMedley.Stats)-1 then
+    max := MAX_SONG_SCORE
   else
+    max := max_song_score_medley;
+
+  for I := 0 to 6 do
+    rate_max[I] := round(max/10*rate_factor[I])+9;
+
+  //fix 7
+  rate_max[7] := 10000;
+
+  if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[0] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_TONE_DEAF');
+    Rating := 0;
+  end else if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[1] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_AMATEUR');
+    Rating := 1;
+  end else if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[2] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_WANNABE');
+    Rating := 2;
+  end else if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[3] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_HOPEFUL');
+    Rating := 3;
+  end else if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[4] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_RISING_STAR');
+    Rating := 4;
+  end else if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[5] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_LEAD_SINGER');
+    Rating := 5;
+  end else if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[6] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_SUPERSTAR');
+    Rating := 6;
+  end else if PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreTotalInt<=rate_max[7] then
+  begin
+    Text[TextScore[ThemeIndex]].Text := Language.Translate('SING_SCORE_ULTRASTAR');
+    Rating := 7;
+  end else
     Rating := 0; // Cheata :P
-  end;
 
   //todo: this could break if the width is not given, for instance when there's a skin with no picture for ratings
-  if ( Theme.Score.StaticRatings[ThemeIndex].W > 0 ) and  ( aPlayerScoreScreenRatings[PlayerNumber].RateEaseValue > 0 ) then
+  if ( Theme.Score.StaticRatings[ThemeIndex].W > 0 ) and  ( aPlayerScoreScreenRatings[ActualRound].Data[PlayerNumber].RateEaseValue > 0 ) then
   begin
-    Text[TextScore[ThemeIndex]].Alpha := aPlayerScoreScreenRatings[PlayerNumber].RateEaseValue / Theme.Score.StaticRatings[ThemeIndex].W;
+    Text[TextScore[ThemeIndex]].Alpha := aPlayerScoreScreenRatings[ActualRound].Data[PlayerNumber].RateEaseValue / Theme.Score.StaticRatings[ThemeIndex].W;
   end;
   // end todo
 
@@ -642,7 +698,7 @@ begin
   PosX := Theme.Score.StaticRatings[PlayerNumber + ArrayStartModifier].X + (Theme.Score.StaticRatings[PlayerNumber + ArrayStartModifier].W  * 0.5);
   PosY := Theme.Score.StaticRatings[PlayerNumber + ArrayStartModifier].Y + (Theme.Score.StaticRatings[PlayerNumber + ArrayStartModifier].H  * 0.5); ;
 
-  Width := aPlayerScoreScreenRatings[PlayerNumber].RateEaseValue/2;
+  Width := aPlayerScoreScreenRatings[ActualRound].Data[PlayerNumber].RateEaseValue/2;
 
   glBindTexture(GL_TEXTURE_2D, Tex_Score_Ratings[Rating].TexNum);
 
@@ -669,7 +725,7 @@ var
   RaiseStep, MaxVal: real;
   EaseOut_Step:      integer;
 begin
-  EaseOut_Step  := aPlayerScoreScreenRatings[PlayerNumber].RateEaseStep;
+  EaseOut_Step  := aPlayerScoreScreenRatings[ActualRound].Data[PlayerNumber].RateEaseStep;
   MaxVal        := Theme.Score.StaticRatings[PlayerNumber + ArrayStartModifier].W;
 
   RaiseStep     := EaseOut_Step;
@@ -688,8 +744,8 @@ begin
     s           := p/(2*PI) * arcsin (1);
     ReturnValue := MaxVal * power(2,-5 * RaiseStep) * sin( (RaiseStep * MaxVal - s) * (2 * PI) / p) + MaxVal;
 
-    inc(aPlayerScoreScreenRatings[PlayerNumber].RateEaseStep);
-    aPlayerScoreScreenRatings[PlayerNumber].RateEaseValue := ReturnValue;
+    inc(aPlayerScoreScreenRatings[ActualRound].Data[PlayerNumber].RateEaseStep);
+    aPlayerScoreScreenRatings[ActualRound].Data[PlayerNumber].RateEaseValue := ReturnValue;
   end;
 
   Result := ReturnValue;
@@ -716,21 +772,21 @@ begin
   // EaseOut_Step is the actual step in the raising process, like the 20iest step of EaseOut_MaxSteps
   if (BarType = 'Note') then
   begin
-    Score        := Player[PlayerNumber - 1].ScoreInt;
+    Score        := PlaylistMedley.Stats[ActualRound].Player[PlayerNumber - 1].ScoreInt;
     RaiseStep    := BarScore_EaseOut_Step;
     BarStartPosY := Theme.Score.StaticBackLevel[PlayerNumber + ArrayStartModifier].Y + MaxHeight;
   end
   else if (BarType = 'Line') then
   begin
-    Score        := Player[PlayerNumber - 1].ScoreLineInt;
+    Score        := PlaylistMedley.Stats[ActualRound].Player[PlayerNumber - 1].ScoreLineInt;
     RaiseStep    := BarPhrase_EaseOut_Step;
-    BarStartPosY := Theme.Score.StaticBackLevel[PlayerNumber + ArrayStartModifier].Y - aPlayerScoreScreenDatas[PlayerNumber].BarScore_ActualHeight + MaxHeight;
+    BarStartPosY := Theme.Score.StaticBackLevel[PlayerNumber + ArrayStartModifier].Y - aPlayerScoreScreenDatas[ActualRound].Data[PlayerNumber].BarScore_ActualHeight + MaxHeight;
   end
   else if (BarType = 'Golden') then
   begin
-    Score        := Player[PlayerNumber - 1].ScoreGoldenInt;
+    Score        := PlaylistMedley.Stats[ActualRound].Player[PlayerNumber - 1].ScoreGoldenInt;
     RaiseStep    := BarGolden_EaseOut_Step;
-    BarStartPosY := Theme.Score.StaticBackLevel[PlayerNumber + ArrayStartModifier].Y - aPlayerScoreScreenDatas[PlayerNumber].BarScore_ActualHeight - aPlayerScoreScreenDatas[PlayerNumber].BarLine_ActualHeight + MaxHeight;
+    BarStartPosY := Theme.Score.StaticBackLevel[PlayerNumber + ArrayStartModifier].Y - aPlayerScoreScreenDatas[ActualRound].Data[PlayerNumber].BarScore_ActualHeight - aPlayerScoreScreenDatas[ActualRound].Data[PlayerNumber].BarLine_ActualHeight + MaxHeight;
   end
   else
   begin
@@ -739,9 +795,12 @@ begin
   end;
 
   // the height dependend of the score
-  Height2Reach := (Score / MAX_SONG_SCORE) * MaxHeight;
+  if ActualRound=Length(PlaylistMedley.Stats)-1 then
+    Height2Reach := (Score / MAX_SONG_SCORE) * MaxHeight
+  else
+    Height2Reach := (Score / max_song_score_medley) * MaxHeight;
 
-  if (aPlayerScoreScreenDatas[PlayerNumber].Bar_Actual_Height < Height2Reach) then
+  if (aPlayerScoreScreenDatas[ActualRound].Data[PlayerNumber].Bar_Actual_Height < Height2Reach) then
   begin
     // Check http://proto.layer51.com/d.aspx?f=400 for more info on easing functions
     // Calculate the actual step according to the maxsteps
@@ -761,11 +820,11 @@ begin
   DrawBar(BarType, PlayerNumber, BarStartPosY, NewHeight);
 
   if (BarType = 'Note') then
-    aPlayerScoreScreenDatas[PlayerNumber].BarScore_ActualHeight  := NewHeight
+    aPlayerScoreScreenDatas[ActualRound].Data[PlayerNumber].BarScore_ActualHeight  := NewHeight
   else if (BarType = 'Line') then
-    aPlayerScoreScreenDatas[PlayerNumber].BarLine_ActualHeight   := NewHeight
+    aPlayerScoreScreenDatas[ActualRound].Data[PlayerNumber].BarLine_ActualHeight   := NewHeight
   else if (BarType = 'Golden') then
-    aPlayerScoreScreenDatas[PlayerNumber].BarGolden_ActualHeight := NewHeight;
+    aPlayerScoreScreenDatas[ActualRound].Data[PlayerNumber].BarGolden_ActualHeight := NewHeight;
 end;
 
 procedure TscreenScore.DrawBar(BarType: string; PlayerNumber: integer; BarStartPosY: single; NewHeight: real);
@@ -839,19 +898,19 @@ begin
   begin
     EaseOut_Step     := BarScore_EaseOut_Step;
     ActualScoreValue := TextScore_ActualValue[PlayerNumber];
-    ScoreReached     := Player[PlayerNumber-1].ScoreInt;
+    ScoreReached     := PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreInt;
   end;
   if (ScoreType = 'Line') then
   begin
     EaseOut_Step     := BarPhrase_EaseOut_Step;
     ActualScoreValue := TextPhrase_ActualValue[PlayerNumber];
-    ScoreReached     := Player[PlayerNumber-1].ScoreLineInt;
+    ScoreReached     := PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreLineInt;
   end;
   if (ScoreType = 'Golden') then
   begin
     EaseOut_Step     := BarGolden_EaseOut_Step;
     ActualScoreValue := TextGolden_ActualValue[PlayerNumber];
-    ScoreReached     := Player[PlayerNumber-1].ScoreGoldenInt;
+    ScoreReached     := PlaylistMedley.Stats[ActualRound].Player[PlayerNumber-1].ScoreGoldenInt;
   end;
 
   // EaseOut_Step is the actual step in the raising process, like the 20iest step of EaseOut_MaxSteps
@@ -893,7 +952,7 @@ var
 begin
   Text[TextName[Item]].Text := Ini.Name[P];
 
-  S := IntToStr((Round(Player[P].Score) div 10) * 10);
+  S := IntToStr((Round(PlaylistMedley.Stats[ActualRound].Player[P].Score) div 10) * 10);
   while (Length(S)<4) do
     S := '0' + S;
   Text[TextNotesScore[Item]].Text := S;
@@ -903,17 +962,17 @@ begin
 
   //fixed: line bonus and golden notes don't show up,
   //       another bug: total score was shown without added golden-, linebonus
-  S := IntToStr(Player[P].ScoreTotalInt);
+  S := IntToStr(PlaylistMedley.Stats[ActualRound].Player[P].ScoreTotalInt);
   while (Length(S)<5) do
     S := '0' + S;
   Text[TextTotalScore[Item]].Text := S;
 
-  S := IntToStr(Player[P].ScoreLineInt);
+  S := IntToStr(PlaylistMedley.Stats[ActualRound].Player[P].ScoreLineInt);
   while (Length(S)<4) do
     S := '0' + S;
   Text[TextLineBonusScore[Item]].Text := S;
 
-  S := IntToStr(Player[P].ScoreGoldenInt);
+  S := IntToStr(PlaylistMedley.Stats[ActualRound].Player[P].ScoreGoldenInt);
   while (Length(S)<4) do
     S := '0' + S;
   Text[TextGoldenNotesScore[Item]].Text := S;

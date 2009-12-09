@@ -312,18 +312,33 @@ var
   Files: TPathDynArray;
   Song: TSong;
   Extension: IPath;
+  MedleyFiles:  TPathDynArray;
+  MedleyExtension: IPath;
 begin
   SetLength(Files, 0);
+
   Extension := Path('.txt');
+  MedleyExtension := Path('.txtm');
   FindFilesByExtension(Dir, Extension, true, Files);
+
 
   for I := 0 to High(Files) do
   begin
     Song := TSong.Create(Files[I]);
 
     if Song.Analyse then
-      SongList.Add(Song)
-    else
+    begin
+      //medley support...   TODO: move it (see USong...)
+      SetLength(MedleyFiles, 0);
+      FindFilesByExtension(Files[I].GetPath, MedleyExtension, true, MedleyFiles);
+
+      if Length(MedleyFiles)>0 then
+      begin
+        Song.ReadMedleyFile(MedleyFiles[0]);
+      end;
+
+      SongList.Add(Song);
+    end else
     begin
       Log.LogError('AnalyseFile failed for "' + Files[I].ToNative + '".');
       FreeAndNil(Song);
