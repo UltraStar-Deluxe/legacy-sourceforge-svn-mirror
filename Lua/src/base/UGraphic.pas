@@ -133,7 +133,7 @@ var
   ScreenSongJumpto:     TScreenSongJumpto;
 
   //Party Screens
-  ScreenSingModi:         TScreenSingModi;
+  //ScreenSingModi:         TScreenSingModi;
   ScreenPartyNewRound:    TScreenPartyNewRound;
   ScreenPartyScore:       TScreenPartyScore;
   ScreenPartyWin:         TScreenPartyWin;
@@ -727,8 +727,8 @@ begin
 //  Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Edit Header', 3); Log.BenchmarkStart(3);
   ScreenOpen :=             TScreenOpen.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Open', 3); Log.BenchmarkStart(3);
-  ScreenSingModi :=         TScreenSingModi.Create;
-  Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Sing with Modi support', 3); Log.BenchmarkStart(3);
+  //ScreenSingModi :=         TScreenSingModi.Create;
+  //Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Sing with Modi support', 3); Log.BenchmarkStart(3);
   ScreenSongMenu :=         TScreenSongMenu.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen SongMenu', 3); Log.BenchmarkStart(3);
   ScreenSongJumpto :=         TScreenSongJumpto.Create;
@@ -783,7 +783,7 @@ begin
   ScreenEdit.Destroy;
   ScreenEditConvert.Destroy;
   ScreenOpen.Destroy;
-  ScreenSingModi.Destroy;
+  //ScreenSingModi.Destroy;
   ScreenSongMenu.Destroy;
   ScreenSongJumpto.Destroy;
   ScreenPopupCheck.Destroy;

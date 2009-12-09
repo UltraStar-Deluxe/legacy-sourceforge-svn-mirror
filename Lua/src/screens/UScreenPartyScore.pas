@@ -304,12 +304,12 @@ end;
 
 procedure TScreenPartyScore.SetAnimationProgress(Progress: real);
 begin
-  if (ScreenSingModi.PlayerInfo.NumPlayers >= 1) then
+  {if (ScreenSingModi.PlayerInfo.NumPlayers >= 1) then
     Static[StaticTeam1].Texture.ScaleW := Progress * ScreenSingModi.PlayerInfo.Playerinfo[0].Percentage / 100;
   if (ScreenSingModi.PlayerInfo.NumPlayers >= 2) then
     Static[StaticTeam2].Texture.ScaleW := Progress * ScreenSingModi.PlayerInfo.Playerinfo[1].Percentage / 100;
   if (ScreenSingModi.PlayerInfo.NumPlayers >= 3) then
-    Static[StaticTeam3].Texture.ScaleW := Progress * ScreenSingModi.PlayerInfo.Playerinfo[2].Percentage / 100;
+    Static[StaticTeam3].Texture.ScaleW := Progress * ScreenSingModi.PlayerInfo.Playerinfo[2].Percentage / 100;}
 end;
 
 end.

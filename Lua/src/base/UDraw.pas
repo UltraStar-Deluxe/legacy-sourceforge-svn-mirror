@@ -926,7 +926,7 @@ begin
   end;
 
   // Draw Lyrics
-  ScreenSingModi.Lyrics.Draw(LyricsState.MidBeat);
+  //ScreenSingModi.Lyrics.Draw(LyricsState.MidBeat);
   // TODO: Lyrics helper
 
   // oscilloscope | the thing that moves when you yell into your mic (imho)

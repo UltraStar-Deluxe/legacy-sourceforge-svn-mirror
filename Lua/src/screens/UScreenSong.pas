@@ -1419,8 +1419,8 @@ begin
     AudioPlayback.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3);
 
   // if hide then stop music (for party mode popup on exit)
-  if (Display.NextScreen <> @ScreenSing) and
-     (Display.NextScreen <> @ScreenSingModi) then
+  if (Display.NextScreen <> @ScreenSing) {and
+     (Display.NextScreen <> @ScreenSingModi) }then
   begin
     StopMusicPreview();
   end;
