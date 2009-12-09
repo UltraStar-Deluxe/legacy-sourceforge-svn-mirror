@@ -61,6 +61,10 @@ type
       sName: String;    //< the events name
 
       PrepareStack: PrepareStackProc; //< prepare stack procedure passed to constructor
+      CallinProcess: boolean; //< true if a chain call is in process, to prepare unhooking during calls
+      HooksToRemove: array of PHook; // hooks to delete after chaincall
+
+      procedure RemoveWaitingHooks;
     public
       constructor Create(Name: String; const Proc: PrepareStackProc = nil);
 
@@ -172,10 +176,58 @@ begin
   end;
 end;
 
+{ removes hooks in HookstoRemove array from chain }
+procedure THookableEvent.RemoveWaitingHooks;
+  function IsInArray(Cur: PHook): boolean;
+    var I: Integer;
+  begin
+    Result := false;
+    for I := 0 to high(HooksToRemove) do
+      if (HooksToRemove[I] = Cur) then
+      begin
+        Result := true;
+        Break;
+      end;
+  end;
+
+  var
+    Cur, Prev: PHook;
+begin
+  Prev := nil;
+  Cur := LastHook;
+
+  while (Cur <> nil) do
+  begin
+    if (IsInArray(Cur)) then
+    begin //we found the hook
+      if (prev <> nil) then
+        Prev.Next := Cur.Next
+      else //last hook found
+        LastHook := Cur.Next;
+
+      //free hooks memory
+      Dispose(Cur);
+
+      if (prev <> nil) then
+        Cur := Prev.Next
+      else
+        Cur := LastHook;
+    end
+    else
+    begin
+      Prev := Cur;
+      Cur := Prev.Next;
+    end;
+  end;
+
+  SetLength(HooksToRemove, 0);
+end;
+
 { unhook by plugin. push true or error string to lua stack }
 procedure  THookableEvent.UnHook(L: Plua_State; hHook: Integer);
   var
     Cur, Prev: PHook;
+    Len: integer;
 begin
   if (hHook < NextHookHandle) and (hHook > 0) then
   begin
@@ -186,15 +238,24 @@ begin
     while (Cur <> nil) do
     begin
       if (Cur.Handle = hHook) then
-      begin //we found the hook => remove it
-        if (prev <> nil) then
-          Prev.Next := Cur.Next
-        else //last hook found
-          LastHook := Cur.Next;
+      begin //we found the hook
+        if not CallinProcess then
+        begin // => remove it
+          if (prev <> nil) then
+            Prev.Next := Cur.Next
+          else //last hook found
+            LastHook := Cur.Next;
 
-        //free hooks memory
-        Dispose(Cur);
-
+          //free hooks memory
+          Dispose(Cur);
+        end
+        else
+        begin // add to list of hooks to remove
+          Len := Length(HooksToRemove);
+          SetLength(HooksToRemove, Len + 1);
+          HooksToRemove[Len] := Cur;
+        end;
+        
         //indicate success
         lua_pushboolean(L, True);
         exit; //break the chain and exit the function
@@ -252,6 +313,8 @@ function  THookableEvent.CallHookChain(Breakable: Boolean): Plua_State;
     P: TLuaPlugin;
 begin
   Result := nil;
+
+  CallinProcess := true;
   
   Cur := LastHook;
   While (Cur <> nil) do
@@ -269,6 +332,9 @@ begin
 
     Cur := Cur.Next;
   end;
+
+  RemoveWaitingHooks;
+  CallinProcess := false;
 end;
 
 { the default function for THookableEvent.PrepareStack it don't pass any arguments }
@@ -279,9 +345,36 @@ end;
 
 { function in resulting hook table. it calls the unhook command of the event on plugins demand }
 function LuaHook_UnHook(L: Plua_State): Integer; cdecl;
+  var
+    Name: string;
+    Event: THookableEvent;
+    hHook: integer;
 begin
-  //lua_upvalueindex
   Result := 0;
+
+  if not lua_isTable(L, 1) then
+    LuaL_Error(L, 'Can''t find hook table in LuaHook_Unhook. Please call Unhook with method seperator (colon) instead of a point.');
+
+  // get event name
+  Lua_GetField(L, 1, 'Event');
+  if not lua_isString(L, -1) then
+    LuaL_Error(L, 'Can''t get event name in LuaHook_Unhook');
+
+  Name := Lua_ToString(L, -1);
+
+  // get event by name
+  Event := LuaCore.GetEventbyName(Name);
+
+  // free stack slots
+  Lua_pop(L, Lua_GetTop(L));
+
+  if (Event = nil) then
+    LuaL_Error(L, PAnsiChar('event ' + Name + ' does not exist (anymore?) in LuaHook_Unhook'));
+
+  // get the hookid
+  hHook := lua_ToInteger(L, lua_upvalueindex(1));
+
+  Event.UnHook(L, hHook);
 end;
 
 end.
