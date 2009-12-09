@@ -49,7 +49,8 @@ uses UMenu,
   gl,
   UThemes,
   UGraphicClasses,
-  USingScores;
+  USingScores,
+  UHookableEvent;
 
 type
   TLyricsSyncSource = class(TSyncSource)
@@ -60,6 +61,7 @@ type
   TScreenSing = class(TMenu)
   private
     VideoLoaded: boolean;
+    eSongLoaded: THookableEvent; //< event is called after lyrics of a song are loaded on OnShow
   protected
     Paused:     boolean; //Pause Mod
     LyricsSync: TLyricsSyncSource;
@@ -315,6 +317,8 @@ begin
       Skin_LyricsLowerX, Skin_LyricsLowerY, Skin_LyricsLowerW, Skin_LyricsLowerH);
 
   LyricsSync := TLyricsSyncSource.Create();
+
+  eSongLoaded := THookableEvent.Create('ScreenSing.SongLoaded');
 
   ClearSettings;
 end;
@@ -625,6 +629,8 @@ begin
   for P := Low(Lines[0].Line) to High(Lines[0].Line) do
     if Lines[0].Line[P].TotalNotes = 0 then
       Inc(NumEmptySentences);
+
+  eSongLoaded.CallHookChain(False);
 
   Log.LogStatus('End', 'onShow');
 end;
