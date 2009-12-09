@@ -1,8 +1,7 @@
 function plugin_init()
   register('lua interface test plugin', 'not Versioned', 'Hawkear');
 
-  require('Usdx.Gl');
-  require('Usdx.TextGl');
+  require('Usdx.Gl', 'Usdx.TextGl', 'Usdx.ScreenSing');
 
   Usdx.Hook('Display.Draw', 'OnDraw');
 
@@ -33,6 +32,9 @@ function OnDraw()
   TextGl.Italic(False)
   Gl.Color(0.9, 0.9, 0.9, 0.7)
   TextGl.Print('FPS: ' .. LastFPSCounted)
+
+  TextGl.Pos(650, 50)
+  TextGl.Print('Beat: ' .. ScreenSing.GetBeat())
 
   -- Draw some rectanGles
   Gl.Enable("Gl_BLEND")
