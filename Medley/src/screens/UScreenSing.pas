@@ -566,8 +566,7 @@ begin
         fCurrentVideoPlaybackEngine.Position := CurrentSong.VideoGAP + CurrentSong.Start
       else
         fCurrentVideoPlaybackEngine.Position := CurrentSong.VideoGAP +
-          GetTimeFromBeat(CurrentSong.Medley.StartBeat) - CurrentSong.Medley.FadeIn_time +
-          CurrentSong.Start;
+          GetTimeFromBeat(CurrentSong.Medley.StartBeat) - CurrentSong.Medley.FadeIn_time;
       fCurrentVideoPlaybackEngine.Play;
       VideoLoaded := true;
     end;
