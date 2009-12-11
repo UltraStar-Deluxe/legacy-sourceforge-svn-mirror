@@ -36,7 +36,8 @@ interface
 uses
   UThemes,
   UTexture,
-  UMenuBackground;
+  UMenuBackground,
+  UPath;
 
 //TMenuBackgroundFade - Background Fade In for Overlay screens
 //--------
@@ -62,14 +63,17 @@ const
   FADEINTIME = 1500; //Time the bg fades in
 
 implementation
-uses sdl,
-     gl,
-     glext,
-     USkins,
-     UCommon;
+uses
+  sdl,
+  gl,
+  glext,
+  USkins,
+  UCommon,
+  UGraphic;
 
 constructor TMenuBackgroundFade.Create(const ThemedSettings: TThemeBackground);
-var texFilename: string;
+var
+  texFilename: IPath;
 begin
   inherited;
   FadeTime := 0;
@@ -79,7 +83,6 @@ begin
   if (Length(ThemedSettings.Tex) > 0) then
   begin
     texFilename := Skin.GetTextureFileName(ThemedSettings.Tex);
-    texFilename := AdaptFilePaths(texFilename);
     Tex         := Texture.GetTexture(texFilename, TEXTURE_TYPE_PLAIN);
 
     UseTexture  := (Tex.TexNum <> 0);
@@ -121,7 +124,8 @@ begin
 
   if (UseTexture) then
   begin //Draw Texture to Screen
-    glClear(GL_DEPTH_BUFFER_BIT);
+    if (ScreenAct = 1) then //Clear just once when in dual screen mode
+      glClear(GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
@@ -149,7 +153,9 @@ begin
   end
   else
   begin //Clear Screen w/ progress Alpha + Color
-    glClear(GL_DEPTH_BUFFER_BIT);
+    if (ScreenAct = 1) then //Clear just once when in dual screen mode
+      glClear(GL_DEPTH_BUFFER_BIT);
+      
     glDisable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

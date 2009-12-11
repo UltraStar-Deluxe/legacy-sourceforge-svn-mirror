@@ -36,7 +36,8 @@ interface
 uses
   UThemes,
   UTexture,
-  UMenuBackground;
+  UMenuBackground,
+  UPath;
 
 //TMenuBackgroundColor - Background Color
 //--------
@@ -61,10 +62,12 @@ uses
   UCommon,
   SysUtils,
   gl,
-  glext;
+  glext,
+  UGraphic;
 
 constructor TMenuBackgroundTexture.Create(const ThemedSettings: TThemeBackground);
-var texFilename: string;
+var
+  texFilename: IPath;
 begin
   inherited;
 
@@ -74,7 +77,6 @@ begin
   Color       := ThemedSettings.Color;
 
   texFilename := Skin.GetTextureFileName(ThemedSettings.Tex);
-  texFilename := AdaptFilePaths(texFilename);
   Tex         := Texture.GetTexture(texFilename, TEXTURE_TYPE_PLAIN);
 
   if (Tex.TexNum = 0) then
@@ -92,7 +94,9 @@ end;
 
 procedure   TMenuBackgroundTexture.Draw;
 begin
-  glClear(GL_DEPTH_BUFFER_BIT);
+  If (ScreenAct = 1) then //Clear just once when in dual screen mode
+    glClear(GL_DEPTH_BUFFER_BIT);
+    
   glColorRGB(Color);
 
   glEnable(GL_TEXTURE_2D);

@@ -33,7 +33,7 @@ interface
 
 {$I switches.inc}
 
-uses SysUtils, ULua, UHookableEvent;
+uses SysUtils, ULua, UHookableEvent, UPath;
 
 type
   { this exception is raised when the lua panic function
@@ -59,7 +59,7 @@ type
   TLuaPlugin = class
     private
       iId: Integer;
-      Filename: WideString;
+      Filename: IPath;
       State: Plua_State;   //< all functions of this plugin are called with this Lua state
       bPaused: Boolean;    //< If true no lua functions from this state are called
       ErrorCount: Integer; //< counts the errors that occured during function calls of this plugin
@@ -72,7 +72,7 @@ type
 
       sStatus: TLuaPlugin_Status;
     public
-      constructor Create(Filename: WideString; Id: Integer);
+      constructor Create(Filename: IPath; Id: Integer);
 
       property Id: Integer read iId;
       property Name: String read sName;
@@ -132,8 +132,8 @@ type
 
       procedure LoadPlugins;                         //< calls LoadPlugin w/ Plugindir and LoadingFinished Eventchain
 
-      procedure BrowseDir(Dir: WideString);          //< searches for files w/ extension .usdx in the specified dir and tries to load them w/ lua
-      procedure LoadPlugin(Filename: WideString);    //< tries to load filename w/ lua and creates the default usdx lua environment for the plugins state
+      procedure BrowseDir(Dir: IPath);               //< searches for files w/ extension .usdx in the specified dir and tries to load them w/ lua
+      procedure LoadPlugin(Filename: IPath);         //< tries to load filename w/ lua and creates the default usdx lua environment for the plugins state
 
       function GetPluginByName(Name: String): TLuaPlugin;
       function GetPluginById(Id: Integer): TLuaPlugin;
@@ -195,7 +195,7 @@ var
   LuaCore: TLuaCore;
 
 implementation
-uses ULog, UPlatform, ULuaUsdx, UMain, StrUtils;
+uses ULog, UFilesystem, ULuaUsdx, UPathUtils, StrUtils;
 
 constructor TLuaCore.Create;
 begin
@@ -242,27 +242,39 @@ end;
 
 { searches for files w/ extension .usdx in the specified
   dir and tries to load them w/ lua }
-procedure TLuaCore.BrowseDir(Dir: WideString);
+procedure TLuaCore.BrowseDir(Dir: IPath);
   var
-    Files: TDirectoryEntryArray;
-    I: Integer;
+    Iter: IFileIterator;
+    FileInfo: TFileInfo;
+    FileName: IPath;
+    Ext: IPath;
 begin
-  try
-    Files := Platform.DirectoryFindFiles(Dir, '.usdx', true);
-    
-    for I := 0 to High(Files) do
-      if (Files[I].IsDirectory) then
-        BrowseDir(Dir + Files[i].Name) //browse recursive
-      else if (Files[I].IsFile) then
-        LoadPlugin(Dir + Files[i].Name);
-  except
-    Log.LogError('Couldn''t deal with directory/file: ' + Dir + ' in TLuaCore.BrowseDir')
+  Ext := Path('.usdx');
+
+  // search for all files and directories
+  Iter := FileSystem.FileFind(Dir.Append('*'), faAnyFile);
+  while (Iter.HasNext) do
+  begin
+    FileInfo := Iter.Next;
+    FileName := FileInfo.Name;
+    if ((FileInfo.Attr and faDirectory) <> 0) then
+    begin
+      if (not FileName.Equals('.')) and (not FileName.Equals('..')) then
+        BrowseDir(Dir.Append(FileName));
+    end
+    else
+    begin
+      if (Ext.Equals(FileName.GetExtension(), true)) then
+      begin
+        LoadPlugin(Dir.Append(FileName));
+      end;
+    end;
   end;
 end;
 
 { tries to load filename w/ lua and creates the default
   usdx lua environment for the plugins state }
-procedure TLuaCore.LoadPlugin(Filename: WideString);
+procedure TLuaCore.LoadPlugin(Filename: IPath);
   var
     Len: Integer;  
 begin
@@ -676,7 +688,7 @@ end;
 
 // Implementation of TLuaPlugin
 //--------
-constructor TLuaPlugin.Create(Filename: WideString; Id: Integer);
+constructor TLuaPlugin.Create(Filename: IPath; Id: Integer);
 begin
   inherited Create;
   Self.iId := Id;
@@ -701,6 +713,8 @@ end;
 { does the main loading part
   can not be called by create, because Plugins[Id] isn't defined there }
 procedure TLuaPlugin.Load;
+  var
+    Filename: String;
 begin
   // create Lua state for this plugin
   State := luaL_newstate;
@@ -709,7 +723,11 @@ begin
   //we don't expect
   lua_atPanic(State, TLua_CustomPanic);
 
-  if (luaL_loadfile(State, PChar(String(Self.Filename))) = 0) then
+  Filename := Self.Filename.ToNative;
+  // to-do : fix this
+  //         it may solve the problem if we read the file
+  //         and pass lua the text }
+  if ({luaL_loadfile(State, PChar(Filename))}1 = 0) then
   begin // file loaded successful
     { note: we run the file here, but the environment isn't
             set up now. it just causes the functions to
@@ -719,7 +737,7 @@ begin
             with require, this code would be useless. }
     if (lua_pcall(State, 0, 0, 0) = 0) then
     begin // file called successful
-      
+
       //let the core prepare our state
       LuaCore.PrepareState(State);
 
@@ -749,7 +767,7 @@ begin
       else
       begin
         sStatus := psErrorInInit;
-        Log.LogError('error in plugin_init: ' + Filename, 'lua');
+        Log.LogError('error in plugin_init: ' + Self.Filename.ToUTF8, 'lua');
         Unload;
       end;
     end
@@ -757,7 +775,7 @@ begin
     begin
       sStatus := psErrorOnLoad;
       Log.LogError(String(lua_toString(State, 1)), 'lua');
-      Log.LogError('unable to call file: ' + Filename, 'lua');
+      Log.LogError('unable to call file: ' + Self.Filename.ToUTF8, 'lua');
       Unload;
     end;
 
@@ -766,7 +784,7 @@ begin
   begin
     sStatus := psErrorOnLoad;
     Log.LogError(String(lua_toString(State, 1)), 'lua');
-    Log.LogError('unable to load file: ' + Filename, 'lua');
+    Log.LogError('unable to load file: ' + Self.Filename.ToUTF8, 'lua');
     Unload;
   end;
 end;
@@ -855,7 +873,7 @@ begin
   end
   else
   begin
-    Log.LogError('trying to call function of closed or not opened lua state', IfThen(HasRegistred, Name, Filename));
+    Log.LogError('trying to call function of closed or not opened lua state', IfThen(HasRegistred, Name, Filename.ToUTF8));
   end;
 end;
 

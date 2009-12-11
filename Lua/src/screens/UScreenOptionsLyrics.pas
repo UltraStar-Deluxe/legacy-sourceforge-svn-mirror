@@ -46,22 +46,25 @@ type
   TScreenOptionsLyrics = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
   end;
 
 implementation
 
-uses UGraphic, SysUtils;
+uses
+  UGraphic,
+  UUnicodeUtils,
+  SysUtils;
 
-function TScreenOptionsLyrics.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenOptionsLyrics.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -80,7 +83,8 @@ begin
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 3 then begin
+          if SelInteraction = 3 then
+          begin
             Ini.Save;
             AudioPlayback.PlaySound(SoundLib.Back);
             FadeTo(@ScreenOptions);
@@ -92,14 +96,16 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 3) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 3) then
+          begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractInc;
           end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 3) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 3) then
+          begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractDec;
           end;
@@ -114,11 +120,17 @@ begin
 
   LoadFromTheme(Theme.OptionsLyrics);
 
-  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsFont, Ini.LyricsFont, ILyricsFont);
-  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsEffect, Ini.LyricsEffect, ILyricsEffect);
-  //AddSelect(Theme.OptionsLyrics.SelectSolmization, Ini.Solmization, ISolmization); GAH!!!!11 DIE!!!
-  AddSelectSlide(Theme.OptionsLyrics.SelectNoteLines, Ini.NoteLines, INoteLines);
+  Theme.OptionsLyrics.SelectLyricsFont.showArrows := true;
+  Theme.OptionsLyrics.SelectLyricsFont.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsFont, Ini.LyricsFont, ILyricsFontTranslated);
 
+  Theme.OptionsLyrics.SelectLyricsEffect.showArrows := true;
+  Theme.OptionsLyrics.SelectLyricsEffect.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsLyrics.SelectLyricsEffect, Ini.LyricsEffect, ILyricsEffectTranslated);
+
+  Theme.OptionsLyrics.SelectNoteLines.showArrows := true;
+  Theme.OptionsLyrics.SelectNoteLines.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsLyrics.SelectNoteLines, Ini.NoteLines, INoteLinesTranslated);
 
   AddButton(Theme.OptionsLyrics.ButtonExit);
   if (Length(Button[0].Text)=0) then
@@ -126,7 +138,7 @@ begin
 
 end;
 
-procedure TScreenOptionsLyrics.onShow;
+procedure TScreenOptionsLyrics.OnShow;
 begin
   inherited;
 

@@ -34,12 +34,24 @@ interface
 {$I switches.inc}
 
 uses
+  SysUtils,
+  Classes,
   UTime,
-  Classes;
+  UBeatTimer,
+  UPath;
 
 type
   TNoteType = (ntFreestyle, ntNormal, ntGolden);
 
+const
+  // ScoreFactor defines how a notehit of a specified notetype is
+  // measured in comparison to the other types
+  // 0 means this notetype is not rated at all
+  // 2 means a hit of this notetype will be rated w/ twice as much
+  // points as a hit of a notetype w/ ScoreFactor 1
+  ScoreFactor:         array[TNoteType] of integer = (0, 1, 2);
+
+type
   (**
    * TLineFragment represents a fragment of a lyrics line.
    * This is a text-fragment (e.g. a syllable) assigned to a note pitch,
@@ -51,7 +63,7 @@ type
     Start:      integer;    // beat the fragment starts at
     Length:     integer;    // length in beats
     Tone:       integer;    // full range tone
-    Text:       string;     // text assigned to this fragment (a syllable, word, etc.)
+    Text:       UTF8String; // text assigned to this fragment (a syllable, word, etc.)
     NoteType:   TNoteType;  // note-type: golden-note/freestyle etc.
   end;
 
@@ -62,8 +74,8 @@ type
   PLine = ^TLine;
   TLine = record
     Start:      integer; // the start beat of this line (<> start beat of the first note of this line)
-    Lyric:      string;
-    LyricWidth: real;    // @deprecated: width of the line in pixels.
+    Lyric:      UTF8String;
+    //LyricWidth: real;    // @deprecated: width of the line in pixels.
                          // Do not use this as the width is not correct.
                          // Use TLyricsEngine.GetUpperLine().Width instead. 
     End_:       integer;
@@ -81,58 +93,13 @@ type
    *)
   TLines = record
     Current:    integer;  // for drawing of current line
-    High:       integer;  // (= High(Line)?)
+    High:       integer;  // = High(Line)!
     Number:     integer;
     Resolution: integer;
     NotesGAP:   integer;
     ScoreValue: integer;
     Line:       array of TLine;
   end;
-
-  (**
-   * TLyricsState contains all information concerning the
-   * state of the lyrics, e.g. the current beat or duration of the lyrics.
-   *)
-  TLyricsState = class
-    private
-      Timer:        TRelativeTimer; // keeps track of the current time
-    public
-      OldBeat:      integer;    // previous discovered beat
-      CurrentBeat:  integer;    // current beat (rounded)
-      MidBeat:      real;       // current beat (float)
-
-      // now we use this for super synchronization!
-      // only used when analyzing voice
-      // TODO: change ...D to ...Detect(ed)
-      OldBeatD:     integer;    // previous discovered beat
-      CurrentBeatD: integer;    // current discovered beat (rounded)
-      MidBeatD:     real;       // current discovered beat (float)
-
-      // we use this for audible clicks
-      // TODO: Change ...C to ...Click
-      OldBeatC:     integer;    // previous discovered beat
-      CurrentBeatC: integer;
-      MidBeatC:     real;       // like CurrentBeatC
-
-      OldLine:      integer;    // previous displayed sentence
-
-      StartTime:    real;       // time till start of lyrics (= Gap)
-      TotalTime:    real;       // total song time
-
-      constructor Create();
-      procedure Pause();
-      procedure Resume();
-
-      procedure Reset();
-      procedure UpdateBeats();
-
-      (**
-       * current song time (in seconds) used as base-timer for lyrics etc.
-       *)
-      function GetCurrentTime(): real;
-      procedure SetCurrentTime(Time: real);
-  end;
-
 
 const
   FFTSize = 512; // size of FFT data (output: FFTSize/2 values)
@@ -212,12 +179,12 @@ type
   TSoundEffect = class
     public
       EngineData: Pointer; // can be used for engine-specific data
-      procedure Callback(Buffer: PChar; BufSize: integer); virtual; abstract;
+      procedure Callback(Buffer: PByteArray; BufSize: integer); virtual; abstract;
   end;
 
   TVoiceRemoval = class(TSoundEffect)
     public
-      procedure Callback(Buffer: PChar; BufSize: integer); override;
+      procedure Callback(Buffer: PByteArray; BufSize: integer); override;
   end;
 
 type
@@ -262,7 +229,7 @@ type
       function IsEOF(): boolean;            virtual; abstract;
       function IsError(): boolean;          virtual; abstract;
     public
-      function ReadData(Buffer: PChar; BufferSize: integer): integer; virtual; abstract;
+      function ReadData(Buffer: PByteArray; BufferSize: integer): integer; virtual; abstract;
 
       property EOF: boolean read IsEOF;
       property Error: boolean read IsError;
@@ -292,7 +259,7 @@ type
       function GetVolume(): single;         virtual; abstract;
       procedure SetVolume(Volume: single);  virtual; abstract;
       function Synchronize(BufferSize: integer; FormatInfo: TAudioFormatInfo): integer;
-      procedure FillBufferWithFrame(Buffer: PChar; BufferSize: integer; Frame: PChar; FrameSize: integer);
+      procedure FillBufferWithFrame(Buffer: PByteArray; BufferSize: integer; Frame: PByteArray; FrameSize: integer);
    public
       (**
        * Opens a SourceStream for playback.
@@ -335,7 +302,7 @@ type
       function Open(ChannelMap: integer; FormatInfo: TAudioFormatInfo): boolean; virtual;
       procedure Close(); override;
 
-      procedure WriteData(Buffer: PChar; BufferSize: integer); virtual; abstract;
+      procedure WriteData(Buffer: PByteArray; BufferSize: integer); virtual; abstract;
       function GetAudioFormatInfo(): TAudioFormatInfo; override;
 
       function GetLength(): real;           override;
@@ -349,7 +316,7 @@ type
   // soundcard output-devices information
   TAudioOutputDevice = class
     public
-      Name: string; // soundcard name
+      Name: UTF8String; // soundcard name
   end;
   TAudioOutputDeviceList = array of TAudioOutputDevice;
 
@@ -358,7 +325,7 @@ type
   ['{63A5EBC3-3F4D-4F23-8DFB-B5165FCE33DD}']
       function GetName: String;
 
-      function Open(const Filename: string): boolean; // true if succeed
+      function Open(const Filename: IPath): boolean; // true if succeed
       procedure Close;
 
       procedure Play;
@@ -410,7 +377,7 @@ type
       // nil-pointers is not neccessary anymore.
       // PlaySound/StopSound will be removed then, OpenSound will be renamed to
       // CreateSound.
-      function OpenSound(const Filename: String): TAudioPlaybackStream;
+      function OpenSound(const Filename: IPath): TAudioPlaybackStream;
       procedure PlaySound(Stream: TAudioPlaybackStream);
       procedure StopSound(Stream: TAudioPlaybackStream);
 
@@ -425,7 +392,7 @@ type
 
   IGenericDecoder = Interface
   ['{557B0E9A-604D-47E4-B826-13769F3E10B7}']
-      function GetName(): String;
+      function GetName(): string;
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
       //function IsSupported(const Filename: string): boolean;
@@ -434,13 +401,13 @@ type
   (*
   IVideoDecoder = Interface( IGenericDecoder )
   ['{2F184B2B-FE69-44D5-9031-0A2462391DCA}']
-      function Open(const Filename: string): TVideoDecodeStream;
+      function Open(const Filename: IPath): TVideoDecodeStream;
   end;
   *)
 
   IAudioDecoder = Interface( IGenericDecoder )
   ['{AB47B1B6-2AA9-4410-BF8C-EC79561B5478}']
-      function Open(const Filename: string): TAudioDecodeStream;
+      function Open(const Filename: IPath): TAudioDecodeStream;
   end;
 
   IAudioInput = Interface
@@ -468,7 +435,7 @@ type
        * input-buffer bytes used.
        * Returns the number of bytes written to the output-buffer or -1 if an error occured.
        *)
-      function Convert(InputBuffer: PChar; OutputBuffer: PChar; var InputSize: integer): integer; virtual; abstract;
+      function Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer; virtual; abstract;
 
       (**
        * Destination/Source size ratio
@@ -490,7 +457,7 @@ const
   SOUNDID_CLICK    = 5;
   LAST_SOUNDID = SOUNDID_CLICK;
 
-  BaseSoundFilenames: array[0..LAST_SOUNDID] of string = (
+  BaseSoundFilenames: array[0..LAST_SOUNDID] of IPath = (
     '%SOUNDPATH%/Common start.mp3',                 // Start
     '%SOUNDPATH%/Common back.mp3',                  // Back
     '%SOUNDPATH%/menu swoosh.mp3',                  // Swoosh
@@ -531,7 +498,7 @@ type
       procedure StartBgMusic();
       procedure PauseBgMusic();
       // TODO
-      //function AddSound(Filename: string): integer;
+      //function AddSound(Filename: IPath): integer;
       //procedure RemoveSound(ID: integer);
       //function GetSound(ID: integer): TAudioPlaybackStream;
       //property Sound[ID: integer]: TAudioPlaybackStream read GetSound; default;
@@ -561,13 +528,13 @@ procedure DumpMediaInterfaces();
 implementation
 
 uses
-  sysutils,
   math,
   UIni,
-  UMain,
+  UNote,
   UCommandLine,
   URecord,
-  ULog;
+  ULog,
+  UPathUtils;
 
 var
   DefaultVideoPlayback : IVideoPlayback;
@@ -688,7 +655,7 @@ begin
   FilterInterfaceList(IAudioDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    CurrentAudioDecoder := IAudioDecoder(InterfaceList[i]);
+    CurrentAudioDecoder := InterfaceList[i] as IAudioDecoder;
     if (not CurrentAudioDecoder.InitializeDecoder()) then
     begin
       Log.LogError('Initialize failed, Removing - '+ CurrentAudioDecoder.GetName);
@@ -705,7 +672,7 @@ begin
   FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    CurrentAudioPlayback := IAudioPlayback(InterfaceList[i]);
+    CurrentAudioPlayback := InterfaceList[i] as IAudioPlayback;
     if (CurrentAudioPlayback.InitializePlayback()) then
     begin
       DefaultAudioPlayback := CurrentAudioPlayback;
@@ -720,7 +687,7 @@ begin
   FilterInterfaceList(IAudioInput, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    CurrentAudioInput := IAudioInput(InterfaceList[i]);
+    CurrentAudioInput := InterfaceList[i] as IAudioInput;
     if (CurrentAudioInput.InitializeRecord()) then
     begin
       DefaultAudioInput := CurrentAudioInput;
@@ -753,7 +720,7 @@ begin
   FilterInterfaceList(IVideoPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    VideoInterface := IVideoPlayback(InterfaceList[i]);
+    VideoInterface := InterfaceList[i] as IVideoPlayback;
     if (VideoInterface.Init()) then
     begin
       DefaultVideoPlayback := VideoInterface;
@@ -768,7 +735,7 @@ begin
   FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    VisualInterface := IVideoVisualization(InterfaceList[i]);
+    VisualInterface := InterfaceList[i] as IVideoVisualization;
     if (VisualInterface.Init()) then
     begin
       DefaultVisualization := VisualInterface;
@@ -782,7 +749,7 @@ begin
 
   // now that we have all interfaces, we can dump them
   // TODO: move this to another place
-  if FindCmdLineSwitch( cMediaInterfaces ) then
+  if FindCmdLineSwitch(cMediaInterfaces) then
   begin
     DumpMediaInterfaces();
     halt;
@@ -806,27 +773,27 @@ begin
   // finalize audio playback interfaces (should be done before the decoders)
   FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IAudioPlayback(InterfaceList[i]).FinalizePlayback();
+    (InterfaceList[i] as IAudioPlayback).FinalizePlayback();
 
   // finalize audio input interfaces
   FilterInterfaceList(IAudioInput, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IAudioInput(InterfaceList[i]).FinalizeRecord();
+    (InterfaceList[i] as IAudioInput).FinalizeRecord();
 
   // finalize audio decoder interfaces
   FilterInterfaceList(IAudioDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IAudioDecoder(InterfaceList[i]).FinalizeDecoder();
+    (InterfaceList[i] as IAudioDecoder).FinalizeDecoder();
 
   // finalize video interfaces
   FilterInterfaceList(IVideoPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IVideoPlayback(InterfaceList[i]).Finalize();
+    (InterfaceList[i] as IVideoPlayback).Finalize();
 
   // finalize audio decoder interfaces
   FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IVideoVisualization(InterfaceList[i]).Finalize();
+    (InterfaceList[i] as IVideoVisualization).Finalize();
 
   InterfaceList.Free;
 
@@ -889,14 +856,14 @@ procedure TSoundLibrary.LoadSounds();
 begin
   UnloadSounds();
 
-  Start   := AudioPlayback.OpenSound(SoundPath + 'Common start.mp3');
-  Back    := AudioPlayback.OpenSound(SoundPath + 'Common back.mp3');
-  Swoosh  := AudioPlayback.OpenSound(SoundPath + 'menu swoosh.mp3');
-  Change  := AudioPlayback.OpenSound(SoundPath + 'select music change music 50.mp3');
-  Option  := AudioPlayback.OpenSound(SoundPath + 'option change col.mp3');
-  Click   := AudioPlayback.OpenSound(SoundPath + 'rimshot022b.mp3');
+  Start   := AudioPlayback.OpenSound(SoundPath.Append('Common start.mp3'));
+  Back    := AudioPlayback.OpenSound(SoundPath.Append('Common back.mp3'));
+  Swoosh  := AudioPlayback.OpenSound(SoundPath.Append('menu swoosh.mp3'));
+  Change  := AudioPlayback.OpenSound(SoundPath.Append('select music change music 50.mp3'));
+  Option  := AudioPlayback.OpenSound(SoundPath.Append('option change col.mp3'));
+  Click   := AudioPlayback.OpenSound(SoundPath.Append('rimshot022b.mp3'));
 
-  BGMusic := AudioPlayback.OpenSound(SoundPath + 'Bebeto_-_Loop010.mp3');
+  BGMusic := AudioPlayback.OpenSound(SoundPath.Append('Bebeto_-_Loop010.mp3'));
 
   if (BGMusic <> nil) then
     BGMusic.Loop := True;
@@ -942,7 +909,7 @@ end;
 
 { TVoiceRemoval }
 
-procedure TVoiceRemoval.Callback(Buffer: PChar; BufSize: integer);
+procedure TVoiceRemoval.Callback(Buffer: PByteArray; BufSize: integer);
 var
   FrameIndex, FrameSize: integer;
   Value: integer;
@@ -966,92 +933,6 @@ begin
     Inc(Buffer, FrameSize);
   end;
 end;
-
-
-{ TVoiceRemoval }
-
-constructor TLyricsState.Create();
-begin
-  // create a triggered timer, so we can Pause() it, set the time
-  // and Resume() it afterwards for better synching.
-  Timer := TRelativeTimer.Create(true);
-
-  // reset state
-  Reset();
-end;
-
-procedure TLyricsState.Pause();
-begin
-  Timer.Pause();
-end;
-
-procedure TLyricsState.Resume();
-begin
-  Timer.Resume();
-end;
-
-procedure TLyricsState.SetCurrentTime(Time: real);
-begin
-  // do not start the timer (if not started already),
-  // after setting the current time
-  Timer.SetTime(Time, false);
-end;
-
-function TLyricsState.GetCurrentTime(): real;
-begin
-  Result := Timer.GetTime();
-end;
-
-(**
- * Resets the timer and state of the lyrics.
- * The timer will be stopped afterwards so you have to call Resume()
- * to start the lyrics timer. 
- *)
-procedure TLyricsState.Reset();
-begin
-  Pause();
-  SetCurrentTime(0);
-
-  StartTime := 0;
-  TotalTime := 0;
-
-  OldBeat      := -1;
-  MidBeat      := -1;
-  CurrentBeat  := -1;
-
-  OldBeatC     := -1;
-  MidBeatC     := -1;
-  CurrentBeatC := -1;
-
-  OldBeatD     := -1;
-  MidBeatD     := -1;
-  CurrentBeatD := -1;
-end;
-
-(**
- * Updates the beat information (CurrentBeat/MidBeat/...) according to the
- * current lyric time.
- *)
-procedure TLyricsState.UpdateBeats();
-var
-  CurLyricsTime: real;
-begin
-  CurLyricsTime := GetCurrentTime();
-
-  OldBeat := CurrentBeat;
-  MidBeat := GetMidBeat(CurLyricsTime - StartTime / 1000);
-  CurrentBeat := Floor(MidBeat);
-
-  OldBeatC := CurrentBeatC;
-  MidBeatC := GetMidBeat(CurLyricsTime - StartTime / 1000);
-  CurrentBeatC := Floor(MidBeatC);
-
-  OldBeatD := CurrentBeatD;
-  // MidBeatD = MidBeat with additional GAP
-  MidBeatD := -0.5 + GetMidBeat(CurLyricsTime - (StartTime + 120 + 20) / 1000);
-  CurrentBeatD := Floor(MidBeatD);
-end;
-
 
 { TAudioConverter }
 
@@ -1180,7 +1061,7 @@ end;
 (*
  * Fills a buffer with copies of the given frame or with 0 if frame.
  *)
-procedure TAudioPlaybackStream.FillBufferWithFrame(Buffer: PChar; BufferSize: integer; Frame: PChar; FrameSize: integer);
+procedure TAudioPlaybackStream.FillBufferWithFrame(Buffer: PByteArray; BufferSize: integer; Frame: PByteArray; FrameSize: integer);
 var
   i: integer;
   FrameCopyCount: integer;

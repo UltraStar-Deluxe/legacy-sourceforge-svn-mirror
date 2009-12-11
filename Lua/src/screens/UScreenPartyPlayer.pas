@@ -45,38 +45,46 @@ uses
 type
   TScreenPartyPlayer = class(TMenu)
     public
-      Team1Name: Cardinal;
-      Player1Name: Cardinal;
-      Player2Name: Cardinal;
-      Player3Name: Cardinal;
-      Player4Name: Cardinal;
+      Team1Name: cardinal;
+      Player1Name: cardinal;
+      Player2Name: cardinal;
+      Player3Name: cardinal;
+      Player4Name: cardinal;
 
-      Team2Name: Cardinal;
-      Player5Name: Cardinal;
-      Player6Name: Cardinal;
-      Player7Name: Cardinal;
-      Player8Name: Cardinal;
+      Team2Name: cardinal;
+      Player5Name: cardinal;
+      Player6Name: cardinal;
+      Player7Name: cardinal;
+      Player8Name: cardinal;
 
-      Team3Name: Cardinal;
-      Player9Name: Cardinal;
-      Player10Name: Cardinal;
-      Player11Name: Cardinal;
-      Player12Name: Cardinal;
+      Team3Name: cardinal;
+      Player9Name: cardinal;
+      Player10Name: cardinal;
+      Player11Name: cardinal;
+      Player12Name: cardinal;
 
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
 
-uses UGraphic, UMain, UIni, UTexture, UParty, UScreenPartyOptions, ULanguage;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  UParty,
+  UUnicodeUtils,
+  UScreenPartyOptions,
+  ULanguage;
 
-function TScreenPartyPlayer.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenPartyPlayer.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
-  SDL_ModState:  Word;
-  I, J: Integer;
+  SDL_ModState:  word;
+  I, J: integer;
   HighPlayer: Integer;
   Rounds: ARounds;
   procedure IntNext;
@@ -103,9 +111,14 @@ begin
   begin // Key Down
     // check normal keys
     case CharCode of
-      '0'..'9', 'a'..'z', 'A'..'Z', ' ', '-', '_', '!', ',', '<', '/', '*', '?', '''', '"':
+      Ord('0')..Ord('9'),
+      Ord('a')..Ord('z'),
+      Ord('A')..Ord('Z'),
+      Ord(' '), Ord('-'), Ord('_'), Ord('!'), Ord(','), Ord('<'), Ord('/'),
+      Ord('*'), Ord('?'), Ord(''''), Ord('"'):
         begin
-          Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + CharCode;
+          Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
+                                              UCS4ToUTF8String(CharCode);
           Exit;
         end;
     end;
@@ -224,7 +237,7 @@ begin
 
       SDLK_BACKSPACE:
         begin
-          Button[Interaction].Text[0].DeleteLastL;
+          Button[Interaction].Text[0].DeleteLastLetter;
         end;
 
       SDLK_ESCAPE:
@@ -311,8 +324,6 @@ begin
 end;
 
 constructor TScreenPartyPlayer.Create;
-//var
-// I:    integer; // Auto Removed, Unused Variable
 begin
   inherited Create;
 
@@ -339,7 +350,7 @@ begin
   Interaction := 0;
 end;
 
-procedure TScreenPartyPlayer.onShow;
+procedure TScreenPartyPlayer.OnShow;
 var
   I:    integer;
 begin
@@ -360,7 +371,7 @@ begin
     Button[10].Text[0].Text := Ini.NameTeam[2];
     // Templates for Names Mod end
   
-  If (ScreenPartyOptions.NumTeams + 2 >= 1) then
+  if (ScreenPartyOptions.NumTeams + 2 >= 1) then
   begin
     Button[0].Visible := true;
     Button[1].Visible := (ScreenPartyOptions.NumPlayer1 + 1 >= 1);
@@ -370,14 +381,14 @@ begin
   end
   else
   begin
-    Button[0].Visible := False;
-    Button[1].Visible := False;
-    Button[2].Visible := False;
-    Button[3].Visible := False;
-    Button[4].Visible := False;
+    Button[0].Visible := false;
+    Button[1].Visible := false;
+    Button[2].Visible := false;
+    Button[3].Visible := false;
+    Button[4].Visible := false;
   end;
 
-  If (ScreenPartyOptions.NumTeams + 2 >= 2) then
+  if (ScreenPartyOptions.NumTeams + 2 >= 2) then
   begin
     Button[5].Visible := true;
     Button[6].Visible := (ScreenPartyOptions.NumPlayer2 + 1 >= 1);
@@ -387,14 +398,14 @@ begin
   end
   else
   begin
-    Button[5].Visible := False;
-    Button[6].Visible := False;
-    Button[7].Visible := False;
-    Button[8].Visible := False;
-    Button[9].Visible := False;
+    Button[5].Visible := false;
+    Button[6].Visible := false;
+    Button[7].Visible := false;
+    Button[8].Visible := false;
+    Button[9].Visible := false;
   end;
 
-  If (ScreenPartyOptions.NumTeams + 2 >= 3) then
+  if (ScreenPartyOptions.NumTeams + 2 >= 3) then
   begin
     Button[10].Visible := true;
     Button[11].Visible := (ScreenPartyOptions.NumPlayer3 + 1 >= 1);
@@ -404,11 +415,11 @@ begin
   end
   else
   begin
-    Button[10].Visible := False;
-    Button[11].Visible := False;
-    Button[12].Visible := False;
-    Button[13].Visible := False;
-    Button[14].Visible := False;
+    Button[10].Visible := false;
+    Button[11].Visible := false;
+    Button[12].Visible := false;
+    Button[13].Visible := false;
+    Button[14].Visible := false;
   end;
 
 end;

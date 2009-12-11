@@ -36,8 +36,11 @@ interface
 uses
   Classes,
   IniFiles,
+  SysUtils,
   ULog,
-  SysUtils;
+  UTextEncoding,
+  UFilesystem,
+  UPath;
 
 type
   // TInputDeviceConfig stores the configuration for an input device.
@@ -70,13 +73,13 @@ type
   TBackgroundMusicOption = (bmoOff, bmoOn);
   TIni = class
     private
-      function RemoveFileExt(FullName: string): string;
       function ExtractKeyIndex(const Key, Prefix, Suffix: string): integer;
       function GetMaxKeyIndex(Keys: TStringList; const Prefix, Suffix: string): integer;
-      function GetArrayIndex(const SearchArray: array of string; Value: string; CaseInsensitiv: Boolean = False): integer;
-      function ReadArrayIndex(const SearchArray: array of string; IniFile: TCustomIniFile;
+      function GetArrayIndex(const SearchArray: array of UTF8String; Value: string; CaseInsensitiv: boolean = false): integer;
+      function ReadArrayIndex(const SearchArray: array of UTF8String; IniFile: TCustomIniFile;
           IniSection: string; IniProperty: string; Default: integer): integer;
 
+      procedure TranslateOptionValues;
       procedure LoadInputDeviceCfg(IniFile: TMemIniFile);
       procedure SaveInputDeviceCfg(IniFile: TIniFile);
       procedure LoadThemes(IniFile: TCustomIniFile);
@@ -84,21 +87,21 @@ type
       procedure LoadScreenModes(IniFile: TCustomIniFile);
 
     public
-      Name:           array[0..11] of string;
+      Name:           array[0..11] of UTF8String;
 
       // Templates for Names Mod
-      NameTeam:       array[0..2] of string;
-      NameTemplate:   array[0..11] of string;
+      NameTeam:       array[0..2] of UTF8String;
+      NameTemplate:   array[0..11] of UTF8String;
 
       //Filename of the opened iniFile
-      Filename:       string;
+      Filename:       IPath;
 
       // Game
       Players:        integer;
       Difficulty:     integer;
       Language:       integer;
       Tabs:           integer;
-      Tabs_at_startup:integer; //Tabs at Startup fix
+      TabsAtStartup:  integer; //Tabs at Startup fix
       Sorting:        integer;
       Debug:          integer;
 
@@ -106,7 +109,7 @@ type
       Screens:        integer;
       Resolution:     integer;
       Depth:          integer;
-      VisualizerOption:integer; 
+      VisualizerOption: integer;
       FullScreen:     integer;
       TextureSize:    integer;
       SingWindow:     integer;
@@ -121,8 +124,8 @@ type
       BeatClick:      integer;
       SavePlayback:   integer;
       ThresholdIndex: integer;
-      AudioOutputBufferSizeIndex:integer;
-      VoicePassthrough:integer;
+      AudioOutputBufferSizeIndex: integer;
+      VoicePassthrough: integer;
 
       //Song Preview
       PreviewVolume:  integer;
@@ -138,8 +141,8 @@ type
       Theme:          integer;
       SkinNo:         integer;
       Color:          integer;
-      BackgroundMusicOption:integer;
-      
+      BackgroundMusicOption: integer;
+
       // Record
       InputDeviceConfig: array of TInputDeviceConfig;
 
@@ -154,6 +157,7 @@ type
 
       // Controller
       Joypad:         integer;
+      Mouse:          integer;
 
       procedure Load();
       procedure Save();
@@ -162,117 +166,366 @@ type
   end;
 
 var
-  Ini:            TIni;
-  IResolution:    array of string;
-  ILanguage:      array of string;
-  ITheme:         array of string;
-  ISkin:          array of string;
-
-
+  Ini:         TIni;
+  IResolution: array of UTF8String;
+  ILanguage:   array of UTF8String;
+  ITheme:      array of UTF8String;
+  ISkin:       array of UTF8String;
 
 const
-  IPlayers:       array[0..4] of string  = ('1', '2', '3', '4', '6');
-  IPlayersVals:   array[0..4] of integer = ( 1 ,  2 ,  3 ,  4 ,  6 );
+  IPlayers:     array[0..4] of UTF8String = ('1', '2', '3', '4', '6');
+  IPlayersVals: array[0..4] of integer    = ( 1 ,  2 ,  3 ,  4 ,  6 );
 
-  IDifficulty:    array[0..2] of string = ('Easy', 'Medium', 'Hard');
-  ITabs:          array[0..1] of string = ('Off', 'On');
+  IDifficulty:  array[0..2] of UTF8String = ('Easy', 'Medium', 'Hard');
+  ITabs:        array[0..1] of UTF8String = ('Off', 'On');
 
-  ISorting:       array[0..7] of string = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2');
+  ISorting:     array[0..6] of UTF8String = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Artist2');
   sEdition  = 0;
   sGenre    = 1;
   sLanguage = 2;
   sFolder   = 3;
   sTitle    = 4;
   sArtist   = 5;
-  sTitle2   = 6;
-  sArtist2  = 7;
+  sArtist2  = 6;
 
-  IDebug:         array[0..1] of string = ('Off', 'On');
+  IDebug:            array[0..1] of UTF8String  = ('Off', 'On');
 
-  IScreens:       array[0..1] of string = ('1', '2');
-  IFullScreen:    array[0..1] of string = ('Off', 'On');
-  IDepth:         array[0..1] of string = ('16 bit', '32 bit');
-  IVisualizer:    array[0..2] of string = ('Off', 'WhenNoVideo','On');
+  IScreens:          array[0..1] of UTF8String  = ('1', '2');
+  IFullScreen:       array[0..1] of UTF8String  = ('Off', 'On');
+  IDepth:            array[0..1] of UTF8String  = ('16 bit', '32 bit');
+  IVisualizer:       array[0..2] of UTF8String  = ('Off', 'WhenNoVideo','On');
 
-  IBackgroundMusic: array[0..1] of string = ('Off', 'On');
+  IBackgroundMusic:  array[0..1] of UTF8String  = ('Off', 'On');
 
+  ITextureSize:      array[0..3] of UTF8String  = ('64', '128', '256', '512');
+  ITextureSizeVals:  array[0..3] of integer     = ( 64,   128,   256,   512);
 
-  ITextureSize:     array[0..2] of string  = ('128', '256', '512');
-  ITextureSizeVals: array[0..2] of integer = ( 128,   256,   512);
-
-  ISingWindow:    array[0..1] of string = ('Small', 'Big');
+  ISingWindow:       array[0..1] of UTF8String  = ('Small', 'Big');
 
   //SingBar Mod
-  IOscilloscope:  array[0..2] of string = ('Off', 'Osci', 'Bar');
-//IOscilloscope:  array[0..1] of string = ('Off', 'On');
+  IOscilloscope:     array[0..1] of UTF8String  = ('Off', 'On');
 
-  ISpectrum:      array[0..1] of string = ('Off', 'On');
-  ISpectrograph:  array[0..1] of string = ('Off', 'On');
-  IMovieSize:     array[0..2] of string = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
+  ISpectrum:         array[0..1] of UTF8String  = ('Off', 'On');
+  ISpectrograph:     array[0..1] of UTF8String  = ('Off', 'On');
+  IMovieSize:        array[0..2] of UTF8String  = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
 
-  IClickAssist:   array[0..1] of string = ('Off', 'On');
-  IBeatClick:     array[0..1] of string = ('Off', 'On');
-  ISavePlayback:  array[0..1] of string = ('Off', 'On');
+  IClickAssist:      array[0..1] of UTF8String  = ('Off', 'On');
+  IBeatClick:        array[0..1] of UTF8String  = ('Off', 'On');
+  ISavePlayback:     array[0..1] of UTF8String  = ('Off', 'On');
 
-  IThreshold:     array[0..3] of string = ('5%', '10%', '15%', '20%');
-  IThresholdVals: array[0..3] of single = (0.05, 0.10,  0.15,  0.20);
+  IThreshold:        array[0..3] of UTF8String  = ('5%', '10%', '15%', '20%');
+  IThresholdVals:    array[0..3] of single  = (0.05, 0.10,  0.15,  0.20);
 
-  IVoicePassthrough:  array[0..1] of string = ('Off', 'On');
+  IVoicePassthrough: array[0..1] of UTF8String  = ('Off', 'On');
 
-  IAudioOutputBufferSize:     array[0..9] of string  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
-  IAudioOutputBufferSizeVals: array[0..9] of integer = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
+  IAudioOutputBufferSize:     array[0..9] of UTF8String  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
+  IAudioOutputBufferSizeVals: array[0..9] of integer     = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
 
-  IAudioInputBufferSize:     array[0..9] of string  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
-  IAudioInputBufferSizeVals: array[0..9] of integer = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
+  IAudioInputBufferSize:      array[0..9] of UTF8String  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
+  IAudioInputBufferSizeVals:  array[0..9] of integer     = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
 
   //Song Preview
-  IPreviewVolume:     array[0..10] of string = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
-  IPreviewVolumeVals: array[0..10] of single = ( 0,   0.10,  0.20,  0.30,  0.40,  0.50,  0.60,  0.70,  0.80,  0.90,   1.00  );
+  IPreviewVolume:             array[0..10] of UTF8String = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
+  IPreviewVolumeVals:         array[0..10] of single     = ( 0,   0.10,  0.20,  0.30,  0.40,  0.50,  0.60,  0.70,  0.80,  0.90,   1.00  );
 
-  IPreviewFading:     array[0..5] of string  = ('Off', '1 Sec', '2 Secs', '3 Secs', '4 Secs', '5 Secs');
-  IPreviewFadingVals: array[0..5] of integer = ( 0,     1,       2,        3,        4,        5      );
+  IPreviewFading:             array[0..5] of UTF8String  = ('Off', '1 Sec', '2 Secs', '3 Secs', '4 Secs', '5 Secs');
+  IPreviewFadingVals:         array[0..5] of integer     = ( 0,     1,       2,        3,        4,        5      );
 
+  ILyricsFont:    array[0..2] of UTF8String = ('Plain', 'OLine1', 'OLine2');
+  ILyricsEffect:  array[0..4] of UTF8String = ('Simple', 'Zoom', 'Slide', 'Ball', 'Shift');
+  ISolmization:   array[0..3] of UTF8String = ('Off', 'Euro', 'Jap', 'American');
+  INoteLines:     array[0..1] of UTF8String = ('Off', 'On');
 
-  ILyricsFont:    array[0..2] of string = ('Plain', 'OLine1', 'OLine2');
-  ILyricsEffect:  array[0..4] of string = ('Simple', 'Zoom', 'Slide', 'Ball', 'Shift');
-  ISolmization:   array[0..3] of string = ('Off', 'Euro', 'Jap', 'American');
-  INoteLines:     array[0..1] of string = ('Off', 'On');
-
-  IColor:         array[0..8] of string = ('Blue', 'Green', 'Pink', 'Red', 'Violet', 'Orange', 'Yellow', 'Brown', 'Black');
+  IColor:         array[0..8] of UTF8String = ('Blue', 'Green', 'Pink', 'Red', 'Violet', 'Orange', 'Yellow', 'Brown', 'Black');
 
   // Advanced
-  ILoadAnimation: array[0..1] of string = ('Off', 'On');
-  IEffectSing:    array[0..1] of string = ('Off', 'On');
-  IScreenFade:    array[0..1] of string =('Off', 'On');
-  IAskbeforeDel:  array[0..1] of string = ('Off', 'On');
-  IOnSongClick:   array[0..2] of string = ('Sing', 'Select Players', 'Open Menu');
-  ILineBonus:     array[0..2] of string = ('Off', 'At Score', 'At Notes');
-  IPartyPopup:    array[0..1] of string = ('Off', 'On');
+  ILoadAnimation: array[0..1] of UTF8String = ('Off', 'On');
+  IEffectSing:    array[0..1] of UTF8String = ('Off', 'On');
+  IScreenFade:    array[0..1] of UTF8String = ('Off', 'On');
+  IAskbeforeDel:  array[0..1] of UTF8String = ('Off', 'On');
+  IOnSongClick:   array[0..2] of UTF8String = ('Sing', 'Select Players', 'Open Menu');
+  sStartSing = 0;
+  sSelectPlayer = 1;
+  sOpenMenu = 2;
 
-  IJoypad:        array[0..1] of string = ('Off', 'On');
+  ILineBonus:     array[0..1] of UTF8String = ('Off', 'On');
+  IPartyPopup:    array[0..1] of UTF8String = ('Off', 'On');
+
+  IJoypad:        array[0..1] of UTF8String = ('Off', 'On');
+  IMouse:         array[0..2] of UTF8String = ('Off', 'Hardware Cursor', 'Software Cursor');
 
   // Recording options
-  IChannelPlayer: array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
-  IMicBoost:      array[0..3] of string = ('Off', '+6dB', '+12dB', '+18dB');
+  IChannelPlayer: array[0..6] of UTF8String = ('Off', '1', '2', '3', '4', '5', '6');
+  IMicBoost:      array[0..3] of UTF8String = ('Off', '+6dB', '+12dB', '+18dB');
+
+var
+  ILanguageTranslated:         array of UTF8String;
+
+  IDifficultyTranslated:       array[0..2] of UTF8String  = ('Easy', 'Medium', 'Hard');
+  ITabsTranslated:             array[0..1] of UTF8String  = ('Off', 'On');
+
+  ISortingTranslated:          array[0..6] of UTF8String  = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Artist2');
+
+  IDebugTranslated:            array[0..1] of UTF8String  = ('Off', 'On');
+
+  IFullScreenTranslated:       array[0..1] of UTF8String  = ('Off', 'On');
+  IVisualizerTranslated:       array[0..2] of UTF8String  = ('Off', 'WhenNoVideo','On');
+
+  IBackgroundMusicTranslated:  array[0..1] of UTF8String  = ('Off', 'On');
+  ISingWindowTranslated:       array[0..1] of UTF8String  = ('Small', 'Big');
+
+  //SingBar Mod
+  IOscilloscopeTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
+
+  ISpectrumTranslated:         array[0..1] of UTF8String  = ('Off', 'On');
+  ISpectrographTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
+  IMovieSizeTranslated:        array[0..2] of UTF8String  = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
+
+  IClickAssistTranslated:      array[0..1] of UTF8String  = ('Off', 'On');
+  IBeatClickTranslated:        array[0..1] of UTF8String  = ('Off', 'On');
+  ISavePlaybackTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
+
+  IVoicePassthroughTranslated: array[0..1] of UTF8String  = ('Off', 'On');
+
+  //Song Preview
+  IPreviewVolumeTranslated:    array[0..10] of UTF8String = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
+
+  IAudioOutputBufferSizeTranslated: array[0..9] of UTF8String  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
+
+  IAudioInputBufferSizeTranslated:  array[0..9] of UTF8String  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
+
+  IPreviewFadingTranslated:    array[0..5] of UTF8String  = ('Off', '1 Sec', '2 Secs', '3 Secs', '4 Secs', '5 Secs');
+
+  ILyricsFontTranslated:       array[0..2] of UTF8String = ('Plain', 'OLine1', 'OLine2');
+  ILyricsEffectTranslated:     array[0..4] of UTF8String = ('Simple', 'Zoom', 'Slide', 'Ball', 'Shift');
+  ISolmizationTranslated:      array[0..3] of UTF8String = ('Off', 'Euro', 'Jap', 'American');
+  INoteLinesTranslated:        array[0..1] of UTF8String = ('Off', 'On');
+
+  IColorTranslated:            array[0..8] of UTF8String = ('Blue', 'Green', 'Pink', 'Red', 'Violet', 'Orange', 'Yellow', 'Brown', 'Black');
+
+  // Advanced
+  ILoadAnimationTranslated:    array[0..1] of UTF8String = ('Off', 'On');
+  IEffectSingTranslated:       array[0..1] of UTF8String = ('Off', 'On');
+  IScreenFadeTranslated:       array[0..1] of UTF8String = ('Off', 'On');
+  IAskbeforeDelTranslated:     array[0..1] of UTF8String = ('Off', 'On');
+  IOnSongClickTranslated:      array[0..2] of UTF8String = ('Sing', 'Select Players', 'Open Menu');
+  ILineBonusTranslated:        array[0..1] of UTF8String = ('Off', 'On');
+  IPartyPopupTranslated:       array[0..1] of UTF8String = ('Off', 'On');
+
+  IJoypadTranslated:           array[0..1] of UTF8String = ('Off', 'On');
+  IMouseTranslated:            array[0..2] of UTF8String = ('Off', 'Hardware Cursor', 'Software Cursor');
+
+  // Recording options
+  IChannelPlayerTranslated:    array[0..6] of UTF8String = ('Off', '1', '2', '3', '4', '5', '6');
+  IMicBoostTranslated:         array[0..3] of UTF8String = ('Off', '+6dB', '+12dB', '+18dB');
 
 implementation
 
 uses
   StrUtils,
-  UMain,
   SDL,
+  UCommandLine,
   ULanguage,
   UPlatform,
-  USkins,
+  UMain,
   URecord,
-  UCommandLine;
+  USkins,
+  UPathUtils,
+  UUnicodeUtils;
 
 (**
- * Returns the filename without its fileextension
+ * Translate and set the values of options, which need translation. 
  *)
-function TIni.RemoveFileExt(FullName: string): string;
+procedure TIni.TranslateOptionValues;
+var
+  I: integer;
 begin
-  Result := ChangeFileExt(FullName, '');
+  // Load Languagefile
+  if (Params.Language <> -1) then
+    ULanguage.Language.ChangeLanguage(ILanguage[Params.Language])
+  else
+    ULanguage.Language.ChangeLanguage(ILanguage[Ini.Language]);
+
+  SetLength(ILanguageTranslated, Length(ILanguage));
+  for I := 0 to High(ILanguage) do
+  begin
+    ILanguageTranslated[I] := ULanguage.Language.Translate(
+      'OPTION_VALUE_' + UpperCase(ILanguage[I])
+    );
+  end;
+
+  IDifficultyTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_EASY');
+  IDifficultyTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_MEDIUM');
+  IDifficultyTranslated[2]            := ULanguage.Language.Translate('OPTION_VALUE_HARD');
+
+  ITabsTranslated[0]                  := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  ITabsTranslated[1]                  := ULanguage.Language.Translate('OPTION_VALUE_ON');
+  
+  ISortingTranslated[0]               := ULanguage.Language.Translate('OPTION_VALUE_EDITION');
+  ISortingTranslated[1]               := ULanguage.Language.Translate('OPTION_VALUE_GENRE');
+  ISortingTranslated[2]               := ULanguage.Language.Translate('OPTION_VALUE_LANGUAGE');
+  ISortingTranslated[3]               := ULanguage.Language.Translate('OPTION_VALUE_FOLDER');
+  ISortingTranslated[4]               := ULanguage.Language.Translate('OPTION_VALUE_TITLE');
+  ISortingTranslated[5]               := ULanguage.Language.Translate('OPTION_VALUE_ARTIST');
+  ISortingTranslated[6]               := ULanguage.Language.Translate('OPTION_VALUE_ARTIST2');
+
+  IDebugTranslated[0]                 := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IDebugTranslated[1]                 := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IFullScreenTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IFullScreenTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IVisualizerTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IVisualizerTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_WHENNOVIDEO');
+  IVisualizerTranslated[2]            := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IBackgroundMusicTranslated[0]       := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IBackgroundMusicTranslated[1]       := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  ISingWindowTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_SMALL');
+  ISingWindowTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_BIG');
+
+  IOscilloscopeTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IOscilloscopeTranslated[1]          := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  ISpectrumTranslated[0]              := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  ISpectrumTranslated[1]              := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  ISpectrographTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  ISpectrographTranslated[1]          := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IMovieSizeTranslated[0]             := ULanguage.Language.Translate('OPTION_VALUE_HALF');
+  IMovieSizeTranslated[1]             := ULanguage.Language.Translate('OPTION_VALUE_FULL_VID');
+  IMovieSizeTranslated[2]             := ULanguage.Language.Translate('OPTION_VALUE_FULL_VID_BG');
+
+  IClickAssistTranslated[0]           := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IClickAssistTranslated[1]           := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IBeatClickTranslated[0]             := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IBeatClickTranslated[1]             := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  ISavePlaybackTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  ISavePlaybackTranslated[1]          := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IVoicePassthroughTranslated[0]      := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IVoicePassthroughTranslated[1]      := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  ILyricsFontTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_PLAIN');
+  ILyricsFontTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_OLINE1');
+  ILyricsFontTranslated[2]            := ULanguage.Language.Translate('OPTION_VALUE_OLINE2');
+
+  ILyricsEffectTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_SIMPLE');
+  ILyricsEffectTranslated[1]          := ULanguage.Language.Translate('OPTION_VALUE_ZOOM');
+  ILyricsEffectTranslated[2]          := ULanguage.Language.Translate('OPTION_VALUE_SLIDE');
+  ILyricsEffectTranslated[3]          := ULanguage.Language.Translate('OPTION_VALUE_BALL');
+  ILyricsEffectTranslated[4]          := ULanguage.Language.Translate('OPTION_VALUE_SHIFT');
+
+  ISolmizationTranslated[0]           := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  ISolmizationTranslated[1]           := ULanguage.Language.Translate('OPTION_VALUE_EURO');
+  ISolmizationTranslated[2]           := ULanguage.Language.Translate('OPTION_VALUE_JAPAN');
+  ISolmizationTranslated[3]           := ULanguage.Language.Translate('OPTION_VALUE_AMERICAN');
+
+  INoteLinesTranslated[0]             := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  INoteLinesTranslated[1]             := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IColorTranslated[0]                 := ULanguage.Language.Translate('OPTION_VALUE_BLUE');
+  IColorTranslated[1]                 := ULanguage.Language.Translate('OPTION_VALUE_GREEN');
+  IColorTranslated[2]                 := ULanguage.Language.Translate('OPTION_VALUE_PINK');
+  IColorTranslated[3]                 := ULanguage.Language.Translate('OPTION_VALUE_RED');
+  IColorTranslated[4]                 := ULanguage.Language.Translate('OPTION_VALUE_VIOLET');
+  IColorTranslated[5]                 := ULanguage.Language.Translate('OPTION_VALUE_ORANGE');
+  IColorTranslated[6]                 := ULanguage.Language.Translate('OPTION_VALUE_YELLOW');
+  IColorTranslated[7]                 := ULanguage.Language.Translate('OPTION_VALUE_BROWN');
+  IColorTranslated[8]                 := ULanguage.Language.Translate('OPTION_VALUE_BLACK');
+
+  // Advanced
+  ILoadAnimationTranslated[0]         := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  ILoadAnimationTranslated[1]         := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IEffectSingTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IEffectSingTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IScreenFadeTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IScreenFadeTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IAskbeforeDelTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IAskbeforeDelTranslated[1]          := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IOnSongClickTranslated[0]           := ULanguage.Language.Translate('OPTION_VALUE_SING');
+  IOnSongClickTranslated[1]           := ULanguage.Language.Translate('OPTION_VALUE_SELECT_PLAYERS');
+  IOnSongClickTranslated[2]           := ULanguage.Language.Translate('OPTION_VALUE_OPEN_MENU');
+
+  ILineBonusTranslated[0]             := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  ILineBonusTranslated[1]             := ULanguage.Language.Translate('OPTION_VALUE_ON');
+ 
+  IPartyPopupTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IPartyPopupTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IJoypadTranslated[0]                := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IJoypadTranslated[1]                := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IMouseTranslated[0]                 := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IMouseTranslated[1]                 := ULanguage.Language.Translate('OPTION_VALUE_HARDWARE_CURSOR');
+  IMouseTranslated[2]                 := ULanguage.Language.Translate('OPTION_VALUE_SOFTWARE_CURSOR');
+
+  IAudioOutputBufferSizeTranslated[0] := ULanguage.Language.Translate('OPTION_VALUE_AUTO');
+  IAudioOutputBufferSizeTranslated[1] := '256';
+  IAudioOutputBufferSizeTranslated[2] := '512';
+  IAudioOutputBufferSizeTranslated[3] := '1024';
+  IAudioOutputBufferSizeTranslated[4] := '2048';
+  IAudioOutputBufferSizeTranslated[5] := '4096';
+  IAudioOutputBufferSizeTranslated[6] := '8192';
+  IAudioOutputBufferSizeTranslated[7] := '16384';
+  IAudioOutputBufferSizeTranslated[8] := '32768';
+  IAudioOutputBufferSizeTranslated[9] := '65536';
+
+
+  IAudioInputBufferSizeTranslated[0]  := ULanguage.Language.Translate('OPTION_VALUE_AUTO');
+  IAudioInputBufferSizeTranslated[1]  := '256';
+  IAudioInputBufferSizeTranslated[2]  := '512';
+  IAudioInputBufferSizeTranslated[3]  := '1024';
+  IAudioInputBufferSizeTranslated[4]  := '2048';
+  IAudioInputBufferSizeTranslated[5]  := '4096';
+  IAudioInputBufferSizeTranslated[6]  := '8192';
+  IAudioInputBufferSizeTranslated[7]  := '16384';
+  IAudioInputBufferSizeTranslated[8]  := '32768';
+  IAudioInputBufferSizeTranslated[9]  := '65536';
+
+  //Song Preview
+  IPreviewVolumeTranslated[0]         := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IPreviewVolumeTranslated[1]         := '10%';
+  IPreviewVolumeTranslated[2]         := '20%';
+  IPreviewVolumeTranslated[3]         := '30%';
+  IPreviewVolumeTranslated[4]         := '40%';
+  IPreviewVolumeTranslated[5]         := '50%';
+  IPreviewVolumeTranslated[6]         := '60%';
+  IPreviewVolumeTranslated[7]         := '70%';
+  IPreviewVolumeTranslated[8]         := '80%';
+  IPreviewVolumeTranslated[9]         := '90%';
+  IPreviewVolumeTranslated[10]        := '100%';
+
+
+  IPreviewFadingTranslated[0]         :=        ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IPreviewFadingTranslated[1]         := '1 ' + ULanguage.Language.Translate('OPTION_VALUE_SEC');
+  IPreviewFadingTranslated[2]         := '2 ' + ULanguage.Language.Translate('OPTION_VALUE_SECS');
+  IPreviewFadingTranslated[3]         := '3 ' + ULanguage.Language.Translate('OPTION_VALUE_SECS');
+  IPreviewFadingTranslated[4]         := '4 ' + ULanguage.Language.Translate('OPTION_VALUE_SECS');
+  IPreviewFadingTranslated[5]         := '5 ' + ULanguage.Language.Translate('OPTION_VALUE_SECS');
+
+  // Recording options
+  IChannelPlayerTranslated[0]         := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IChannelPlayerTranslated[1]         := '1';
+  IChannelPlayerTranslated[2]         := '2';
+  IChannelPlayerTranslated[3]         := '3';
+  IChannelPlayerTranslated[4]         := '4';
+  IChannelPlayerTranslated[5]         := '5';
+  IChannelPlayerTranslated[6]         := '6';
+
+  IMicBoostTranslated[0]              := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IMicBoostTranslated[1]              := '+6dB';
+  IMicBoostTranslated[2]              := '+12dB';
+  IMicBoostTranslated[3]              := '+18dB';
+
 end;
 
 (**
@@ -283,17 +536,22 @@ function TIni.ExtractKeyIndex(const Key, Prefix, Suffix: string): integer;
 var
   Value: string;
   Start: integer;
+  PrefixPos, SuffixPos: integer;
 begin
   Result := -1;
 
-  if Pos(Prefix, Key) > -1 then
-  begin
-    Start  := Pos(Prefix, Key) + Length(Prefix);
+  PrefixPos := Pos(Prefix, Key);
+  if (PrefixPos <= 0) then
+    Exit;
+  SuffixPos := Pos(Suffix, Key);
+  if (SuffixPos <= 0) then
+    Exit;
 
-    // copy all between prefix and suffix
-    Value  := Copy(Key, Start, Pos(Suffix, Key)-1 - Start);
-    Result := StrToIntDef(Value, -1);
-  end;
+  Start := PrefixPos + Length(Prefix);
+
+  // copy all between prefix and suffix
+  Value  := Copy(Key, Start, SuffixPos - Start);
+  Result := StrToIntDef(Value, -1);
 end;
 
 (**
@@ -303,7 +561,7 @@ end;
  *)
 function TIni.GetMaxKeyIndex(Keys: TStringList; const Prefix, Suffix: string): integer;
 var
-  i: integer;
+  i:        integer;
   KeyIndex: integer;
 begin
   Result := -1;
@@ -320,8 +578,8 @@ end;
  * Returns the index of Value in SearchArray
  * or -1 if Value is not in SearchArray.
  *)
-function TIni.GetArrayIndex(const SearchArray: array of string; Value: string;
-    CaseInsensitiv: Boolean = False): integer;
+function TIni.GetArrayIndex(const SearchArray: array of UTF8String; Value: string;
+    CaseInsensitiv: boolean = false): integer;
 var
   i: integer;
 begin
@@ -344,7 +602,7 @@ end;
  * If SearchArray does not contain the property value, the default value is
  * returned.
  *)
-function TIni.ReadArrayIndex(const SearchArray: array of string; IniFile: TCustomIniFile;
+function TIni.ReadArrayIndex(const SearchArray: array of UTF8String; IniFile: TCustomIniFile;
     IniSection: string; IniProperty: string; Default: integer): integer;
 var
   StrValue: string;
@@ -357,15 +615,14 @@ begin
   end;
 end;
 
-
 procedure TIni.LoadInputDeviceCfg(IniFile: TMemIniFile);
 var
-  DeviceCfg: PInputDeviceConfig;
-  DeviceIndex: integer;
+  DeviceCfg:    PInputDeviceConfig;
+  DeviceIndex:  integer;
   ChannelCount: integer;
   ChannelIndex: integer;
-  RecordKeys: TStringList;
-  i: integer;
+  RecordKeys:   TStringList;
+  i:            integer;
 begin
   RecordKeys := TStringList.Create();
 
@@ -414,15 +671,15 @@ begin
   RecordKeys.Free();
 
   // MicBoost
-  //MicBoost := GetArrayIndex(IMicBoost, IniFile.ReadString('Record', 'MicBoost', 'Off'));
+  MicBoost := GetArrayIndex(IMicBoost, IniFile.ReadString('Record', 'MicBoost', 'Off'));
   // Threshold
-  //  ThresholdIndex := GetArrayIndex(IThreshold, IniFile.ReadString('Record', 'Threshold', IThreshold[1]));
+  ThresholdIndex := GetArrayIndex(IThreshold, IniFile.ReadString('Record', 'Threshold', IThreshold[1]));
 end;
 
 procedure TIni.SaveInputDeviceCfg(IniFile: TIniFile);
 var
-  DeviceIndex:    integer;
-  ChannelIndex:   integer;
+  DeviceIndex:  integer;
+  ChannelIndex: integer;
 begin
   for DeviceIndex := 0 to High(InputDeviceConfig) do
   begin
@@ -431,7 +688,7 @@ begin
                         InputDeviceConfig[DeviceIndex].Name);
     IniFile.WriteInteger('Record', Format('Input[%d]', [DeviceIndex+1]),
                         InputDeviceConfig[DeviceIndex].Input);
-                        
+
     // Channel-to-Player Mapping
     for ChannelIndex := 0 to High(InputDeviceConfig[DeviceIndex].ChannelToPlayerMap) do
     begin
@@ -442,15 +699,15 @@ begin
   end;
 
   // MicBoost
-  //IniFile.WriteString('Record', 'MicBoost', IMicBoost[MicBoost]);
+  IniFile.WriteString('Record', 'MicBoost', IMicBoost[MicBoost]);
   // Threshold
-  //IniFile.WriteString('Record', 'Threshold', IThreshold[ThresholdIndex]);
+  IniFile.WriteString('Record', 'Threshold', IThreshold[ThresholdIndex]);
 end;
 
 procedure TIni.LoadPaths(IniFile: TCustomIniFile);
 var
   PathStrings: TStringList;
-  I: integer;
+  I:           integer;
 begin
   PathStrings := TStringList.Create;
   IniFile.ReadSection('Directories', PathStrings);
@@ -458,9 +715,9 @@ begin
   // Load song-paths
   for I := 0 to PathStrings.Count-1 do
   begin
-    if (AnsiStartsText('SongDir', PathStrings[I])) then
+    if (Pos('SONGDIR', UpperCase(PathStrings[I])) = 1) then
     begin
-      AddSongPath(IniFile.ReadString('Directories', PathStrings[I], ''));
+      AddSongPath(Path(IniFile.ReadString('Directories', PathStrings[I], '')));
     end;
   end;
 
@@ -473,18 +730,23 @@ var
   ThemeIni:     TMemIniFile;
   ThemeName:    string;
   I: integer;
+  Iter: IFileIterator;
+  FileInfo: TFileInfo;
 begin
   // Theme
   SetLength(ITheme, 0);
-  Log.LogStatus('Searching for Theme : ' + ThemePath + '*.ini', 'Theme');
+  Log.LogStatus('Searching for Theme : ' + ThemePath.ToNative + '*.ini', 'Theme');
 
-  FindFirst(ThemePath + '*.ini',faAnyFile, SearchResult);
-  Repeat
-    Log.LogStatus('Found Theme: ' + SearchResult.Name, 'Theme');
+
+  Iter := FileSystem.FileFind(ThemePath.Append('*.ini'), 0);
+  while (Iter.HasNext) do
+  begin
+    FileInfo := Iter.Next;
+    Log.LogStatus('Found Theme: ' + FileInfo.Name.ToNative, 'Theme');
 
     //Read Themename from Theme
-    ThemeIni := TMemIniFile.Create(SearchResult.Name);
-    ThemeName := UpperCase(ThemeIni.ReadString('Theme','Name', RemoveFileExt(SearchResult.Name)));
+    ThemeIni := TMemIniFile.Create(FileInfo.Name.ToNative);
+    ThemeName := UpperCase(ThemeIni.ReadString('Theme','Name', FileInfo.Name.SetExtension('').ToNative));
     ThemeIni.Free;
 
     //Search for Skins for this Theme
@@ -493,12 +755,11 @@ begin
       if UpperCase(Skin.Skin[I].Theme) = ThemeName then
       begin
         SetLength(ITheme, Length(ITheme)+1);
-        ITheme[High(ITheme)] := RemoveFileExt(SearchResult.Name);
+        ITheme[High(ITheme)] := FileInfo.Name.SetExtension('').ToNative;
         break;
       end;
     end;
-  until FindNext(SearchResult) <> 0;
-  FindClose(SearchResult);
+  end;
 
   // No Theme Found
   if (Length(ITheme) = 0) then
@@ -508,7 +769,7 @@ begin
 
   Theme := GetArrayIndex(ITheme, IniFile.ReadString('Themes', 'Theme', 'DELUXE'), true);
   if (Theme = -1) then
-       Theme := 0;
+    Theme := 0;
 
   // Skin
   Skin.onThemeChange;
@@ -519,7 +780,7 @@ end;
 procedure TIni.LoadScreenModes(IniFile: TCustomIniFile);
 
   // swap two strings
-  procedure swap(var s1, s2: string);
+  procedure swap(var s1, s2: UTF8String);
   var
     s3: string;
   begin
@@ -530,25 +791,25 @@ procedure TIni.LoadScreenModes(IniFile: TCustomIniFile);
 
 var
   Modes: PPSDL_Rect;
-  I: integer;
+  I:     integer;
 begin
   // Screens
   Screens := GetArrayIndex(IScreens, IniFile.ReadString('Graphics', 'Screens', IScreens[0]));
-  
+
   // FullScreen
   FullScreen := GetArrayIndex(IFullScreen, IniFile.ReadString('Graphics', 'FullScreen', 'On'));
 
   // Resolution
   SetLength(IResolution, 0);
-  
+
   // Check if there are any modes available
   // TODO: we should seperate windowed and fullscreen modes. Otherwise it is not
   // possible to select a reasonable fullscreen mode when in windowed mode
   if IFullScreen[FullScreen] = 'On' then
     Modes  := SDL_ListModes(nil, SDL_OPENGL or SDL_FULLSCREEN)
-  else 
+  else
     Modes  := SDL_ListModes(nil, SDL_OPENGL or SDL_RESIZABLE) ;
-  
+
   if (Modes = nil) then
   begin
     Log.LogStatus( 'No resolutions Found' , 'Video');
@@ -567,7 +828,7 @@ begin
     IResolution[7] := '1440x900';
     IResolution[8] := '1600x1200';
     IResolution[9] := '1680x1050';
-      
+
     Resolution := GetArrayIndex(IResolution, IniFile.ReadString('Graphics', 'Resolution', '800x600'));
     if Resolution = -1 then
     begin
@@ -587,6 +848,7 @@ begin
     end;
 
     // reverse order
+    Log.LogStatus( 'Log size of resolution: ' + IntToStr(Length(IResolution)), 'Video');
     for I := 0 to (Length(IResolution) div 2) - 1 do
     begin
       swap(IResolution[I], IResolution[High(IResolution)-I]);
@@ -623,23 +885,19 @@ end;
 procedure TIni.Load();
 var
   IniFile: TMemIniFile;
-  I: integer;
+  I:       integer;
 begin
   GamePath := Platform.GetGameUserPath;
 
-  Log.LogStatus( 'GamePath : ' +GamePath , '' );
+  Log.LogStatus( 'GamePath : ' +GamePath.ToNative , '' );
 
-  if (Params.ConfigFile <> '') then
-    try
-      FileName := Params.ConfigFile;
-    except
-      FileName := GamePath + 'config.ini';
-    end
+  if (Params.ConfigFile.IsSet) then
+    FileName := Params.ConfigFile
   else
-    FileName := GamePath + 'config.ini';
+    FileName := GamePath.Append('config.ini');
 
-  Log.LogStatus( 'Using config : ' + FileName , 'Ini');
-  IniFile := TMemIniFile.Create( FileName );
+  Log.LogStatus('Using config : ' + FileName.ToNative, 'Ini');
+  IniFile := TMemIniFile.Create(FileName.ToNative);
 
   // Name
   for I := 0 to 11 do
@@ -650,24 +908,23 @@ begin
     NameTeam[I] := IniFile.ReadString('NameTeam', 'T'+IntToStr(I+1), 'Team'+IntToStr(I+1));
   for I := 0 to 11 do
     NameTemplate[I] := IniFile.ReadString('NameTemplate', 'Name'+IntToStr(I+1), 'Template'+IntToStr(I+1));
-  
+
   // Players
   Players := GetArrayIndex(IPlayers, IniFile.ReadString('Game', 'Players', IPlayers[0]));
-  
+
   // Difficulty
   Difficulty := GetArrayIndex(IDifficulty, IniFile.ReadString('Game', 'Difficulty', 'Easy'));
-  
+
   // Language
   Language := GetArrayIndex(ILanguage, IniFile.ReadString('Game', 'Language', 'English'));
-  //Language.ChangeLanguage(ILanguage[Language]);
-  
+
   // Tabs
   Tabs := GetArrayIndex(ITabs, IniFile.ReadString('Game', 'Tabs', ITabs[0]));
-  Tabs_at_startup := Tabs;	//Tabs at Startup fix
-  
+  TabsAtStartup := Tabs;	//Tabs at Startup fix
+
   // Song Sorting
   Sorting := GetArrayIndex(ISorting, IniFile.ReadString('Game', 'Sorting', ISorting[0]));
-  
+
   // Debug
   Debug := GetArrayIndex(IDebug, IniFile.ReadString('Game', 'Debug', IDebug[0]));
 
@@ -680,7 +937,7 @@ begin
   SingWindow := GetArrayIndex(ISingWindow, IniFile.ReadString('Graphics', 'SingWindow', 'Big'));
 
   // Oscilloscope
-  Oscilloscope := GetArrayIndex(IOscilloscope, IniFile.ReadString('Graphics', 'Oscilloscope', 'Bar'));
+  Oscilloscope := GetArrayIndex(IOscilloscope, IniFile.ReadString('Graphics', 'Oscilloscope', IOscilloscope[0]));
 
   // Spectrum
   Spectrum := GetArrayIndex(ISpectrum, IniFile.ReadString('Graphics', 'Spectrum', 'Off'));
@@ -705,18 +962,18 @@ begin
 
   //Preview Volume
   PreviewVolume := GetArrayIndex(IPreviewVolume, IniFile.ReadString('Sound', 'PreviewVolume', IPreviewVolume[7]));
-  
+
   //Preview Fading
-  PreviewFading := GetArrayIndex(IPreviewFading, IniFile.ReadString('Sound', 'PreviewFading', IPreviewFading[1]));
+  PreviewFading := GetArrayIndex(IPreviewFading, IniFile.ReadString('Sound', 'PreviewFading', IPreviewFading[3]));
 
   //AudioRepeat aka VoicePassthrough
   VoicePassthrough := GetArrayIndex(IVoicePassthrough, IniFile.ReadString('Sound', 'VoicePassthrough', IVoicePassthrough[0]));
 
   // Lyrics Font
-  LyricsFont := GetArrayIndex(ILyricsFont, IniFile.ReadString('Lyrics', 'LyricsFont', ILyricsFont[1]));
+  LyricsFont := GetArrayIndex(ILyricsFont, IniFile.ReadString('Lyrics', 'LyricsFont', ILyricsFont[0]));
 
   // Lyrics Effect
-  LyricsEffect := GetArrayIndex(ILyricsEffect, IniFile.ReadString('Lyrics', 'LyricsEffect', ILyricsEffect[1]));
+  LyricsEffect := GetArrayIndex(ILyricsEffect, IniFile.ReadString('Lyrics', 'LyricsEffect', ILyricsEffect[2]));
 
   // Solmization
   Solmization := GetArrayIndex(ISolmization, IniFile.ReadString('Lyrics', 'Solmization', ISolmization[0]));
@@ -760,7 +1017,7 @@ begin
   OnSongClick := GetArrayIndex(IOnSongClick, IniFile.ReadString('Advanced', 'OnSongClick', 'Sing'));
 
   // Linebonus
-  LineBonus := GetArrayIndex(ILineBonus, IniFile.ReadString('Advanced', 'LineBonus', 'At Score'));
+  LineBonus := GetArrayIndex(ILineBonus, IniFile.ReadString('Advanced', 'LineBonus', ILineBonus[1]));
 
   // PartyPopup
   PartyPopup := GetArrayIndex(IPartyPopup, IniFile.ReadString('Advanced', 'PartyPopup', 'On'));
@@ -768,22 +1025,27 @@ begin
   // Joypad
   Joypad := GetArrayIndex(IJoypad, IniFile.ReadString('Controller',    'Joypad',   IJoypad[0]));
 
+  // Mouse
+  Mouse := GetArrayIndex(IMouse, IniFile.ReadString('Controller',    'Mouse',   IMouse[2]));
+
   LoadPaths(IniFile);
-  
+
+  TranslateOptionValues;
+
   IniFile.Free;
 end;
 
 procedure TIni.Save;
 var
-  IniFile:    TIniFile;
+  IniFile: TIniFile;
 begin
-  if (FileExists(Filename) and FileIsReadOnly(Filename)) then
+  if (Filename.IsFile and Filename.IsReadOnly) then
   begin
     Log.LogError('Config-file is read-only', 'TIni.Save');
     Exit;
   end;
 
-  IniFile := TIniFile.Create(Filename);
+  IniFile := TIniFile.Create(Filename.ToNative);
 
   // Players
   IniFile.WriteString('Game', 'Players', IPlayers[Players]);
@@ -850,7 +1112,7 @@ begin
 
   // Song Preview
   IniFile.WriteString('Sound', 'PreviewVolume', IPreviewVolume[PreviewVolume]);
-    
+
   // PreviewFading
   IniFile.WriteString('Sound', 'PreviewFading', IPreviewFading[PreviewFading]);
 
@@ -907,6 +1169,9 @@ begin
   // Joypad
   IniFile.WriteString('Controller', 'Joypad', IJoypad[Joypad]);
 
+  // Mouse
+  IniFile.WriteString('Controller', 'Mouse', IMouse[Mouse]);
+
   // Directories (add a template if section is missing)
   // Note: Value must be ' ' and not '', otherwise no key is generated on Linux
   if (not IniFile.SectionExists('Directories')) then
@@ -920,17 +1185,17 @@ var
   IniFile: TIniFile;
   I:       integer;
 begin
-  if not FileIsReadOnly(Filename) then
+  if not Filename.IsReadOnly() then
   begin
-    IniFile := TIniFile.Create(Filename);
+    IniFile := TIniFile.Create(Filename.ToNative);
 
     //Name Templates for Names Mod
-    for I := 1 to 12 do
-      IniFile.WriteString('Name', 'P' + IntToStr(I), Name[I-1]);
-    for I := 1 to 3 do
-      IniFile.WriteString('NameTeam', 'T' + IntToStr(I), NameTeam[I-1]);
-    for I := 1 to 12 do
-      IniFile.WriteString('NameTemplate', 'Name' + IntToStr(I), NameTemplate[I-1]);
+    for I := 0 to High(Name) do
+      IniFile.WriteString('Name', 'P' + IntToStr(I+1), Name[I]);
+    for I := 0 to High(NameTeam) do
+      IniFile.WriteString('NameTeam', 'T' + IntToStr(I+1), NameTeam[I]);
+    for I := 0 to High(NameTemplate) do
+      IniFile.WriteString('NameTemplate', 'Name' + IntToStr(I+1), NameTemplate[I]);
 
     IniFile.Free;
   end;
@@ -940,9 +1205,9 @@ procedure TIni.SaveLevel;
 var
   IniFile: TIniFile;
 begin
-  if not FileIsReadOnly(Filename) then
+  if not Filename.IsReadOnly() then
   begin
-    IniFile := TIniFile.Create(Filename);
+    IniFile := TIniFile.Create(Filename.ToNative);
 
     // Difficulty
     IniFile.WriteString('Game', 'Difficulty', IDifficulty[Difficulty]);

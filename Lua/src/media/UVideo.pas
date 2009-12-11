@@ -22,7 +22,7 @@
  * $URL$
  * $Id$
  *}
- 
+
 unit UVideo;
 
 {*
@@ -69,8 +69,9 @@ type
 implementation
 
 uses
+  SysUtils,
+  Math,
   SDL,
-  textgl,
   avcodec,
   avformat,
   avutil,
@@ -79,17 +80,17 @@ uses
   {$IFDEF UseSWScale}
   swscale,
   {$ENDIF}
-  UMediaCore_FFmpeg,
-  math,
   gl,
   glext,
-  SysUtils,
+  textgl,
+  UMediaCore_FFmpeg,
   UCommon,
   UConfig,
   ULog,
   UMusic,
   UGraphicClasses,
-  UGraphic;
+  UGraphic,
+  UPath;
 
 const
 {$IFDEF PIXEL_FMT_BGR}
@@ -135,7 +136,7 @@ type
 
     fAspect: real;        //**< width/height ratio
     fAspectCorrection: TAspectCorrection;
-    
+
     fTimeBase: extended;  //**< FFmpeg time base per time unit
     fTime:     extended;  //**< video time position (absolute)
     fLoopTime: extended;  //**< start time of the current loop
@@ -145,7 +146,7 @@ type
     procedure SynchronizeTime(Frame: PAVFrame; var pts: double);
 
     procedure GetVideoRect(var ScreenRect, TexRect: TRectCoords);
-    
+
     procedure ShowDebugInfo();
 
   public
@@ -154,7 +155,7 @@ type
     function    Init(): boolean;
     function    Finalize: boolean;
 
-    function    Open(const aFileName : string): boolean; // true if succeed
+    function    Open(const FileName : IPath): boolean; // true if succeed
     procedure   Close;
 
     procedure   Play;
@@ -171,7 +172,7 @@ type
 var
   FFmpegCore: TMediaCore_FFmpeg;
 
-  
+
 // These are called whenever we allocate a frame buffer.
 // We use this to store the global_pts in a frame at the time it is allocated.
 function PtsGetBuffer(CodecCtx: PAVCodecContext; Frame: PAVFrame): integer; cdecl;
@@ -248,11 +249,11 @@ begin
   // TODO: do we really want this by default?
   fLoop := true;
   fLoopTime := 0;
-  
+
   fAspectCorrection := acoCrop;
 end;
 
-function TVideoPlayback_FFmpeg.Open(const aFileName : string): boolean; // true if succeed
+function TVideoPlayback_FFmpeg.Open(const FileName : IPath): boolean; // true if succeed
 var
   errnum: Integer;
   AudioStreamIndex: integer;
@@ -261,10 +262,11 @@ begin
 
   Reset();
 
-  errnum := av_open_input_file(fFormatContext, PChar(aFileName), nil, 0, nil);
+  // use custom 'ufile' protocol for UTF-8 support
+  errnum := av_open_input_file(fFormatContext, PAnsiChar('ufile:'+FileName.ToNative), nil, 0, nil);
   if (errnum <> 0) then
   begin
-    Log.LogError('Failed to open file "'+aFileName+'" ('+FFmpegCore.GetErrorString(errnum)+')');
+    Log.LogError('Failed to open file "'+ FileName.ToNative +'" ('+FFmpegCore.GetErrorString(errnum)+')');
     Exit;
   end;
 
@@ -434,7 +436,7 @@ begin
   fAVFrame     := nil;
   fAVFrameRGB  := nil;
   fFrameBuffer := nil;
-    
+
   if (fCodecContext <> nil) then
   begin
     // avcodec_close() is not thread-safe
@@ -479,7 +481,7 @@ end;
  * Decode a new frame from the video stream.
  * The decoded frame is stored in fAVFrame. fTime is updated to the new frame's
  * time.
- * @param pts will be updated to the presentation time of the decoded frame. 
+ * @param pts will be updated to the presentation time of the decoded frame.
  * returns true if a frame could be decoded. False if an error or EOF occured.
  *}
 function TVideoPlayback_FFmpeg.DecodeFrame(): boolean;
@@ -532,8 +534,17 @@ begin
       end;
 
       // no error -> wait for user input
-      SDL_Delay(100);
+{
+      SDL_Delay(100);  // initial version, left for documentation
       continue;
+}
+
+      // Patch by Hawkear:
+      // Why should this function loop in an endless loop if there is an error?
+      // This runs in the main thread, so it halts the whole program
+      // Therefore, it is better to exit when an error occurs
+      Exit;
+
     end;
 
     // if we got a packet from the video stream, then decode it
@@ -564,6 +575,10 @@ begin
       begin
         pts := 0;
       end;
+
+      if fStream^.start_time <> AV_NOPTS_VALUE then
+        pts := pts - fStream^.start_time;
+
       pts := pts * av_q2d(fStream^.time_base);
 
       // synchronize time on each complete frame
@@ -611,7 +626,7 @@ begin
                  'TimeDiff:  '+inttostr(floor(TimeDifference*1000)));
     {$endif}
 
-    // check if last time is more than one frame in the past 
+    // check if last time is more than one frame in the past
     if (TimeDifference < fTimeBase) then
     begin
       {$ifdef DebugFrames}
@@ -635,7 +650,7 @@ begin
   {$IFDEF VideoBenchmark}
   Log.BenchmarkStart(15);
   {$ENDIF}
-  
+
   // fetch new frame (updates fTime)
   Success := DecodeFrame();
   TimeDifference := NewTime - fTime;
@@ -662,7 +677,7 @@ begin
       Success := DecodeFrame();
   end;
 
-  // check if we got an EOF or error 
+  // check if we got an EOF or error
   if (not Success) then
   begin
     if fLoop then
@@ -688,11 +703,17 @@ begin
           0, fCodecContext^.Height,
           @(fAVFrameRGB.data), @(fAVFrameRGB.linesize));
   {$ELSE}
+  // img_convert from lib/ffmpeg/avcodec.pas is actually deprecated.
+  // If ./configure does not find SWScale then this gives the error
+  // that the identifier img_convert is not known or similar.
+  // I think this should be removed, but am not sure whether there should
+  // be some other replacement or a warning, Therefore, I leave it for now.
+  // April 2009, mischi
   errnum := img_convert(PAVPicture(fAVFrameRGB), PIXEL_FMT_FFMPEG,
             PAVPicture(fAVFrame), fCodecContext^.pix_fmt,
             fCodecContext^.width, fCodecContext^.height);
   {$ENDIF}
-  
+
   if (errnum < 0) then
   begin
     Log.LogError('Image conversion failed', 'TVideoPlayback_ffmpeg.GetFrame');
@@ -785,8 +806,18 @@ var
 begin
   // have a nice black background to draw on
   // (even if there were errors opening the vid)
-  glClearColor(0, 0, 0, 0);
-  glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+  // TODO: Philipp: IMO TVideoPlayback should not clear the screen at
+  //       all, because clearing is already done by the background class
+  //       at this moment.
+  if (Screen = 1) then
+  begin
+    // It is important that we just clear once before we start
+    // drawing the first screen otherwise the first screen
+    // would be cleared by the drawgl called when the second
+    // screen is drawn
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+  end;
 
   // exit if there's nothing to draw
   if (not fOpened) then
@@ -913,7 +944,7 @@ begin
 
   fTime := Time;
   fEOF := false;
-  fFrameTexValid := false; 
+  fFrameTexValid := false;
 
   if (av_seek_frame(fFormatContext, fStreamIndex, Floor(Time/fTimeBase), SeekFlags) < 0) then
   begin

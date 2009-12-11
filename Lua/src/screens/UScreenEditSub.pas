@@ -116,11 +116,11 @@ type
       Tex_Background:     TTexture;
       FadeOut:            boolean;
       constructor Create; override;
-      procedure onShow; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      function ParseInputEditText(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+      procedure OnShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInputEditText(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
       function Draw: boolean; override;
-      procedure onHide; override;
+      procedure OnHide; override;
   end;
 
 implementation
@@ -128,16 +128,46 @@ implementation
 uses
   UGraphic,
   UDraw,
-  UMain,
+  UNote,
   USkins,
-  ULanguage;
+  ULanguage,
+  UTextEncoding,
+  UUnicodeUtils,
+  UPath;
 
-// Method for input parsing. If False is returned, GetNextWindow
-// should be checked to know the next window to load;
-function TScreenEditSub.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+
+procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
 var
-  SDL_ModState:  Word;
+  SResult: TSaveSongResult;
+  FilePath: IPath;
+  Success: boolean;
+begin
+  Success := false;
+  if (Value) then
+  begin
+    CurrentSong.Encoding := encUTF8;
+    FilePath := CurrentSong.Path.Append(CurrentSong.FileName);
+    // create backup file
+    FilePath.CopyFile(Path(FilePath.ToUTF8 + '.ansi.bak'), false);
+    // store in UTF-8 encoding
+    SResult := SaveSong(CurrentSong, Lines[0], FilePath,
+             boolean(Data));
+    Success := (SResult = ssrOK);
+  end;
+
+  if (Success) then
+    ScreenPopupInfo.ShowPopup(Language.Translate('INFO_FILE_SAVED'))
+  else
+    ScreenPopupError.ShowPopup(Language.Translate('ERROR_SAVE_FILE_FAILED'));
+end;
+
+// Method for input parsing. If false is returned, GetNextWindow
+// should be checked to know the next window to load;
+function TScreenEditSub.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
+var
+  SDL_ModState:  word;
   R:    real;
+  SResult: TSaveSongResult;
 begin
   Result := true;
 
@@ -152,40 +182,47 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   if (PressedDown) then  // Key Down
-  begin  // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+  begin
+    // check normal keys
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
         end;
-      'S':
+      Ord('S'):
         begin
           // Save Song
-          if SDL_ModState = KMOD_LSHIFT then
-            SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName, true)
+          SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path.Append(CurrentSong.FileName),
+                   (SDL_ModState = KMOD_LSHIFT));
+          if (SResult = ssrOK) then
+          begin
+            ScreenPopupInfo.ShowPopup(Language.Translate('INFO_FILE_SAVED'));
+          end
+          else if (SResult = ssrEncodingError) then
+          begin
+            ScreenPopupCheck.ShowPopup(Language.Translate('ENCODING_ERROR_ASK_FOR_UTF8'), OnSaveEncodingError,
+                Pointer(SDL_ModState = KMOD_LSHIFT), true);
+          end
           else
-            SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName, false);
-
-          {if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL + KMOD_LALT then
-            // Save Song
-            SaveSongDebug(CurrentSong, Lines[0], 'C:\song.asm', false);}
-
+          begin
+            ScreenPopupError.ShowPopup(Language.Translate('ERROR_SAVE_FILE_FAILED'));
+          end;
           Exit;
         end;
-      'D':
+      Ord('D'):
         begin
           // Divide lengths by 2
           DivideBPM;
           Exit;
         end;
-      'M':
+      Ord('M'):
         begin
           // Multiply lengths by 2
           MultiplyBPM;
           Exit;
         end;
-      'C':
+      Ord('C'):
         begin
           // Capitalize letter at the beginning of line
           if SDL_ModState = 0 then
@@ -201,11 +238,11 @@ begin
 
           Exit;
         end;
-      'V':
+      Ord('V'):
         begin
           // Paste text
           if SDL_ModState = KMOD_LCTRL then
-	  begin
+          begin
             if Lines[0].Line[Lines[0].Current].HighNote >= Lines[0].Line[CopySrc].HighNote then
               PasteText
             else
@@ -213,17 +250,17 @@ begin
           end;
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
-	  begin
+          begin
             CopySentence(CopySrc, Lines[0].Current);
           end;
         end;
-      'T':
+      Ord('T'):
         begin
           // Fixes timings between sentences
           FixTimings;
           Exit;
         end;
-      'P':
+      Ord('P'):
         begin
           if SDL_ModState = 0 then
           begin
@@ -269,8 +306,8 @@ begin
           Exit;
         end;
       
-      // Golden Note Patch
-      'G':
+      // Golden Note
+      Ord('G'):
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntGolden) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
@@ -280,8 +317,8 @@ begin
           Exit;
         end;
       
-      // Freestyle Note Patch
-      'F':
+      // Freestyle Note
+      Ord('F'):
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntFreestyle) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
@@ -333,7 +370,7 @@ begin
       SDLK_4:
         begin
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
-	  begin
+          begin
             CopySentence(CopySrc, Lines[0].Current);
             CopySentence(CopySrc+1, Lines[0].Current+1);
             CopySentence(CopySrc+2, Lines[0].Current+2);
@@ -341,14 +378,14 @@ begin
           end;
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then
-	  begin
+          begin
             CopySentences(CopySrc, Lines[0].Current, 4);
           end;
         end;
       SDLK_5:
         begin
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
-	  begin
+          begin
             CopySentence(CopySrc, Lines[0].Current);
             CopySentence(CopySrc+1, Lines[0].Current+1);
             CopySentence(CopySrc+2, Lines[0].Current+2);
@@ -357,7 +394,7 @@ begin
           end;
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then
-	  begin
+          begin
             CopySentences(CopySrc, Lines[0].Current, 5);
           end;
         end;
@@ -400,21 +437,21 @@ begin
       SDLK_SLASH:
         begin
           if SDL_ModState = 0 then
-	  begin
+          begin
             // Insert start of sentece
             if CurrentNote > 0 then
               DivideSentence;
           end;
 
           if SDL_ModState = KMOD_LSHIFT then
-	  begin
+          begin
             // Join next sentence with current
             if Lines[0].Current < Lines[0].High then
               JoinSentence;
           end;
 
           if SDL_ModState = KMOD_LCTRL then
-	  begin
+          begin
             // divide note
             DivideNote;
           end;
@@ -449,7 +486,7 @@ begin
       SDLK_DELETE:
         begin
           if SDL_ModState = KMOD_LCTRL then
-	  begin
+          begin
             // moves text to right in current sentence
             DeleteNote;
           end;
@@ -465,24 +502,24 @@ begin
         begin
           // right
           if SDL_ModState = 0 then
-	  begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+          begin
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Inc(CurrentNote);
             if CurrentNote > Lines[0].Line[Lines[0].Current].HighNote then
-	      CurrentNote := 0;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              CurrentNote := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
           end;
 
           // ctrl + right
           if SDL_ModState = KMOD_LCTRL then
-	  begin
+          begin
             if Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length > 1 then
-	    begin
+            begin
               Dec(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
               Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
               if CurrentNote = 0 then
-	      begin
+              begin
                 Inc(Lines[0].Line[Lines[0].Current].Start);
               end;
             end;
@@ -490,10 +527,10 @@ begin
 
           // shift + right
           if SDL_ModState = KMOD_LSHIFT then
-	  begin
+          begin
             Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
             if CurrentNote = 0 then
-	    begin
+            begin
               Inc(Lines[0].Line[Lines[0].Current].Start);
             end;
             if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
@@ -502,7 +539,7 @@ begin
 
           // alt + right
           if SDL_ModState = KMOD_LALT then
-	  begin
+          begin
             Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
             if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
               Inc(Lines[0].Line[Lines[0].Current].End_);
@@ -510,7 +547,7 @@ begin
 
           // alt + ctrl + shift + right = move all from cursor to right
           if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
-	  begin
+          begin
             MoveAllToEnd(1);
           end;
 
@@ -520,34 +557,34 @@ begin
         begin
           // left
           if SDL_ModState = 0 then
-	  begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+          begin
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Dec(CurrentNote);
             if CurrentNote = -1 then
-	      CurrentNote := Lines[0].Line[Lines[0].Current].HighNote;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              CurrentNote := Lines[0].Line[Lines[0].Current].HighNote;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
           end;
 
           // ctrl + left
           if SDL_ModState = KMOD_LCTRL then
-	  begin
+          begin
             Dec(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
             Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
             if CurrentNote = 0 then
-	    begin
+            begin
               Dec(Lines[0].Line[Lines[0].Current].Start);
             end;
           end;
 
           // shift + left
           if SDL_ModState = KMOD_LSHIFT then
-	  begin
+          begin
             Dec(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
 
             // resizing sentences
             if CurrentNote = 0 then
-	    begin
+            begin
               Dec(Lines[0].Line[Lines[0].Current].Start);
             end;
 
@@ -558,9 +595,9 @@ begin
 
           // alt + left
           if SDL_ModState = KMOD_LALT then
-	  begin
+          begin
             if Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length > 1 then
-	    begin
+            begin
               Dec(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
               if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
                 Dec(Lines[0].Line[Lines[0].Current].End_);
@@ -569,7 +606,7 @@ begin
 
           // alt + ctrl + shift + right = move all from cursor to left
           if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
-	  begin
+          begin
             MoveAllToEnd(-1);
           end;
 
@@ -580,17 +617,18 @@ begin
 
           // skip to next sentence
           if SDL_ModState = 0 then
-	  begin                       {$IFDEF UseMIDIPort}
+          begin
+            {$IFDEF UseMIDIPort}
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
-            {$endif}
+            {$ENDIF}
 
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Inc(Lines[0].Current);
             CurrentNote := 0;
             if Lines[0].Current > Lines[0].High then
-	      Lines[0].Current := 0;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              Lines[0].Current := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
 
             Lyric.AddLine(Lines[0].Current);
             Lyric.Selected := 0;
@@ -600,7 +638,7 @@ begin
 
           // decrease tone
           if SDL_ModState = KMOD_LCTRL then
-	  begin
+          begin
             TransposeNote(-1);
           end;
 
@@ -611,18 +649,18 @@ begin
 
           // skip to previous sentence
           if SDL_ModState = 0 then
-	  begin
+          begin
             {$IFDEF UseMIDIPort}
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
             {$endif}
 
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Dec(Lines[0].Current);
             CurrentNote := 0;
             if Lines[0].Current = -1 then
-	      Lines[0].Current := Lines[0].High;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              Lines[0].Current := Lines[0].High;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
 
             Lyric.AddLine(Lines[0].Current);
             Lyric.Selected := 0;
@@ -632,7 +670,7 @@ begin
 
           // increase tone
           if SDL_ModState = KMOD_LCTRL then
-	  begin
+          begin
             TransposeNote(1);
           end;
         end;
@@ -642,9 +680,9 @@ begin
   end; // if
 end;
 
-function TScreenEditSub.ParseInputEditText(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenEditSub.ParseInputEditText(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
-  SDL_ModState:  Word;
+  SDL_ModState:  word;
 begin
   // used when in Text Edit Mode
   Result := true;
@@ -653,7 +691,16 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   if (PressedDown) then
-  begin // Key Down
+  begin
+    // check normal keys
+    if (IsPrintableChar(CharCode)) then
+    begin
+      Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text :=
+        Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + UCS4ToUTF8String(CharCode);
+      Exit;
+    end;
+
+    // check special keys
     case PressedKey of
 
       SDLK_ESCAPE:
@@ -665,26 +712,21 @@ begin
           // Exit Text Edit Mode
           TextEditMode := false;
         end;
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
-        begin
-          Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text :=
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + CharCode;
-        end;
       SDLK_BACKSPACE:
         begin
-          Delete(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text,
-            Length(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text), 1);
+          UTF8Delete(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text,
+            LengthUTF8(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text), 1);
         end;
       SDLK_RIGHT:
         begin
           // right
           if SDL_ModState = 0 then
-	  begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+          begin
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Inc(CurrentNote);
             if CurrentNote > Lines[0].Line[Lines[0].Current].HighNote then
-	      CurrentNote := 0;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              CurrentNote := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
           end;
         end;
@@ -692,12 +734,12 @@ begin
         begin
           // left
           if SDL_ModState = 0 then
-	  begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+          begin
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Dec(CurrentNote);
             if CurrentNote = -1 then
-	      CurrentNote := Lines[0].Line[Lines[0].Current].HighNote;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              CurrentNote := Lines[0].Line[Lines[0].Current].HighNote;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
           end;
       end;
@@ -758,9 +800,11 @@ var
   S:    string;
 begin
   // temporary
-{  for C := 0 to Lines[0].High do
+  {
+  for C := 0 to Lines[0].High do
     for N := 0 to Lines[0].Line[C].HighNut do
-      Lines[0].Line[C].Note[N].Text := AnsiLowerCase(Lines[0].Line[C].Note[N].Text);}
+      Lines[0].Line[C].Note[N].Text := UTF8LowerCase(Lines[0].Line[C].Note[N].Text);
+  }
 
   for C := 0 to Lines[0].High do
   begin
@@ -876,9 +920,8 @@ begin
   NStart := CurrentNote;
   Lines[0].Line[CNew].Start := Lines[0].Line[CStart].Note[NStart].Start;
   Lines[0].Line[CNew].Lyric := '';
-  Lines[0].Line[CNew].LyricWidth := 0;
   Lines[0].Line[CNew].End_ := 0;
-  Lines[0].Line[CNew].BaseNote := 0; // 0.5.0: we modify it later in this procedure
+  Lines[0].Line[CNew].BaseNote := 0;//High(integer); // TODO: High (integer) will causes a memory exception later in this procedure. Weird!
   Lines[0].Line[CNew].HighNote := -1;
   SetLength(Lines[0].Line[CNew].Note, 0);
 
@@ -905,9 +948,19 @@ begin
     Lines[0].Line[CStart].Note[NStart-1].Length;
   SetLength(Lines[0].Line[CStart].Note, Lines[0].Line[CStart].HighNote + 1);
 
+  //recalculate BaseNote of the divided Sentence
+  with Lines[0].Line[CStart] do
+  begin
+    BaseNote := High(integer);
+
+    for N := 0 to HighNote do
+      if Note[N].Tone < BaseNote then
+        BaseNote := Note[N].Tone;
+  end;
+
   Lines[0].Current := Lines[0].Current + 1;
   CurrentNote := 0;
-  Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+  Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
   Lyric.AddLine(Lines[0].Current);
 end;
 
@@ -970,7 +1023,7 @@ begin
     Inc(Note[CurrentNote+1].Start);
     Dec(Note[CurrentNote+1].Length);
     Note[CurrentNote+1].Text := '- ';
-    Note[CurrentNote+1].Color := 0;
+    Note[CurrentNote+1].Color := 1;
   end;
 end;
 
@@ -982,7 +1035,7 @@ begin
   C := Lines[0].Current;
 
   //Do Not delete Last Note
-  if (Lines[0].High > 0) OR (Lines[0].Line[C].HighNote > 0) then
+  if (Lines[0].High > 0) or (Lines[0].Line[C].HighNote > 0) then
   begin
 
     // we copy all notes from the next to the selected one
@@ -1000,7 +1053,7 @@ begin
       if CurrentNote > Lines[0].Line[C].HighNote then
         Dec(CurrentNote);
       
-      Lines[0].Line[C].Note[CurrentNote].Color := 1;
+      Lines[0].Line[C].Note[CurrentNote].Color := 2;
     end
     //Last Note of current Sentence Deleted - > Delete Sentence
     else
@@ -1020,7 +1073,7 @@ begin
       else
         Lines[0].Current := 0;
 
-      Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+      Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
     end;
   end;
 end;
@@ -1076,14 +1129,16 @@ var
   N:      integer;
   NHigh:  integer;
 begin
-{  C := Lines[0].Current;
+  {
+  C := Lines[0].Current;
 
   for N := Lines[0].Line[C].HighNut downto 1 do
   begin
     Lines[0].Line[C].Note[N].Text := Lines[0].Line[C].Note[N-1].Text;
   end; // for
 
-  Lines[0].Line[C].Note[0].Text := '- ';}
+  Lines[0].Line[C].Note[0].Text := '- ';
+  }
 
   C := Lines[0].Current;
   NHigh := Lines[0].Line[C].HighNote;
@@ -1172,7 +1227,6 @@ begin
     CopySentence(Src + C, Dst + C);
 end;
 
-
 constructor TScreenEditSub.Create;
 begin
   inherited Create;
@@ -1225,23 +1279,31 @@ begin
 
 end;
 
-procedure TScreenEditSub.onShow;
+procedure TScreenEditSub.OnShow;
+var
+  FileExt: IPath;
 begin
   inherited;
 
-  Log.LogStatus('Initializing', 'TEditScreen.onShow');
+  Log.LogStatus('Initializing', 'TEditScreen.OnShow');
   Lyric := TEditorLyrics.Create;
 
   ResetSingTemp;
 
   try 
-  //Check if File is XML
-   if copy(CurrentSong.FileName,length(CurrentSong.FileName)-3,4) = '.xml' then
-     Error := not CurrentSong.LoadXMLSong()
-   else
-     Error := not CurrentSong.LoadSong();
+    //Check if File is XML
+    FileExt := CurrentSong.FileName.GetExtension;
+    if FileExt.ToUTF8 = '.xml' then
+      Error := not CurrentSong.LoadXMLSong()
+    else
+    begin
+      // reread header with custom tags
+      Error := not CurrentSong.Analyse(true);
+      if not Error then
+        Error := not CurrentSong.LoadSong;
+    end;
   except
-    Error := True;
+    Error := true;
   end;
 
   if Error then
@@ -1261,19 +1323,19 @@ begin
   {$ENDIF}
     Text[TextTitle].Text :=   CurrentSong.Title;
     Text[TextArtist].Text :=  CurrentSong.Artist;
-    Text[TextMp3].Text :=     CurrentSong.Mp3;
+    Text[TextMp3].Text :=     CurrentSong.Mp3.ToUTF8;
 
     Lines[0].Current := 0;
     CurrentNote := 0;
-    Lines[0].Line[0].Note[0].Color := 1;
-    AudioPlayback.Open(CurrentSong.Path + CurrentSong.Mp3);
+    Lines[0].Line[0].Note[0].Color := 2;
+    AudioPlayback.Open(CurrentSong.Path.Append(CurrentSong.Mp3));
     //Set Down Music Volume for Better hearability of Midi Sounds
     //Music.SetVolume(0.4);
 
     Lyric.Clear;
     Lyric.X := 400;
     Lyric.Y := 500;
-    Lyric.Align := center;
+    Lyric.Align := atCenter;
     Lyric.Size := 42;
     Lyric.ColR := 0;
     Lyric.ColG := 0;
@@ -1306,7 +1368,6 @@ begin
    {$IFDEF UseMIDIPort}
     MidiPos := USTime.GetTime - MidiTime + MidiStart;
 
-
     // stop the music
     if (MidiPos > MidiStop) then
     begin
@@ -1324,7 +1385,6 @@ begin
       for Pet := 0 to Lines[0].Line[Lines[0].Current].HighNote do
         if (Lines[0].Line[Lines[0].Current].Note[Pet].Start = AktBeat) then
         begin
-
 
           LastClick := AktBeat;
           {$IFDEF UseMIDIPort}
@@ -1406,7 +1466,7 @@ begin
   Result := true;
 end;
 
-procedure TScreenEditSub.onHide;
+procedure TScreenEditSub.OnHide;
 begin
   {$IFDEF UseMIDIPort}
   MidiOut.Close;
@@ -1417,7 +1477,8 @@ begin
 end;
 
 function TScreenEditSub.GetNoteName(Note: integer): string;
-var N1, N2: integer;
+var
+  N1, N2: integer;
 begin
   if (Note > 0) then
   begin

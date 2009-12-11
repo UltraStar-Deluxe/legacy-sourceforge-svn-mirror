@@ -61,8 +61,8 @@ type
       PreviewDeviceIndex: integer;
 
       // string arrays for select-slide options
-      InputSourceNames: array of string;
-      InputDeviceNames: array of string;
+      InputSourceNames: array of UTF8String;
+      InputDeviceNames: array of UTF8String;
 
       // dynamic generated themes for channel select-sliders
       SelectSlideChannelTheme: array of TThemeSelectSlide;
@@ -95,9 +95,9 @@ type
     public
       constructor Create; override;
       function    Draw: boolean; override;
-      function    ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure   onShow; override;
-      procedure   onHide; override;
+      function    ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure   OnShow; override;
+      procedure   OnHide; override;
   end;
 
 const
@@ -126,33 +126,34 @@ uses
   UFiles,
   UDisplay,
   UIni,
+  UUnicodeUtils,
   ULog;
 
-function TScreenOptionsRecord.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenOptionsRecord.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
         end;
-      '+':
+      Ord('+'):
         begin
           // FIXME: add a nice volume-slider instead
           // or at least provide visualization and acceleration if the user holds the key pressed.
           ChangeVolume(0.02);
         end;
-      '-':
+      Ord('-'):
         begin
           // FIXME: add a nice volume-slider instead
           // or at least provide visualization and acceleration if the user holds the key pressed.
           ChangeVolume(-0.02);
         end;
-      'T':
+      Ord('T'):
         begin
           if ((SDL_GetModState() and KMOD_SHIFT) <> 0) then
             Ini.ThresholdIndex := (Ini.ThresholdIndex + Length(IThresholdVals) - 1) mod Length(IThresholdVals)
@@ -166,8 +167,8 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE:
         begin
-          // Escape -> save nothing - just leave this screen
-          
+          // TODO: Show Save/Abort screen
+          Ini.Save;          
           AudioPlayback.PlaySound(SoundLib.Back);
           FadeTo(@ScreenOptions);
         end;
@@ -244,6 +245,8 @@ begin
       InputDeviceNames[DeviceIndex] := AudioInputProcessor.DeviceList[DeviceIndex].Name;
     end;
     // add device-selection slider (InteractionID: 0)
+    Theme.OptionsRecord.SelectSlideCard.showArrows := true;
+    Theme.OptionsRecord.SelectSlideCard.oneItemOnly := true;
     AddSelectSlide(Theme.OptionsRecord.SelectSlideCard, CurrentDeviceIndex, InputDeviceNames);
 
     // init source-selection slider
@@ -252,6 +255,9 @@ begin
     begin
       InputSourceNames[SourceIndex] := InputDevice.Source[SourceIndex].Name;
     end;
+
+    Theme.OptionsRecord.SelectSlideInput.showArrows := true;
+    Theme.OptionsRecord.SelectSlideInput.oneItemOnly := true;
     // add source-selection slider (InteractionID: 1)
     SelectInputSourceID := AddSelectSlide(Theme.OptionsRecord.SelectSlideInput,
         InputDeviceCfg.Input, InputSourceNames);
@@ -294,7 +300,7 @@ begin
 
         // add slider
         SelectSlideChannelID[ChannelIndex] := AddSelectSlide(ChannelTheme^,
-          InputDeviceCfg.ChannelToPlayerMap[ChannelIndex], IChannelPlayer);
+          InputDeviceCfg.ChannelToPlayerMap[ChannelIndex], IChannelPlayerTranslated);
       end
       else
       begin
@@ -302,7 +308,7 @@ begin
 
         // add slider but hide it and assign a dummy variable to it
         SelectSlideChannelID[ChannelIndex] := AddSelectSlide(ChannelTheme^,
-          ChannelToPlayerMapDummy, IChannelPlayer);
+          ChannelToPlayerMapDummy, IChannelPlayerTranslated);
         SelectsS[SelectSlideChannelID[ChannelIndex]].Visible := false;
       end;
     end;
@@ -368,7 +374,7 @@ begin
 
         // show slider
         UpdateSelectSlideOptions(SelectSlideChannelTheme[ChannelIndex],
-          SelectSlideChannelID[ChannelIndex], IChannelPlayer,
+          SelectSlideChannelID[ChannelIndex], IChannelPlayerTranslated,
           InputDeviceCfg.ChannelToPlayerMap[ChannelIndex]);
         SelectsS[SelectSlideChannelID[ChannelIndex]].Visible := true;
       end
@@ -378,7 +384,7 @@ begin
 
         // hide slider and assign a dummy variable to it
         UpdateSelectSlideOptions(SelectSlideChannelTheme[ChannelIndex],
-          SelectSlideChannelID[ChannelIndex], IChannelPlayer,
+          SelectSlideChannelID[ChannelIndex], IChannelPlayerTranslated,
           ChannelToPlayerMapDummy);
         SelectsS[SelectSlideChannelID[ChannelIndex]].Visible := false;
       end;
@@ -413,7 +419,7 @@ begin
   NextVolumePollTime := 0;
 end;
 
-procedure TScreenOptionsRecord.onShow;
+procedure TScreenOptionsRecord.OnShow;
 var
   ChannelIndex: integer;
 begin
@@ -431,7 +437,7 @@ begin
   StartPreview();
 end;
 
-procedure TScreenOptionsRecord.onHide;
+procedure TScreenOptionsRecord.OnHide;
 var
   ChannelIndex: integer;
 begin
@@ -483,7 +489,6 @@ begin
   end;
   PreviewDeviceIndex := -1;
 end;
-
 
 procedure TScreenOptionsRecord.DrawVolume(x, y, Width, Height: single);
 var
@@ -802,8 +807,7 @@ begin
     end;
   end;
 
-  Result := True;
+  Result := true;
 end;
-
 
 end.

@@ -56,7 +56,11 @@ uses
     PseudoThread,
   {$ENDIF}
   UCatCovers,
-  UXMLSong;
+  UXMLSong,
+  UUnicodeUtils,
+  UTextEncoding,
+  UFilesystem,
+  UPath;
 
 type
 
@@ -68,42 +72,63 @@ type
   end;
 
   TScore = record
-    Name:       WideString;
+    Name:       UTF8String;
     Score:      integer;
-    Length:     string;
+    Date:       UTF8String;
+  end;
+
+  { used to hold header tags that are not supported by this version of
+    usdx (e.g. some tags from ultrastar 0.7.0) when songs are loaded in
+    songeditor. They will be written the end of the song header }
+  TCustomHeaderTag = record
+    Tag: UTF8String;
+    Content: UTF8String;
   end;
 
   TSong = class
+  private
     FileLineNo  : integer;  // line, which is read last, for error reporting
 
-    procedure ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: string);
+    function DecodeFilename(Filename: RawByteString): IPath;
+    function Solmizate(Note: integer; Type_: integer): string;
+    procedure ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: UTF8String);
     procedure NewSentence(LineNumberP: integer; Param1, Param2: integer);
 
-    function ReadTXTHeader( const aFileName : WideString ): boolean;
-    function ReadXMLHeader( const aFileName : WideString ): boolean;
+    function ParseLyricStringParam(const Line: RawByteString; var LinePos: integer): RawByteString;
+    function ParseLyricIntParam(const Line: RawByteString; var LinePos: integer): integer;
+    function ParseLyricFloatParam(const Line: RawByteString; var LinePos: integer): real;
+    function ParseLyricCharParam(const Line: RawByteString; var LinePos: integer): AnsiChar;
+    function ParseLyricText(const Line: RawByteString; var LinePos: integer): RawByteString;
+
+    function ReadTXTHeader(SongFile: TTextFileStream; ReadCustomTags: Boolean): boolean;
+    function ReadXMLHeader(const aFileName: IPath): boolean;
+
+    function GetFolderCategory(const aFileName: IPath): UTF8String;
+    function FindSongFile(Dir: IPath; Mask: UTF8String): IPath;
   public
-    Path:       WideString;
-    Folder:     WideString; // for sorting by folder
-    fFileName,
-    FileName:   WideString;
+    Path:         IPath; // kust path component of file (only set if file was found)
+    Folder:       UTF8String; // for sorting by folder (only set if file was found)
+    FileName:     IPath; // just name component of file (only set if file was found)
+
+    // filenames
+    Cover:      IPath;
+    Mp3:        IPath;
+    Background: IPath;
+    Video:      IPath;
 
     // sorting methods
-    Category:   array of WideString; // TODO: do we need this?
-    Genre:      WideString;
-    Edition:    WideString;
-    Language:   WideString;
+    Genre:      UTF8String;
+    Edition:    UTF8String;
+    Language:   UTF8String;
+    Year:       Integer;
 
-    Title:      WideString;
-    Artist:     WideString;
+    Title:      UTF8String;
+    Artist:     UTF8String;
 
-    Text:       WideString;
-    Creator:    WideString;
+    Creator:    UTF8String;
 
-    Cover:      WideString;
     CoverTex:   TTexture;
-    Mp3:        WideString;
-    Background: WideString;
-    Video:      WideString;
+
     VideoGAP:   real;
     NotesGAP:   integer;
     Start:      real; // in seconds
@@ -112,6 +137,10 @@ type
     Resolution: integer;
     BPM:        array of TBPM;
     GAP:        real; // in miliseconds
+
+    Encoding:   TEncoding;
+
+    CustomTags: array of TCustomHeaderTag;
 
     Score:      array[0..2] of array of TScore;
 
@@ -122,23 +151,21 @@ type
     OrderTyp:   integer; // type of sorting for this button (0=name)
     CatNumber:  integer; // Count of Songs in Category for Cats and Number of Song in Category for Songs
 
-    SongFile: TextFile;   // all procedures in this unit operate on this file
-
     Base    : array[0..1] of integer;
     Rel     : array[0..1] of integer;
     Mult    : integer;
     MultBPM : integer;
 
-    LastError: String;
+    LastError: AnsiString;
     function  GetErrorLineNo: integer;
     property  ErrorLineNo: integer read GetErrorLineNo;
 
 
-    constructor Create  (); overload;
-    constructor Create  ( const aFileName : WideString ); overload;
+    constructor Create(); overload;
+    constructor Create(const aFileName : IPath); overload;
     function    LoadSong: boolean;
     function    LoadXMLSong: boolean;
-    function    Analyse(): boolean;
+    function    Analyse(const ReadCustomTags: Boolean = false): boolean;
     function    AnalyseXML(): boolean;
     procedure   Clear();
   end;
@@ -146,33 +173,85 @@ type
 implementation
 
 uses
+  StrUtils,
   TextGL,
   UIni,
+  UPathUtils,
   UMusic,  //needed for Lines
-  UMain;   //needed for Player
+  UNote;   //needed for Player
+
+const
+  DEFAULT_ENCODING = encAuto;
 
 constructor TSong.Create();
 begin
   inherited;
+
+  // to-do : special create for category "songs"
+  //dirty fix to fix folders=on
+  Self.Path     := PATH_NONE();
+  Self.FileName := PATH_NONE();
+  Self.Cover    := PATH_NONE();
+  Self.Mp3      := PATH_NONE();
+  Self.Background:= PATH_NONE();
+  Self.Video    := PATH_NONE();
 end;
 
-constructor TSong.Create( const aFileName : WideString );
+// This may be changed, when we rewrite song select code.
+// it is some kind of dirty, but imho the best possible
+// solution as we do atm not support nested categorys.
+// it works like the folder sorting in 1.0.1a
+// folder is set to the first folder under the songdir
+// so songs ~/.ultrastardx/songs/punk is in the same
+// category as songs in shared/ultrastardx/songs are.
+// note: folder is just the name of a category it has
+//       nothing to do with the path used for file loading
+function TSong.GetFolderCategory(const aFileName: IPath): UTF8String;
+var
+  I: Integer;
+  CurSongPath: IPath;
+  CurSongPathRel: IPath;
+begin
+  Result := 'Unknown'; //default folder category, if we can't locate the song dir
+
+  for I := 0 to SongPaths.Count-1 do
+  begin
+    CurSongPath := SongPaths[I] as IPath;
+    if (aFileName.IsChildOf(CurSongPath, false)) then
+    begin
+      if (aFileName.IsChildOf(CurSongPath, true)) then
+      begin
+        // songs are in the "root" of the songdir => use songdir for the categorys name
+        Result := CurSongPath.RemovePathDelim.ToUTF8;
+      end
+      else
+      begin
+        // use the first subdirectory below CurSongPath as the category name
+        CurSongPathRel := aFileName.GetRelativePath(CurSongPath.AppendPathDelim);
+        Result := CurSongPathRel.SplitDirs[0].RemovePathDelim.ToUTF8;
+      end;
+      Exit;
+    end;
+  end;
+end;
+
+constructor TSong.Create(const aFileName: IPath);
 begin
   inherited Create();
 
   Mult    := 1;
   MultBPM := 4;
-  fFileName := aFileName;
 
   LastError := '';
 
-  if fileexists( aFileName ) then
+  Self.Path     := aFileName.GetPath;
+  Self.FileName := aFileName.GetName;
+  Self.Folder   := GetFolderCategory(aFileName);
+
+  (*
+  if (aFileName.IsFile) then
   begin
-    self.Path     := ExtractFilePath( aFileName );
-    self.Folder   := ExtractFilePath( aFileName );
-    self.FileName := ExtractFileName( aFileName );
-    (*
-    if ReadTXTHeader( aFileName ) then
+    if ReadTXTHeader(aFileName) then
     begin
       LoadSong();
     end
@@ -181,43 +260,178 @@ begin
       Log.LogError('Error Loading SongHeader, abort Song Loading');
       Exit;
     end;
-    *)
+  end;
+  *)
+end;
+
+function TSong.FindSongFile(Dir: IPath; Mask: UTF8String): IPath;
+var
+  Iter: IFileIterator;
+  FileInfo: TFileInfo;
+  FileName: IPath;
+begin
+  Iter := FileSystem.FileFind(Dir.Append(Mask), faDirectory);
+  if (Iter.HasNext) then
+    Result := Iter.Next.Name
+  else
+    Result := PATH_NONE;
+end;
+
+function TSong.DecodeFilename(Filename: RawByteString): IPath;
+begin
+  Result := UPath.Path(DecodeStringUTF8(Filename, Encoding));
+end;
+
+type
+  EUSDXParseException = class(Exception);
+
+{**
+ * Parses the Line string starting from LinePos for a parameter.
+ * Leading whitespace is trimmed, same applies to the first trailing whitespace.
+ * After the call LinePos will point to the position after the first trailing
+ * whitespace.
+ *
+ * Raises an EUSDXParseException if no string was found.
+ *
+ * Example:
+ *   ParseLyricParam(Line:'Param0  Param1 Param2', LinePos:8, ...)
+ *   -> Param:'Param1', LinePos:16 (= start of 'Param2')
+ *}
+function TSong.ParseLyricStringParam(const Line: RawByteString; var LinePos: integer): RawByteString;
+var
+  Start: integer;
+  OldLinePos: integer;
+const
+  Whitespace = [#9, ' '];
+begin
+  OldLinePos := LinePos;
+
+  Start := 0;
+  while (LinePos <= Length(Line)) do
+  begin
+    if (Line[LinePos] in Whitespace) then
+    begin
+      // check for end of param
+      if (Start > 0) then
+        Break;
+    end
+    // check for beginning of param
+    else if (Start = 0) then
+    begin
+      Start := LinePos;
+    end;
+    Inc(LinePos);
+  end;
+
+  // check if param was found
+  if (Start = 0) then
+  begin
+    LinePos := OldLinePos;
+    raise EUSDXParseException.Create('String expected');
+  end
+  else
+  begin
+    // copy param without trailing whitespace
+    Result := Copy(Line, Start, LinePos-Start);
+    // skip first trailing whitespace (if not at EOL)
+    if (LinePos <= Length(Line)) then
+      Inc(LinePos);
+  end;
+end;
+
+function TSong.ParseLyricIntParam(const Line: RawByteString; var LinePos: integer): integer;
+var
+  Str: RawByteString;
+  OldLinePos: integer;
+begin
+  OldLinePos := LinePos;
+  Str := ParseLyricStringParam(Line, LinePos);
+  try
+    Result := StrToInt(Str);
+  except // on EConvertError
+    LinePos := OldLinePos;
+    raise EUSDXParseException.Create('Integer expected');
+  end;
+end;
+
+function TSong.ParseLyricFloatParam(const Line: RawByteString; var LinePos: integer): real;
+var
+  Str: RawByteString;
+  OldLinePos: integer;
+begin
+  OldLinePos := LinePos;
+  Str := ParseLyricStringParam(Line, LinePos);
+  try
+    Result := StrToFloat(Str);
+  except // on EConvertError
+    LinePos := OldLinePos;
+    raise EUSDXParseException.Create('Float expected');
+  end;
+end;
+
+function TSong.ParseLyricCharParam(const Line: RawByteString; var LinePos: integer): AnsiChar;
+var
+  Str: RawByteString;
+  OldLinePos: integer;
+begin
+  OldLinePos := LinePos;
+  Str := ParseLyricStringParam(Line, LinePos);
+  if (Length(Str) <> 1) then
+  begin
+    LinePos := OldLinePos;
+    raise EUSDXParseException.Create('Character expected');
+  end;
+  Result := Str[1];
+end;
+
+{**
+ * Returns the rest of the line from LinePos as lyric text.
+ * Leading and trailing whitespace is not trimmed.
+ *}
+function TSong.ParseLyricText(const Line: RawByteString; var LinePos: integer): RawByteString;
+begin
+  if (LinePos > Length(Line)) then
+    Result := ''
+  else
+  begin
+    Result := Copy(Line, LinePos, Length(Line)-LinePos+1);
+    LinePos := Length(Line)+1;
   end;
 end;
 
 //Load TXT Song
 function TSong.LoadSong(): boolean;
-
 var
-  TempC:    char;
-  Text:     string;
-  CP:       integer; // Current Player (0 or 1)
+  CurLine: RawByteString;
+  LinePos:  integer;
   Count:    integer;
   Both:     boolean;
-  Param1:   integer;
-  Param2:   integer;
-  Param3:   integer;
-  ParamS:   string;
-  I:        integer;
 
+  Param0:    AnsiChar;
+  Param1:    integer;
+  Param2:    integer;
+  Param3:    integer;
+  ParamLyric: UTF8String;
+
+  I:        integer;
+  NotesFound: boolean;
+  SongFile: TTextFileStream;
+  FileNamePath: IPath;
 begin
   Result := false;
   LastError := '';
 
-  if not FileExists(Path + PathDelim + FileName) then
+  FileNamePath := Path.Append(FileName);
+  if not FileNamePath.IsFile() then
   begin
     LastError := 'ERROR_CORRUPT_SONG_FILE_NOT_FOUND';
-    Log.LogError('File not found: "' + Path + PathDelim + FileName + '"', 'TSong.LoadSong()');
-    exit;
+    Log.LogError('File not found: "' + FileNamePath.ToNative + '"', 'TSong.LoadSong()');
+    Exit;
   end;
 
   MultBPM           := 4; // multiply beat-count of note by 4
   Mult              := 1; // accuracy of measurement of note
-  Base[0]           := 100; // high number
-  Lines[0].ScoreValue := 0;
-  self.Relative     := false;
   Rel[0]            := 0;
-  CP                := 0;
   Both              := false;
 
   if Length(Player) = 2 then
@@ -225,187 +439,155 @@ begin
 
   try
     // Open song file for reading.....
-    FileMode := fmOpenRead;
-    AssignFile(SongFile, fFileName);
-    Reset(SongFile);
+    SongFile := TMemTextFileStream.Create(FileNamePath, fmOpenRead);
+    try
+      //Search for Note Beginning
+      FileLineNo := 0;
+      NotesFound := false;
+      while (SongFile.ReadLine(CurLine)) do
+      begin
+        Inc(FileLineNo);
+        if (Length(CurLine) > 0) and (CurLine[1] in [':', 'F', '*']) then
+        begin
+          NotesFound := true;
+          Break;
+        end;
+      end;
 
-    //Clear old Song Header
-    if (self.Path = '') then
-      self.Path := ExtractFilePath(FileName);
-
-    if (self.FileName = '') then
-      self.Filename := ExtractFileName(FileName);
-
-    FileLineNo := 0;
-    //Search for Note Begining
-    repeat
-      ReadLn(SongFile, Text);
-      Inc(FileLineNo);
-
-      if (EoF(SongFile)) then
+      if (not NotesFound) then
       begin //Song File Corrupted - No Notes
-        CloseFile(SongFile);
-        Log.LogError('Could not load txt File, no Notes found: ' + FileName);
+        Log.LogError('Could not load txt File, no notes found: ' + FileNamePath.ToNative);
         LastError := 'ERROR_CORRUPT_SONG_NO_NOTES';
         Exit;
       end;
-      Read(SongFile, TempC);
-    until ((TempC = ':') or (TempC = 'F') or (TempC = '*'));
 
-    SetLength(Lines, 2);
-    for Count := 0 to High(Lines) do
-    begin
-      SetLength(Lines[Count].Line, 1);
-      Lines[Count].High := 0;
-      Lines[Count].Number := 1;
-      Lines[Count].Current := 0;
-      Lines[Count].Resolution := self.Resolution;
-      Lines[Count].NotesGAP   := self.NotesGAP;
-      Lines[Count].Line[0].HighNote := -1;
-      Lines[Count].Line[0].LastLine := false;
-    end;
-
-    //TempC := ':';
-    //TempC := Text[1]; // read from backup variable, don't use default ':' value
-
-    while (TempC <> 'E') and (not EOF(SongFile)) do
-    begin
-
-      if (TempC = ':') or (TempC = '*') or (TempC = 'F') then
+      SetLength(Lines, 2);
+      for Count := 0 to High(Lines) do
       begin
-        // read notes
-        Read(SongFile, Param1);
-        Read(SongFile, Param2);
-        Read(SongFile, Param3);
-        Read(SongFile, ParamS);
+        Lines[Count].High := 0;
+        Lines[Count].Number := 1;
+        Lines[Count].Current := 0;
+        Lines[Count].Resolution := self.Resolution;
+        Lines[Count].NotesGAP   := self.NotesGAP;
+        Lines[Count].ScoreValue := 0;
 
-        //Check for ZeroNote
-        if Param2 = 0 then
-          Log.LogError('Found ZeroNote at "'+TempC+' '+IntToStr(Param1)+' '+IntToStr(Param2)+' '+IntToStr(Param3)+ParamS+'" -> Note ignored!')
-        else
-        begin
-         // add notes
-         if not Both then
-           // P1
-           ParseNote(0, TempC, (Param1+Rel[0]) * Mult, Param2 * Mult, Param3, ParamS)
-         else
-         begin
-           // P1 + P2
-           ParseNote(0, TempC, (Param1+Rel[0]) * Mult, Param2 * Mult, Param3, ParamS);
-           ParseNote(1, TempC, (Param1+Rel[1]) * Mult, Param2 * Mult, Param3, ParamS);
-         end;
-        end; //Zeronote check
-      end // if
-
-      else if TempC = '-' then
-      begin
-        // reads sentence
-        Read(SongFile, Param1);
-        if self.Relative then
-          Read(SongFile, Param2); // read one more data for relative system
-
-        // new sentence
-        if not Both then
-          // P1
-          NewSentence(0, (Param1 + Rel[0]) * Mult, Param2)
-        else
-        begin
-          // P1 + P2
-          NewSentence(0, (Param1 + Rel[0]) * Mult, Param2);
-          NewSentence(1, (Param1 + Rel[1]) * Mult, Param2);
-        end;
-      end // if
-
-      else if TempC = 'B' then
-      begin
-        SetLength(self.BPM, Length(self.BPM) + 1);
-        Read(SongFile, self.BPM[High(self.BPM)].StartBeat);
-        self.BPM[High(self.BPM)].StartBeat := self.BPM[High(self.BPM)].StartBeat + Rel[0];
-
-        Read(SongFile, Text);
-        self.BPM[High(self.BPM)].BPM := StrToFloat(Text);
-        self.BPM[High(self.BPM)].BPM := self.BPM[High(self.BPM)].BPM * Mult * MultBPM;
+        //Add first line and set some standard values to fields
+        //see procedure NewSentence for further explantation
+        //concerning most of these values
+        SetLength(Lines[Count].Line, 1);
+        Lines[Count].Line[0].HighNote := -1;
+        Lines[Count].Line[0].LastLine := false;
+        Lines[Count].Line[0].BaseNote := High(Integer);
+        Lines[Count].Line[0].TotalNotes := 0;
       end;
 
-
-      if not Both then
+      while true do
       begin
-        Lines[CP].Line[Lines[CP].High].BaseNote := Base[CP];
-        Lines[CP].Line[Lines[CP].High].LyricWidth := glTextWidth(Lines[CP].Line[Lines[CP].High].Lyric);
-        //Total Notes Patch
-        Lines[CP].Line[Lines[CP].High].TotalNotes := 0;
-        for I := low(Lines[CP].Line[Lines[CP].High].Note) to high(Lines[CP].Line[Lines[CP].High].Note) do
-        begin
-          if (Lines[CP].Line[Lines[CP].High].Note[I].NoteType = ntGolden) then
-            Lines[CP].Line[Lines[CP].High].TotalNotes := Lines[CP].Line[Lines[CP].High].TotalNotes + Lines[CP].Line[Lines[CP].High].Note[I].Length;
+        LinePos := 0;
 
-          if (Lines[CP].Line[Lines[CP].High].Note[I].NoteType <> ntFreestyle) then
-            Lines[CP].Line[Lines[CP].High].TotalNotes := Lines[CP].Line[Lines[CP].High].TotalNotes + Lines[CP].Line[Lines[CP].High].Note[I].Length;
-        end;
-        //Total Notes Patch End
-      end
-      else
-      begin
-        for Count := 0 to High(Lines) do
+        Param0 := ParseLyricCharParam(CurLine, LinePos);
+        if (Param0 = 'E') then
         begin
-          Lines[Count].Line[Lines[Count].High].BaseNote := Base[Count];
-          Lines[Count].Line[Lines[Count].High].LyricWidth := glTextWidth(Lines[Count].Line[Lines[Count].High].Lyric);
-          //Total Notes Patch
-          Lines[Count].Line[Lines[Count].High].TotalNotes := 0;
-          for I := low(Lines[Count].Line[Lines[Count].High].Note) to high(Lines[Count].Line[Lines[Count].High].Note) do
+          Break
+        end
+        else if (Param0 in [':', '*', 'F']) then
+        begin
+          // read notes
+          Param1 := ParseLyricIntParam(CurLine, LinePos);
+          Param2 := ParseLyricIntParam(CurLine, LinePos);
+          Param3 := ParseLyricIntParam(CurLine, LinePos);
+          ParamLyric := ParseLyricText(CurLine, LinePos);
+
+          //Check for ZeroNote
+          if Param2 = 0 then
+            Log.LogError('Found zero-length note at "'+Param0+' '+IntToStr(Param1)+' '+IntToStr(Param2)+' '+IntToStr(Param3)+ParamLyric+'" -> Note ignored!')
+          else
           begin
-            if (Lines[Count].Line[Lines[Count].High].Note[I].NoteType = ntGolden) then
-              Lines[Count].Line[Lines[Count].High].TotalNotes := Lines[Count].Line[Lines[Count].High].TotalNotes + Lines[Count].Line[Lines[Count].High].Note[I].Length;
-            if (Lines[Count].Line[Lines[Count].High].Note[I].NoteType <> ntFreestyle) then
-              Lines[Count].Line[Lines[Count].High].TotalNotes := Lines[Count].Line[Lines[Count].High].TotalNotes + Lines[Count].Line[Lines[Count].High].Note[I].Length;
+           // add notes
+           if not Both then
+             // P1
+             ParseNote(0, Param0, (Param1+Rel[0]) * Mult, Param2 * Mult, Param3, ParamLyric)
+           else
+           begin
+             // P1 + P2
+             ParseNote(0, Param0, (Param1+Rel[0]) * Mult, Param2 * Mult, Param3, ParamLyric);
+             ParseNote(1, Param0, (Param1+Rel[1]) * Mult, Param2 * Mult, Param3, ParamLyric);
+           end;
+          end; //Zeronote check
+        end // if
+
+        else if Param0 = '-' then
+        begin
+          // reads sentence
+          Param1 := ParseLyricIntParam(CurLine, LinePos);
+          if self.Relative then
+            Param2 := ParseLyricIntParam(CurLine, LinePos); // read one more data for relative system
+
+          // new sentence
+          if not Both then
+            // P1
+            NewSentence(0, (Param1 + Rel[0]) * Mult, Param2)
+          else
+          begin
+            // P1 + P2
+            NewSentence(0, (Param1 + Rel[0]) * Mult, Param2);
+            NewSentence(1, (Param1 + Rel[1]) * Mult, Param2);
           end;
-          //Total Notes Patch End
-        end;
-      end;
-      ReadLn(SongFile); //Jump to next line in File, otherwise the next Read would catch the linebreak(e.g. #13 #10 on win32)
+        end // if
 
-      Read(SongFile, TempC);
-      Inc(FileLineNo);
-    end; // while}
-
-    CloseFile(SongFile);
-
-    for I := 0 to High(Lines) do
-    begin
-      if ((Both) or (I = 0)) then
-      begin
-        if (Length(Lines[I].Line) < 2) then
+        else if Param0 = 'B' then
         begin
-          LastError := 'ERROR_CORRUPT_SONG_NO_BREAKS';
-          Log.LogError('Error Loading File, Can''t find any Linebreaks: "' + fFileName + '"');
-          exit;
+          SetLength(self.BPM, Length(self.BPM) + 1);
+          self.BPM[High(self.BPM)].StartBeat := ParseLyricFloatParam(CurLine, LinePos);
+          self.BPM[High(self.BPM)].StartBeat := self.BPM[High(self.BPM)].StartBeat + Rel[0];
+
+          self.BPM[High(self.BPM)].BPM := ParseLyricFloatParam(CurLine, LinePos);
+          self.BPM[High(self.BPM)].BPM := self.BPM[High(self.BPM)].BPM * Mult * MultBPM;
         end;
 
-        if (Lines[I].Line[Lines[I].High].HighNote < 0) then
-        begin
-          SetLength(Lines[I].Line, Lines[I].Number - 1);
-          Lines[I].High := Lines[I].High - 1;
-          Lines[I].Number := Lines[I].Number - 1;
-          Log.LogError('Error loading Song, sentence w/o note found in last line before E: ' + Filename);
-        end;
-      end;
-    end;
+        // Read next line in File
+        if (not SongFile.ReadLine(CurLine)) then
+          Break;
 
-    for Count := 0 to High(Lines) do
-    begin
-      if (High(Lines[Count].Line) >= 0) then
-        Lines[Count].Line[High(Lines[Count].Line)].LastLine := true;
+        Inc(FileLineNo);
+      end; // while
+    finally
+      SongFile.Free;
     end;
   except
-    try
-      CloseFile(SongFile);
-    except
-
+    on E: Exception do
+    begin
+      Log.LogError(Format('Error loading file: "%s" in line %d,%d: %s',
+                  [FileNamePath.ToNative, FileLineNo, LinePos, E.Message]));
+      Exit;
     end;
+  end;
 
-    LastError := 'ERROR_CORRUPT_SONG_ERROR_IN_LINE';
-    Log.LogError('Error Loading File: "' + fFileName + '" in Line ' + inttostr(FileLineNo));
-    exit;
+  for I := 0 to High(Lines) do
+  begin
+    if ((Both) or (I = 0)) then
+    begin
+      if (Length(Lines[I].Line) < 2) then
+      begin
+        LastError := 'ERROR_CORRUPT_SONG_NO_BREAKS';
+        Log.LogError('Error loading file: Can''t find any linebreaks in "' + FileNamePath.ToNative + '"');
+        exit;
+      end;
+
+      if (Lines[I].Line[Lines[I].High].HighNote < 0) then
+      begin
+        SetLength(Lines[I].Line, Lines[I].Number - 1);
+        Lines[I].High := Lines[I].High - 1;
+        Lines[I].Number := Lines[I].Number - 1;
+        Log.LogError('Error loading Song, sentence w/o note found in last line before E: ' + FileNamePath.ToNative);
+      end;
+    end;
+  end;
+
+  for Count := 0 to High(Lines) do
+  begin
+    if (High(Lines[Count].Line) >= 0) then
+      Lines[Count].Line[High(Lines[Count].Line)].LastLine := true;
   end;
 
   Result := true;
@@ -413,11 +595,7 @@ end;
 
 //Load XML Song
 function TSong.LoadXMLSong(): boolean;
-
 var
-  //TempC:     char;
-  Text:      string;
-  CP:        integer; // Current Player (0 or 1)
   Count:     integer;
   Both:      boolean;
   Param1:    integer;
@@ -430,24 +608,23 @@ var
   NoteType:  char;
   SentenceEnd, Rest, Time: integer;
   Parser: TParser;
-
+  FileNamePath: IPath;
 begin
   Result := false;
   LastError := '';
 
-  if not FileExists(Path + PathDelim + FileName) then
+  FileNamePath := Path.Append(FileName);
+  if not FileNamePath.IsFile() then
   begin
-    Log.LogError('File not found: "' + Path + PathDelim + FileName + '"', 'TSong.LoadSong()');
+    Log.LogError('File not found: "' + FileNamePath.ToNative + '"', 'TSong.LoadSong()');
     exit;
   end;
 
   MultBPM           := 4; // multiply beat-count of note by 4
   Mult              := 1; // accuracy of measurement of note
-  Base[0]           := 100; // high number
   Lines[0].ScoreValue := 0;
   self.Relative     := false;
   Rel[0]            := 0;
-  CP                := 0;
   Both              := false;
 
   if Length(Player) = 2 then
@@ -458,19 +635,26 @@ begin
 
   for Count := 0 to High(Lines) do
   begin
-    SetLength(Lines[Count].Line, 1);
     Lines[Count].High := 0;
-    Lines[Count].Number := 1;
-    Lines[Count].Current := 0;
-    Lines[Count].Resolution := self.Resolution;
-    Lines[Count].NotesGAP   := self.NotesGAP;
-    Lines[Count].Line[0].HighNote := -1;
-    Lines[Count].Line[0].LastLine := false;
+      Lines[Count].Number := 1;
+      Lines[Count].Current := 0;
+      Lines[Count].Resolution := self.Resolution;
+      Lines[Count].NotesGAP   := self.NotesGAP;
+      Lines[Count].ScoreValue := 0;
+
+      //Add first line and set some standard values to fields
+      //see procedure NewSentence for further explantation
+      //concerning most of these values
+      SetLength(Lines[Count].Line, 1);
+      Lines[Count].Line[0].HighNote := -1;
+      Lines[Count].Line[0].LastLine := false;
+      Lines[Count].Line[0].BaseNote := High(Integer);
+      Lines[Count].Line[0].TotalNotes := 0;
   end;
 
   //Try to Parse the Song
 
-  if Parser.ParseSong(Path + PathDelim + FileName) then
+  if Parser.ParseSong(FileNamePath) then
   begin
     //Writeln('XML Inputfile Parsed succesful');
 
@@ -501,42 +685,6 @@ begin
           ParseNote(0, NoteType, (Param1+Rel[0]) * Mult, Param2 * Mult, Param3, ParamS);
           ParseNote(1, NoteType, (Param1+Rel[1]) * Mult, Param2 * Mult, Param3, ParamS);
         end;
-
-        if not Both then
-        begin
-          Lines[CP].Line[Lines[CP].High].BaseNote := Base[CP];
-          Lines[CP].Line[Lines[CP].High].LyricWidth := glTextWidth(Lines[CP].Line[Lines[CP].High].Lyric);
-          //Total Notes Patch
-          Lines[CP].Line[Lines[CP].High].TotalNotes := 0;
-          for NoteIndex := 0 to high(Lines[CP].Line[Lines[CP].High].Note) do
-          begin
-            if (Lines[CP].Line[Lines[CP].High].Note[NoteIndex].NoteType = ntGolden) then
-              Lines[CP].Line[Lines[CP].High].TotalNotes := Lines[CP].Line[Lines[CP].High].TotalNotes + Lines[CP].Line[Lines[CP].High].Note[NoteIndex].Length;
-
-            if (Lines[CP].Line[Lines[CP].High].Note[NoteIndex].NoteType <> ntFreestyle) then
-              Lines[CP].Line[Lines[CP].High].TotalNotes := Lines[CP].Line[Lines[CP].High].TotalNotes + Lines[CP].Line[Lines[CP].High].Note[NoteIndex].Length;
-          end;
-          //Total Notes Patch End
-        end
-        else
-        begin
-          for Count := 0 to High(Lines) do
-          begin
-            Lines[Count].Line[Lines[Count].High].BaseNote := Base[Count];
-            Lines[Count].Line[Lines[Count].High].LyricWidth := glTextWidth(Lines[Count].Line[Lines[Count].High].Lyric);
-            //Total Notes Patch
-            Lines[Count].Line[Lines[Count].High].TotalNotes := 0;
-            for NoteIndex := 0 to high(Lines[Count].Line[Lines[Count].High].Note) do
-            begin
-              if (Lines[Count].Line[Lines[Count].High].Note[NoteIndex].NoteType = ntGolden) then
-                Lines[Count].Line[Lines[Count].High].TotalNotes := Lines[Count].Line[Lines[Count].High].TotalNotes + Lines[Count].Line[Lines[Count].High].Note[NoteIndex].Length;
-              if (Lines[Count].Line[Lines[Count].High].Note[NoteIndex].NoteType <> ntFreestyle) then
-                Lines[Count].Line[Lines[Count].High].TotalNotes := Lines[Count].Line[Lines[Count].High].TotalNotes + Lines[Count].Line[Lines[Count].High].Note[NoteIndex].Length;
-
-            end;
-            //Total Notes Patch End
-          end;
-        end; { end of for loop }
 
       end; //J Forloop
 
@@ -573,7 +721,7 @@ begin
   end
   else
   begin
-    Log.LogError('Could not parse Inputfile: ' + Path + PathDelim + FileName);
+    Log.LogError('Could not parse inputfile: ' + FileNamePath.ToNative);
     exit;
   end;
 
@@ -585,14 +733,11 @@ begin
   Result := true;
 end;
 
-function TSong.ReadXMLHeader(const aFileName : WideString): boolean;
-
+function TSong.ReadXMLHeader(const aFileName : IPath): boolean;
 var
-  //Line, Identifier, Value: string;
-  //Temp        : word;
   Done        : byte;
   Parser      : TParser;
-
+  FileNamePath: IPath;
 begin
   Result := true;
   Done   := 0;
@@ -601,7 +746,8 @@ begin
   Parser := TParser.Create;
   Parser.Settings.DashReplacement := '~';
 
-  if Parser.ParseSong(self.Path + self.FileName) then
+  FileNamePath := Self.Path.Append(Self.FileName);
+  if Parser.ParseSong(FileNamePath) then
   begin
     //-----------
     //Required Attributes
@@ -620,9 +766,9 @@ begin
     Done := Done or 2;
 
     //MP3 File //Test if Exists
-    self.Mp3 := platform.FindSongFile(Path, '*.mp3');
+    Self.Mp3 := FindSongFile(Self.Path, '*.mp3');
     //Add Mp3 Flag to Done
-    if (FileExists(self.Path + self.Mp3)) then
+    if (Self.Path.Append(Self.Mp3).IsFile()) then
       Done := Done or 4;
 
     //Beats per Minute
@@ -643,16 +789,16 @@ begin
     self.GAP := Parser.SongInfo.Header.Gap;
 
     //Cover Picture
-    self.Cover := platform.FindSongFile(Path, '*[CO].jpg');
+    self.Cover := FindSongFile(Path, '*[CO].jpg');
 
     //Background Picture
-    self.Background := platform.FindSongFile(Path, '*[BG].jpg');
+    self.Background := FindSongFile(Path, '*[BG].jpg');
 
     // Video File
     //    self.Video := Value
 
     // Video Gap
-    //  self.VideoGAP := song_StrtoFloat( Value )
+    //  self.VideoGAP := StrtoFloatI18n( Value )
 
     //Genre Sorting
     self.Genre := Parser.SongInfo.Header.Genre;
@@ -667,7 +813,7 @@ begin
     self.Language := Parser.SongInfo.Header.Language;
   end
   else
-    Log.LogError('File Incomplete or not SingStar XML (A): ' + aFileName);
+    Log.LogError('File incomplete or not SingStar XML (A): ' + aFileName.ToNative);
 
   Parser.Free;
 
@@ -676,220 +822,297 @@ begin
   begin
     Result := false;
     if (Done and 8) = 0 then      //No BPM Flag
-      Log.LogError('BPM Tag Missing: ' + self.FileName)
+      Log.LogError('BPM tag missing: ' + self.FileName.ToNative)
     else if (Done and 4) = 0 then //No MP3 Flag
-      Log.LogError('MP3 Tag/File Missing: ' + self.FileName)
+      Log.LogError('MP3 tag/file missing: ' + self.FileName.ToNative)
     else if (Done and 2) = 0 then //No Artist Flag
-      Log.LogError('Artist Tag Missing: ' + self.FileName)
+      Log.LogError('Artist tag missing: ' + self.FileName.ToNative)
     else if (Done and 1) = 0 then //No Title Flag
-      Log.LogError('Title Tag Missing: ' + self.FileName)
+      Log.LogError('Title tag missing: ' + self.FileName.ToNative)
     else //unknown Error
-      Log.LogError('File Incomplete or not SingStar XML (B - '+ inttostr(Done) +'): ' + aFileName);
+      Log.LogError('File incomplete or not SingStar XML (B - '+ inttostr(Done) +'): ' + aFileName.ToNative);
   end;
 
 end;
 
-
-function TSong.ReadTXTHeader(const aFileName : WideString): boolean;
-
-  function song_StrtoFloat( aValue : string ) : extended;
-
-  var
-    lValue : string;
-
-  begin
-    lValue := aValue;
-
-    if (Pos(',', lValue) <> 0) then
-      lValue[Pos(',', lValue)] := '.';
-
-    Result := StrToFloatDef(lValue, 0);
-  end;
-
+{**
+ * "International" StrToFloat variant. Uses either ',' or '.' as decimal
+ * separator.
+ *}
+function StrToFloatI18n(const Value: string): extended;
 var
-  Line, Identifier, Value: string;
-  Temp        : word;
-  Done        : byte;
+  TempValue : string;
+begin
+  TempValue := Value;
+  if (Pos(',', TempValue) <> 0) then
+    TempValue[Pos(',', TempValue)] := '.';
+  Result := StrToFloatDef(TempValue, 0);
+end;
 
+function TSong.ReadTXTHeader(SongFile: TTextFileStream; ReadCustomTags: Boolean): boolean;
+var
+  Line, Identifier: string;
+  Value: string;
+  SepPos: integer; // separator position
+  Done: byte;      // bit-vector of mandatory fields
+  EncFile: IPath; // encoded filename
+  FullFileName: string;
+
+  { adds a custom header tag to the song
+    if there is no ':' in the read line, Tag should be empty
+    and the whole line should be in Content }
+  procedure AddCustomTag(const Tag, Content: String);
+    var Len: Integer;
+  begin
+    if ReadCustomTags then
+    begin
+      Len := Length(CustomTags);
+      SetLength(CustomTags, Len + 1);
+      CustomTags[Len].Tag := DecodeStringUTF8(Tag, Encoding);
+      CustomTags[Len].Content := DecodeStringUTF8(Content, Encoding);
+    end;
+  end;
 begin
   Result := true;
   Done   := 0;
 
-  //Read first Line
-  ReadLn (SongFile, Line);
+  FullFileName := Path.Append(Filename).ToNative;
 
+  //Read first Line
+  SongFile.ReadLine(Line);
   if (Length(Line) <= 0) then
   begin
-    Log.LogError('File Starts with Empty Line: ' + aFileName);
+    Log.LogError('File starts with empty line: ' + FullFileName,
+                 'TSong.ReadTXTHeader');
     Result := false;
     Exit;
   end;
+
+  // check if file begins with a UTF-8 BOM, if so set encoding to UTF-8
+  if (CheckReplaceUTF8BOM(Line)) then
+    Encoding := encUTF8;
 
   //Read Lines while Line starts with # or its empty
   while (Length(Line) = 0) or (Line[1] = '#') do
   begin
     //Increase Line Number
     Inc (FileLineNo);
-    Temp := Pos(':', Line);
+    SepPos := Pos(':', Line);
 
-    //Line has a Seperator-> Headerline
-    if (Temp <> 0) then
+    //Line has no Seperator, ignore non header field
+    if (SepPos = 0) then
     begin
-      //Read Identifier and Value
-      Identifier  := Uppercase(Trim(Copy(Line, 2, Temp - 2))); //Uppercase is for Case Insensitive Checks
-      Value       := Trim(Copy(Line, Temp + 1,Length(Line) - Temp));
-
-      //Check the Identifier (If Value is given)
-      if (Length(Value) <> 0) then
+      AddCustomTag('', Copy(Line, 2, Length(Line) - 1));
+      // read next line
+      if (not SongFile.ReadLine(Line)) then
       begin
-        //-----------
-        //Required Attributes
-        //-----------
+        Result := false;
+        Log.LogError('File incomplete or not Ultrastar txt (A): ' + FullFileName);
+        Break;
+      end;
+      Continue;
+    end;
 
-        {$IFDEF UTF8_FILENAMES}
-        if ((Identifier = 'MP3') or (Identifier = 'BACKGROUND') or (Identifier = 'COVER') or (Identifier = 'VIDEO')) then
-          Value := Utf8Encode(Value);
-        {$ENDIF}
+    //Read Identifier and Value
+    Identifier  := UpperCase(Trim(Copy(Line, 2, SepPos - 2))); //Uppercase is for Case Insensitive Checks
+    Value       := Trim(Copy(Line, SepPos + 1, Length(Line) - SepPos));
 
-        //Title
-        if (Identifier = 'TITLE') then
+    //Check the Identifier (If Value is given)
+    if (Length(Value) = 0) then
+    begin
+      Log.LogWarn('Empty field "'+Identifier+'" in file ' + FullFileName,
+                   'TSong.ReadTXTHeader');
+      AddCustomTag(Identifier, '');
+    end
+    else
+    begin
+
+      //-----------
+      //Required Attributes
+      //-----------
+
+      if (Identifier = 'TITLE') then
+      begin
+        DecodeStringUTF8(Value, Title, Encoding);
+        //Add Title Flag to Done
+        Done := Done or 1;
+      end
+
+      else if (Identifier = 'ARTIST') then
+      begin
+        DecodeStringUTF8(Value, Artist, Encoding);
+        //Add Artist Flag to Done
+        Done := Done or 2;
+      end
+
+      //MP3 File
+      else if (Identifier = 'MP3') then
+      begin
+        EncFile := DecodeFilename(Value);
+        if (Self.Path.Append(EncFile).IsFile) then
         begin
-          self.Title := Value;
-
-          //Add Title Flag to Done
-          Done := Done or 1;
-        end
-
-        //Artist
-        else if (Identifier = 'ARTIST') then
-        begin
-          self.Artist := Value;
-
-          //Add Artist Flag to Done
-          Done := Done or 2;
-        end
-
-        //MP3 File //Test if Exists
-        else if (Identifier = 'MP3') and (FileExists(self.Path + Value)) then
-        begin
-          self.Mp3 := Value;
+          self.Mp3 := EncFile;
 
           //Add Mp3 Flag to Done
           Done := Done or 4;
-        end
+        end;
+      end
 
-        //Beats per Minute
-        else if (Identifier = 'BPM') then
+      //Beats per Minute
+      else if (Identifier = 'BPM') then
+      begin
+        SetLength(self.BPM, 1);
+        self.BPM[0].StartBeat := 0;
+
+        self.BPM[0].BPM := StrToFloatI18n( Value ) * Mult * MultBPM;
+
+        if self.BPM[0].BPM <> 0 then
         begin
-          SetLength(self.BPM, 1);
-          self.BPM[0].StartBeat := 0;
+          //Add BPM Flag to Done
+          Done := Done or 8;
+        end;
+      end
 
-          self.BPM[0].BPM := song_StrtoFloat( Value ) * Mult * MultBPM;
+      //---------
+      //Additional Header Information
+      //---------
 
-          if self.BPM[0].BPM <> 0 then
-          begin
-            //Add BPM Flag to Done
-            Done := Done or 8;
-          end;
-        end
+      // Gap
+      else if (Identifier = 'GAP') then
+      begin
+        self.GAP := StrToFloatI18n(Value);
+      end
 
-        //---------
-        //Additional Header Information
-        //---------
+      //Cover Picture
+      else if (Identifier = 'COVER') then
+      begin
+        self.Cover := DecodeFilename(Value);
+      end
 
-        // Gap
-        else if (Identifier = 'GAP') then
-          self.GAP := song_StrtoFloat( Value )
+      //Background Picture
+      else if (Identifier = 'BACKGROUND') then
+      begin
+        self.Background := DecodeFilename(Value);
+      end
 
-        //Cover Picture
-        else if (Identifier = 'COVER') then
-          self.Cover := Value
+      // Video File
+      else if (Identifier = 'VIDEO') then
+      begin
+        EncFile := DecodeFilename(Value);
+        if (self.Path.Append(EncFile).IsFile) then
+          self.Video := EncFile
+        else
+          Log.LogError('Can''t find video file in song: ' + FullFileName);
+      end
 
-        //Background Picture
-        else if (Identifier = 'BACKGROUND') then
-          self.Background := Value
+      // Video Gap
+      else if (Identifier = 'VIDEOGAP') then
+      begin
+        self.VideoGAP := StrToFloatI18n( Value )
+      end
 
-        // Video File
-        else if (Identifier = 'VIDEO') then
-        begin
-          if (FileExists(self.Path + Value)) then
-            self.Video := Value
-          else
-            Log.LogError('Can''t find Video File in Song: ' + aFileName);
-        end
+      //Genre Sorting
+      else if (Identifier = 'GENRE') then
+      begin
+        DecodeStringUTF8(Value, Genre, Encoding)
+      end
 
-        // Video Gap
-        else if (Identifier = 'VIDEOGAP') then
-          self.VideoGAP := song_StrtoFloat( Value )
+      //Edition Sorting
+      else if (Identifier = 'EDITION') then
+      begin
+        DecodeStringUTF8(Value, Edition, Encoding)
+      end
 
-        //Genre Sorting
-        else if (Identifier = 'GENRE') then
-          self.Genre := Value
+      //Creator Tag
+      else if (Identifier = 'CREATOR') then
+      begin
+        DecodeStringUTF8(Value, Creator, Encoding)
+      end
 
-        //Edition Sorting
-        else if (Identifier = 'EDITION') then
-          self.Edition := Value
+      //Language Sorting
+      else if (Identifier = 'LANGUAGE') then
+      begin
+        DecodeStringUTF8(Value, Language, Encoding)
+      end
 
-        //Creator Tag
-        else if (Identifier = 'CREATOR') then
-          self.Creator := Value
+      //Language Sorting
+      else if (Identifier = 'YEAR') then
+      begin
+        TryStrtoInt(Value, self.Year)
+      end
 
-        //Language Sorting
-        else if (Identifier = 'LANGUAGE') then
-          self.Language := Value
+      // Song Start
+      else if (Identifier = 'START') then
+      begin
+        self.Start := StrToFloatI18n( Value )
+      end
 
-        // Song Start
-        else if (Identifier = 'START') then
-          self.Start := song_StrtoFloat( Value )
+      // Song Ending
+      else if (Identifier = 'END') then
+      begin
+        TryStrtoInt(Value, self.Finish)
+      end
 
-        // Song Ending
-        else if (Identifier = 'END') then
-          TryStrtoInt(Value, self.Finish)
+      // Resolution
+      else if (Identifier = 'RESOLUTION') then
+      begin
+        TryStrtoInt(Value, self.Resolution)
+      end
 
-        // Resolution
-        else if (Identifier = 'RESOLUTION') then
-          TryStrtoInt(Value, self.Resolution)
+      // Notes Gap
+      else if (Identifier = 'NOTESGAP') then
+      begin
+        TryStrtoInt(Value, self.NotesGAP)
+      end
 
-        // Notes Gap
-        else if (Identifier = 'NOTESGAP') then
-          TryStrtoInt(Value, self.NotesGAP)
-        // Relative Notes
-        else if (Identifier = 'RELATIVE') and (uppercase(Value) = 'YES') then
+      // Relative Notes
+      else if (Identifier = 'RELATIVE') then
+      begin
+        if (UpperCase(Value) = 'YES') then
           self.Relative := true;
+      end
 
+      // File encoding
+      else if (Identifier = 'ENCODING') then
+      begin
+        self.Encoding := ParseEncoding(Value, DEFAULT_ENCODING);
+      end
+
+      // unsupported tag
+      else
+      begin
+        AddCustomTag(Identifier, Value);
       end;
-    end;
 
-    if not EOF(SongFile) then
-      ReadLn (SongFile, Line)
-    else
+    end; // End check for non-empty Value
+
+    // read next line
+    if (not SongFile.ReadLine(Line)) then
     begin
       Result := false;
-      Log.LogError('File Incomplete or not Ultrastar TxT (A): ' + aFileName);
-      break;
+      Log.LogError('File incomplete or not Ultrastar txt (A): ' + FullFileName);
+      Break;
     end;
+  end; // while
 
-  end;
-
-  if self.Cover = '' then
-    self.Cover := platform.FindSongFile(Path, '*[CO].jpg');
+  if self.Cover.IsUnset then
+    self.Cover := FindSongFile(Path, '*[CO].jpg');
 
   //Check if all Required Values are given
   if (Done <> 15) then
   begin
     Result := false;
     if (Done and 8) = 0 then      //No BPM Flag
-      Log.LogError('BPM Tag Missing: ' + self.FileName)
+      Log.LogError('BPM tag missing: ' + FullFileName)
     else if (Done and 4) = 0 then //No MP3 Flag
-      Log.LogError('MP3 Tag/File Missing: ' + self.FileName)
+      Log.LogError('MP3 tag/file missing: ' + FullFileName)
     else if (Done and 2) = 0 then //No Artist Flag
-      Log.LogError('Artist Tag Missing: ' + self.FileName)
+      Log.LogError('Artist tag missing: ' + FullFileName)
     else if (Done and 1) = 0 then //No Title Flag
-      Log.LogError('Title Tag Missing: ' + self.FileName)
+      Log.LogError('Title tag missing: ' + FullFileName)
     else //unknown Error
-      Log.LogError('File Incomplete or not Ultrastar TxT (B - '+ inttostr(Done) +'): ' + aFileName);
+      Log.LogError('File incomplete or not Ultrastar txt (B - '+ inttostr(Done) +'): ' + FullFileName);
   end;
-
 end;
 
 function  TSong.GetErrorLineNo: integer;
@@ -900,47 +1123,52 @@ begin
     Result := -1;
 end;
 
-procedure TSong.ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: string);
-
+function TSong.Solmizate(Note: integer; Type_: integer): string;
 begin
-  case Ini.Solmization of
+  case (Type_) of
     1:  // european
       begin
-        case (NoteP mod 12) of
-          0..1:   LyricS := ' do ';
-          2..3:   LyricS := ' re ';
-          4:      LyricS := ' mi ';
-          5..6:   LyricS := ' fa ';
-          7..8:   LyricS := ' sol ';
-          9..10:  LyricS := ' la ';
-          11:     LyricS := ' si ';
+        case (Note mod 12) of
+          0..1:   Result := ' do ';
+          2..3:   Result := ' re ';
+          4:      Result := ' mi ';
+          5..6:   Result := ' fa ';
+          7..8:   Result := ' sol ';
+          9..10:  Result := ' la ';
+          11:     Result := ' si ';
         end;
       end;
     2:  // japanese
       begin
-        case (NoteP mod 12) of
-          0..1:   LyricS := ' do ';
-          2..3:   LyricS := ' re ';
-          4:      LyricS := ' mi ';
-          5..6:   LyricS := ' fa ';
-          7..8:   LyricS := ' so ';
-          9..10:  LyricS := ' la ';
-          11:     LyricS := ' shi ';
+        case (Note mod 12) of
+          0..1:   Result := ' do ';
+          2..3:   Result := ' re ';
+          4:      Result := ' mi ';
+          5..6:   Result := ' fa ';
+          7..8:   Result := ' so ';
+          9..10:  Result := ' la ';
+          11:     Result := ' shi ';
         end;
       end;
     3:  // american
       begin
-        case (NoteP mod 12) of
-          0..1:   LyricS := ' do ';
-          2..3:   LyricS := ' re ';
-          4:      LyricS := ' mi ';
-          5..6:   LyricS := ' fa ';
-          7..8:   LyricS := ' sol ';
-          9..10:  LyricS := ' la ';
-          11:     LyricS := ' ti ';
+        case (Note mod 12) of
+          0..1:   Result := ' do ';
+          2..3:   Result := ' re ';
+          4:      Result := ' mi ';
+          5..6:   Result := ' fa ';
+          7..8:   Result := ' sol ';
+          9..10:  Result := ' la ';
+          11:     Result := ' ti ';
         end;
       end;
   end; // case
+end;
+
+procedure TSong.ParseNote(LineNumber: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: UTF8String);
+begin
+  if (Ini.Solmization <> 0) then
+    LyricS := Solmizate(NoteP, Ini.Solmization);
 
   with Lines[LineNumber].Line[Lines[LineNumber].High] do
   begin
@@ -964,17 +1192,23 @@ begin
       '*':  Note[HighNote].NoteType := ntGolden;
     end;
 
-    if (Note[HighNote].NoteType = ntGolden) then
-      Lines[LineNumber].ScoreValue := Lines[LineNumber].ScoreValue + Note[HighNote].Length;
+    //add this notes value ("notes length" * "notes scorefactor") to the current songs entire value
+    Inc(Lines[LineNumber].ScoreValue, Note[HighNote].Length * ScoreFactor[Note[HighNote].NoteType]);
 
-    if (Note[HighNote].NoteType <> ntFreestyle) then
-      Lines[LineNumber].ScoreValue := Lines[LineNumber].ScoreValue + Note[HighNote].Length;
+    //and to the current lines entire value
+    Inc(TotalNotes, Note[HighNote].Length * ScoreFactor[Note[HighNote].NoteType]);
+
 
     Note[HighNote].Tone := NoteP;
-    if Note[HighNote].Tone < Base[LineNumber] then
-      Base[LineNumber] := Note[HighNote].Tone;
 
-    Note[HighNote].Text := Copy(LyricS, 2, 100);
+    //if a note w/ a deeper pitch then the current basenote is found
+    //we replace the basenote w/ the current notes pitch
+    if Note[HighNote].Tone < BaseNote then
+      BaseNote := Note[HighNote].Tone;
+
+    Note[HighNote].Color := 1; // default color to 1 for editor
+
+    DecodeStringUTF8(LyricS, Note[HighNote].Text, Encoding);
     Lyric := Lyric + Note[HighNote].Text;
 
     End_ := Note[HighNote].Start + Note[HighNote].Length;
@@ -982,42 +1216,34 @@ begin
 end;
 
 procedure TSong.NewSentence(LineNumberP: integer; Param1, Param2: integer);
-
 var
   I: integer;
-
 begin
 
   if (Lines[LineNumberP].Line[Lines[LineNumberP].High].HighNote  <> -1) then
-  begin //Update old Sentence if it has notes and create a new sentence
-    // Update old part
-    Lines[LineNumberP].Line[Lines[LineNumberP].High].BaseNote := Base[LineNumberP];
-    Lines[LineNumberP].Line[Lines[LineNumberP].High].LyricWidth := glTextWidth(Lines[LineNumberP].Line[Lines[LineNumberP].High].Lyric);
-
-    //Total Notes Patch
-    Lines[LineNumberP].Line[Lines[LineNumberP].High].TotalNotes := 0;
-    for I := low(Lines[LineNumberP].Line[Lines[LineNumberP].High].Note) to high(Lines[LineNumberP].Line[Lines[LineNumberP].High].Note) do
-    begin
-      if (Lines[LineNumberP].Line[Lines[LineNumberP].High].Note[I].NoteType = ntGolden) then
-        Lines[LineNumberP].Line[Lines[LineNumberP].High].TotalNotes := Lines[LineNumberP].Line[Lines[LineNumberP].High].TotalNotes + Lines[LineNumberP].Line[Lines[LineNumberP].High].Note[I].Length;
-
-      if (Lines[LineNumberP].Line[Lines[LineNumberP].High].Note[I].NoteType <> ntFreestyle) then
-        Lines[LineNumberP].Line[Lines[LineNumberP].High].TotalNotes := Lines[LineNumberP].Line[Lines[LineNumberP].High].TotalNotes + Lines[LineNumberP].Line[Lines[LineNumberP].High].Note[I].Length;
-    end;
-    //Total Notes Patch End
-
-
-    // Update new part
+  begin //create a new line
     SetLength(Lines[LineNumberP].Line, Lines[LineNumberP].Number + 1);
-    Lines[LineNumberP].High := Lines[LineNumberP].High + 1;
-    Lines[LineNumberP].Number := Lines[LineNumberP].Number + 1;
+    Inc(Lines[LineNumberP].High);
+    Inc(Lines[LineNumberP].Number);
   end
   else
-  begin //Use old Sentence if it has no notes
-    Log.LogError('Error loading Song, sentence w/o note found in line ' + InttoStr(FileLineNo) + ': ' + Filename);
+  begin //use old line if it there were no notes added since last call of NewSentence
+    Log.LogError('Error loading Song, sentence w/o note found in line ' +
+                 InttoStr(FileLineNo) + ': ' + Filename.ToNative);
   end;
 
   Lines[LineNumberP].Line[Lines[LineNumberP].High].HighNote := -1;
+
+  //set the current lines value to zero
+  //it will be incremented w/ the value of every added note
+  Lines[LineNumberP].Line[Lines[LineNumberP].High].TotalNotes := 0;
+
+  //basenote is the pitch of the deepest note, it is used for note drawing.
+  //if a note with a less value than the current sentences basenote is found,
+  //basenote will be set to this notes pitch. Therefore the initial value of
+  //this field has to be very high.
+  Lines[LineNumberP].Line[Lines[LineNumberP].High].BaseNote := High(Integer);
+
 
   if self.Relative then
   begin
@@ -1028,12 +1254,9 @@ begin
     Lines[LineNumberP].Line[Lines[LineNumberP].High].Start := Param1;
 
   Lines[LineNumberP].Line[Lines[LineNumberP].High].LastLine := false;
-
-  Base[LineNumberP] := 100; // high number
 end;
 
-procedure TSong.clear();
-
+procedure TSong.Clear();
 begin
   //Main Information
   Title  := '';
@@ -1042,33 +1265,38 @@ begin
   //Sortings:
   Genre    := 'Unknown';
   Edition  := 'Unknown';
-  Language := 'Unknown'; //Language Patch
+  Language := 'Unknown';
+  Year := 0;
+
+  // set to default encoding
+  Encoding := DEFAULT_ENCODING;
+
+  // clear custom header tags
+  SetLength(CustomTags, 0);
 
   //Required Information
-  Mp3    := '';
-  {$IFDEF FPC}
-  setlength( BPM, 0 );
-  {$ELSE}
-  BPM    := nil;
-  {$ENDIF}
+  Mp3    := PATH_NONE;
+  SetLength(BPM, 0);
 
   GAP    := 0;
   Start  := 0;
   Finish := 0;
 
   //Additional Information
-  Background := '';
-  Cover      := '';
-  Video      := '';
+  Background := PATH_NONE;
+  Cover      := PATH_NONE;
+  Video      := PATH_NONE;
   VideoGAP   := 0;
   NotesGAP   := 0;
   Resolution := 4;
   Creator    := '';
 
+  Relative := false;
 end;
 
-function TSong.Analyse(): boolean;
-
+function TSong.Analyse(const ReadCustomTags: Boolean): boolean;
+var
+  SongFile: TTextFileStream;
 begin
   Result := false;
 
@@ -1076,20 +1304,15 @@ begin
   FileLineNo := 0;
 
   //Open File and set File Pointer to the beginning
-  AssignFile(SongFile, self.Path + self.FileName);
-
+  SongFile := TMemTextFileStream.Create(Self.Path.Append(Self.FileName), fmOpenRead);
   try
-    Reset(SongFile);
-
     //Clear old Song Header
-    self.clear;
+    Self.clear;
 
     //Read Header
-    Result := self.ReadTxTHeader( FileName )
-
-    //And Close File
+    Result := Self.ReadTxTHeader(SongFile, ReadCustomTags)
   finally
-    CloseFile(SongFile);
+    SongFile.Free;
   end;
 end;
 

@@ -224,7 +224,7 @@ PKG_HAVE([portmixer], [portmixer], no)
 AC_SUBST_DEFINE(HAVE_PORTMIXER, $portmixer_HAVE)
 
 # determine linker-flags
-#LDFLAGS=
+LDFLAGS="-undefined dynamic_lookup"
 #LIBS=
 AC_SUBST(LDFLAGS)
 AC_SUBST(LIBS)
@@ -235,6 +235,7 @@ AC_SUBST(LIBS)
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([plugins/Makefile])
 AC_CONFIG_FILES([src/config-$FPC_PLATFORM.inc:src/config.inc.in])
 if [[ x$libprojectM_USE_CWRAPPER = xyes ]]; then
     AC_CONFIG_FILES([src/lib/projectM/cwrapper/Makefile])

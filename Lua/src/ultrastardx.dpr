@@ -50,11 +50,7 @@ uses
   {$IFDEF Unix}
   cthreads,            // THIS MUST be the first used unit in FPC if Threads are used!!
                        // (see http://wiki.lazarus.freepascal.org/Multithreaded_Application_Tutorial)
-  // cwstring crashes in FPC 2.2.2 so do not use the cwstring stuff
-  {.$IFNDEF DARWIN}
-  {$IFDEF NOIGNORE}
-  cwstring,            // Enable Unicode support. MacOSX misses some references to iconv.
-  {$ENDIF}
+  cwstring,            // Enable Unicode support
   {$ENDIF}
 
   {$IFNDEF FPC}
@@ -71,16 +67,12 @@ uses
   sdl                    in 'lib\JEDI-SDL\SDL\Pas\sdl.pas',
   sdl_image              in 'lib\JEDI-SDL\SDL_Image\Pas\sdl_image.pas',
   sdlutils               in 'lib\JEDI-SDL\SDL\Pas\sdlutils.pas',
+  sdlstreams             in 'lib\JEDI-SDL\SDL\Pas\sdlstreams.pas',
   UMediaCore_SDL         in 'media\UMediaCore_SDL.pas',
 
   zlib                   in 'lib\zlib\zlib.pas',
   png                    in 'lib\libpng\png.pas',
-
-  {$IFDEF UseFreetype}
   freetype               in 'lib\freetype\freetype.pas',
-  UFont                  in 'base\UFont.pas',
-  UTextEncoding          in 'base\UTextEncoding.pas',
-  {$ENDIF}
 
   {$IFDEF UseBass}
   bass                   in 'lib\bass\delphi\bass.pas',
@@ -136,14 +128,28 @@ uses
   {$IFDEF DARWIN}
   PseudoThread  in 'macosx\PseudoThread.pas',
   {$ENDIF}
-  
+
   SQLiteTable3  in 'lib\SQLite\SQLiteTable3.pas',
   SQLite3       in 'lib\SQLite\SQLite3.pas',
+
+  pcre          in 'lib\pcre\pcre.pas',
+
+  {$IFDEF MSWINDOWS}
+  // TntUnicodeControls
+  TntSystem         in 'lib\TntUnicodeControls\TntSystem.pas',
+  TntSysUtils       in 'lib\TntUnicodeControls\TntSysUtils.pas',
+  TntWindows        in 'lib\TntUnicodeControls\TntWindows.pas',
+  TntWideStrUtils   in 'lib\TntUnicodeControls\TntWideStrUtils.pas',
+  TntClasses        in 'lib\TntUnicodeControls\TntClasses.pas',
+  TntFormatStrUtils in 'lib\TntUnicodeControls\TntFormatStrUtils.pas',
+  {$IFNDEF DELPHI_10_UP} // WideStrings for FPC and Delphi < 2006
+  TntWideStrings   in 'lib\TntUnicodeControls\TntWideStrings.pas',
+  {$ENDIF}
+  {$ENDIF}
 
   //------------------------------
   //Includes - Lua Support
   //------------------------------
-
   ULua           in 'lib\Lua\ULua.pas',
   ULuaUtils      in 'lua\ULuaUtils.pas',
   ULuaGl         in 'lua\ULuaGl.pas',
@@ -154,7 +160,7 @@ uses
   ULuaCore       in 'lua\ULuaCore.pas',
   ULuaUsdx       in 'lua\ULuaUsdx.pas',
   ULuaParty      in 'lua\ULuaParty.pas',
-  ULuaScreenSing in 'lua\ULuaScreenSing.pas', 
+  ULuaScreenSing in 'lua\ULuaScreenSing.pas',
 
   //------------------------------
   //Includes - Menu System
@@ -190,7 +196,6 @@ uses
   UDraw             in 'base\UDraw.pas',
   URecord           in 'base\URecord.pas',
   UTime             in 'base\UTime.pas',
-  TextGL            in 'base\TextGL.pas',
   USong             in 'base\USong.pas',
   UXMLSong          in 'base\UXMLSong.pas',
   USongs            in 'base\USongs.pas',
@@ -213,26 +218,21 @@ uses
   URingBuffer       in 'base\URingBuffer.pas',
   USingScores       in 'base\USingScores.pas',
   USingNotes        in 'base\USingNotes.pas',
+  UPathUtils        in 'base\UPathUtils.pas',
+  UNote             in 'base\UNote.pas',
+  UBeatTimer        in 'base\UBeatTimer.pas',
+
+  TextGL            in 'base\TextGL.pas',
+  UUnicodeUtils     in 'base\UUnicodeUtils.pas',
+  UFont             in 'base\UFont.pas',
+  UTextEncoding     in 'base\UTextEncoding.pas',
+
+  UPath             in 'base\UPath.pas',
+  UFilesystem       in 'base\UFilesystem.pas',
 
   //------------------------------
   //Includes - Plugin Support
   //------------------------------
-  {UPluginDefines    in 'pluginsupport\UPluginDefines.pas',
-  UPartyDefines     in 'pluginsupport\UPartyDefines.pas',
-
-  UPartyMode        in 'pluginsupport\UPartyMode.pas',
-  UPartyManager     in 'pluginsupport\UPartyManager.pas',
-  UPartyModePlugin  in 'pluginsupport\UPartyModePlugin.pas',
-  UPluginLoader     in 'pluginsupport\UPluginLoader.pas',    }
-
-  UModules          in 'base\UModules.pas',          //List of Modules to Load
-  UHooks            in 'base\UHooks.pas',            //Hook Managing
-  UServices         in 'base\UServices.pas',         //Service Managing
-  UCore             in 'base\UCore.pas',             //Core, Maybe remove this
-  UCoreModule       in 'base\UCoreModule.pas',       //^
-  UPluginInterface  in 'base\UPluginInterface.pas',  //Interface offered by Core to Plugins
-  UPluginLoader     in 'base\UPluginLoader.pas',     //New Plugin Loader Module
-
   UParty            in 'base\UParty.pas',            // TODO: rewrite Party Manager as Module, reomplent ability to offer party Mody by Plugin
 
   //------------------------------
@@ -256,7 +256,7 @@ uses
   UAudioPlaybackBase        in 'media\UAudioPlaybackBase.pas',
 {$IF Defined(UsePortaudioPlayback) or Defined(UseSDLPlayback)}
   UFFT                      in 'lib\fft\UFFT.pas',
-  UAudioPlayback_Softmixer  in 'media\UAudioPlayback_SoftMixer.pas',
+  UAudioPlayback_SoftMixer  in 'media\UAudioPlayback_SoftMixer.pas',
 {$IFEND}
   UAudioConverter           in 'media\UAudioConverter.pas',
 
@@ -344,8 +344,6 @@ uses
   //Includes - Modi SDK
   //------------------------------
   ModiSDK       in '..\plugins\SDK\ModiSDK.pas', //Old SDK, will be deleted soon
-  UPluginDefs   in '..\plugins\SDK\UPluginDefs.pas', //New SDK, not only Modis
-  UPartyDefs    in '..\plugins\SDK\UPartyDefs.pas', //Headers to register Party Modes
 
   SysUtils;
 

@@ -47,29 +47,32 @@ type
     private
       procedure ReloadTheme;
     public
-      SkinSelect: Integer;
+      SkinSelect: integer;
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure InteractInc; override;
       procedure InteractDec; override;
   end;
 
 implementation
 
-uses UMain,
-     UGraphic,
-     USkins,
-     SysUtils;
+uses 
+  SysUtils,
+  UGraphic,
+  UMain,
+  UPathUtils,
+  UUnicodeUtils,
+  USkins;
 
-function TScreenOptionsThemes.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenOptionsThemes.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -133,7 +136,7 @@ begin
   if (SelInteraction = 0) then
   begin
     Skin.OnThemeChange;
-    UpdateSelectSlideOptions (Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
+    UpdateSelectSlideOptions(Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
   end;
 
   ReloadTheme();
@@ -159,18 +162,24 @@ begin
 
   LoadFromTheme(Theme.OptionsThemes);
 
+  Theme.OptionsThemes.SelectTheme.showArrows := true;
+  Theme.OptionsThemes.SelectTheme.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsThemes.SelectTheme, Ini.Theme, ITheme);
 
+  Theme.OptionsThemes.SelectSkin.showArrows := true;
+  Theme.OptionsThemes.SelectSkin.oneItemOnly := true;
   SkinSelect := AddSelectSlide(Theme.OptionsThemes.SelectSkin, Ini.SkinNo, ISkin);
 
-  AddSelectSlide(Theme.OptionsThemes.SelectColor, Ini.Color, IColor);
+  Theme.OptionsThemes.SelectColor.showArrows := true;
+  Theme.OptionsThemes.SelectColor.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsThemes.SelectColor, Ini.Color, IColorTranslated);
 
   AddButton(Theme.OptionsThemes.ButtonExit);
   if (Length(Button[0].Text)=0) then
     AddButtonText(14, 20, Theme.Options.Description[7]);
 end;
 
-procedure TScreenOptionsThemes.onShow;
+procedure TScreenOptionsThemes.OnShow;
 begin
   inherited;
 
@@ -179,7 +188,7 @@ end;
 
 procedure TScreenOptionsThemes.ReloadTheme;
 begin
-  Theme.LoadTheme(ThemePath + ITheme[Ini.Theme] + '.ini', Ini.Color);
+  Theme.LoadTheme(ThemePath.Append(ITheme[Ini.Theme] + '.ini'), Ini.Color);
 
   ScreenOptionsThemes := TScreenOptionsThemes.create();
   ScreenOptionsThemes.onshow;
@@ -187,7 +196,6 @@ begin
 
   ScreenOptionsThemes.Interaction    := self.Interaction;
   ScreenOptionsThemes.Draw;
-
 
   Display.Draw;
   SwapBuffers;

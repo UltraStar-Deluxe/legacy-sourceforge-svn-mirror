@@ -38,31 +38,31 @@ uses
   UTexture,
   gl,
   UMenuText,
-  SDL;
+  SDL,
+  UMenuInteract;
 
 type
   CButton = class of TButton;
 
   TButton = class
     protected
-      SelectBool:           Boolean;
+      SelectBool:   boolean;
 
-      FadeProgress:         Real;
-      FadeLastTick:         Cardinal;
+      FadeProgress: real;
+      FadeLastTick: cardinal;
 
       DeSelectW,
       DeSelectH,
       PosX,
-      PosY:                 Real;
+      PosY:         real;
 
-      constructor Create(); overload;
 
     public
-      Text:                      Array of TText;
+      Text:                      array of TText;
       Texture:                   TTexture; // Button Screen position and size
       Texture2:                  TTexture; // second texture only used for fading full resolution covers
 
-      Colorized: Boolean;
+      Colorized:                 boolean;
       DeSelectTexture:           TTexture; // texture for colorized hack
 
       FadeTex:                   TTexture; //Texture for beautiful fading
@@ -73,15 +73,15 @@ type
 
       Reflection:                boolean;
       Reflectionspacing,
-      DeSelectReflectionspacing: Real;
+      DeSelectReflectionspacing: real;
 
       Fade,
-      FadeText:                  Boolean;
+      FadeText:                  boolean;
 
       Selectable:                boolean;
 
       //Number of the Parent Collection, 0 if in no Collection
-      Parent:  Byte;
+      Parent:  byte;
 
       SelectColR,
       SelectColG,
@@ -103,25 +103,29 @@ type
       procedure SetW(Value: real);
       procedure SetH(Value: real);
 
-      procedure SetSelect(Value: Boolean); virtual;
+      procedure SetSelect(Value: boolean); virtual;
       property X: real read PosX write SetX;
       property Y: real read PosY write SetY;
       property Z: real read Texture.z write Texture.z;
       property W: real read DeSelectW write SetW;
       property H: real read DeSelectH write SetH;
-      property Selected: Boolean read SelectBool write SetSelect;
+      property Selected: boolean read SelectBool write SetSelect;
 
       procedure   Draw; virtual;
 
+      constructor Create(); overload;
       constructor Create(Textura: TTexture); overload;
       constructor Create(Textura, DSTexture: TTexture); overload;
       destructor  Destroy; override;
+
+      function GetMouseOverArea: TMouseOverRect;
   end;
 
 implementation
 
-uses SysUtils,
-     UDrawTexture;
+uses 
+  SysUtils,
+  UDrawTexture;
 
 procedure TButton.SetX(Value: real);
 {var
@@ -143,8 +147,8 @@ end;
 
 procedure TButton.SetY(Value: real);
 {var
-  dY:   real;
-  T:    integer;    // text}
+  dY: real;
+  T:  integer;    // text}
 begin
   {dY := Value - PosY;
 
@@ -164,7 +168,7 @@ begin
 
   DeSelectW := Value;
 
-  if Not Fade then
+  if not Fade then
   begin
     if SelectBool then
       Texture.W := SelectW
@@ -180,7 +184,7 @@ begin
 
   DeSelectH := Value;
 
-  if Not Fade then
+  if not Fade then
   begin
     if SelectBool then
       Texture.H := SelectH
@@ -189,9 +193,9 @@ begin
   end;
 end;
 
-procedure TButton.SetSelect(Value : Boolean);
+procedure TButton.SetSelect(Value : boolean);
 var
-  T:    integer;
+  T: integer;
 begin
   SelectBool := Value;
 
@@ -251,49 +255,13 @@ begin
   end;
 end;
 
-constructor TButton.Create();
-begin
-  inherited Create;
-  // We initialize all to 0, nil or false
-  Visible        := true;
-  SelectBool     := false;
-  DeselectType   := 0;
-  Selectable     := true;
-  Reflection     := false;
-  Colorized      := false;
-
-  SelectColR     := 1;
-  SelectColG     := 1;
-  SelectColB     := 1;
-  SelectInt      := 1;
-  SelectTInt     := 1;
-
-  DeselectColR   := 1;
-  DeselectColG   := 1;
-  DeselectColB   := 1;
-  DeselectInt    := 0.5;
-  DeselectTInt   := 1;
-
-  Fade           := false;
-  FadeTex.TexNum := 0;
-  FadeProgress   := 0;
-  FadeText       := false;
-  SelectW        := DeSelectW;
-  SelectH        := DeSelectH;
-
-  PosX           := 0;
-  PosY           := 0;
-
-  Parent         := 0;
-end;
-
 // ***** Public methods ****** //
 
 procedure TButton.Draw;
 var
-  T:    integer;
-  Tick: Cardinal;
-  Spacing: Real;
+  T:       integer;
+  Tick:    cardinal;
+  Spacing: real;
 begin
   if Visible then
   begin
@@ -315,7 +283,7 @@ begin
 
           if (FadeText) then
           begin
-            For T := 0 to high(Text) do
+            for T := 0 to high(Text) do
             begin
               Text[T].MoveX := (SelectW - DeSelectW) * FadeProgress;
               Text[T].MoveY := (SelectH - DeSelectH) * FadeProgress;
@@ -353,7 +321,7 @@ begin
         FadeTex.TexY1     := 0;
         FadeTex.TexY2     := 1;
 
-        Case FadeTexPos of
+        case FadeTexPos of
           0: //FadeTex on Top
             begin
               //Standard Texture
@@ -465,7 +433,7 @@ begin
     //Reflection Mod
     if (Reflection) then // Draw Reflections
     begin
-      if (FadeProgress <> 0) AND (FadeProgress <> 1) then
+      if (FadeProgress <> 0) and (FadeProgress <> 1) then
       begin
         Spacing := DeSelectReflectionspacing - (DeSelectReflectionspacing - Reflectionspacing) * FadeProgress;
       end
@@ -514,9 +482,10 @@ begin
         glDisable(GL_TEXTURE_2D);
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
-      end else
+      end
+      else
       with DeSelectTexture do
-        begin
+      begin
         //Bind Tex and GL Attributes
         glEnable(GL_TEXTURE_2D);
         glEnable(GL_BLEND);
@@ -556,8 +525,52 @@ begin
       end;
     end;
 
-    for T := 0 to High(Text) do begin
+    for T := 0 to High(Text) do
+    begin
       Text[T].Draw;
+    end;
+  end;
+end;
+
+function TButton.GetMouseOverArea: TMouseOverRect;
+begin
+  if (FadeTex.TexNum = 0) then
+  begin
+    Result.X := Texture.X;
+    Result.Y := Texture.Y;
+    Result.W := Texture.W;
+    Result.H := Texture.H;
+  end
+  else
+  begin
+    case FadeTexPos of
+      0: begin // fade tex on top
+        Result.X := Texture.X;
+        Result.Y := FadeTex.Y;
+        Result.W := Texture.W;
+        Result.H := FadeTex.H + Texture.H;
+      end;
+
+      1: begin // fade tex on left side
+        Result.X := FadeTex.X;
+        Result.Y := Texture.Y;
+        Result.W := FadeTex.W + Texture.W;
+        Result.H := Texture.H;
+      end;
+
+      2: begin // fade tex on bottom
+        Result.X := Texture.X;
+        Result.Y := Texture.Y;
+        Result.W := Texture.W;
+        Result.H := FadeTex.H + Texture.H;
+      end;
+
+      3: begin // fade tex on right side
+        Result.X := Texture.X;
+        Result.Y := Texture.Y;
+        Result.W := FadeTex.W + Texture.W;
+        Result.H := Texture.H;
+      end;
     end;
   end;
 end;
@@ -566,6 +579,42 @@ end;
 destructor TButton.Destroy;
 begin
   inherited;
+end;
+
+constructor TButton.Create();
+begin
+  inherited Create;
+  // We initialize all to 0, nil or false
+  Visible        := true;
+  SelectBool     := false;
+  DeselectType   := 0;
+  Selectable     := true;
+  Reflection     := false;
+  Colorized      := false;
+
+  SelectColR     := 1;
+  SelectColG     := 1;
+  SelectColB     := 1;
+  SelectInt      := 1;
+  SelectTInt     := 1;
+
+  DeselectColR   := 1;
+  DeselectColG   := 1;
+  DeselectColB   := 1;
+  DeselectInt    := 0.5;
+  DeselectTInt   := 1;
+
+  Fade           := false;
+  FadeTex.TexNum := 0;
+  FadeProgress   := 0;
+  FadeText       := false;
+  SelectW        := DeSelectW;
+  SelectH        := DeSelectH;
+
+  PosX           := 0;
+  PosY           := 0;
+
+  Parent         := 0;
 end;
 
 constructor TButton.Create(Textura: TTexture);
@@ -577,7 +626,7 @@ begin
   Texture.ColG    := 0.5;
   Texture.ColB    := 0;
   Texture.Int     := 1;
-  Colorized       := False;
+  Colorized       := false;
 end;
 
 // Button has the texture-type "colorized"
@@ -592,7 +641,7 @@ begin
   Texture.ColG    := 1;
   Texture.ColB    := 1;
   Texture.Int     := 1;
-  Colorized       := True;
+  Colorized       := true;
 end;
 
 end.

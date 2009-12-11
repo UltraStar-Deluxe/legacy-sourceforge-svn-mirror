@@ -27,8 +27,13 @@
 (*
  * Conversion of libavformat/avformat.h
  * Min. version: 50.5.0 , revision 6577,  Sat Oct 7 15:30:46 2006 UTC
- * Max. version: 52.22.1, revision 15441, Sat Sep 27 20:05:12 2008 UTC 
+ * Max. version: 52.25.0, revision 16986, Wed Feb 4 05:56:39 2009 UTC 
  *)
+{
+ * update to
+ * Max. version: 52.41.0, Sun Dec 6 20:15:00 2009 CET 
+ * MiSchi
+}
 
 unit avformat;
 
@@ -54,13 +59,14 @@ uses
   avutil,
   avio,
   rational,
+  SysUtils,
   UConfig;
 
 const
   (* Max. supported version by this header *)
   LIBAVFORMAT_MAX_VERSION_MAJOR   = 52;
-  LIBAVFORMAT_MAX_VERSION_MINOR   = 22;
-  LIBAVFORMAT_MAX_VERSION_RELEASE = 1;
+  LIBAVFORMAT_MAX_VERSION_MINOR   = 41;
+  LIBAVFORMAT_MAX_VERSION_RELEASE = 0;
   LIBAVFORMAT_MAX_VERSION = (LIBAVFORMAT_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                             (LIBAVFORMAT_MAX_VERSION_MINOR * VERSION_MINOR) +
                             (LIBAVFORMAT_MAX_VERSION_RELEASE * VERSION_RELEASE);
@@ -91,33 +97,105 @@ function avformat_version(): cuint;
   cdecl; external av__format;
 {$IFEND}
 
+{$IF LIBAVFORMAT_VERSION >= 52039002} // 52.39.2
+(**
+ * Returns the libavformat build-time configuration.
+ *)
+function avformat_configuration(): {const} PansiChar;
+  cdecl; external av__format;
+
+(**
+ * Returns the libavformat license.
+ *)
+function avformat_license(): {const} PansiChar;
+  cdecl; external av__format;
+{$IFEND}
 
 type
   PAVFile = Pointer;
 
+(*
+ * Public Metadata API.
+ * The metadata API allows libavformat to export metadata tags to a client
+ * application using a sequence of key/value pairs.
+ * Important concepts to keep in mind:
+ * 1. Keys are unique; there can never be 2 tags with the same key. This is
+ *    also meant semantically, i.e., a demuxer should not knowingly produce
+ *    several keys that are literally different but semantically identical.
+ *    E.g., key=Author5, key=Author6. In this example, all authors must be
+ *    placed in the same tag.
+ * 2. Metadata is flat, not hierarchical; there are no subtags. If you
+ *    want to store, e.g., the email address of the child of producer Alice
+ *    and actor Bob, that could have key=alice_and_bobs_childs_email_address.
+ * 3. A tag whose value is localized for a particular language is appended
+ *    with a dash character ('-') and the ISO 639-2/B 3-letter language code.
+ *    For example: Author-ger=Michael, Author-eng=Mike
+ *    The original/default language is in the unqualified "Author" tag.
+ *    A demuxer should set a default if it sets any translated tag.
+ *)
+const
+  AV_METADATA_MATCH_CASE    = 1;
+  AV_METADATA_IGNORE_SUFFIX = 2;
+
+type
+  PAVMetadataTag = ^TAVMetadataTag;
+  TAVMetadataTag = record
+    key:   PAnsiChar;
+    value: PAnsiChar;
+  end;
+
+  PAVMetadata = Pointer;
+
+{$IF LIBAVFORMAT_VERSION > 52024001} // > 52.24.1
+(**
+ * Gets a metadata element with matching key.
+ * @param prev Set to the previous matching element to find the next.
+ * @param flags Allows case as well as suffix-insensitive comparisons.
+ * @return Found tag or NULL, changing key or value leads to undefined behavior.
+ *)
+function av_metadata_get(m: PAVMetadata; key: {const} PAnsiChar;
+                         prev: {const} PAVMetadataTag ; flags: cint): PAVMetadataTag;
+  cdecl; external av__format;
+
+(**
+ * Sets the given tag in m, overwriting an existing tag.
+ * @param key tag key to add to m (will be av_strduped)
+ * @param value tag value to add to m (will be av_strduped)
+ * @return >= 0 on success otherwise an error code <0
+ *)
+function av_metadata_set(var pm: PAVMetadata; key: {const} PAnsiChar; value: {const} PAnsiChar): cint;
+  cdecl; external av__format;
+
+(**
+ * Frees all the memory allocated for an AVMetadata struct.
+ *)
+procedure av_metadata_free(var m: PAVMetadata);
+  cdecl; external av__format;
+{$IFEND}
+
 (* packet functions *)
 
+{$IF LIBAVCODEC_VERSION < 52032000} // < 52.32.0
 type
   PAVPacket = ^TAVPacket;
   TAVPacket = record
     (**
-     * Presentation time stamp in time_base units.
-     * This is the time at which the decompressed packet will be presented
-     * to the user.
+     * Presentation timestamp in time_base units; the time at which the
+     * decompressed packet will be presented to the user.
      * Can be AV_NOPTS_VALUE if it is not stored in the file.
      * pts MUST be larger or equal to dts as presentation can not happen before
      * decompression, unless one wants to view hex dumps. Some formats misuse
-     * the terms dts and pts/cts to mean something different, these timestamps
+     * the terms dts and pts/cts to mean something different. Such timestamps
      * must be converted to true pts/dts before they are stored in AVPacket.
      *)
     pts: cint64;
     (**
-     * Decompression time stamp in time_base units.
-     * This is the time at which the packet is decompressed.
+     * Decompression timestamp in time_base units; the time at which the
+     * packet is decompressed.
      * Can be AV_NOPTS_VALUE if it is not stored in the file.
      *)
     dts: cint64;
-    data: PChar;
+    data: PByteArray;
     size: cint;
     stream_index: cint;
     flags: cint;
@@ -126,7 +204,7 @@ type
      * Equals next_pts - this_pts in presentation order.
      *)
     duration: cint;
-    destruct: procedure (p: PAVPacket); cdecl; 
+    destruct: procedure (p: PAVPacket); cdecl;
     priv: pointer;
     pos: cint64;                            ///< byte position in stream, -1 if unknown
 
@@ -182,6 +260,7 @@ procedure av_init_packet(var pkt: TAVPacket);
  *)
 function av_new_packet(var pkt: TAVPacket; size: cint): cint;
   cdecl; external av__format;
+{$IFEND}
 
 (**
  * Allocate and read the payload of a packet and initialize its fields with
@@ -194,6 +273,7 @@ function av_new_packet(var pkt: TAVPacket; size: cint): cint;
 function av_get_packet(s: PByteIOContext; var pkt: TAVPacket; size: cint): cint;
   cdecl; external av__format;
 
+{$IF LIBAVCODEC_VERSION < 52032000} // < 52.32.0
 (**
  * @warning This is a hack - the packet memory allocation stuff is broken. The
  * packet is allocated if it was not really allocated.
@@ -207,6 +287,7 @@ function av_dup_packet(pkt: PAVPacket): cint;
  * @param pkt packet to free
  *)
 procedure av_free_packet(pkt: PAVPacket); {$IFDEF HasInline}inline;{$ENDIF}
+{$IFEND}
 
 (*************************************************)
 (* fractional numbers for exact pts handling *)
@@ -215,12 +296,11 @@ type
  (**
   * The exact value of the fractional number is: 'val + num / den'.
   * num is assumed to be 0 <= num < den.
-  * @deprecated Use AVRational instead.
   *)
   PAVFrac = ^TAVFrac;
   TAVFrac = record
     val, num, den: cint64;
-  end; {deprecated}
+  end;
 
 (*************************************************)
 (* input/output formats *)
@@ -228,13 +308,13 @@ type
 type
   (** This structure contains the data a format has to probe a file. *)
   TAVProbeData = record
-    filename: pchar;
-    buf: pchar;
-    buf_size: cint;
+    filename: PAnsiChar;
+    buf: PByteArray;  (**< Buffer must have AVPROBE_PADDING_SIZE of extra allocated bytes filled with zero. *)
+    buf_size: cint;   (**< Size of buf except extra allocated bytes *)
   end;
 
 const
-  AVPROBE_SCORE_MAX   = 100;   ///< Maximum score, half of that is used for file-extension-based detection.
+  AVPROBE_SCORE_MAX   = 100;   ///< Maximum score, half of that is used for file-extension-based detection
   AVPROBE_PADDING_SIZE = 32;   ///< extra allocated bytes at the end of the probe buffer
 
   //! Demuxer will use url_fopen, no opened file should be provided by the caller.
@@ -247,6 +327,9 @@ const
   AVFMT_NOTIMESTAMPS  = $0080; (**< Format does not need / have any timestamps. *)
   AVFMT_GENERIC_INDEX = $0100; (**< Use generic index building code. *)
   AVFMT_TS_DISCONT    = $0200; (**< Format allows timestamp discontinuities. *)
+  {$IF LIBAVFORMAT_VERSION >= 52029002} // 52.29.2
+  AVFMT_VARIABLE_FPS  = $0400; (**< Format allows variable fps. *)
+  {$IFEND}
 
   // used by AVIndexEntry
   AVINDEX_KEYFRAME = $0001;
@@ -257,7 +340,7 @@ const
 
   AVFMT_NOOUTPUTLOOP = -1;
   AVFMT_INFINITEOUTPUTLOOP = 0;
-  AVFMT_FLAG_GENPTS = $0001;   ///< Generate pts if missing even if it requires parsing future frames.
+  AVFMT_FLAG_GENPTS = $0001;   ///< Generate missing pts even if it requires parsing future frames.
   AVFMT_FLAG_IGNIDX = $0002;   ///< Ignore index.
   AVFMT_FLAG_NONBLOCK = $0004; ///< Do not block when reading packets from input.
 
@@ -276,7 +359,23 @@ const
   AV_DISPOSITION_KARAOKE   = $0020;
 
   // used by TAVFormatContext.debug
-  FF_FDEBUG_TS       = 0001;
+  FF_FDEBUG_TS = 0001;
+
+  {$IF LIBAVFORMAT_VERSION >= 52034000}  // >= 52.34.0
+    {$IF LIBAVFORMAT_VERSION < 52039000} // <  52.39.0
+  MAX_PROBE_PACKETS = 100;
+    {$ELSE}
+  MAX_PROBE_PACKETS = 2500;
+    {$IFEND}
+  {$IFEND}
+
+  {$IF LIBAVFORMAT_VERSION >= 52035000}  // >= 52.35.0
+    {$IF LIBAVFORMAT_VERSION < 52039000} // <  52.39.0
+  RAW_PACKET_BUFFER_SIZE 32000
+    {$ELSE}
+  RAW_PACKET_BUFFER_SIZE 2500000
+    {$IFEND}
+  {$IFEND}
 
 type
   PPAVCodecTag = ^PAVCodecTag;
@@ -304,12 +403,32 @@ type
   PAVImageInfo = ^TAVImageInfo;
   {$IFEND}
 
+{$IF LIBAVFORMAT_VERSION >= 52030001} // >= 52.30.1
+(**
+ * Convert all the metadata sets from ctx according to the source and
+ * destination conversion tables.
+ * @param d_conv destination tags format conversion table
+ * @param s_conv source tags format conversion table
+ *)
+  PAVMetadataConv = ^TAVMetadataConv;
+  TAVMetadataConv = record
+    ctx:            PAVFormatContext;
+    d_conv: {const} PAVMetadataConv;
+    s_conv: {const} PAVMetadataConv;
+  end;
+{$IFEND}
+
   PAVChapter = ^TAVChapter;
   TAVChapter = record
     id: cint;                 ///< unique ID to identify the chapter
     time_base: TAVRational;   ///< time base in which the start/end timestamps are specified
     start, end_: cint64;      ///< chapter start/end time in time_base units
-    title: PChar;             ///< chapter title
+    {$IF LIBAVFORMAT_VERSION < 53000000}  // 53.00.0
+    title: PAnsiChar;         ///< chapter title
+    {$IFEND}
+    {$IF LIBAVFORMAT_VERSION >= 52024001} // 52.24.1
+    metadata: PAVMetadata;
+    {$IFEND}
   end;
   TAVChapterArray = array[0..(MaxInt div SizeOf(TAVChapter))-1] of TAVChapter;
   PAVChapterArray = ^TAVChapterArray;
@@ -326,9 +445,9 @@ type
     {$IFEND}
     channel: cint; (**< Used to select DV channel. *)
     {$IF LIBAVFORMAT_VERSION_MAJOR < 52}
-    device: pchar; (* video, audio or DV device, if LIBAVFORMAT_VERSION_INT < (52<<16) *)
+    device: PAnsiChar; (* video, audio or DV device, if LIBAVFORMAT_VERSION_INT < (52<<16) *)
     {$IFEND}
-    standard: pchar; (**< TV standard, NTSC, PAL, SECAM *)
+    standard: PAnsiChar; (**< TV standard, NTSC, PAL, SECAM *)
     { Delphi does not support bit fields -> use bf_flags instead
     unsigned int mpeg2ts_raw:1;  (**< Force raw MPEG-2 transport stream output, if possible. *)
     unsigned int mpeg2ts_compute_pcr:1; (**< Compute exact PCR for each transport
@@ -346,16 +465,16 @@ type
   end;
 
   TAVOutputFormat = record
-    name: pchar;
+    name: PAnsiChar;
     (**
      * Descriptive name for the format, meant to be more human-readable
-     * than \p name. You \e should use the NULL_IF_CONFIG_SMALL() macro
+     * than name. You should use the NULL_IF_CONFIG_SMALL() macro
      * to define it.
      *)
-    long_name: pchar;
-    mime_type: pchar;
-    extensions: pchar; (**< comma-separated filename extensions *)
-    (** Size of private data so that it can be allocated in the wrapper. *)
+    long_name: PAnsiChar;
+    mime_type: PAnsiChar;
+    extensions: PAnsiChar; (**< comma-separated filename extensions *)
+    (** size of private data so that it can be allocated in the wrapper *)
     priv_data_size: cint;
     (* output support *)
     audio_codec: TCodecID; (**< default audio codec *)
@@ -373,7 +492,7 @@ type
     {$IF LIBAVFORMAT_VERSION >= 51008000} // 51.8.0
     (**
      * List of supported codec_id-codec_tag pairs, ordered by "better
-     * choice first". The arrays are all CODEC_ID_NONE terminated.
+     * choice first". The arrays are all terminated by CODEC_ID_NONE.
      *)
     codec_tag: {const} PPAVCodecTag;
     {$IFEND}
@@ -382,22 +501,26 @@ type
     subtitle_codec: TCodecID; (**< default subtitle codec *)
     {$IFEND}
 
+    {$IF LIBAVFORMAT_VERSION >= 52030001} // 52.30.1
+    {const} metadata_conv: PAVMetadataConv;
+    {$IFEND}
+
     (* private fields *)
     next: PAVOutputFormat;
   end;
 
   TAVInputFormat = record
-    name: pchar;
+    name: PAnsiChar;
     (**
      * Descriptive name for the format, meant to be more human-readable
-     * than \p name. You \e should use the NULL_IF_CONFIG_SMALL() macro
+     * than name. You should use the NULL_IF_CONFIG_SMALL() macro
      * to define it.
      *)
-    long_name: pchar;
+    long_name: PAnsiChar;
     (** Size of private data so that it can be allocated in the wrapper. *)
     priv_data_size: cint;
     (**
-     * Tell if a given file has a chance of being parsed by this format.
+     * Tell if a given file has a chance of being parsed as this format.
      * The buffer provided is guaranteed to be AVPROBE_PADDING_SIZE bytes
      * big so you do not have to check for that unless you need more.
      *)
@@ -409,21 +532,28 @@ type
     read_header: function (c: PAVFormatContext; ap: PAVFormatParameters): cint; cdecl;
     (** Read one packet and put it in 'pkt'. pts and flags are also
        set. 'av_new_stream' can be called only if the flag
-       AVFMTCTX_NOHEADER is used. *)
+       AVFMTCTX_NOHEADER is used.
+       @return 0 on success, < 0 on error.
+               When returning an error, pkt must not have been allocated
+               or must be freed before returning *)
     read_packet: function (c: PAVFormatContext; var pkt: TAVPacket): cint; cdecl;
     (** Close the stream. The AVFormatContext and AVStreams are not
        freed by this function *)
     read_close: function (c: PAVFormatContext): cint; cdecl;
+
+{$IF LIBAVFORMAT_VERSION_MAJOR < 53}
     (**
      * Seek to a given timestamp relative to the frames in
      * stream component stream_index.
-     * @param stream_index must not be -1
-     * @param flags selects which direction should be preferred if no exact
-     *              match is available
+     * @param stream_index Must not be -1.
+     * @param flags Selects which direction should be preferred if no exact
+     *              match is available.
      * @return >= 0 on success (but not necessarily the new offset)
      *)
     read_seek: function (c: PAVFormatContext; stream_index: cint;
                   timestamp: cint64; flags: cint): cint; cdecl;
+{$IFEND}
+
     (**
      * Gets the next timestamp in stream[stream_index].time_base units.
      * @return the timestamp or AV_NOPTS_VALUE if an error occurred
@@ -435,20 +565,39 @@ type
     (** If extensions are defined, then no probe is done. You should
        usually not use extension format guessing because it is not
        reliable enough *)
-    extensions: pchar;
+    extensions: PAnsiChar;
     (** General purpose read-only value that the format can use. *)
     value: cint;
 
-    (** Start/resume playing - only meaningful if using a network-based format
+    (** Starts/resumes playing - only meaningful if using a network-based format
        (RTSP). *)
     read_play: function (c: PAVFormatContext): cint; cdecl;
 
-    (** Pause playing - only meaningful if using a network-based format
+    (** Pauses playing - only meaningful if using a network-based format
       (RTSP). *)  
     read_pause: function (c: PAVFormatContext): cint; cdecl;
 
     {$IF LIBAVFORMAT_VERSION >= 51008000} // 51.8.0
     codec_tag: {const} PPAVCodecTag;
+    {$IFEND}
+
+    {$IF LIBAVFORMAT_VERSION >= 52030000} // 52.30.0
+    (**
+     * Seeks to timestamp ts.
+     * Seeking will be done so that the point from which all active streams
+     * can be presented successfully will be closest to ts and within min/max_ts.
+     * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
+     *)
+    read_seek2: function (s:            PAVFormatContext;
+                          stream_index: cint;
+			  min_ts:       cint64;
+			  ts:           cint64; 
+			  max_ts:       cint64;
+			  flags:        cint): cint; cdecl;
+    {$IFEND}
+    
+    {$IF LIBAVFORMAT_VERSION >= 52030001} // 52.30.1
+    {const} metadata_conv: PAVMetadataConv;
     {$IFEND}
 
     (* private fields *)
@@ -485,11 +634,11 @@ type
     id: cint;       (**< format-specific stream ID *)
     codec: PAVCodecContext; (**< codec context *)
     (**
-     * Real base frame rate of the stream.
-     * This is the lowest frame rate with which all timestamps can be
+     * Real base framerate of the stream.
+     * This is the lowest framerate with which all timestamps can be
      * represented accurately (it is the least common multiple of all
-     * frame rates in the stream). Note, this value is just a guess!
-     * For example if the timebase is 1/90000 and all frames have either
+     * framerates in the stream). Note, this value is just a guess!
+     * For example, if the time base is 1/90000 and all frames have either
      * approximately 3600 or 1800 timer ticks, then r_frame_rate will be 50/1.
      *)
     r_frame_rate: TAVRational;
@@ -506,7 +655,7 @@ type
     (**
      * This is the fundamental unit of time (in seconds) in terms
      * of which frame timestamps are represented. For fixed-fps content,
-     * time base should be 1/frame rate and timestamp increments should be 1.
+     * time base should be 1/framerate and timestamp increments should be 1.
      *)
     time_base: TAVRational;
     pts_wrap_bits: cint; (* number of bits in pts (used for wrapping control) *)
@@ -533,7 +682,9 @@ type
      *)
     duration: cint64;
 
-    language: array [0..3] of char; (* ISO 639 3-letter language code (empty string if undefined) *)
+    {$IF LIBAVFORMAT_VERSION_MAJOR < 53}
+    language: array [0..3] of PAnsiChar; (* ISO 639-2/B 3-letter language code (empty string if undefined) *)
+    {$IFEND}
 
     (* av_read_frame() support *)
     need_parsing: TAVStreamParseType;
@@ -554,8 +705,8 @@ type
     unused: array [0..4] of cint64;
     {$IFEND}
 
-    {$IF LIBAVFORMAT_VERSION >= 52006000} // 52.6.0
-    filename: PChar; (**< source filename of the stream *)
+    {$IF (LIBAVFORMAT_VERSION >= 52006000) and (LIBAVFORMAT_VERSION_MAJOR < 53)} // 52.6.0 - 53.0.0
+    filename: PAnsiChar; (**< source filename of the stream *)
     {$IFEND}
 
     {$IF LIBAVFORMAT_VERSION >= 52008000} // 52.8.0
@@ -576,6 +727,43 @@ type
      *)
     sample_aspect_ratio: TAVRational;
     {$IFEND}
+
+    {$IF LIBAVFORMAT_VERSION >= 52024001} // 52.24.1
+    metadata: PAVMetadata;
+    {$IFEND}
+
+    {$IF LIBAVFORMAT_VERSION > 52024001} // > 52.24.1
+    {* av_read_frame() support *}
+    cur_ptr: {const} PCuint8;
+    cur_len: cint;
+    cur_pkt: TAVPacket;
+    {$IFEND}
+
+    {$IF LIBAVFORMAT_VERSION >= 52030000} // > 52.30.0
+    // Timestamp generation support:
+    (**
+     * Timestamp corresponding to the last dts sync point.
+     *
+     * Initialized when AVCodecParserContext.dts_sync_point >= 0 and
+     * a DTS is received from the underlying container. Otherwise set to
+     * AV_NOPTS_VALUE by default.
+     *)
+    reference_dts: cint64;
+    {$IFEND}
+    {$IF LIBAVFORMAT_VERSION >= 52034000} // >= 52.34.0
+    (**
+     * Number of packets to buffer for codec probing
+     * NOT PART OF PUBLIC API
+     *)
+    probe_packets: cint;
+    {$IFEND}
+    {$IF LIBAVFORMAT_VERSION >= 52038000} // >= 52.38.0
+    (**
+     * last packet in packet_buffer for this stream when muxing.
+     * used internally, NOT PART OF PUBLIC API, dont read or write from outside of libav*
+     *)
+    last_in_packet_buffer: PAVPacketList;
+    {$IFEND}
   end;
 
  (**
@@ -586,7 +774,7 @@ type
   * sizeof(AVFormatContext) must not be used outside libav*.
   *)
   TAVFormatContext = record
-    av_class: PAVClass; (**< Set by av_alloc_format_context. *)
+    av_class: PAVClass; (**< Set by avformat_alloc_context. *)
     (* Can only be iformat or oformat, not both at the same time. *)
     iformat: PAVInputFormat;
     oformat: PAVOutputFormat;
@@ -600,17 +788,19 @@ type
 
     nb_streams: cuint;
     streams: array [0..MAX_STREAMS - 1] of PAVStream;
-    filename: array [0..1023] of char; (* input or output filename *)
+    filename: array [0..1023] of AnsiChar; (* input or output filename *)
     (* stream info *)
     timestamp: cint64;
-    title: array [0..511] of char;
-    author: array [0..511] of char;
-    copyright: array [0..511] of char;
-    comment: array [0..511] of char;
-    album: array [0..511] of char;
+    {$IF LIBAVFORMAT_VERSION < 53000000} // 53.00.0
+    title: array [0..511] of AnsiChar;
+    author: array [0..511] of AnsiChar;
+    copyright: array [0..511] of AnsiChar;
+    comment: array [0..511] of AnsiChar;
+    album: array [0..511] of AnsiChar;
     year: cint;  (**< ID3 year, 0 if none *)
     track: cint; (**< track number, 0 if none *)
-    genre: array [0..31] of char; (**< ID3 genre *)
+    genre: array [0..31] of AnsiChar; (**< ID3 genre *)
+    {$IFEND}
 
     ctx_flags: cint; (**< Format-specific flags, see AVFMTCTX_xx *)
     (* private data for pts handling (do not modify directly). *)
@@ -636,16 +826,22 @@ type
 
     (* av_read_frame() support *)
     cur_st: PAVStream;
-    cur_ptr: pbyte;
-    cur_len: cint;
-    cur_pkt: TAVPacket;
+    {$IF LIBAVFORMAT_VERSION_MAJOR < 53}
+    cur_ptr_deprecated: pbyte;
+    cur_len_deprecated: cint;
+    cur_pkt_deprecated: TAVPacket;
+    {$IFEND}
 
     (* av_seek_frame() support *)
     data_offset: cint64; (* offset of the first packet *)
     index_built: cint;
 
     mux_rate: cint;
+    {$IF LIBAVFORMAT_VERSION < 52034001} // < 52.34.1
     packet_size: cint;
+    {$ELSE}
+    packet_size: cuint;
+    {$IFEND}
     preload: cint;
     max_delay: cint;
 
@@ -656,7 +852,7 @@ type
     loop_input: cint;
 
     {$IF LIBAVFORMAT_VERSION >= 50006000} // 50.6.0
-    (** Decoding: size of data to probe; encoding: unused. *)
+    (** decoding: size of data to probe; encoding: unused. *)
     probesize: cuint;
     {$IFEND}
 
@@ -696,8 +892,8 @@ type
 
     {$IF LIBAVFORMAT_VERSION >= 52004000} // 52.4.0
     (**
-     * Maximum amount of memory in bytes to use per stream for the index.
-     * If the needed index exceeds this size, entries will be discarded as
+     * Maximum amount of memory in bytes to use for the index of each stream.
+     * If the index exceeds this size, entries will be discarded as
      * needed to maintain a smaller size. This can lead to slower or less
      * accurate seeking (depends on demuxer).
      * Demuxers for which a full in-memory index is mandatory will ignore
@@ -740,6 +936,19 @@ type
 
     packet_buffer_end: PAVPacketList;
     {$IFEND}
+
+    {$IF LIBAVFORMAT_VERSION >= 52024001} // 52.24.1
+    metadata: PAVMetadata;
+    {$IFEND}
+    
+    {$IF LIBAVFORMAT_VERSION >= 52035000} // 52.35.0
+    (**
+     * Remaining size available for raw_packet_buffer, in bytes.
+     * NOT PART OF PUBLIC API
+     *)
+    raw_packet_buffer_remaining_size: cint;
+    {$IFEND}
+
   end;
 
   (**
@@ -750,13 +959,18 @@ type
    *)
   TAVProgram = record
       id                : cint;
-      provider_name     : PChar;      ///< network name for DVB streams
-      name              : PChar;      ///< service name for DVB streams
+      {$IF LIBAVFORMAT_VERSION < 53000000} // 53.00.0
+      provider_name     : PAnsiChar;  ///< network name for DVB streams
+      name              : PAnsiChar;  ///< service name for DVB streams
+      {$IFEND}
       flags             : cint;
       discard           : TAVDiscard; ///< selects which program to discard and which to feed to the caller
       {$IF LIBAVFORMAT_VERSION >= 51016000} // 51.16.0
       stream_index      : PCardinal;
       nb_stream_indexes : PCardinal;
+      {$IFEND}
+      {$IF LIBAVFORMAT_VERSION >= 52024001} // 52.24.1
+      metadata: PAVMetadata;
       {$IFEND}
   end;
 
@@ -779,8 +993,8 @@ type
   end; {deprecated}
 
   TAVImageFormat = record
-    name: pchar;
-    extensions: pchar;
+    name: PAnsiChar;
+    extensions: PAnsiChar;
     (* tell if a given file has a chance of being parsing by this format *)
     img_probe: function (d: PAVProbeData): cint; cdecl;
     (* read a whole image. 'alloc_cb' is called when the image size is
@@ -801,10 +1015,10 @@ procedure av_register_image_format(img_fmt: PAVImageFormat);
 function av_probe_image_format(pd: PAVProbeData): PAVImageFormat;
     cdecl; external av__format; deprecated;
 
-function guess_image_format(filename: pchar): PAVImageFormat;
+function guess_image_format(filename: PAnsiChar): PAVImageFormat;
     cdecl; external av__format; deprecated;
 
-function av_read_image(pb: PByteIOContext; filename: pchar;
+function av_read_image(pb: PByteIOContext; filename: PAnsiChar;
                   fmt: PAVImageFormat;
                   alloc_cb: pointer; opaque: pointer): cint;
     cdecl; external av__format; deprecated;
@@ -822,17 +1036,27 @@ var
 {$IFEND}
 
 {$IF LIBAVFORMAT_VERSION >= 52003000} // 52.3.0
+(**
+ * If f is NULL, returns the first registered input format,
+ * if f is non-NULL, returns the next registered input format after f
+ * or NULL if f is the last one.
+ *)
 function av_iformat_next(f: PAVInputFormat): PAVInputFormat;
     cdecl; external av__format;
+(**
+ * If f is NULL, returns the first registered output format,
+ * if f is non-NULL, returns the next registered input format after f
+ * or NULL if f is the last one.
+ *)
 function av_oformat_next(f: PAVOutputFormat): PAVOutputFormat;
     cdecl; external av__format;
 {$IFEND}
 
-function av_guess_image2_codec(filename: {const} PChar): TCodecID;
+function av_guess_image2_codec(filename: {const} PAnsiChar): TCodecID;
     cdecl; external av__format;
 
-(* XXX: use automatic init with either ELF sections or C file parser *)
-(* modules *)
+(* XXX: Use automatic init with either ELF sections or C file parser *)
+(* modules. *)
 
 (* utils.c *)
 procedure av_register_input_format(format: PAVInputFormat);
@@ -841,26 +1065,26 @@ procedure av_register_input_format(format: PAVInputFormat);
 procedure av_register_output_format(format: PAVOutputFormat);
   cdecl; external av__format;
 
-function guess_stream_format(short_name: pchar;
-                             filename: pchar;
-                             mime_type: pchar): PAVOutputFormat;
+function guess_stream_format(short_name: PAnsiChar;
+                             filename: PAnsiChar;
+                             mime_type: PAnsiChar): PAVOutputFormat;
   cdecl; external av__format;
 
-function guess_format(short_name: pchar;
-                      filename: pchar;
-                      mime_type: pchar): PAVOutputFormat;
+function guess_format(short_name: PAnsiChar;
+                      filename: PAnsiChar;
+                      mime_type: PAnsiChar): PAVOutputFormat;
   cdecl; external av__format;
 
 (**
  * Guesses the codec ID based upon muxer and filename.
  *)
-function av_guess_codec(fmt: PAVOutputFormat; short_name: pchar;
-                        filename: pchar; mime_type: pchar;
+function av_guess_codec(fmt: PAVOutputFormat; short_name: PAnsiChar;
+                        filename: PAnsiChar; mime_type: PAnsiChar;
                         type_: TCodecType): TCodecID;
   cdecl; external av__format;
 
 (**
- * Send a nice hexadecimal dump of a buffer to the specified file stream.
+ * Sends a nice hexadecimal dump of a buffer to the specified file stream.
  *
  * @param f The file stream pointer where the dump should be sent to.
  * @param buf buffer
@@ -868,12 +1092,12 @@ function av_guess_codec(fmt: PAVOutputFormat; short_name: pchar;
  *
  * @see av_hex_dump_log, av_pkt_dump, av_pkt_dump_log
  *)
-procedure av_hex_dump(f: PAVFile; buf: pchar; size: cint);
+procedure av_hex_dump(f: PAVFile; buf: PByteArray; size: cint);
   cdecl; external av__format;
 
 {$IF LIBAVFORMAT_VERSION >= 51011000} // 51.11.0
 (**
- * Send a nice hexadecimal dump of a buffer to the log.
+ * Sends a nice hexadecimal dump of a buffer to the log.
  *
  * @param avcl A pointer to an arbitrary struct of which the first field is a
  * pointer to an AVClass struct.
@@ -884,12 +1108,12 @@ procedure av_hex_dump(f: PAVFile; buf: pchar; size: cint);
  *
  * @see av_hex_dump, av_pkt_dump, av_pkt_dump_log
  *)
-procedure av_hex_dump_log(avcl: Pointer; level: cint; buf: PChar; size: cint);
+procedure av_hex_dump_log(avcl: Pointer; level: cint; buf: PByteArray; size: cint);
   cdecl; external av__format;
 {$IFEND}
 
 (**
- * Send a nice dump of a packet to the specified file stream.
+ * Sends a nice dump of a packet to the specified file stream.
  *
  * @param f The file stream pointer where the dump should be sent to.
  * @param pkt packet to dump
@@ -900,7 +1124,7 @@ procedure av_pkt_dump(f: PAVFile; pkt: PAVPacket; dump_payload: cint);
 
 {$IF LIBAVFORMAT_VERSION >= 51011000} // 51.11.0
 (**
- * Send a nice dump of a packet to the log.
+ * Sends a nice dump of a packet to the log.
  *
  * @param avcl A pointer to an arbitrary struct of which the first field is a
  * pointer to an AVClass struct.
@@ -913,6 +1137,15 @@ procedure av_pkt_dump_log(avcl: Pointer; level: cint; pkt: PAVPacket; dump_paylo
   cdecl; external av__format;
 {$IFEND}
 
+(**
+ * Initializes libavformat and registers all the muxers, demuxers and
+ * protocols. If you do not call this function, then you can select
+ * exactly which formats you want to support.
+ *
+ * @see av_register_input_format()
+ * @see av_register_output_format()
+ * @see av_register_protocol()
+ *)
 procedure av_register_all();
   cdecl; external av__format;
 
@@ -929,11 +1162,11 @@ function av_codec_get_tag(var tags: PAVCodecTag; id: TCodecID): cuint;
 (**
  * Finds AVInputFormat based on the short name of the input format.
  *)
-function av_find_input_format(short_name: pchar): PAVInputFormat;
+function av_find_input_format(short_name: PAnsiChar): PAVInputFormat;
   cdecl; external av__format;
 
 (**
- * Guess file format.
+ * Guesses file format.
  *
  * @param is_opened Whether the file is already opened; determines whether
  *                  demuxers with or without AVFMT_NOFILE are probed.
@@ -945,13 +1178,13 @@ function av_probe_input_format(pd: PAVProbeData; is_opened: cint): PAVInputForma
  * Allocates all the structures needed to read an input stream.
  *        This does not open the needed codecs for decoding the stream[s].
  *)
-function av_open_input_stream(ic_ptr: PAVFormatContext;
-                       pb: PByteIOContext; filename: pchar;
+function av_open_input_stream(var ic_ptr: PAVFormatContext;
+                       pb: PByteIOContext; filename: PAnsiChar;
                        fmt: PAVInputFormat; ap: PAVFormatParameters): cint;
   cdecl; external av__format;
 
 (**
- * Open a media file as input. The codecs are not opened. Only the file
+ * Opens a media file as input. The codecs are not opened. Only the file
  * header (if present) is read.
  *
  * @param ic_ptr The opened media file handle is put here.
@@ -962,23 +1195,33 @@ function av_open_input_stream(ic_ptr: PAVFormatContext;
  *           (NULL if default).
  * @return 0 if OK, AVERROR_xxx otherwise
  *)
-function av_open_input_file(var ic_ptr: PAVFormatContext; filename: pchar;
+function av_open_input_file(var ic_ptr: PAVFormatContext; filename: PAnsiChar;
                      fmt: PAVInputFormat; buf_size: cint;
                      ap: PAVFormatParameters): cint;
   cdecl; external av__format;
 
+{$IF LIBAVFORMAT_VERSION >= 52026000} // 52.26.0
 (**
- * Allocate an AVFormatContext.
+ * Allocates an AVFormatContext.
  * Can be freed with av_free() but do not forget to free everything you
  * explicitly allocated as well!
  *)
+function avformat_alloc_context(): PAVFormatContext;
+  cdecl; external av__format;
+{$ELSE}
+  {$IF LIBAVFORMAT_VERSION_MAJOR < 53}
+(**
+ * @deprecated Use avformat_alloc_context() instead.
+ *)
 function av_alloc_format_context(): PAVFormatContext;
   cdecl; external av__format;
+  {$IFEND}
+{$IFEND}
 
 (**
- * Read packets of a media file to get stream information. This
+ * Reads packets of a media file to get stream information. This
  * is useful for file formats with no headers such as MPEG. This
- * function also computes the real frame rate in case of MPEG-2 repeat
+ * function also computes the real framerate in case of MPEG-2 repeat
  * frame mode.
  * The logical file position is not changed by this function;
  * examined packets may be buffered for later processing.
@@ -992,7 +1235,7 @@ function av_find_stream_info(ic: PAVFormatContext): cint;
   cdecl; external av__format;
 
 (**
- * Read a transport packet from a media file.
+ * Reads a transport packet from a media file.
  *
  * This function is obsolete and should never be used.
  * Use av_read_frame() instead.
@@ -1005,7 +1248,7 @@ function av_read_packet(s: PAVFormatContext; var pkt: TAVPacket): cint;
   cdecl; external av__format;
 
 (**
- * Return the next frame of a stream.
+ * Returns the next frame of a stream.
  *
  * The returned packet is valid
  * until the next av_read_frame() or until av_close_input_file() and
@@ -1016,7 +1259,7 @@ function av_read_packet(s: PAVFormatContext; var pkt: TAVPacket): cint;
  * then it contains one frame.
  *
  * pkt->pts, pkt->dts and pkt->duration are always set to correct
- * values in AVStream.timebase units (and guessed if the format cannot
+ * values in AVStream.time_base units (and guessed if the format cannot
  * provide them). pkt->pts can be AV_NOPTS_VALUE if the video format
  * has B-frames, so it is better to rely on pkt->dts if you do not
  * decompress the payload.
@@ -1027,7 +1270,7 @@ function av_read_frame(s: PAVFormatContext; var pkt: TAVPacket): cint;
   cdecl; external av__format;
 
 (**
- * Seek to the key frame at timestamp.
+ * Seeks to the keyframe at timestamp.
  * 'timestamp' in 'stream_index'.
  * @param stream_index If stream_index is (-1), a default
  * stream is selected, and timestamp is automatically converted
@@ -1041,15 +1284,51 @@ function av_seek_frame(s: PAVFormatContext; stream_index: cint; timestamp: cint6
                        flags: cint): cint;
   cdecl; external av__format;
 
+{$IF LIBAVFORMAT_VERSION >= 52026000} // 52.26.0
 (**
- * Start playing a network based stream (e.g. RTSP stream) at the
+ * Seeks to timestamp ts.
+ * Seeking will be done so that the point from which all active streams
+ * can be presented successfully will be closest to ts and within min/max_ts.
+ * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
+ *
+ * If flags contain AVSEEK_FLAG_BYTE, then all timestamps are in byte and
+ * are the file position (this may not be supported by all demuxers).
+ * If flags contain AVSEEK_FLAG_FRAME then all timestamps are in frames
+ * in the stream with stream_index (this may not be supported by all demuxers).
+ * Otherwise all timestamps are in units of the stream selected by stream_index
+ * or if stream_index is -1, in AV_TIME_BASE units.
+ * If flags contain AVSEEK_FLAG_ANY, then non-keyframes are treated as
+ * keyframes (this may not be supported by all demuxers).
+ *
+ * @param stream_index index of the stream which is used as time base reference.
+ * @param min_ts smallest acceptable timestamp
+ * @param ts target timestamp
+ * @param max_ts largest acceptable timestamp
+ * @param flags flags
+ * @returns >=0 on success, error code otherwise
+ *
+ * @NOTE This is part of the new seek API which is still under construction.
+ *       Thus do not use this yet. It may change at any time, do not expect
+ *       ABI compatibility yet!
+ *)
+function avformat_seek_file(s:            PAVFormatContext;
+			    stream_index: cint;
+			    min_ts:       cint64;
+			    ts:           cint64;
+			    max_ts:       cint64;
+			    flags:        cint): cint;
+  cdecl; external av__format;
+{$IFEND}
+
+(**
+ * Starts playing a network-based stream (e.g. RTSP stream) at the
  * current position.
  *)
 function av_read_play(s: PAVFormatContext): cint;
   cdecl; external av__format;
 
 (**
- * Pause a network based stream (e.g. RTSP stream).
+ * Pauses a network-based stream (e.g. RTSP stream).
  *
  * Use av_read_play() to resume it.
  *)
@@ -1058,7 +1337,7 @@ function av_read_pause(s: PAVFormatContext): cint;
 
 {$IF LIBAVFORMAT_VERSION >= 52003000} // 52.3.0
 (**
- * Free a AVFormatContext allocated by av_open_input_stream.
+ * Frees a AVFormatContext allocated by av_open_input_stream.
  * @param s context to free
  *)
 procedure av_close_input_stream(s: PAVFormatContext);
@@ -1066,7 +1345,7 @@ procedure av_close_input_stream(s: PAVFormatContext);
 {$IFEND}
 
 (**
- * Close a media file (but not its codecs).
+ * Closes a media file (but not its codecs).
  *
  * @param s media file handle
  *)
@@ -1074,7 +1353,7 @@ procedure av_close_input_file(s: PAVFormatContext);
   cdecl; external av__format;
 
 (**
- * Add a new stream to a media file.
+ * Adds a new stream to a media file.
  *
  * Can only be called in the read_header() function. If the flag
  * AVFMTCTX_NOHEADER is in the format context, then new streams
@@ -1092,7 +1371,7 @@ function av_new_program(s: PAVFormatContext; id: cint): PAVProgram;
 
 {$IF LIBAVFORMAT_VERSION >= 52014000} // 52.14.0
 (**
- * Add a new chapter.
+ * Adds a new chapter.
  * This function is NOT part of the public API
  * and should ONLY be used by demuxers.
  *
@@ -1105,12 +1384,12 @@ function av_new_program(s: PAVFormatContext; id: cint): PAVProgram;
  * @return AVChapter or NULL on error
  *)
 function ff_new_chapter(s: PAVFormatContext; id: cint; time_base: TAVRational;
-                        start, end_: cint64; title: {const} Pchar): PAVChapter;
+                        start, end_: cint64; title: {const} PAnsiChar): PAVChapter;
   cdecl; external av__format;
 {$IFEND}
 
 (**
- * Set the pts for a given stream.
+ * Sets the pts for a given stream.
  *
  * @param s stream
  * @param pts_wrap_bits number of bits effectively used by the pts
@@ -1119,13 +1398,20 @@ function ff_new_chapter(s: PAVFormatContext; id: cint; time_base: TAVRational;
  * @param pts_den denominator to convert to seconds (MPEG: 90000)
  *)
 procedure av_set_pts_info(s: PAVStream; pts_wrap_bits: cint;
+{$IF LIBAVFORMAT_VERSION < 52036000} // < 52.36.0
                    pts_num: cint; pts_den: cint);
+{$ELSE}
+                   pts_num: cuint; pts_den: cuint);
+{$IFEND}
   cdecl; external av__format;
 
 const
   AVSEEK_FLAG_BACKWARD = 1; ///< seek backward
   AVSEEK_FLAG_BYTE     = 2; ///< seeking based on position in bytes
   AVSEEK_FLAG_ANY      = 4; ///< seek to any frame, even non-keyframes
+{$IF LIBAVFORMAT_VERSION >= 52037000} // >= 52.37.0
+  AVSEEK_FLAG_FRAME    = 8;
+{$IFEND}
 
 function av_find_default_stream_index(s: PAVFormatContext): cint;
   cdecl; external av__format;
@@ -1144,7 +1430,7 @@ function av_index_search_timestamp(st: PAVStream; timestamp: cint64; flags: cint
 {$IF LIBAVFORMAT_VERSION >= 52004000} // 52.4.0
 (**
  * Ensures the index uses less memory than the maximum specified in
- * AVFormatContext.max_index_size, by discarding entries if it grows
+ * AVFormatContext.max_index_size by discarding entries if it grows
  * too large.
  * This function is not part of the public API and should only be called
  * by demuxers.
@@ -1154,7 +1440,7 @@ procedure ff_reduce_index(s: PAVFormatContext; stream_index: cint);
 {$IFEND}
 
 (**
- * Add an index entry into a sorted list. Update the entry if the list
+ * Adds an index entry into a sorted list. Updates the entry if the list
  * already contains it.
  *
  * @param timestamp timestamp in the timebase of the given stream
@@ -1214,7 +1500,7 @@ function av_set_parameters(s: PAVFormatContext; ap: PAVFormatParameters): cint;
   cdecl; external av__format;
 
 (**
- * Allocate the stream private data and write the stream header to an
+ * Allocates the stream private data and writes the stream header to an
  * output media file.
  *
  * @param s media file handle
@@ -1224,7 +1510,7 @@ function av_write_header(s: PAVFormatContext): cint;
   cdecl; external av__format;
 
 (**
- * Write a packet to an output media file.
+ * Writes a packet to an output media file.
  *
  * The packet shall contain one audio or video frame.
  * The packet must be correctly interleaved according to the container
@@ -1242,7 +1528,7 @@ function av_write_frame(s: PAVFormatContext; var pkt: TAVPacket): cint;
  * Writes a packet to an output media file ensuring correct interleaving.
  *
  * The packet must contain one audio or video frame.
- * If the packets are already correctly interleaved the application should
+ * If the packets are already correctly interleaved, the application should
  * call av_write_frame() instead as it is slightly faster. It is also important
  * to keep in mind that completely non-interleaved input will need huge amounts
  * of memory to interleave with this, so it is preferable to interleave at the
@@ -1257,10 +1543,10 @@ function av_interleaved_write_frame(s: PAVFormatContext; var pkt: TAVPacket): ci
   cdecl; external av__format;
 
 (**
- * Interleave a packet per dts in an output media file.
+ * Interleaves a packet per dts in an output media file.
  *
  * Packets with pkt->destruct == av_destruct_packet will be freed inside this
- * function, so they cannot be used after it, note calling av_free_packet()
+ * function, so they cannot be used after it. Note that calling av_free_packet()
  * on them is still safe.
  *
  * @param s media file handle
@@ -1275,9 +1561,27 @@ function av_interleave_packet_per_dts(s: PAVFormatContext; _out: PAVPacket;
                                       pkt: PAVPacket; flush: cint): cint;
   cdecl; external av__format;
 
+{$IF LIBAVFORMAT_VERSION >= 52025000} // 52.25.0
 (**
- * @brief Write the stream trailer to an output media file and
- *        free the file private data.
+ * Add packet to AVFormatContext->packet_buffer list, determining its
+ * interleaved position using compare() function argument.
+ *
+ * This function is not part of the public API and should only be called
+ * by muxers using their own interleave function.
+ *)
+{
+procedure ff_interleave_add_packet(s:   PAVFormatContext;
+                                   pkt: PAVPacket;
+		   compare: function(para1: PAVFormatContext;
+				     para2: PAVPacket;
+				     para3: PAVPacket): cint);
+  cdecl; external av__format;
+}
+{$IFEND}
+
+(**
+ * Writes the stream trailer to an output media file and frees the
+ * file private data.
  *
  * May only be called after a successful call to av_write_header.
  *
@@ -1287,7 +1591,7 @@ function av_interleave_packet_per_dts(s: PAVFormatContext; _out: PAVPacket;
 function av_write_trailer(s: pAVFormatContext): cint;
   cdecl; external av__format;
 
-procedure dump_format(ic: PAVFormatContext; index: cint; url: pchar;
+procedure dump_format(ic: PAVFormatContext; index: cint; url: PAnsiChar;
                is_output: cint);
   cdecl; external av__format;
 
@@ -1296,19 +1600,21 @@ procedure dump_format(ic: PAVFormatContext; index: cint; url: pchar;
  * @deprecated Use av_parse_video_frame_size instead.
  *)
 function parse_image_size(width_ptr: PCint; height_ptr: PCint;
-                          str: pchar): cint;
+                          str: PAnsiChar): cint;
   cdecl; external av__format; deprecated;
 
+{$IF LIBAVFORMAT_VERSION_MAJOR < 53}
 (**
- * Converts frame rate from string to a fraction.
+ * Converts framerate from a string to a fraction.
  * @deprecated Use av_parse_video_frame_rate instead.
  *)
 function parse_frame_rate(frame_rate: PCint; frame_rate_base: PCint;
-                          arg: pchar): cint;
+                          arg: PByteArray): cint;
   cdecl; external av__format; deprecated;
+{$IFEND}
 
 (**
- * Parses \p datestr and returns a corresponding number of microseconds.
+ * Parses datestr and returns a corresponding number of microseconds.
  * @param datestr String representing a date or a duration.
  * - If a date the syntax is:
  * @code
@@ -1319,7 +1625,7 @@ function parse_frame_rate(frame_rate: PCint; frame_rate_base: PCint;
  * If the year-month-day part is not specified it takes the current
  * year-month-day.
  * Returns the number of microseconds since 1st of January, 1970 up to
- * the time of the parsed date or INT64_MIN if \p datestr cannot be
+ * the time of the parsed date or INT64_MIN if datestr cannot be
  * successfully parsed.
  * - If a duration the syntax is:
  * @code
@@ -1327,13 +1633,13 @@ function parse_frame_rate(frame_rate: PCint; frame_rate_base: PCint;
  *  [-]S+[.m...]
  * @endcode
  * Returns the number of microseconds contained in a time interval
- * with the specified duration or INT64_MIN if \p datestr cannot be
+ * with the specified duration or INT64_MIN if datestr cannot be
  * successfully parsed.
- * @param duration Flag which tells how to interpret \p datestr, if
- * not zero \p datestr is interpreted as a duration, otherwise as a
+ * @param duration Flag which tells how to interpret datestr, if
+ * not zero datestr is interpreted as a duration, otherwise as a
  * date.
  *)
-function parse_date(datestr: pchar; duration: cint): cint64;
+function parse_date(datestr: PAnsiChar; duration: cint): cint64;
   cdecl; external av__format;
 
 (** Gets the current time in microseconds. *)
@@ -1347,7 +1653,11 @@ const
 function ffm_read_write_index(fd: cint): cint64;
   cdecl; external av__format;
 
+{$IF LIBAVFORMAT_VERSION < 52027000} // 52.27.0
 procedure ffm_write_write_index(fd: cint; pos: cint64);
+{$ELSE}
+function ffm_write_write_index(fd: cint; pos: cint64): cint;
+{$IFEND}
   cdecl; external av__format;
 
 procedure ffm_set_write_index(s: PAVFormatContext; pos: cint64; file_size: cint64);
@@ -1359,11 +1669,11 @@ procedure ffm_set_write_index(s: PAVFormatContext; pos: cint64; file_size: cint6
  * syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done.
  * Return 1 if found.
  *)
-function find_info_tag(arg: pchar; arg_size: cint; tag1: pchar; info: pchar): cint;
+function find_info_tag(arg: PAnsiChar; arg_size: cint; tag1: PAnsiChar; info: PAnsiChar): cint;
   cdecl; external av__format;
 
 (**
- * Returns in 'buf' the path with '%d' replaced by number.
+ * Returns in 'buf' the path with '%d' replaced by a number.
  *
  * Also handles the '%0nd' format where 'n' is the total number
  * of digits and '%%'.
@@ -1374,20 +1684,20 @@ function find_info_tag(arg: pchar; arg_size: cint; tag1: pchar; info: pchar): ci
  * @param number frame number
  * @return 0 if OK, -1 on format error
  *)
-function av_get_frame_filename(buf: pchar; buf_size: cint;
-                               path: pchar; number: cint): cint;
+function av_get_frame_filename(buf: PAnsiChar; buf_size: cint;
+                               path: PAnsiChar; number: cint): cint;
   cdecl; external av__format
   {$IF LIBAVFORMAT_VERSION <= 50006000} // 50.6.0
   name 'get_frame_filename'
   {$IFEND};
 
 (**
- * Check whether filename actually is a numbered sequence generator.
+ * Checks whether filename actually is a numbered sequence generator.
  *
  * @param filename possible numbered sequence string
  * @return 1 if a valid numbered sequence string, 0 otherwise
  *)
-function av_filename_number_test(filename: pchar): cint;
+function av_filename_number_test(filename: PAnsiChar): cint;
   cdecl; external av__format
   {$IF LIBAVFORMAT_VERSION <= 50006000} // 50.6.0
   name 'filename_number_test'
@@ -1395,7 +1705,7 @@ function av_filename_number_test(filename: pchar): cint;
 
 {$IF LIBAVFORMAT_VERSION >= 51012002} // 51.12.2
 (**
- * Generate an SDP for an RTP session.
+ * Generates an SDP for an RTP session.
  *
  * @param ac array of AVFormatContexts describing the RTP streams. If the
  *           array is composed by only one context, such context can contain
@@ -1408,7 +1718,7 @@ function av_filename_number_test(filename: pchar): cint;
  * @param size the size of the buffer
  * @return 0 if OK, AVERROR_xxx on error
  *)
-function avf_sdp_create(ac: PPAVFormatContext; n_files: cint; buff: PChar; size: cint): cint;
+function avf_sdp_create(ac: PPAVFormatContext; n_files: cint; buff: PByteArray; size: cint): cint;
   cdecl; external av__format;
 {$IFEND}
 
@@ -1429,10 +1739,12 @@ begin
 end;
 {$IFEND}
 
+{$IF LIBAVCODEC_VERSION < 52032000} // < 52.32.0
 procedure av_free_packet(pkt: PAVPacket);
 begin
   if ((pkt <> nil) and (@pkt^.destruct <> nil)) then
     pkt^.destruct(pkt);
 end;
+{$IFEND}
 
 end.

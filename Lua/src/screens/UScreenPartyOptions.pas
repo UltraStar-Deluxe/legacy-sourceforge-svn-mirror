@@ -61,20 +61,20 @@ type
       NumPlayer1, NumPlayer2, NumPlayer3: integer;
 
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
       procedure SetPlaylist2;
   end;
 
 var
-  IPlaylist: array[0..2] of string;
-  IPlaylist2: array of string;
+  IPlaylist: array[0..2] of UTF8String;
+  IPlaylist2: array of UTF8String;
 
   const
-  ITeams:   array[0..1] of string = ('2', '3');
-  IPlayers: array[0..3] of string = ('1', '2', '3', '4');
-  IRounds:  array[0..5] of string = ('2', '3', '4', '5', '6', '7');
+  ITeams:   array[0..1] of UTF8String = ('2', '3');
+  IPlayers: array[0..3] of UTF8String = ('1', '2', '3', '4');
+  IRounds:  array[0..5] of UTF8String = ('2', '3', '4', '5', '6', '7');
 
 implementation
 
@@ -88,9 +88,10 @@ uses
   USong,
   UDLLManager,
   UPlaylist,
-  USongs;
+  USongs,
+  UUnicodeUtils;
 
-function TScreenPartyOptions.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenPartyOptions.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
   I, J: integer;
   OnlyMultiPlayer: boolean;
@@ -99,8 +100,8 @@ begin
   if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -121,17 +122,26 @@ begin
           //Don'T start when Playlist is Selected and there are no Playlists
           if (Playlist = 2) and (Length(PlaylistMan.Playlists) = 0) then
             Exit;
-
+          {// Don't start when SinglePlayer Teams but only Multiplayer Plugins available
+          OnlyMultiPlayer := true;
+          for I := 0 to High(DLLMan.Plugins) do
+          begin
+            OnlyMultiPlayer := (OnlyMultiPlayer and DLLMan.Plugins[I].TeamModeOnly);
+          end;
+          if (OnlyMultiPlayer) and ((NumPlayer1 = 0) or (NumPlayer2 = 0) or ((NumPlayer3 = 0) and (NumTeams = 1))) then
+          begin
+            ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_PLUGINS'));
+            Exit;
+          end;}
           //Save Difficulty
           Ini.Difficulty := SelectsS[SelectLevel].SelectedOption;
           Ini.SaveLevel;
 
-
-          //Save Num Teams:
-          {PartySession.Teams.NumTeams := NumTeams + 2;
+          {//Save Num Teams:
+          PartySession.Teams.NumTeams := NumTeams + 2;
           PartySession.Teams.Teaminfo[0].NumPlayers := NumPlayer1+1;
           PartySession.Teams.Teaminfo[1].NumPlayers := NumPlayer2+1;
-          PartySession.Teams.Teaminfo[2].NumPlayers := NumPlayer3+1;}
+          PartySession.Teams.Teaminfo[2].NumPlayers := NumPlayer3+1};
 
           //Save Playlist
           PlaylistMan.Mode := TSingMode( Playlist );
@@ -158,10 +168,6 @@ begin
           end
           else
             PlaylistMan.CurPlayList := Playlist2;
-
-          //Start Party
-          // to-do : Party
-          //PartySession.StartNewParty(Rounds + 2);
 
           AudioPlayback.PlaySound(SoundLib.Start);
           //Go to Player Screen
@@ -231,14 +237,14 @@ begin
   //Load Screen From Theme
   LoadFromTheme(Theme.PartyOptions);
 
-  SelectLevel     := AddSelectSlide (Theme.PartyOptions.SelectLevel, Ini.Difficulty, Theme.ILevel);
-  SelectPlayList  := AddSelectSlide (Theme.PartyOptions.SelectPlayList, PlayList, IPlaylist);
-  SelectPlayList2 := AddSelectSlide (Theme.PartyOptions.SelectPlayList2, PlayList2, IPlaylist2);
-  SelectRounds    := AddSelectSlide (Theme.PartyOptions.SelectRounds, Rounds, IRounds);
-  SelectTeams     := AddSelectSlide (Theme.PartyOptions.SelectTeams, NumTeams, ITeams);
-  SelectPlayers1  := AddSelectSlide (Theme.PartyOptions.SelectPlayers1, NumPlayer1, IPlayers);
-  SelectPlayers2  := AddSelectSlide (Theme.PartyOptions.SelectPlayers2, NumPlayer2, IPlayers);
-  SelectPlayers3  := AddSelectSlide (Theme.PartyOptions.SelectPlayers3, NumPlayer3, IPlayers);
+  SelectLevel     := AddSelectSlide(Theme.PartyOptions.SelectLevel, Ini.Difficulty, Theme.ILevel);
+  SelectPlayList  := AddSelectSlide(Theme.PartyOptions.SelectPlayList, PlayList, IPlaylist);
+  SelectPlayList2 := AddSelectSlide(Theme.PartyOptions.SelectPlayList2, PlayList2, IPlaylist2);
+  SelectRounds    := AddSelectSlide(Theme.PartyOptions.SelectRounds, Rounds, IRounds);
+  SelectTeams     := AddSelectSlide(Theme.PartyOptions.SelectTeams, NumTeams, ITeams);
+  SelectPlayers1  := AddSelectSlide(Theme.PartyOptions.SelectPlayers1, NumPlayer1, IPlayers);
+  SelectPlayers2  := AddSelectSlide(Theme.PartyOptions.SelectPlayers2, NumPlayer2, IPlayers);
+  SelectPlayers3  := AddSelectSlide(Theme.PartyOptions.SelectPlayers3, NumPlayer3, IPlayers);
 
   Interaction := 0;
 
@@ -247,7 +253,8 @@ begin
 end;
 
 procedure TScreenPartyOptions.SetPlaylist2;
-var I: integer;
+var
+  I: integer;
 begin
   case Playlist of
     0:
@@ -292,7 +299,7 @@ begin
   UpdateSelectSlideOptions(Theme.PartyOptions.SelectPlayList2, 2, IPlaylist2, Playlist2);
 end;
 
-procedure TScreenPartyOptions.onShow;
+procedure TScreenPartyOptions.OnShow;
 begin
   inherited;
 

@@ -34,40 +34,52 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
+  SysUtils, 
+  SDL,
+  UDisplay,
+  UFiles,
+  UMenu,
+  UMusic,
+  UThemes;
 
 type
   TScreenName = class(TMenu)
     public
-      Goto_SingScreen: Boolean; //If True then next Screen in SingScreen
+      Goto_SingScreen: boolean; //If true then next Screen in SingScreen
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
 
-uses UGraphic, UMain, UIni, UTexture, UCommon;
+uses
+  UCommon,
+  UGraphic, 
+  UIni,
+  UNote,
+  UTexture,
+  UUnicodeUtils;
 
 
-function TScreenName.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenName.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
-  I:    integer;
-SDL_ModState:  Word;
+  I: integer;
+  SDL_ModState: word;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
 
     SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT);
 
     // check normal keys
-    if (IsAlphaNumericChar(CharCode) or
-        {(CharCode in [' ','-','_','!',',','<','/','*','?','''','"']))} IsPunctuationChar(CharCode)) then
+    if (IsPrintableChar(CharCode)) then
     begin
-      Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + CharCode;
+      Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
+                                          UCS4ToUTF8String(CharCode);
       Exit;
     end;
 
@@ -183,10 +195,9 @@ begin
            Button[Interaction].Text[0].Text := Ini.NameTemplate[11];
          end;
 
-
       SDLK_BACKSPACE:
         begin
-          Button[Interaction].Text[0].DeleteLastL;
+          Button[Interaction].Text[0].DeleteLastLetter();
         end;
 
       SDLK_ESCAPE :
@@ -211,7 +222,7 @@ begin
           else
             FadeTo(@ScreenLevel);
 
-          GoTo_SingScreen := False;
+          GoTo_SingScreen := false;
         end;
 
       // Up and Down could be done at the same time,
@@ -233,14 +244,13 @@ begin
 
   LoadFromTheme(Theme.Name);
 
-
   for I := 1 to 6 do
     AddButton(Theme.Name.ButtonPlayer[I]);
 
   Interaction := 0;
 end;
 
-procedure TScreenName.onShow;
+procedure TScreenName.OnShow;
 var
   I:    integer;
 begin
@@ -249,12 +259,14 @@ begin
   for I := 1 to 6 do
     Button[I-1].Text[0].Text := Ini.Name[I-1];
 
-  for I := 1 to PlayersPlay do begin
+  for I := 1 to PlayersPlay do
+  begin
     Button[I-1].Visible := true;
     Button[I-1].Selectable := true;
   end;
 
-  for I := PlayersPlay+1 to 6 do begin
+  for I := PlayersPlay+1 to 6 do
+  begin
     Button[I-1].Visible := false;
     Button[I-1].Selectable := false;
   end;

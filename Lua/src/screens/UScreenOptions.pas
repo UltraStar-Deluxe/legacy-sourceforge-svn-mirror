@@ -34,15 +34,22 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, SysUtils, UDisplay, UMusic, UFiles, UIni, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UFiles,
+  UIni,
+  UThemes;
 
 type
   TScreenOptions = class(TMenu)
     public
       TextDescription:    integer;
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure InteractNext; override;
       procedure InteractPrev; override;
       procedure InteractNextRow; override;
@@ -52,16 +59,18 @@ type
 
 implementation
 
-uses UGraphic;
+uses
+  UGraphic,
+  UUnicodeUtils;
 
-function TScreenOptions.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenOptions.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -181,7 +190,7 @@ begin
   Interaction := 0;
 end;
 
-procedure TScreenOptions.onShow;
+procedure TScreenOptions.OnShow;
 begin
   inherited;
 end;

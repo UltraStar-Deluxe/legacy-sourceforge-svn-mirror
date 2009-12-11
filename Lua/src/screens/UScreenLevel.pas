@@ -34,46 +34,58 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
+  UMenu,
+  SDL,
+  UDisplay,
+  UMusic,
+  UFiles,
+  SysUtils,
+  UThemes;
 
 type
   TScreenLevel = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
 
-uses UGraphic,
-     UMain,
-     UIni,
-     USong,
-     UTexture;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  USong,
+  UTexture,
+  UUnicodeUtils;
 
-function TScreenLevel.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenLevel.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
         end;
     end;
-    
+
     // check special keys
     case PressedKey of
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
           AudioPlayback.PlaySound(SoundLib.Back);
-          FadeTo(@ScreenName);
+
+          if Ini.OnSongClick = sSelectPlayer then
+            FadeTo(@ScreenMain)
+          else
+            FadeTo(@ScreenName);
         end;
 
       SDLK_RETURN:
@@ -98,8 +110,6 @@ begin
 end;
 
 constructor TScreenLevel.Create;
-//var
-// I:    integer; // Auto Removed, Unused Variable
 begin
   inherited Create;
 
@@ -112,7 +122,7 @@ begin
   Interaction := 0;
 end;
 
-procedure TScreenLevel.onShow;
+procedure TScreenLevel.OnShow;
 begin
   inherited;
 

@@ -95,7 +95,7 @@ var
  *   user - players associated with left/right channels
  *}
 function MicrophoneCallback(stream: HSTREAM; buffer: Pointer;
-    len: Cardinal; inputDevice: Pointer): boolean; {$IFDEF MSWINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
+    len: integer; inputDevice: Pointer): boolean; {$IFDEF MSWINDOWS}stdcall;{$ELSE}cdecl;{$ENDIF}
 begin
   AudioInputProcessor.HandleMicrophoneData(buffer, len, inputDevice);
   Result := true;
@@ -489,6 +489,11 @@ end;
 function TAudioInput_Bass.InitializeRecord(): boolean;
 begin
   BassCore := TAudioCore_Bass.GetInstance();
+  if not BassCore.CheckVersion then
+  begin
+    Result := false;
+    Exit;
+  end;
   Result := EnumDevices();
 end;
 

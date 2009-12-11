@@ -40,6 +40,7 @@ uses
   Classes,
   SysUtils,
   UCommon,
+  UPath,
   SDL,
   SDL_Image;
 
@@ -66,7 +67,7 @@ type
     TexX2:    real;
     TexY2:    real;
     Alpha:    real;
-    Name:     string; // experimental for handling cache images. maybe it's useful for dynamic skins
+    Name:     IPath; // experimental for handling cache images. maybe it's useful for dynamic skins
   end;
 
 type
@@ -91,9 +92,9 @@ procedure AdjustPixelFormat(var TexSurface: PSDL_Surface; Typ: TTextureType);
 type
   PTextureEntry = ^TTextureEntry;
   TTextureEntry = record
-    Name:         string;
+    Name:         IPath;
     Typ:          TTextureType;
-    Color:        Cardinal;
+    Color:        cardinal;
 
     // we use normal TTexture, it's easier to implement and if needed - we copy ready data
     Texture:      TTexture; // Full-size texture
@@ -104,8 +105,8 @@ type
     private
       Texture: array of TTextureEntry;
     public
-      procedure AddTexture(var Tex: TTexture; Typ: TTextureType; Color: Cardinal; Cache: boolean);
-      function FindTexture(const Name: string; Typ: TTextureType; Color: Cardinal): integer;
+      procedure AddTexture(var Tex: TTexture; Typ: TTextureType; Color: cardinal; Cache: boolean);
+      function FindTexture(const Name: IPath; Typ: TTextureType; Color: cardinal): integer;
   end;
 
   TTextureUnit = class
@@ -115,15 +116,15 @@ type
       Limit: integer;
 
       procedure AddTexture(var Tex: TTexture; Typ: TTextureType; Cache: boolean = false); overload;
-      procedure AddTexture(var Tex: TTexture; Typ: TTextureType; Color: Cardinal; Cache: boolean = false); overload;
-      function GetTexture(const Name: string; Typ: TTextureType; FromCache: boolean = false): TTexture; overload;
-      function GetTexture(const Name: string; Typ: TTextureType; Col: LongWord; FromCache: boolean = false): TTexture; overload;
-      function LoadTexture(FromRegistry: boolean; const Identifier: string; Typ: TTextureType; Col: LongWord): TTexture; overload;
-      function LoadTexture(const Identifier: string; Typ: TTextureType; Col: LongWord): TTexture; overload;
-      function LoadTexture(const Identifier: string): TTexture; overload;
-      function CreateTexture(Data: PChar; const Name: string; Width, Height: word; BitsPerPixel: byte): TTexture;
-      procedure UnloadTexture(const Name: string; Typ: TTextureType; FromCache: boolean); overload;
-      procedure UnloadTexture(const Name: string; Typ: TTextureType; Col: Cardinal; FromCache: boolean); overload;
+      procedure AddTexture(var Tex: TTexture; Typ: TTextureType; Color: cardinal; Cache: boolean = false); overload;
+      function GetTexture(const Name: IPath; Typ: TTextureType; FromCache: boolean = false): TTexture; overload;
+      function GetTexture(const Name: IPath; Typ: TTextureType; Col: LongWord; FromCache: boolean = false): TTexture; overload;
+      function LoadTexture(FromRegistry: boolean; const Identifier: IPath; Typ: TTextureType; Col: LongWord): TTexture; overload;
+      function LoadTexture(const Identifier: IPath; Typ: TTextureType; Col: LongWord): TTexture; overload;
+      function LoadTexture(const Identifier: IPath): TTexture; overload;
+      function CreateTexture(Data: PChar; const Name: IPath; Width, Height: word; BitsPerPixel: byte): TTexture;
+      procedure UnloadTexture(const Name: IPath; Typ: TTextureType; FromCache: boolean); overload;
+      procedure UnloadTexture(const Name: IPath; Typ: TTextureType; Col: cardinal; FromCache: boolean); overload;
       //procedure FlushTextureDatabase();
 
       constructor Create;
@@ -164,10 +165,10 @@ begin
     SDL_FreeSurface(TempSurface);
   end;
 end;
-  
+
 { TTextureDatabase }
 
-procedure TTextureDatabase.AddTexture(var Tex: TTexture; Typ: TTextureType; Color: Cardinal; Cache: boolean);
+procedure TTextureDatabase.AddTexture(var Tex: TTexture; Typ: TTextureType; Color: cardinal; Cache: boolean);
 var
   TextureIndex: integer;
 begin
@@ -188,7 +189,7 @@ begin
     Texture[TextureIndex].Texture      := Tex;
 end;
 
-function TTextureDatabase.FindTexture(const Name: string; Typ: TTextureType; Color: Cardinal): integer;
+function TTextureDatabase.FindTexture(const Name: IPath; Typ: TTextureType; Color: cardinal): integer;
 var
   TextureIndex: integer;
   CurrentTexture: PTextureEntry;
@@ -197,7 +198,7 @@ begin
   for TextureIndex := 0 to High(Texture) do
   begin
     CurrentTexture := @Texture[TextureIndex];
-    if (CurrentTexture.Name = Name) and
+    if (CurrentTexture.Name.Equals(Name)) and
        (CurrentTexture.Typ = Typ) then
     begin
       // colorized textures must match in their color too
@@ -210,7 +211,6 @@ begin
     end;
   end;
 end;
-
 
 { TTextureUnit }
 
@@ -226,33 +226,32 @@ begin
   inherited Destroy;
 end;
 
-
 procedure TTextureUnit.AddTexture(var Tex: TTexture; Typ: TTextureType; Cache: boolean);
 begin
   TextureDatabase.AddTexture(Tex, Typ, 0, Cache);
 end;
 
-procedure TTextureUnit.AddTexture(var Tex: TTexture; Typ: TTextureType; Color: Cardinal; Cache: boolean);
+procedure TTextureUnit.AddTexture(var Tex: TTexture; Typ: TTextureType; Color: cardinal; Cache: boolean);
 begin
   TextureDatabase.AddTexture(Tex, Typ, Color, Cache);
 end;
 
-function TTextureUnit.LoadTexture(FromRegistry: boolean; const Identifier: string; Typ: TTextureType; Col: LongWord): TTexture;
+function TTextureUnit.LoadTexture(FromRegistry: boolean; const Identifier: IPath; Typ: TTextureType; Col: LongWord): TTexture;
 begin
   // FIXME: what is the FromRegistry parameter supposed to do?
   Result := LoadTexture(Identifier, Typ, Col);
 end;
 
-function TTextureUnit.LoadTexture(const Identifier: string): TTexture;
+function TTextureUnit.LoadTexture(const Identifier: IPath): TTexture;
 begin
   Result := LoadTexture(Identifier, TEXTURE_TYPE_PLAIN, 0);
 end;
 
-function TTextureUnit.LoadTexture(const Identifier: string; Typ: TTextureType; Col: LongWord): TTexture;
+function TTextureUnit.LoadTexture(const Identifier: IPath; Typ: TTextureType; Col: LongWord): TTexture;
 var
   TexSurface: PSDL_Surface;
-  newWidth, newHeight: Cardinal;
-  oldWidth, oldHeight: Cardinal;
+  newWidth, newHeight: integer;
+  oldWidth, oldHeight: integer;
   ActTex: GLuint;
 begin
   // zero texture data
@@ -262,7 +261,7 @@ begin
   TexSurface := LoadImage(Identifier);
   if not assigned(TexSurface) then
   begin
-    Log.LogError('Could not load texture: "' + Identifier +'" with type "'+ TextureTypeToStr(Typ) +'"',
+    Log.LogError('Could not load texture: "' + Identifier.ToNative +'" with type "'+ TextureTypeToStr(Typ) +'"',
                  'TTextureUnit.LoadTexture');
     Exit;
   end;
@@ -338,8 +337,8 @@ begin
     X := 0;
     Y := 0;
     Z := 0;
-    W := 0;
-    H := 0;
+    W := oldWidth;
+    H := oldHeight;
     ScaleW := 1;
     ScaleH := 1;
     Rot := 0;
@@ -365,16 +364,16 @@ begin
   SDL_FreeSurface(TexSurface);
 end;
 
-function TTextureUnit.GetTexture(const Name: string; Typ: TTextureType; FromCache: boolean): TTexture;
+function TTextureUnit.GetTexture(const Name: IPath; Typ: TTextureType; FromCache: boolean): TTexture;
 begin
   Result := GetTexture(Name, Typ, 0, FromCache);
 end;
 
-function TTextureUnit.GetTexture(const Name: string; Typ: TTextureType; Col: LongWord; FromCache: boolean): TTexture;
+function TTextureUnit.GetTexture(const Name: IPath; Typ: TTextureType; Col: LongWord; FromCache: boolean): TTexture;
 var
   TextureIndex: integer;
 begin
-  if (Name = '') then
+  if (Name.IsUnset) then
   begin
     // zero texture data
     FillChar(Result, SizeOf(Result), 0);
@@ -415,7 +414,7 @@ begin
   Result := TextureDatabase.Texture[TextureIndex].Texture;
 end;
 
-function TTextureUnit.CreateTexture(Data: PChar; const Name: string; Width, Height: word; BitsPerPixel: byte): TTexture;
+function TTextureUnit.CreateTexture(Data: PChar; const Name: IPath; Width, Height: word; BitsPerPixel: byte): TTexture;
 var
   //Error:     integer;
   ActTex:    GLuint;
@@ -431,8 +430,8 @@ begin
   {$ELSE}
   glTexImage2D(GL_TEXTURE_2D, 0, 3, Width, Height, 0, GL_RGB, GL_UNSIGNED_BYTE, Data);
   {$ENDIF}
-  
-  {
+
+{
   if Mipmapping then
   begin
     Error := gluBuild2DMipmaps(GL_TEXTURE_2D, 3, W, H, GL_RGB, GL_UNSIGNED_BYTE, @Data[0]);
@@ -440,8 +439,8 @@ begin
     if Error > 0 then
       Log.LogError('gluBuild2DMipmaps() failed', 'TTextureUnit.CreateTexture');
   end;
-  }
-  
+}
+
   Result.X := 0;
   Result.Y := 0;
   Result.Z := 0;
@@ -469,19 +468,19 @@ begin
   Result.Name := Name;
 end;
 
-procedure TTextureUnit.UnloadTexture(const Name: string; Typ: TTextureType; FromCache: boolean);
+procedure TTextureUnit.UnloadTexture(const Name: IPath; Typ: TTextureType; FromCache: boolean);
 begin
   UnloadTexture(Name, Typ, 0, FromCache);
 end;
 
-procedure TTextureUnit.UnloadTexture(const Name: string; Typ: TTextureType; Col: Cardinal; FromCache: boolean);
+procedure TTextureUnit.UnloadTexture(const Name: IPath; Typ: TTextureType; Col: cardinal; FromCache: boolean);
 var
   T:      integer;
   TexNum: GLuint;
 begin
   T := TextureDatabase.FindTexture(Name, Typ, Col);
 
-  if not FromCache then 
+  if not FromCache then
   begin
     TexNum := TextureDatabase.Texture[T].Texture.TexNum;
     if TexNum > 0 then
@@ -529,20 +528,20 @@ end;
 
 function ParseTextureType(const TypeStr: string; Default: TTextureType): TTextureType;
 var
-  TexType: TTextureType;
+  TextureType:   TTextureType;
   UpCaseStr: string;
 begin
   UpCaseStr := UpperCase(TypeStr);
-  for TexType := Low(TextureTypeStr) to High(TextureTypeStr) do
+  for TextureType := Low(TextureTypeStr) to High(TextureTypeStr) do
   begin
-    if (UpCaseStr = UpperCase(TextureTypeStr[TexType])) then
+    if (UpCaseStr = UpperCase(TextureTypeStr[TextureType])) then
     begin
-      Result := TexType;
+      Result := TextureType;
       Exit;
     end;
   end;
-  Log.LogWarn('Unknown texture-type: "' + TypeStr + '"', 'ParseTextureType');
-  Result := TEXTURE_TYPE_PLAIN;
+  Log.LogWarn('Unknown texture type: "' + TypeStr + '". Using default texture type "' + TextureTypeToStr(Default) + '"', 'ParseTextureType');
+  Result := Default;
 end;
 
 end.

@@ -34,71 +34,80 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UFiles,
+  UThemes;
 
 type
   TScreenPartyNewRound = class(TMenu)
     public
       //Texts:
-      TextRound: array [0..6] of Cardinal;
+      TextRound: array [0..6] of cardinal;
 
-      TextWinner: array [0..6] of Cardinal;
+      TextWinner: array [0..6] of cardinal;
 
-      TextNextRound: Cardinal;
-      TextNextRoundNo: Cardinal;
-      TextNextPlayer1: Cardinal;
-      TextNextPlayer2: Cardinal;
-      TextNextPlayer3: Cardinal;
+      TextNextRound: cardinal;
+      TextNextRoundNo: cardinal;
+      TextNextPlayer1: cardinal;
+      TextNextPlayer2: cardinal;
+      TextNextPlayer3: cardinal;
 
       //Statics
-      StaticRound: array [0..6] of Cardinal;
+      StaticRound: array [0..6] of cardinal;
 
       //Scores
-      TextScoreTeam1: Cardinal;
-      TextScoreTeam2: Cardinal;
-      TextScoreTeam3: Cardinal;
-      TextNameTeam1: Cardinal;
-      TextNameTeam2: Cardinal;
-      TextNameTeam3: Cardinal;
+      TextScoreTeam1: cardinal;
+      TextScoreTeam2: cardinal;
+      TextScoreTeam3: cardinal;
+      TextNameTeam1: cardinal;
+      TextNameTeam2: cardinal;
+      TextNameTeam3: cardinal;
 
-      TextTeam1Players: Cardinal;
-      TextTeam2Players: Cardinal;
-      TextTeam3Players: Cardinal;
+      TextTeam1Players: cardinal;
+      TextTeam2Players: cardinal;
+      TextTeam3Players: cardinal;
 
-      StaticTeam1: Cardinal;
-      StaticTeam2: Cardinal;
-      StaticTeam3: Cardinal;
-      StaticNextPlayer1: Cardinal;
-      StaticNextPlayer2: Cardinal;
-      StaticNextPlayer3: Cardinal;   
+      StaticTeam1: cardinal;
+      StaticTeam2: cardinal;
+      StaticTeam3: cardinal;
+      StaticNextPlayer1: cardinal;
+      StaticNextPlayer2: cardinal;
+      StaticNextPlayer3: cardinal;
+
 
 
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
 
-uses UGraphic,
-     UMain,
-     UIni,
-     UTexture,
-     UParty,
-     UDLLManager,
-     ULanguage,
-     USong,
-     ULog;
+uses
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  UParty,
+  UDLLManager,
+  ULanguage,
+  USong,
+  ULog,
+  UUnicodeUtils;
 
-function TScreenPartyNewRound.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenPartyNewRound.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -180,21 +189,21 @@ begin
   LoadFromTheme(Theme.PartyNewRound);
 end;
 
-procedure TScreenPartyNewRound.onShow;
+procedure TScreenPartyNewRound.OnShow;
 var
-  I: Integer;
-  function GetTeamPlayers(const Num: Integer): String;
+  I: integer;
+  function GetTeamPlayers(const Num: integer): UTF8String;
   var
-    Players: Array of String;
-    J: Integer;
-  begin          
+    Players: array of UTF8String;
+    J: integer;
+  begin
     if (Num > High(Party.Teams)) or (Num < 0) then
       exit;
 
-    //Create Players Array
+    //Create Players array
     SetLength(Players, Length(Party.Teams[Num].Players));
     For J := 0 to High(Party.Teams[Num].Players) do
-      Players[J] := Party.Teams[Num].Players[J].Name;
+      Players[J] := UTF8String(Party.Teams[Num].Players[J].Name);
 
     //Implode and Return
     Result := Language.Implode(Players);
@@ -228,64 +237,64 @@ begin
   if (Length(Party.Teams) >= 1) then
   begin
     Text[TextScoreTeam1].Text := InttoStr(Party.Teams[0].Score);
-    Text[TextNameTeam1].Text := Party.Teams[0].Name;
+    Text[TextNameTeam1].Text := UTF8String(Party.Teams[0].Name);
     Text[TextTeam1Players].Text := GetTeamPlayers(0);
 
-    Text[TextScoreTeam1].Visible := True;
-    Text[TextNameTeam1].Visible := True;
-    Text[TextTeam1Players].Visible := True;
-    Static[StaticTeam1].Visible := True;
-    Static[StaticNextPlayer1].Visible := True;
+    Text[TextScoreTeam1].Visible := true;
+    Text[TextNameTeam1].Visible := true;
+    Text[TextTeam1Players].Visible := true;
+    Static[StaticTeam1].Visible := true;
+    Static[StaticNextPlayer1].Visible := true;
   end
   else
   begin
-    Text[TextScoreTeam1].Visible := False;
-    Text[TextNameTeam1].Visible := False;
-    Text[TextTeam1Players].Visible := False;
-    Static[StaticTeam1].Visible := False;
-    Static[StaticNextPlayer1].Visible := False;
+    Text[TextScoreTeam1].Visible := false;
+    Text[TextNameTeam1].Visible := false;
+    Text[TextTeam1Players].Visible := false;
+    Static[StaticTeam1].Visible := false;
+    Static[StaticNextPlayer1].Visible := false;
   end;
 
   if (Length(Party.Teams) >= 2) then
   begin
     Text[TextScoreTeam2].Text := InttoStr(Party.Teams[1].Score);
-    Text[TextNameTeam2].Text := Party.Teams[1].Name;
+    Text[TextNameTeam2].Text := UTF8String(Party.Teams[1].Name);
     Text[TextTeam2Players].Text := GetTeamPlayers(1);
 
-    Text[TextScoreTeam2].Visible := True;
-    Text[TextNameTeam2].Visible := True;
-    Text[TextTeam2Players].Visible := True;
-    Static[StaticTeam2].Visible := True;
-    Static[StaticNextPlayer2].Visible := True;
+    Text[TextScoreTeam2].Visible := true;
+    Text[TextNameTeam2].Visible := true;
+    Text[TextTeam2Players].Visible := true;
+    Static[StaticTeam2].Visible := true;
+    Static[StaticNextPlayer2].Visible := true;
   end
   else
   begin
-    Text[TextScoreTeam2].Visible := False;
-    Text[TextNameTeam2].Visible := False;
-    Text[TextTeam2Players].Visible := False;
-    Static[StaticTeam2].Visible := False;
-    Static[StaticNextPlayer2].Visible := False;
+    Text[TextScoreTeam2].Visible := false;
+    Text[TextNameTeam2].Visible := false;
+    Text[TextTeam2Players].Visible := false;
+    Static[StaticTeam2].Visible := false;
+    Static[StaticNextPlayer2].Visible := false;
   end;
 
   if (Length(Party.Teams) >= 3) then
   begin
     Text[TextScoreTeam3].Text := InttoStr(Party.Teams[2].Score);
-    Text[TextNameTeam3].Text := Party.Teams[2].Name;
+    Text[TextNameTeam3].Text := UTF8String(Party.Teams[2].Name);
     Text[TextTeam3Players].Text := GetTeamPlayers(2);
 
-    Text[TextScoreTeam3].Visible := True;
-    Text[TextNameTeam3].Visible := True;
-    Text[TextTeam3Players].Visible := True;
-    Static[StaticTeam3].Visible := True;
-    Static[StaticNextPlayer3].Visible := True;
+    Text[TextScoreTeam3].Visible := true;
+    Text[TextNameTeam3].Visible := true;
+    Text[TextTeam3Players].Visible := true;
+    Static[StaticTeam3].Visible := true;
+    Static[StaticNextPlayer3].Visible := true;
   end
   else
   begin
-    Text[TextScoreTeam3].Visible := False;
-    Text[TextNameTeam3].Visible := False;
-    Text[TextTeam3Players].Visible := False;
-    Static[StaticTeam3].Visible := False;
-    Static[StaticNextPlayer3].Visible := False;
+    Text[TextScoreTeam3].Visible := false;
+    Text[TextNameTeam3].Visible := false;
+    Text[TextTeam3Players].Visible := false;
+    Static[StaticTeam3].Visible := false;
+    Static[StaticNextPlayer3].Visible := false;
   end;  
 
   //nextRound Texts
@@ -294,26 +303,26 @@ begin
   if (Length(Party.Teams) >= 1) then
   begin
     Text[TextNextPlayer1].Text := Party.Teams[0].Players[Party.Teams[0].NextPlayer].Name;
-    Text[TextNextPlayer1].Visible := True;
+    Text[TextNextPlayer1].Visible := true;
   end
   else
-    Text[TextNextPlayer1].Visible := False;
+    Text[TextNextPlayer1].Visible := false;
 
   if (Length(Party.Teams) >= 2) then
   begin
     Text[TextNextPlayer2].Text := Party.Teams[1].Players[Party.Teams[1].NextPlayer].Name;
-    Text[TextNextPlayer2].Visible := True;
+    Text[TextNextPlayer2].Visible := true;
   end
   else
-    Text[TextNextPlayer2].Visible := False;
+    Text[TextNextPlayer2].Visible := false;
 
   if (Length(Party.Teams) >= 3) then
   begin
     Text[TextNextPlayer3].Text := Party.Teams[2].Players[Party.Teams[2].NextPlayer].Name;
-    Text[TextNextPlayer3].Visible := True;
+    Text[TextNextPlayer3].Visible := true;
   end
   else
-    Text[TextNextPlayer3].Visible := False;
+    Text[TextNextPlayer3].Visible := false;
 end;
 
 procedure TScreenPartyNewRound.SetAnimationProgress(Progress: real);

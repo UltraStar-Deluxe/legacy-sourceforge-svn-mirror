@@ -34,53 +34,66 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu, SDL, UDisplay, UMusic, SysUtils, UThemes;
+  SDL,
+  SysUtils,
+  UMenu,
+  UDisplay,
+  UMusic,
+  UThemes;
 
 type
   TScreenPartyScore = class(TMenu)
     public
-      TextScoreTeam1:    Cardinal;
-      TextScoreTeam2:    Cardinal;
-      TextScoreTeam3:    Cardinal;
-      TextNameTeam1:     Cardinal;
-      TextNameTeam2:     Cardinal;
-      TextNameTeam3:     Cardinal;
-      StaticTeam1:       Cardinal;
-      StaticTeam1BG:     Cardinal;
-      StaticTeam1Deco:   Cardinal;
-      StaticTeam2:       Cardinal;
-      StaticTeam2BG:     Cardinal;
-      StaticTeam2Deco:   Cardinal;
-      StaticTeam3:       Cardinal;
-      StaticTeam3BG:     Cardinal;
-      StaticTeam3Deco:   Cardinal;
-      TextWinner:        Cardinal;
+      TextScoreTeam1:    cardinal;
+      TextScoreTeam2:    cardinal;
+      TextScoreTeam3:    cardinal;
+      TextNameTeam1:     cardinal;
+      TextNameTeam2:     cardinal;
+      TextNameTeam3:     cardinal;
+      StaticTeam1:       cardinal;
+      StaticTeam1BG:     cardinal;
+      StaticTeam1Deco:   cardinal;
+      StaticTeam2:       cardinal;
+      StaticTeam2BG:     cardinal;
+      StaticTeam2Deco:   cardinal;
+      StaticTeam3:       cardinal;
+      StaticTeam3BG:     cardinal;
+      StaticTeam3Deco:   cardinal;
+      TextWinner:        cardinal;
 
-      DecoTex:          Array[0..5] of Integer;
-      DecoColor:        Array[0..5] of Record
-                                        R, G, B: Real;
+      DecoTex:          array[0..5] of integer;
+      DecoColor:        array[0..5] of Record
+                                        R, G, B: real;
                         end;
 
-      MaxScore:          Word;
+      MaxScore:          word;
       
       constructor Create; override;
-      function ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
 implementation
 
-uses UGraphic, UMain, UParty, UScreenSingModi, ULanguage, UTexture, USkins;
+uses
+  UGraphic,
+  UMain,
+  UParty,
+  UScreenSingModi,
+  ULanguage,
+  UTexture,
+  USkins,
+  UUnicodeUtils;
 
-function TScreenPartyScore.ParseInput(PressedKey: Cardinal; CharCode: WideChar; PressedDown: Boolean): Boolean;
+function TScreenPartyScore.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
-  If (PressedDown) Then
+  if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -114,8 +127,8 @@ constructor TScreenPartyScore.Create;
 var
 // I:    integer; // Auto Removed, Unused Variable
   Tex:  TTexture;
-  R, G, B: Real;
-  Color: Integer;
+  R, G, B: real;
+  Color: integer;
 begin
   inherited Create;
 
@@ -149,7 +162,9 @@ begin
     DecoColor[0].B := B;
 
     //Load Texture
-    Tex := Texture.LoadTexture(pchar(Skin.GetTextureFileName(Theme.PartyScore.DecoTextures.FirstTexture)), Theme.PartyScore.DecoTextures.FirstTyp, Color);
+    Tex := Texture.LoadTexture(
+      Skin.GetTextureFileName(Theme.PartyScore.DecoTextures.FirstTexture),
+      Theme.PartyScore.DecoTextures.FirstTyp, Color);
     DecoTex[0] := Tex.TexNum;
 
     //Get Second Color
@@ -160,7 +175,9 @@ begin
     DecoColor[1].B := B;
 
     //Load Second Texture
-    Tex := Texture.LoadTexture(pchar(Skin.GetTextureFileName(Theme.PartyScore.DecoTextures.SecondTexture)), Theme.PartyScore.DecoTextures.SecondTyp, Color);
+    Tex := Texture.LoadTexture(
+      Skin.GetTextureFileName(Theme.PartyScore.DecoTextures.SecondTexture),
+      Theme.PartyScore.DecoTextures.SecondTyp, Color);
     DecoTex[1] := Tex.TexNum;
 
     //Get Third Color
@@ -171,16 +188,18 @@ begin
     DecoColor[2].B := B;
 
     //Load Third Texture
-    Tex := Texture.LoadTexture(pchar(Skin.GetTextureFileName(Theme.PartyScore.DecoTextures.ThirdTexture)), Theme.PartyScore.DecoTextures.ThirdTyp, Color);
+    Tex := Texture.LoadTexture(
+      Skin.GetTextureFileName(Theme.PartyScore.DecoTextures.ThirdTexture),
+      Theme.PartyScore.DecoTextures.ThirdTyp, Color);
     DecoTex[2] := Tex.TexNum;
   end;
 
   LoadFromTheme(Theme.PartyScore);
 end;
 
-procedure TScreenPartyScore.onShow;
+procedure TScreenPartyScore.OnShow;
 var
-  I, J: Integer;
+  I, J: integer;
   Ranking: AParty_TeamRanking;
 begin
   inherited;
@@ -208,7 +227,7 @@ begin
   if (Length(Party.Teams) >= 1) then
   begin
     Text[TextScoreTeam1].Text := InttoStr(Party.Teams[0].Score);
-    Text[TextNameTeam1].Text := Party.Teams[0].Name;
+    Text[TextNameTeam1].Text := Utf8String(Party.Teams[0].Name);
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
@@ -222,25 +241,25 @@ begin
       end;
     end;
 
-    Text[TextScoreTeam1].Visible := True;
-    Text[TextNameTeam1].Visible := True;
-    Static[StaticTeam1].Visible := True;
-    Static[StaticTeam1BG].Visible := True;
-    Static[StaticTeam1Deco].Visible := True;
+    Text[TextScoreTeam1].Visible := true;
+    Text[TextNameTeam1].Visible := true;
+    Static[StaticTeam1].Visible := true;
+    Static[StaticTeam1BG].Visible := true;
+    Static[StaticTeam1Deco].Visible := true;
   end
   else
   begin
-    Text[TextScoreTeam1].Visible := False;
-    Text[TextNameTeam1].Visible := False;
-    Static[StaticTeam1].Visible := False;
-    Static[StaticTeam1BG].Visible := False;
-    Static[StaticTeam1Deco].Visible := False;
+    Text[TextScoreTeam1].Visible := false;
+    Text[TextNameTeam1].Visible := false;
+    Static[StaticTeam1].Visible := false;
+    Static[StaticTeam1BG].Visible := false;
+    Static[StaticTeam1Deco].Visible := false;
   end;
 
   if (Length(Party.Teams) >= 2) then
   begin
     Text[TextScoreTeam2].Text := InttoStr(Party.Teams[1].Score);
-    Text[TextNameTeam2].Text := Party.Teams[1].Name;
+    Text[TextNameTeam2].Text := UTF8String(Party.Teams[1].Name);
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
@@ -254,25 +273,25 @@ begin
       end;
     end;
 
-    Text[TextScoreTeam2].Visible := True;
-    Text[TextNameTeam2].Visible := True;
-    Static[StaticTeam2].Visible := True;
-    Static[StaticTeam2BG].Visible := True;
-    Static[StaticTeam2Deco].Visible := True;
+    Text[TextScoreTeam2].Visible := true;
+    Text[TextNameTeam2].Visible := true;
+    Static[StaticTeam2].Visible := true;
+    Static[StaticTeam2BG].Visible := true;
+    Static[StaticTeam2Deco].Visible := true;
   end
   else
   begin
-    Text[TextScoreTeam2].Visible := False;
-    Text[TextNameTeam2].Visible := False;
-    Static[StaticTeam2].Visible := False;
-    Static[StaticTeam2BG].Visible := False;
-    Static[StaticTeam2Deco].Visible := False;
+    Text[TextScoreTeam2].Visible := false;
+    Text[TextNameTeam2].Visible := false;
+    Static[StaticTeam2].Visible := false;
+    Static[StaticTeam2BG].Visible := false;
+    Static[StaticTeam2Deco].Visible := false;
   end;
 
   if (Length(Party.Teams) >= 3) then
   begin
     Text[TextScoreTeam3].Text := InttoStr(Party.Teams[2].Score);
-    Text[TextNameTeam3].Text := Party.Teams[2].Name;
+    Text[TextNameTeam3].Text := UTF8String(Party.Teams[2].Name);
 
     //Set Deco Texture
     if Theme.PartyScore.DecoTextures.ChangeTextures then
@@ -286,19 +305,19 @@ begin
       end;
     end;
 
-    Text[TextScoreTeam3].Visible := True;
-    Text[TextNameTeam3].Visible := True;
-    Static[StaticTeam3].Visible := True;
-    Static[StaticTeam3BG].Visible := True;
-    Static[StaticTeam3Deco].Visible := True;
+    Text[TextScoreTeam3].Visible := true;
+    Text[TextNameTeam3].Visible := true;
+    Static[StaticTeam3].Visible := true;
+    Static[StaticTeam3BG].Visible := true;
+    Static[StaticTeam3Deco].Visible := true;
   end
   else
   begin
-    Text[TextScoreTeam3].Visible := False;
-    Text[TextNameTeam3].Visible := False;
-    Static[StaticTeam3].Visible := False;
-    Static[StaticTeam3BG].Visible := False;
-    Static[StaticTeam3Deco].Visible := False;
+    Text[TextScoreTeam3].Visible := false;
+    Text[TextNameTeam3].Visible := false;
+    Static[StaticTeam3].Visible := false;
+    Static[StaticTeam3BG].Visible := false;
+    Static[StaticTeam3Deco].Visible := false;
   end;
 end;
 
@@ -313,4 +332,3 @@ begin
 end;
 
 end.
-

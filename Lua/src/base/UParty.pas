@@ -195,7 +195,7 @@ type
     function GetTeamRanking: AParty_TeamRanking;
 
     { returns a string like "Team 1 (and Team 2) win" }
-    function GetWinnerString(Round: Integer): String;
+    function GetWinnerString(Round: integer): UTF8String;
 
     destructor  Destroy;
   end;
@@ -238,7 +238,7 @@ uses
   ULuaCore,
   UDisplay,
   USong,
-  UMain,
+  UNote,
   SysUtils;
 
 //-------------
@@ -873,9 +873,9 @@ end;
   result is name of winners of specified round.
   if Round is -1 the result is name of winners of
   the whole party game}
-function TPartyGame.GetWinnerString(Round: Integer): String;
+function TPartyGame.GetWinnerString(Round: integer): UTF8String;
 var
-  Winners: array of String;
+  Winners: array of UTF8String;
   I: integer;
   Ranking: AParty_TeamRanking;
 begin
@@ -901,7 +901,7 @@ begin
       if (Ranking[I].Rank = PR_First) and (Ranking[I].Team >= 0) and (Ranking[I].Team <= High(Teams)) then
       begin
         SetLength(Winners, Length(Winners) + 1);
-        Winners[high(Winners)] := Teams[Ranking[I].Team].Name;
+        Winners[high(Winners)] := UTF8String(Teams[Ranking[I].Team].Name);
       end;
     end;
 
