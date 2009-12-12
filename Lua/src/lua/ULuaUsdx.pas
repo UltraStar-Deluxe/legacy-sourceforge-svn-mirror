@@ -54,11 +54,12 @@ function ULuaUsdx_Hook(L: Plua_State): Integer; cdecl;
 function ULuaUsdx_ShutMeDown(L: Plua_State): Integer; cdecl;
 
 const
-  ULuaUsdx_Lib_f: array [0..3] of lual_reg = (
+  ULuaUsdx_Lib_f: array [0..4] of lual_reg = (
     (name:'Version'; func:ULuaUsdx_Version),
     (name:'Time'; func:ULuaUsdx_Time),
     (name:'Hook'; func:ULuaUsdx_Hook),
-    (name:'ShutMeDown'; func:ULuaUsdx_ShutMeDown)
+    (name:'ShutMeDown'; func:ULuaUsdx_ShutMeDown),
+    (name:nil;func:nil)
   );
 
 implementation

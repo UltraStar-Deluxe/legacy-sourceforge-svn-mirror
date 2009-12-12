@@ -195,7 +195,13 @@ var
   LuaCore: TLuaCore;
 
 implementation
-uses ULog, UFilesystem, ULuaUsdx, UPathUtils, StrUtils;
+uses
+  StrUtils,
+  ULog,
+  UFilesystem,
+  ULuaUsdx,
+  UPathUtils,
+  ULuaUtils;
 
 constructor TLuaCore.Create;
 begin
@@ -713,8 +719,6 @@ end;
 { does the main loading part
   can not be called by create, because Plugins[Id] isn't defined there }
 procedure TLuaPlugin.Load;
-  var
-    Filename: String;
 begin
   // create Lua state for this plugin
   State := luaL_newstate;
@@ -723,11 +727,10 @@ begin
   //we don't expect
   lua_atPanic(State, TLua_CustomPanic);
 
-  Filename := Self.Filename.ToNative;
   // to-do : fix this
   //         it may solve the problem if we read the file
   //         and pass lua the text }
-  if ({luaL_loadfile(State, PChar(Filename))}1 = 0) then
+  if (LuaL_LoadFile(State, PChar(Filename.ToNative)) = 0) then
   begin // file loaded successful
     { note: we run the file here, but the environment isn't
             set up now. it just causes the functions to
@@ -767,7 +770,7 @@ begin
       else
       begin
         sStatus := psErrorInInit;
-        Log.LogError('error in plugin_init: ' + Self.Filename.ToUTF8, 'lua');
+        Log.LogError('error in plugin_init: ' + Self.Filename.ToNative, 'lua');
         Unload;
       end;
     end
@@ -775,7 +778,7 @@ begin
     begin
       sStatus := psErrorOnLoad;
       Log.LogError(String(lua_toString(State, 1)), 'lua');
-      Log.LogError('unable to call file: ' + Self.Filename.ToUTF8, 'lua');
+      Log.LogError('unable to call file: ' + Self.Filename.ToNative, 'lua');
       Unload;
     end;
 
@@ -784,7 +787,7 @@ begin
   begin
     sStatus := psErrorOnLoad;
     Log.LogError(String(lua_toString(State, 1)), 'lua');
-    Log.LogError('unable to load file: ' + Self.Filename.ToUTF8, 'lua');
+    Log.LogError('unable to load file: ' + Self.Filename.ToNative, 'lua');
     Unload;
   end;
 end;
