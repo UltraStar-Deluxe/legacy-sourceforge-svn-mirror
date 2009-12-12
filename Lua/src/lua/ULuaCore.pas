@@ -727,9 +727,6 @@ begin
   //we don't expect
   lua_atPanic(State, TLua_CustomPanic);
 
-  // to-do : fix this
-  //         it may solve the problem if we read the file
-  //         and pass lua the text }
   if (LuaL_LoadFile(State, PChar(Filename.ToNative)) = 0) then
   begin // file loaded successful
     { note: we run the file here, but the environment isn't
