@@ -96,7 +96,7 @@ type
 
     function ParseLyricStringParam(const Line: RawByteString; var LinePos: integer): RawByteString;
     function ParseLyricIntParam(const Line: RawByteString; var LinePos: integer): integer;
-    function ParseLyricFloatParam(const Line: RawByteString; var LinePos: integer): real;
+    function ParseLyricFloatParam(const Line: RawByteString; var LinePos: integer): extended;
     function ParseLyricCharParam(const Line: RawByteString; var LinePos: integer): AnsiChar;
     function ParseLyricText(const Line: RawByteString; var LinePos: integer): RawByteString;
 
@@ -346,24 +346,26 @@ var
 begin
   OldLinePos := LinePos;
   Str := ParseLyricStringParam(Line, LinePos);
-  try
-    Result := StrToInt(Str);
-  except // on EConvertError
+
+  if not TryStrToInt(Str, Result) then
+  begin // on convert error
+    Result := 0;
     LinePos := OldLinePos;
     raise EUSDXParseException.Create('Integer expected');
   end;
 end;
 
-function TSong.ParseLyricFloatParam(const Line: RawByteString; var LinePos: integer): real;
+function TSong.ParseLyricFloatParam(const Line: RawByteString; var LinePos: integer): extended;
 var
   Str: RawByteString;
   OldLinePos: integer;
 begin
   OldLinePos := LinePos;
   Str := ParseLyricStringParam(Line, LinePos);
-  try
-    Result := StrToFloat(Str);
-  except // on EConvertError
+
+  if not TryStrToFloat(Str, Result) then
+  begin // on convert error
+    Result := 0;
     LinePos := OldLinePos;
     raise EUSDXParseException.Create('Float expected');
   end;
@@ -378,6 +380,14 @@ begin
   Str := ParseLyricStringParam(Line, LinePos);
   if (Length(Str) <> 1) then
   begin
+    { to-do : decide what to do here
+              usdx < 1.1 does not nead a whitespace after a char param
+              so we may just write a warning to error.log and use the
+              first non whitespace character instead of raising an
+              exception that causes the song not to load. So the more
+              error resistant code is:
+                LinePos := OldLinePos + 1;
+                // raise EUSDXParseException.Create('Character expected'); }
     LinePos := OldLinePos;
     raise EUSDXParseException.Create('Character expected');
   end;
@@ -483,7 +493,7 @@ begin
 
       while true do
       begin
-        LinePos := 0;
+        LinePos := 1;
 
         Param0 := ParseLyricCharParam(CurLine, LinePos);
         if (Param0 = 'E') then

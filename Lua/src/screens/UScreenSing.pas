@@ -1004,7 +1004,9 @@ begin
       // spawn rating pop-up
       Rating := Round(LinePerfection * MAX_LINE_RATING);
       Scores.SpawnPopUp(PlayerIndex, Rating, CurrentPlayer.ScoreTotalInt);
-    end;
+    end
+    else
+      Scores.RaiseScore(PlayerIndex, CurrentPlayer.ScoreTotalInt);
 
     // PerfectLineTwinkle (effect), part 1
     if (Ini.EffectSing = 1) then

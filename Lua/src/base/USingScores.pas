@@ -138,8 +138,17 @@ type
       FirstPopUp: PScorePopUp;
       LastPopUp:  PScorePopUp;
 
+      // only defined during draw, time passed between
+      // current and previous call of draw
+      TimePassed: Cardinal;
+
       // draws a popup by pointer
       procedure DrawPopUp(const PopUp: PScorePopUp);
+
+      // raises players score if RaiseScore was called
+      // has to be called after DrawPopUp and before
+      // DrawScore
+      procedure DoRaiseScore(const Index: integer);
 
       // draws a score by playerindex
       procedure DrawScore(const Index: integer);
@@ -149,6 +158,10 @@ type
 
       // removes a popup w/o destroying the list
       procedure KillPopUp(const last, cur: PScorePopUp);
+
+      // calculate the amount of points for a player that is
+      // still in popups and therfore not displayed
+      function GetPopUpPoints(const Index: integer): integer;
     public
       Settings: record // Record containing some Displaying Options
         Phase1Time: real;     // time for phase 1 to complete (in msecs)
@@ -202,6 +215,12 @@ type
       // it gives every player a score position
       procedure Init;
 
+      // raises the score of a specified player to the specified score
+      procedure RaiseScore(Player: byte; Score: integer);
+
+      // sets the score of a specified player to the specified score
+      procedure SetScore(Player: byte; Score: integer);
+
       // spawns a new line bonus popup for the player
       procedure SpawnPopUp(const PlayerIndex: byte; const Rating: integer; const Score: integer);
 
@@ -216,6 +235,7 @@ implementation
 
 uses
   SysUtils,
+  Math,
   SDL,
   TextGL,
   ULog,
@@ -319,6 +339,7 @@ procedure TSingScores.ClearPlayers;
 begin
   KillAllPopUps;
   oPlayerCount := 0;
+  TimePassed := 0;
 end;
 
 {**
@@ -329,6 +350,7 @@ begin
   KillAllPopUps;
   oPlayerCount    := 0;
   oPositionCount  := 0;
+  TimePassed := 0;
 end;
 
 {**
@@ -398,6 +420,30 @@ begin
 
   // player 3:
   AddByStatics(4, Theme.Sing.StaticP3RScoreBG, Theme.Sing.StaticP3SingBar, Theme.Sing.TextP3RScore);
+end;
+
+{**
+ * raises the score of a specified player to the specified score
+ *}
+procedure TSingScores.RaiseScore(Player: byte; Score: integer);
+begin
+  if (Player <= PlayerCount - 1) then
+    aPlayers[Player].Score := Score;
+end;
+
+{**
+ * sets the score of a specified player to the specified score
+ *}
+procedure TSingScores.SetScore(Player: byte; Score: integer);
+  var
+    Diff: Integer;
+begin
+  if (Player <= PlayerCount - 1) then
+  begin
+    Diff := Score - Players[Player].Score;
+    aPlayers[Player].Score := Score;
+    Inc(aPlayers[Player].ScoreDisplayed, Diff);
+  end;
 end;
 
 {**
@@ -516,6 +562,32 @@ begin
 end;
 
 {**
+ * calculate the amount of points for a player that is
+ * still in popups and therfore not displayed
+ *}
+function TSingScores.GetPopUpPoints(const Index: integer): integer;
+  var
+    CurPopUp: PScorePopUp;
+begin
+  Result := 0;
+  
+  // only check points if there is a difference between actual
+  // and displayed points
+  if (Players[Index].Score > Players[Index].ScoreDisplayed) then
+  begin
+    CurPopUp := FirstPopUp;
+    while (CurPopUp <> nil) do
+    begin
+      if (CurPopUp.Player = Index) then
+      begin // add points left "in" popup to result
+        Inc(Result, CurPopUp.ScoreDiff - CurPopUp.ScoreGiven);
+      end;
+      CurPopUp := CurPopUp.Next;
+    end;
+  end;
+end;
+
+{**
  * has to be called after positions and players have been added, before first call of draw
  * it gives each player a score position
  *}
@@ -617,6 +689,8 @@ var
   CurPopUp, LastPopUp: PScorePopUp;
 begin
   CurTime := SDL_GetTicks;
+  if (TimePassed <> 0) then
+    TimePassed := CurTime - TimePassed;
 
   if Visible then
   begin
@@ -647,6 +721,7 @@ begin
       // draw players w/ rating bar
       for I := 0 to PlayerCount-1 do
       begin
+        DoRaiseScore(I);
         DrawScore(I);
         DrawRatingBar(I);
       end
@@ -654,10 +729,38 @@ begin
       // draw players w/o rating bar
       for I := 0 to PlayerCount-1 do
       begin
+        DoRaiseScore(I);
         DrawScore(I);
       end;
 
   end; // eo visible
+
+  TimePassed := CurTime;
+end;
+
+{**
+ * raises players score if RaiseScore was called
+ * has to be called after DrawPopUp and before
+ * DrawScore
+ *}
+procedure TSingScores.DoRaiseScore(const Index: integer);
+  var
+    S: integer;
+    Diff: integer;
+  const
+    RaisePerSecond = 500;
+begin
+  S := (Players[Index].Score - Players[Index].ScoreDisplayed) + GetPopUpPoints(Index);
+
+  if (S <> 0) then
+  begin
+    if (S > 0) then
+      Diff := Min(Round(RoundTo((RaisePerSecond * TimePassed) / 1000, 1)), S)
+    else
+      Diff := Max(Round(RoundTo((RaisePerSecond * TimePassed) / 1000, 1)), S);
+
+    Inc(aPlayers[Index].ScoreDisplayed, Diff);
+  end;
 end;
 
 {**
