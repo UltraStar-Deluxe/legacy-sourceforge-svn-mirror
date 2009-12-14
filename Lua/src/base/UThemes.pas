@@ -649,16 +649,17 @@ type
     SelectPlayList: TThemeSelectSlide;
     SelectPlayList2: TThemeSelectSlide;
     SelectRounds: TThemeSelectSlide;
-    SelectTeams: TThemeSelectSlide;
-    SelectPlayers1: TThemeSelectSlide;
-    SelectPlayers2: TThemeSelectSlide;
-    SelectPlayers3: TThemeSelectSlide;
 
     {ButtonNext: TThemeButton;
     ButtonPrev: TThemeButton;}
   end;
 
   TThemePartyPlayer = class(TThemeBasic)
+    SelectTeams: TThemeSelectSlide;
+    SelectPlayers1: TThemeSelectSlide;
+    SelectPlayers2: TThemeSelectSlide;
+    SelectPlayers3: TThemeSelectSlide;
+
     Team1Name: TThemeButton;
     Player1Name: TThemeButton;
     Player2Name: TThemeButton;
@@ -1436,16 +1437,18 @@ begin
       ThemeLoadSelectSlide(PartyOptions.SelectPlayList, 'PartyOptionsSelectPlayList');
       ThemeLoadSelectSlide(PartyOptions.SelectPlayList2, 'PartyOptionsSelectPlayList2');
       ThemeLoadSelectSlide(PartyOptions.SelectRounds, 'PartyOptionsSelectRounds');
-      ThemeLoadSelectSlide(PartyOptions.SelectTeams, 'PartyOptionsSelectTeams');
-      ThemeLoadSelectSlide(PartyOptions.SelectPlayers1, 'PartyOptionsSelectPlayers1');
-      ThemeLoadSelectSlide(PartyOptions.SelectPlayers2, 'PartyOptionsSelectPlayers2');
-      ThemeLoadSelectSlide(PartyOptions.SelectPlayers3, 'PartyOptionsSelectPlayers3');
 
       {ThemeLoadButton (ButtonNext, 'ButtonNext');
       ThemeLoadButton (ButtonPrev, 'ButtonPrev');}
 
       //Party Player
       ThemeLoadBasic(PartyPlayer, 'PartyPlayer');
+
+      ThemeLoadSelectSlide(PartyPlayer.SelectTeams, 'PartyPlayerSelectTeams');
+      ThemeLoadSelectSlide(PartyPlayer.SelectPlayers1, 'PartyPlayerSelectPlayers1');
+      ThemeLoadSelectSlide(PartyPlayer.SelectPlayers2, 'PartyPlayerSelectPlayers2');
+      ThemeLoadSelectSlide(PartyPlayer.SelectPlayers3, 'PartyPlayerSelectPlayers3');
+
       ThemeLoadButton(PartyPlayer.Team1Name, 'PartyPlayerTeam1Name');
       ThemeLoadButton(PartyPlayer.Player1Name, 'PartyPlayerPlayer1Name');
       ThemeLoadButton(PartyPlayer.Player2Name, 'PartyPlayerPlayer2Name');

@@ -49,10 +49,6 @@ type
       SelectPlayList:  cardinal;
       SelectPlayList2: cardinal;
       SelectRounds:    cardinal;
-      SelectTeams:     cardinal;
-      SelectPlayers1:  cardinal;
-      SelectPlayers2:  cardinal;
-      SelectPlayers3:  cardinal;
 
       PlayList:  integer;
       PlayList2: integer;
@@ -188,10 +184,6 @@ begin
           if (Interaction = 1) then
           begin
             SetPlaylist2;
-          end //Change Team3 Players visibility
-          else if (Interaction = 4) then
-          begin
-              SelectsS[7].Visible := (NumTeams = 1);
           end;
         end;
       SDLK_LEFT:
@@ -203,10 +195,6 @@ begin
           if (Interaction = 1) then
           begin
             SetPlaylist2;
-          end //Change Team3 Players visibility
-          else if (Interaction = 4) then
-          begin
-            SelectsS[7].Visible := (NumTeams = 1);
           end;
         end;
     end;
@@ -225,11 +213,7 @@ begin
   SetLength(IPlaylist2, 1);
   IPlaylist2[0] := '---';
 
-  //Clear all Selects
-  NumTeams := 0;
-  NumPlayer1 := 0;
-  NumPlayer2 := 0;
-  NumPlayer3 := 0;
+  //Clear all Selects  
   Rounds := 5;
   PlayList := 0;
   PlayList2 := 0;
@@ -241,10 +225,6 @@ begin
   SelectPlayList  := AddSelectSlide(Theme.PartyOptions.SelectPlayList, PlayList, IPlaylist);
   SelectPlayList2 := AddSelectSlide(Theme.PartyOptions.SelectPlayList2, PlayList2, IPlaylist2);
   SelectRounds    := AddSelectSlide(Theme.PartyOptions.SelectRounds, Rounds, IRounds);
-  SelectTeams     := AddSelectSlide(Theme.PartyOptions.SelectTeams, NumTeams, ITeams);
-  SelectPlayers1  := AddSelectSlide(Theme.PartyOptions.SelectPlayers1, NumPlayer1, IPlayers);
-  SelectPlayers2  := AddSelectSlide(Theme.PartyOptions.SelectPlayers2, NumPlayer2, IPlayers);
-  SelectPlayers3  := AddSelectSlide(Theme.PartyOptions.SelectPlayers3, NumPlayer3, IPlayers);
 
   Interaction := 0;
 
