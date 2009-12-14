@@ -379,24 +379,35 @@ begin
 
   LoadFromTheme(Theme.PartyPlayer);
 
+  Theme.PartyPlayer.SelectTeams.oneItemOnly := true;
+  Theme.PartyPlayer.SelectTeams.showArrows := true;
   SelectTeams     := AddSelectSlide(Theme.PartyPlayer.SelectTeams, CountTeams, ITeams);
 
   Team1Name := AddButton(Theme.PartyPlayer.Team1Name);
+  Theme.PartyPlayer.SelectPlayers1.oneItemOnly := true;
+  Theme.PartyPlayer.SelectPlayers1.showArrows := true;
   SelectPlayers[0]  := AddSelectSlide(Theme.PartyPlayer.SelectPlayers1, CountPlayer[0], IPlayers);
+
   AddButton(Theme.PartyPlayer.Player1Name);
   AddButton(Theme.PartyPlayer.Player2Name);
   AddButton(Theme.PartyPlayer.Player3Name);
   AddButton(Theme.PartyPlayer.Player4Name);
 
   Team2Name := AddButton(Theme.PartyPlayer.Team2Name);
+  Theme.PartyPlayer.SelectPlayers2.oneItemOnly := true;
+  Theme.PartyPlayer.SelectPlayers2.showArrows := true;
   SelectPlayers[1]  := AddSelectSlide(Theme.PartyPlayer.SelectPlayers2, CountPlayer[1], IPlayers);
+
   AddButton(Theme.PartyPlayer.Player5Name);
   AddButton(Theme.PartyPlayer.Player6Name);
   AddButton(Theme.PartyPlayer.Player7Name);
   AddButton(Theme.PartyPlayer.Player8Name);
 
   Team3Name := AddButton(Theme.PartyPlayer.Team3Name);
+  Theme.PartyPlayer.SelectPlayers3.oneItemOnly := true;
+  Theme.PartyPlayer.SelectPlayers3.showArrows := true;
   SelectPlayers[2]  := AddSelectSlide(Theme.PartyPlayer.SelectPlayers3, CountPlayer[2], IPlayers);
+  
   AddButton(Theme.PartyPlayer.Player9Name);
   AddButton(Theme.PartyPlayer.Player10Name);
   AddButton(Theme.PartyPlayer.Player11Name);
@@ -432,7 +443,7 @@ begin
     Button[10].Text[0].Text := Ini.NameTeam[2];
     // Templates for Names Mod end
 
-
+  UpdateInterface;
 end;
 
 procedure TScreenPartyPlayer.SetAnimationProgress(Progress: real);
