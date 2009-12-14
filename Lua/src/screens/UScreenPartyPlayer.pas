@@ -145,7 +145,7 @@ begin
   begin
     Party.AddTeam(Button[I * 5].Text[0].Text);
 
-    for J := 0 to CountPlayer[I]-1 do
+    for J := 0 to CountPlayer[I] do
       Party.AddPlayer(I, Button[I * 5 + 1 + J].Text[0].Text);
   end;
 
