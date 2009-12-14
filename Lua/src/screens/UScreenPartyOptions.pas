@@ -227,9 +227,6 @@ begin
   SelectRounds    := AddSelectSlide(Theme.PartyOptions.SelectRounds, Rounds, IRounds);
 
   Interaction := 0;
-
-  //Hide Team3 Players
-  SelectsS[7].Visible := false;
 end;
 
 procedure TScreenPartyOptions.SetPlaylist2;
