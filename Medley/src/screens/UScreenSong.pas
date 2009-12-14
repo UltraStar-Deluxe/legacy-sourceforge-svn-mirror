@@ -1774,13 +1774,7 @@ begin
   if AudioPlayback.Open(Song.Path.Append(Song.Mp3)) then
   begin
     PreviewOpened := Interaction;
-
-    if Song.Medley.Source <> msNone then
-    begin
-      CurrentSong := Song;
-      AudioPlayback.Position := GetTimeFromBeat(Song.Medley.StartBeat);
-    end else
-      AudioPlayback.Position := AudioPlayback.Length / 4;
+    AudioPlayback.Position := Song.PreviewStart;
 
     // set preview volume
     if (Ini.PreviewFading = 0) then
@@ -1941,7 +1935,19 @@ begin
     PlaylistMedley.Song[0] := Interaction;
     PlaylistMedley.NumMedleySongs := 1;
   end;
-  FadeTo(@ScreenSing);
+
+  //TODO: how about case 2? menu for medley mode?
+  case Ini.OnSongClick of
+    0: FadeTo(@ScreenSing);
+    1: SelectPlayers;
+    2: FadeTo(@ScreenSing);
+    {2: begin
+         if (CatSongs.CatNumShow = -3) then
+           ScreenSongMenu.MenuShow(SM_Playlist)
+         else
+           ScreenSongMenu.MenuShow(SM_Main);
+       end;}
+  end;
 end;
 
 procedure TScreenSong.SkipTo(Target: cardinal);

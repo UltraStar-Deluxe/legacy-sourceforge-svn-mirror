@@ -312,30 +312,37 @@ var
   Files: TPathDynArray;
   Song: TSong;
   Extension: IPath;
-  MedleyFiles:  TPathDynArray;
-  MedleyExtension: IPath;
+  MedleyFiles:  TPathDynArray; //will be deleted soon!
+  MedleyExtension: IPath;      //will be deleted soon!
 begin
   SetLength(Files, 0);
 
   Extension := Path('.txt');
-  MedleyExtension := Path('.txtm');
+  MedleyExtension := Path('.txtm'); //will be deleted soon!
   FindFilesByExtension(Dir, Extension, true, Files);
 
 
   for I := 0 to High(Files) do
   begin
     Song := TSong.Create(Files[I]);
-
+    Song.Medley.Source := msNone; //will be deleted soon!
     if Song.Analyse then
     begin
-      //medley support...   TODO: move it (see USong...)
-      SetLength(MedleyFiles, 0);
-      FindFilesByExtension(Files[I].GetPath, MedleyExtension, true, MedleyFiles);
-
-      if Length(MedleyFiles)>0 then
+      //TODO: delete it to deactivate *.txtm support (see USong...)
+      if Song.Medley.Source = msNone then
       begin
-        Song.ReadMedleyFile(MedleyFiles[0]);
+        SetLength(MedleyFiles, 0);
+        FindFilesByExtension(Files[I].GetPath, MedleyExtension, true, MedleyFiles);
+
+        if Length(MedleyFiles)>0 then
+        begin
+          Song.ReadMedleyFile(MedleyFiles[0]);
+        end;
       end;
+
+      //medley support
+      if Song.Medley.Source = msNone then
+        Song.FindRefrainStart;
 
       SongList.Add(Song);
     end else

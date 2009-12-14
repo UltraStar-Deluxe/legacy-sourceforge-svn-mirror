@@ -94,10 +94,10 @@ type
     Source:       TMedleySource;  //source of the information
     StartBeat:    integer;  //start beat of medley
     EndBeat:      integer;  //end beat of medley
-    FadeIn:       integer;  //start beat of fadein
-    FadeOut:      integer;  //end beat of fadeout
+    FadeIn:       integer;  //start beat of fadein  deprecated!
+    FadeOut:      integer;  //end beat of fadeout   deprecated!
     FadeIn_time:  real;     //FadeIn-Time in seconds
-    FadeOut_time: real;     //FadeIn-Time in seconds
+    FadeOut_time: real;     //FadeOut-Time in seconds
   end;
 
   TSong = class
@@ -155,6 +155,8 @@ type
 
     Encoding:   TEncoding;
 
+    PreviewStart: real; //in seconds
+
     CustomTags: array of TCustomHeaderTag;
 
     Score:      array[0..2] of array of TScore;
@@ -188,7 +190,7 @@ type
     procedure   Clear();
     procedure   FindRefrainStart;
     procedure   SetMedleyMode;
-    function    ReadMedleyFile(MedleyFilePath: IPath): boolean;
+    function    ReadMedleyFile(MedleyFilePath: IPath): boolean; //deprecated!
   end;
 
 implementation
@@ -612,7 +614,6 @@ begin
       Lines[Count].Line[High(Lines[Count].Line)].LastLine := true;
   end;
   Result := true;
-  FindRefrainStart;
 end;
 
 //Load XML Song
@@ -877,6 +878,7 @@ var
   Value: string;
   SepPos: integer; // separator position
   Done: byte;      // bit-vector of mandatory fields
+  MedleyFlags: byte; //bit-vector for medley/preview tags
   EncFile: IPath; // encoded filename
   FullFileName: string;
 
@@ -897,6 +899,7 @@ var
 begin
   Result := true;
   Done   := 0;
+  MedleyFlags := 0;
 
   FullFileName := Path.Append(Filename).ToNative;
 
@@ -1100,6 +1103,27 @@ begin
         self.Encoding := ParseEncoding(Value, DEFAULT_ENCODING);
       end
 
+      // PreviewStart
+      else if (Identifier = 'PREVIEWSTART') then
+      begin
+         self.PreviewStart := StrToFloatI18n( Value );
+         MedleyFlags := MedleyFlags or 1;
+      end
+
+      // MedleyStartBeat
+      else if (Identifier = 'MEDLEYSTARTBEAT') then
+      begin
+        if TryStrtoInt(Value, self.Medley.StartBeat) then
+          MedleyFlags := MedleyFlags or 2;
+      end
+
+      // MedleyEndBeat
+      else if (Identifier = 'MEDLEYENDBEAT') then
+      begin
+        if TryStrtoInt(Value, self.Medley.EndBeat) then
+          MedleyFlags := MedleyFlags or 4;
+      end
+
       // unsupported tag
       else
       begin
@@ -1134,6 +1158,36 @@ begin
       Log.LogError('Title tag missing: ' + FullFileName)
     else //unknown Error
       Log.LogError('File incomplete or not Ultrastar txt (B - '+ inttostr(Done) +'): ' + FullFileName);
+  end else
+  begin //check medley tags
+    if (MedleyFlags and 6)=6 then //MedleyStartBeat and MedleyEndBeat are both set
+    begin
+      if Medley.StartBeat >= Medley.EndBeat then
+        MedleyFlags := MedleyFlags - 6;
+    end;
+
+    CurrentSong := self;
+
+    if ((MedleyFlags and 1)=0) or (self.PreviewStart<=0) then //PreviewStart is not set or <=0
+    begin
+      if (MedleyFlags and 2)=2 then
+        self.PreviewStart := GetTimeFromBeat(CurrentSong.Medley.StartBeat)  //fallback to MedleyStart
+      else
+        self.PreviewStart := 0; //else set it to 0, it will be set in FindRefrainStart
+    end;
+
+    if (MedleyFlags and 6)=6 then
+    begin
+      self.Medley.Source := msTag;
+
+      //calculate fade time
+      self.Medley.FadeIn_time := GetTimeFromBeat(CurrentSong.Medley.StartBeat) -
+        DEFAULT_FADE_IN_TIME;
+
+      self.Medley.FadeOut_time := GetTimeFromBeat(CurrentSong.Medley.FadeOut) -
+        DEFAULT_FADE_OUT_TIME;
+    end else
+      self.Medley.Source := msNone;
   end;
 end;
 
@@ -1385,7 +1439,7 @@ var
   len_lines, len_notes: integer;
   found_end:            boolean;
 begin
-  if Medley.Source = msTag then
+  if Medley.Source = msTag then    //will be deleted soon
     Exit;
 
   num_lines := Length(Lines[0].Line);
@@ -1443,6 +1497,8 @@ begin
     end;
   end;
 
+  len_lines := length(Lines[0].Line);
+
   if (Length(series)>0) and (series[max].len > 3) then
   begin
     Medley.StartBeat := Lines[0].Line[series[max].start].Note[0].Start;
@@ -1464,7 +1520,6 @@ begin
     //ahead an set to a line end (if possible)
     if not found_end then
     begin
-      len_lines := length(Lines[0].Line);
       for I := series[max].start+1 to len_lines-1 do
       begin
         len_notes := length(Lines[0].Line[I].Note);
@@ -1491,13 +1546,21 @@ begin
       Medley.FadeOut := Medley.EndBeat + round(GetMidBeat(DEFAULT_FADE_OUT_TIME));
 
       //calculate fade time
-
       Medley.FadeIn_time := GetTimeFromBeat(Medley.StartBeat) - GetTimeFromBeat(Medley.FadeIn);
       Medley.FadeOut_time := GetTimeFromBeat(Medley.FadeOut) - GetTimeFromBeat(Medley.EndBeat);
-    end else
-      Medley.Source := msNone;
-  end else
-    Medley.Source := msNone;
+    end;
+  end;
+
+  //set PreviewStart if not set
+  if PreviewStart=0 then
+  begin
+    len_notes := length(Lines[0].Line[len_lines-1].Note);
+    if Medley.Source = msCalculated then
+      PreviewStart := GetTimeFromBeat(Medley.StartBeat)
+    else
+      PreviewStart := (GetTimeFromBeat(Lines[0].Line[len_lines-1].Note[len_notes-1].start+
+        Lines[0].Line[len_lines-1].Note[len_notes-1].length))/4;
+  end;
 end;
 
 //sets a song to medley-mod:
@@ -1539,11 +1602,7 @@ begin
 end;
 
 //reads the txtm
-//TODO move this to ReadTXTHeader and implement the MEDLEY-TAGS in txt-file:
-//conversion: START-> MEDLEY_START
-//            END-> MEDLEY_END
-//            FADE_IN -> MEDLEY_FADE_IN
-//            FADE_OUT-> MEDLEY_FADE_OUT
+//whole function is deprecated
 //TODO: write a tool to convert existing txtm
 function TSong.ReadMedleyFile(MedleyFilePath: IPath): boolean;
 var
@@ -1700,11 +1759,14 @@ begin
     end;
 
     //calculate fade time
-
     self.Medley.FadeIn_time := GetTimeFromBeat(CurrentSong.Medley.StartBeat) -
       GetTimeFromBeat(CurrentSong.Medley.FadeIn);
     self.Medley.FadeOut_time := GetTimeFromBeat(CurrentSong.Medley.FadeOut) -
       GetTimeFromBeat(CurrentSong.Medley.EndBeat);
+
+    //set PreviewStart
+    if self.PreviewStart<=0 then //PreviewStart is not set or <=0
+      self.PreviewStart := GetTimeFromBeat(CurrentSong.Medley.StartBeat);  //fallback to MedleyStart
   end;
 end;
 
