@@ -648,7 +648,6 @@ type
     SelectLevel: TThemeSelectSlide;
     SelectPlayList: TThemeSelectSlide;
     SelectPlayList2: TThemeSelectSlide;
-    SelectRounds: TThemeSelectSlide;
 
     {ButtonNext: TThemeButton;
     ButtonPrev: TThemeButton;}
@@ -680,6 +679,11 @@ type
 
     {ButtonNext: TThemeButton;
     ButtonPrev: TThemeButton;}
+  end;
+
+  TThemePartyRounds = class(TThemeBasic)
+    SelectRoundCount: TThemeSelectSlide;
+    SelectRound: array [0..6] of TThemeSelectSlide;
   end;
 
   //Stats Screens
@@ -757,6 +761,7 @@ type
     PartyWin:         TThemePartyWin;
     PartyOptions:     TThemePartyOptions;
     PartyPlayer:      TThemePartyPlayer;
+    PartyRounds:      TThemePartyRounds;
 
     //Stats Screens:
     StatMain:         TThemeStatMain;
@@ -887,6 +892,7 @@ begin
   PartyScore := TThemePartyScore.Create;
   PartyOptions := TThemePartyOptions.Create;
   PartyPlayer := TThemePartyPlayer.Create;
+  PartyRounds := TThemePartyRounds.Create;
 
   //Stats Screens:
   StatMain :=   TThemeStatMain.Create;
@@ -1436,8 +1442,6 @@ begin
       ThemeLoadSelectSlide(PartyOptions.SelectLevel, 'PartyOptionsSelectLevel');
       ThemeLoadSelectSlide(PartyOptions.SelectPlayList, 'PartyOptionsSelectPlayList');
       ThemeLoadSelectSlide(PartyOptions.SelectPlayList2, 'PartyOptionsSelectPlayList2');
-      ThemeLoadSelectSlide(PartyOptions.SelectRounds, 'PartyOptionsSelectRounds');
-
       {ThemeLoadButton (ButtonNext, 'ButtonNext');
       ThemeLoadButton (ButtonPrev, 'ButtonPrev');}
 
@@ -1466,6 +1470,13 @@ begin
       ThemeLoadButton(PartyPlayer.Player10Name, 'PartyPlayerPlayer10Name');
       ThemeLoadButton(PartyPlayer.Player11Name, 'PartyPlayerPlayer11Name');
       ThemeLoadButton(PartyPlayer.Player12Name, 'PartyPlayerPlayer12Name');
+
+      // Party Rounds
+      ThemeLoadBasic(PartyRounds, 'PartyRounds');
+
+      ThemeLoadSelectSlide(PartyRounds.SelectRoundCount, 'PartyRoundsSelectRoundCount');
+      for I := 0 to High(PartyRounds.SelectRound) do
+        ThemeLoadSelectSlide(PartyRounds.SelectRound[I], 'PartyRoundsSelectRound' + IntToStr(I + 1));
 
       {ThemeLoadButton(ButtonNext, 'PartyPlayerButtonNext');
       ThemeLoadButton(ButtonPrev, 'PartyPlayerButtonPrev');}

@@ -44,33 +44,25 @@ uses
 
 type
   TScreenPartyOptions = class(TMenu)
-    public
+    private
       SelectLevel:     cardinal;
       SelectPlayList:  cardinal;
       SelectPlayList2: cardinal;
       SelectRounds:    cardinal;
 
+      IPlaylist: array[0..2] of UTF8String;
+      IPlaylist2: array of UTF8String;
+
       PlayList:  integer;
       PlayList2: integer;
-      Rounds:    integer;
-      NumTeams:  integer;
-      NumPlayer1, NumPlayer2, NumPlayer3: integer;
-
+      
+      procedure SetPlaylist2;
+    public 
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure OnShow; override;
       procedure SetAnimationProgress(Progress: real); override;
-      procedure SetPlaylist2;
   end;
-
-var
-  IPlaylist: array[0..2] of UTF8String;
-  IPlaylist2: array of UTF8String;
-
-  const
-  ITeams:   array[0..1] of UTF8String = ('2', '3');
-  IPlayers: array[0..3] of UTF8String = ('1', '2', '3', '4');
-  IRounds:  array[0..5] of UTF8String = ('2', '3', '4', '5', '6', '7');
 
 implementation
 
@@ -118,26 +110,10 @@ begin
           //Don'T start when Playlist is Selected and there are no Playlists
           if (Playlist = 2) and (Length(PlaylistMan.Playlists) = 0) then
             Exit;
-          {// Don't start when SinglePlayer Teams but only Multiplayer Plugins available
-          OnlyMultiPlayer := true;
-          for I := 0 to High(DLLMan.Plugins) do
-          begin
-            OnlyMultiPlayer := (OnlyMultiPlayer and DLLMan.Plugins[I].TeamModeOnly);
-          end;
-          if (OnlyMultiPlayer) and ((NumPlayer1 = 0) or (NumPlayer2 = 0) or ((NumPlayer3 = 0) and (NumTeams = 1))) then
-          begin
-            ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_PLUGINS'));
-            Exit;
-          end;}
+
           //Save Difficulty
           Ini.Difficulty := SelectsS[SelectLevel].SelectedOption;
           Ini.SaveLevel;
-
-          {//Save Num Teams:
-          PartySession.Teams.NumTeams := NumTeams + 2;
-          PartySession.Teams.Teaminfo[0].NumPlayers := NumPlayer1+1;
-          PartySession.Teams.Teaminfo[1].NumPlayers := NumPlayer2+1;
-          PartySession.Teams.Teaminfo[2].NumPlayers := NumPlayer3+1};
 
           //Save Playlist
           PlaylistMan.Mode := TSingMode( Playlist );
@@ -213,18 +189,24 @@ begin
   SetLength(IPlaylist2, 1);
   IPlaylist2[0] := '---';
 
-  //Clear all Selects  
-  Rounds := 5;
+  //Clear all Selects
   PlayList := 0;
   PlayList2 := 0;
 
   //Load Screen From Theme
   LoadFromTheme(Theme.PartyOptions);
 
+  Theme.PartyOptions.SelectLevel.oneItemOnly := true;
+  Theme.PartyOptions.SelectLevel.showArrows := true;
   SelectLevel     := AddSelectSlide(Theme.PartyOptions.SelectLevel, Ini.Difficulty, Theme.ILevel);
+
+  Theme.PartyOptions.SelectPlayList.oneItemOnly := true;
+  Theme.PartyOptions.SelectPlayList.showArrows := true;
   SelectPlayList  := AddSelectSlide(Theme.PartyOptions.SelectPlayList, PlayList, IPlaylist);
+
+  Theme.PartyOptions.SelectPlayList2.oneItemOnly := true;
+  Theme.PartyOptions.SelectPlayList2.showArrows := true;
   SelectPlayList2 := AddSelectSlide(Theme.PartyOptions.SelectPlayList2, PlayList2, IPlaylist2);
-  SelectRounds    := AddSelectSlide(Theme.PartyOptions.SelectRounds, Rounds, IRounds);
 
   Interaction := 0;
 end;

@@ -151,32 +151,12 @@ begin
 
   if (Party.ModesAvailable) then
   begin //mode for current playersetup available
-    // to - do : add round select screen
-    // atm just add random rounds to the rounds array
-    SetLength(Rounds, ScreenPartyOptions.Rounds + 2);
-
-    for I := 0 to High(Rounds) do
-      Rounds[I] := Party_Round_Random;
-
-    // start party game
-    if (Party.StartGame(Rounds)) then
-    begin
-      FadeTo(@ScreenPartyNewRound, SoundLib.Start);
-    end
-    else
-    begin
-      //error starting party game
-      ScreenPopupError.ShowPopup(Language.Translate('ERROR_CAN_NOT_START_PARTY'));
-
-      Party.Clear;
-    end;
-
+    FadeTo(@ScreenPartyRounds, SoundLib.Start);
   end
   else
   begin
     // no mode available for current player setup
     ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_MODES_FOR_CURRENT_SETUP'));
-
     Party.Clear;
   end;
 end;
@@ -442,6 +422,8 @@ begin
     Button[5].Text[0].Text := Ini.NameTeam[1];
     Button[10].Text[0].Text := Ini.NameTeam[2];
     // Templates for Names Mod end
+
+  Party.Clear;
 
   UpdateInterface;
 end;

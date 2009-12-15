@@ -337,6 +337,7 @@ uses
   UScreenPartyScore       in 'screens\UScreenPartyScore.pas',
   UScreenPartyPlayer      in 'screens\UScreenPartyPlayer.pas',
   UScreenPartyOptions     in 'screens\UScreenPartyOptions.pas',
+  UScreenPartyRounds      in 'screens\UScreenPartyRounds.pas',
   UScreenPartyWin         in 'screens\UScreenPartyWin.pas',
 
 

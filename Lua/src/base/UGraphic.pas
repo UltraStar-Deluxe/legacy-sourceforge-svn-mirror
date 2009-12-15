@@ -77,6 +77,7 @@ uses
   UScreenPartyOptions,
   UScreenPartyWin,
   UScreenPartyPlayer,
+  UScreenPartyRounds,
   {Stats Screens}
   UScreenStatMain,
   UScreenStatDetail,
@@ -139,6 +140,7 @@ var
   ScreenPartyWin:         TScreenPartyWin;
   ScreenPartyOptions:     TScreenPartyOptions;
   ScreenPartyPlayer:      TScreenPartyPlayer;
+  ScreenPartyRounds:      TScreenPartyRounds;
 
   //StatsScreens
   ScreenStatMain:         TScreenStatMain;
@@ -769,6 +771,8 @@ begin
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen PartyOptions', 3); Log.BenchmarkStart(3);
   ScreenPartyPlayer :=      TScreenPartyPlayer.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen PartyPlayer', 3); Log.BenchmarkStart(3);
+  ScreenPartyRounds :=      TScreenPartyRounds.Create;
+  Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen PartyRounds', 3); Log.BenchmarkStart(3);
   ScreenStatMain :=         TScreenStatMain.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Stat Main', 3); Log.BenchmarkStart(3);
   ScreenStatDetail :=       TScreenStatDetail.Create;
@@ -816,6 +820,7 @@ begin
   ScreenPartyWin.Destroy;
   ScreenPartyOptions.Destroy;
   ScreenPartyPlayer.Destroy;
+  ScreenPartyRounds.Destroy;
   ScreenStatMain.Destroy;
   ScreenStatDetail.Destroy;
 end;

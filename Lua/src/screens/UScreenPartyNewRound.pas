@@ -221,7 +221,7 @@ begin
       Text[TextWinner[I]].Visible := True;
 
       // update texts:
-      Text[TextRound[I]].Text := Language.Translate('PLUGIN_' + uppercase(Party.Modes[Party.Rounds[I].Mode].Name) + '_NAME');
+      Text[TextRound[I]].Text := Language.Translate('MODE_' + uppercase(Party.Modes[Party.Rounds[I].Mode].Name) + '_NAME');
       Text[TextWinner[I]].Text := Party.GetWinnerString(I);
     end
     else
@@ -298,7 +298,7 @@ begin
   end;  
 
   //nextRound Texts
-  Text[TextNextRound].Text := Language.Translate('PLUGIN_' + uppercase(Party.Modes[Party.Rounds[Party.CurrentRound].Mode].Name) + '_DESC');
+  Text[TextNextRound].Text := Language.Translate('MODE_' + uppercase(Party.Modes[Party.Rounds[Party.CurrentRound].Mode].Name) + '_DESC');
   Text[TextNextRoundNo].Text := InttoStr(Party.CurrentRound + 1);
   if (Length(Party.Teams) >= 1) then
   begin

@@ -48,7 +48,13 @@ type
     Team: Integer; //< id of team
     Rank: Integer; //< 1 to Length(Teams) e.g. 1 is for placed first
   end;
-  AParty_TeamRanking = Array of TParty_TeamRanking; //< returned by TPartyGame.GetTeamRanking
+  AParty_TeamRanking = array of TParty_TeamRanking; //< returned by TPartyGame.GetTeamRanking
+
+  TParty_RoundList = record
+    Index: integer;
+    Name: UTF8String;
+  end;
+  AParty_ModeList = array of TParty_RoundList;
 
   { record used by TPartyGame to store round specific data }
   TParty_Round = record
@@ -113,6 +119,9 @@ type
     function GetRandomMode: integer;
     function GetRandomPlayer(Team: integer): integer;
 
+    { returns true if a mode is playable with current playerconfig }
+    function ModePlayable(I: integer): boolean;
+
     function CallLua(Parent: Integer; Func: String):Boolean;
 
     procedure SetRankingByScore;
@@ -139,6 +148,10 @@ type
       up. if there are no teams set up it returns
       if there are any party modes available }
     function ModesAvailable: Boolean;
+
+    { returns an array with the name of all available modes (that
+      are playable with current player configuration }
+    function GetAvailableModes: AParty_ModeList;
 
     { clears all party specific data previously stored }
     procedure Clear;
@@ -289,14 +302,17 @@ begin
   // search for the plugins less played yet
   for I := 0 to high(Modes) do
   begin
-    if (TimesPlayed[I] < lowestTP) then
+    if (ModePlayable(I)) then
     begin
-      lowestTP := TimesPlayed[I];
-      NumPwithLTP := 1;
-    end
-    else if (TimesPlayed[I] = lowestTP) then
-    begin
-      Inc(NumPwithLTP);
+      if (TimesPlayed[I] < lowestTP) then
+      begin
+        lowestTP := TimesPlayed[I];
+        NumPwithLTP := 1;
+      end
+      else if (TimesPlayed[I] = lowestTP) then
+      begin
+        Inc(NumPwithLTP);
+      end;
     end;
   end;
 
@@ -306,7 +322,7 @@ begin
   // select the random mode from the modes with less timesplayed
   for I := 0 to high(Modes) do
   begin
-    if (TimesPlayed[I] = lowestTP) { and (((Modis[I].Info.LoadingSettings and MLS_TeamOnly) <> 0) = TeamMode) }then
+    if (TimesPlayed[I] = lowestTP) and (ModePlayable(I)) then
     begin
       //Plugin found
       if (R = 0) then
@@ -436,14 +452,35 @@ begin
   end;
 end;
 
+{ returns true if a mode is playable with current playerconfig }
+function TPartyGame.ModePlayable(I: integer): boolean;
+  var
+    J: integer;
+begin
+  if (Length(Teams) = 0) then
+    Result := true
+  else
+  begin
+    if (Modes[I].TeamCount and (1 shl (Length(Teams) - 1)) <> 0) then
+    begin
+      Result := true;
+
+      for J := 0 to High(Teams) do
+        Result := Result and (Modes[I].PlayerCount and (1 shl (Length(Teams[J].Players) - 1)) <> 0);
+    end
+    else
+      Result := false;
+  end;
+end;
+
 { returns true if modes are available for
   players and teams that are currently set
   up. if there are no teams set up it returns
   if there are any party modes available }
 function TPartyGame.ModesAvailable: Boolean;
   var
-    I, J: Integer;
-    CountTeams: Integer;
+    I: integer;
+    CountTeams: integer;
 begin
   CountTeams := Length(Teams);
   if CountTeams = 0 then
@@ -452,19 +489,37 @@ begin
   end
   else
   begin
-    Result := False;
+    Result := false;
     for I := 0 to High(Modes) do
-      if (Modes[I].TeamCount and (1 shl (CountTeams - 1)) <> 0) then
-      begin
-        Result := True;
+    begin
+      Result := ModePlayable(I);
 
-        for J := 0 to High(Teams) do
-          Result := Result and (Modes[I].PlayerCount and (1 shl (Length(Teams[J].Players) - 1)) <> 0);
-
-        if Result then
-          Exit;
-      end;
+      if Result then
+        Exit;
+    end;
   end;
+end;       
+
+{ returns an array with the name of all available modes (that
+  are playable with current player configuration }
+function TPartyGame.GetAvailableModes: AParty_ModeList;
+  var
+    I: integer;
+    Len: integer;
+begin
+  Len := 0;
+  SetLength(Result, Len + 1);
+  Result[Len].Index := Party_Round_Random;
+  Result[Len].Name := Language.Translate('MODE_RANDOM_NAME');
+
+  for I := 0 to High(Modes) do
+    if (ModePlayable(I)) then
+    begin
+      Inc(Len);
+      SetLength(Result, Len + 1);
+      Result[Len].Index := I;
+      Result[Len].Name := Language.Translate('MODE_' + Uppercase(Modes[I].Name) + '_NAME');
+    end;
 end;
 
 { adds a team to the team array, returning its id
