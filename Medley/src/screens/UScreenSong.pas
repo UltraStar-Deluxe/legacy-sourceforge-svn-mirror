@@ -72,6 +72,10 @@ type
       //Video Icon Mod
       VideoIcon: cardinal;
 
+      //Medley Icons
+      MedleyIcon: cardinal;
+      CalcMedleyIcon: cardinal;
+
       TextCat:   integer;
       StaticCat: integer;
 
@@ -883,6 +887,10 @@ begin
   //Show Video Icon Mod
   VideoIcon := AddStatic(Theme.Song.VideoIcon);
 
+  //Meldey Icons
+  MedleyIcon := AddStatic(Theme.Song.MedleyIcon);
+  CalcMedleyIcon := AddStatic(Theme.Song.CalculatedMedleyIcon);
+
   //Party Mode
   StaticTeam1Joker1 := AddStatic(Theme.Song.StaticTeam1Joker1);
   StaticTeam1Joker2 := AddStatic(Theme.Song.StaticTeam1Joker2);
@@ -1022,16 +1030,13 @@ begin
     // Set visibility of video icon
     Static[VideoIcon].Visible := CatSongs.Song[Interaction].Video.IsSet;
 
+    // Set visibility of medley icons
+    Static[MedleyIcon].Visible := (CatSongs.Song[Interaction].Medley.Source = msTag);
+    Static[CalcMedleyIcon].Visible := (CatSongs.Song[Interaction].Medley.Source = msCalculated);
+
     // Set texts
     Text[TextArtist].Text := CatSongs.Song[Interaction].Artist;
     Text[TextTitle].Text  :=  CatSongs.Song[Interaction].Title;
-
-    //medley mod
-    if CatSongs.Song[Interaction].Medley.Source = msTag then
-      Text[TextTitle].Text := Text[TextTitle].Text + ' [M]';
-
-    if CatSongs.Song[Interaction].Medley.Source = msCalculated then
-      Text[TextTitle].Text := Text[TextTitle].Text + ' [C]';
 
     if (Ini.TabsAtStartup = 1) and (CatSongs.CatNumShow = -1) then
     begin

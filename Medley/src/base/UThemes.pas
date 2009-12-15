@@ -259,6 +259,10 @@ type
     //Video Icon Mod
     VideoIcon:        TThemeStatic;
 
+    //Medley Icons
+    MedleyIcon:       TThemeStatic;
+    CalculatedMedleyIcon:       TThemeStatic;
+
    //Show Cat in TopLeft Mod
     TextCat:          TThemeText;
     StaticCat:        TThemeStatic;
@@ -998,6 +1002,10 @@ begin
 
       //Video Icon Mod
       ThemeLoadStatic(Song.VideoIcon, 'SongVideoIcon');
+
+      //Medley Icons
+      ThemeLoadStatic(Song.MedleyIcon, 'SongMedleyIcon');
+      ThemeLoadStatic(Song.CalculatedMedleyIcon, 'SongCalculatedMedleyIcon');
 
       //Show Cat in TopLeft Mod
       ThemeLoadStatic(Song.StaticCat, 'SongStaticCat');
