@@ -1181,11 +1181,9 @@ begin
       self.Medley.Source := msTag;
 
       //calculate fade time
-      self.Medley.FadeIn_time := GetTimeFromBeat(CurrentSong.Medley.StartBeat) -
-        DEFAULT_FADE_IN_TIME;
+      self.Medley.FadeIn_time := DEFAULT_FADE_IN_TIME;
 
-      self.Medley.FadeOut_time := GetTimeFromBeat(CurrentSong.Medley.FadeOut) -
-        DEFAULT_FADE_OUT_TIME;
+      self.Medley.FadeOut_time := DEFAULT_FADE_OUT_TIME;
     end else
       self.Medley.Source := msNone;
   end;
