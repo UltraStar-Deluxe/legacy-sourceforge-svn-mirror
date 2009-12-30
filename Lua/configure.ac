@@ -166,6 +166,9 @@ PKG_HAVE([freetype], [freetype2], yes)
 # find sqlite3
 PKG_HAVE([sqlite3], [sqlite3], yes)
 
+# find lua 5.1
+PKG_HAVE([lua], [lua5.1], yes)
+
 # find FFMpeg
 # Note: do not use the min/max version parameters with ffmpeg
 # otherwise it might fail in ubuntu due to a wrong version number 
