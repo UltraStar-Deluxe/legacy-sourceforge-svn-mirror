@@ -167,7 +167,12 @@ PKG_HAVE([freetype], [freetype2], yes)
 PKG_HAVE([sqlite3], [sqlite3], yes)
 
 # find lua 5.1
-PKG_HAVE([lua], [lua5.1], yes)
+# (K)Ubuntu uses lua5.1.pc, Mac OS X and other 
+# linux distributions use lua.pc
+PKG_HAVE([lua], [lua5.1], no)
+if [[ x$lua_HAVE = xno ]]; then
+    PKG_HAVE([lua], [lua >= 5.1], yes)
+fi
 
 # find FFMpeg
 # Note: do not use the min/max version parameters with ffmpeg
