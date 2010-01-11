@@ -28,12 +28,11 @@
  * Conversion of libavformat/avformat.h
  * Min. version: 50.5.0 , revision 6577,  Sat Oct 7 15:30:46 2006 UTC
  * Max. version: 52.25.0, revision 16986, Wed Feb 4 05:56:39 2009 UTC 
- *)
-{
+ *
  * update to
- * Max. version: 52.44.0, Tue Dec 29 0:40:00 2009 CET 
+ * Max. version: 52.46.0, Mo Jan 4 2010 0:40:00 CET 
  * MiSchi
-}
+ *)
 
 unit avformat;
 
@@ -65,7 +64,7 @@ uses
 const
   (* Max. supported version by this header *)
   LIBAVFORMAT_MAX_VERSION_MAJOR   = 52;
-  LIBAVFORMAT_MAX_VERSION_MINOR   = 44;
+  LIBAVFORMAT_MAX_VERSION_MINOR   = 46;
   LIBAVFORMAT_MAX_VERSION_RELEASE = 0;
   LIBAVFORMAT_MAX_VERSION = (LIBAVFORMAT_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                             (LIBAVFORMAT_MAX_VERSION_MINOR * VERSION_MINOR) +
@@ -192,7 +191,7 @@ procedure av_metadata_free(var m: PAVMetadata);
 
 (* packet functions *)
 
-{$IF LIBAVCODEC_VERSION < 52032000} // < 52.32.0
+{$IF LIBAVFORMAT_VERSION < 52032000} // < 52.32.0
 type
   PAVPacket = ^TAVPacket;
   TAVPacket = record
@@ -290,7 +289,7 @@ function av_new_packet(var pkt: TAVPacket; size: cint): cint;
 function av_get_packet(s: PByteIOContext; var pkt: TAVPacket; size: cint): cint;
   cdecl; external av__format;
 
-{$IF LIBAVCODEC_VERSION < 52032000} // < 52.32.0
+{$IF LIBAVFORMAT_VERSION < 52032000} // < 52.32.0
 (**
  * @warning This is a hack - the packet memory allocation stuff is broken. The
  * packet is allocated if it was not really allocated.
@@ -1088,15 +1087,39 @@ procedure av_register_input_format(format: PAVInputFormat);
 procedure av_register_output_format(format: PAVOutputFormat);
   cdecl; external av__format;
 
+{$IF LIBAVFORMAT_VERSION_MAJOR < 53} // < 53
 function guess_stream_format(short_name: PAnsiChar;
                              filename: PAnsiChar;
                              mime_type: PAnsiChar): PAVOutputFormat;
-  cdecl; external av__format;
+  cdecl; external av__format; deprecated;
+{$IFEND}
 
+(**
+ * Returns the output format in the list of registered output formats
+ * which best matches the provided parameters, or returns NULL if
+ * there is no match.
+ *
+ * @param short_name if non-NULL checks if short_name matches with the
+ * names of the registered formats
+ * @param filename if non-NULL checks if filename terminates with the
+ * extensions of the registered formats
+ * @param mime_type if non-NULL checks if mime_type matches with the
+ * MIME type of the registered formats
+ *)
+(**
+ * @deprecated Use av_guess_format() instead.
+ *)
 function guess_format(short_name: PAnsiChar;
                       filename: PAnsiChar;
                       mime_type: PAnsiChar): PAVOutputFormat;
   cdecl; external av__format;
+{$IF LIBAVFORMAT_VERSION >= 52045000} // >= 52.45.0
+                              deprecated;
+function av_guess_format(short_name: PAnsiChar;
+                         filename: PAnsiChar;
+                         mime_type: PAnsiChar): PAVOutputFormat;
+  cdecl; external av__format;
+{$IFEND}
 
 (**
  * Guesses the codec ID based upon muxer and filename.
@@ -1762,7 +1785,7 @@ begin
 end;
 {$IFEND}
 
-{$IF LIBAVCODEC_VERSION < 52032000} // < 52.32.0
+{$IF LIBAVFORMAT_VERSION < 52032000} // < 52.32.0
 procedure av_free_packet(pkt: PAVPacket);
 begin
   if ((pkt <> nil) and (@pkt^.destruct <> nil)) then

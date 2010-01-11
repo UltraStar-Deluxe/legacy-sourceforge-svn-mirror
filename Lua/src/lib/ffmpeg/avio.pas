@@ -33,13 +33,11 @@
  *
  * @warning This file has to be considered an internal but installed
  * header, so it should not be directly included in your projects.
- *)
-
-{
+ *
  * update to
- * Max. avformat version: 52.44.0, Tue Dec 29 0:40:00 2009 CET 
+ * Max. avformat version: 52.46.0, Mon Jan 4 2010 0:40:00 CET 
  * MiSchi
-}
+ *)
 
 unit avio;
 
@@ -114,9 +112,6 @@ type
     name: PAnsiChar;
     url_open: function (h: PURLContext; filename: {const} PAnsiChar; flags: cint): cint; cdecl;
     url_read: function (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
-    {$IF LIBAVFORMAT_VERSION >= 52034001} // 52.34.1
-    url_read_complete: function (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
-    {$IFEND}
     url_write: function (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
     url_seek: function (h: PURLContext; pos: cint64; whence: cint): cint64; cdecl;
     url_close: function (h: PURLContext): cint; cdecl;
@@ -131,6 +126,9 @@ type
     {$IF LIBAVFORMAT_VERSION >= 52001000} // 52.1.0
     url_read_seek: function (h: PURLContext; stream_index: cint;
                              timestamp: cint64; flags: cint): cint64; cdecl;
+    {$IFEND}
+    {$IF LIBAVFORMAT_VERSION >= 52031000} // 52.31.0
+    url_get_file_handle: function (h: PURLContext): cint; cdecl;
     {$IFEND}
   end;
 
@@ -184,6 +182,10 @@ function url_open(h: PPointer; filename: {const} PAnsiChar; flags: cint): cint;
   cdecl; external av__format;
 function url_read (h: PURLContext; buf: PByteArray; size: cint): cint;
   cdecl; external av__format;
+{$IF LIBAVFORMAT_VERSION >= 52034000} // 52.34.0
+function url_read_complete (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
+  cdecl; external av__format;
+{$IFEND}
 function url_write (h: PURLContext; buf: PByteArray; size: cint): cint;
   cdecl; external av__format;
 function url_seek (h: PURLContext; pos: cint64; whence: cint): cint64;
