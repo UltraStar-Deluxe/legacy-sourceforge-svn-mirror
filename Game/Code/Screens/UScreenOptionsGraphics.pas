@@ -87,7 +87,7 @@ begin
   AddSelect(Theme.OptionsGraphics.SelectFullscreen, Ini.Fullscreen, IFullscreen);
   AddSelect(Theme.OptionsGraphics.SelectDepth, Ini.Depth, IDepth);
   AddSelect(Theme.OptionsGraphics.SelectOscilloscope, Ini.Oscilloscope, IOscilloscope);
-  AddSelect(Theme.OptionsGraphics.SelectMovieSize, Ini.MovieSize, IMovieSize);
+  AddSelectSlide(Theme.OptionsGraphics.SelectSlideMovieSize, Ini.MovieSize, IMovieSize);
   AddSelect(Theme.OptionsGraphics.SelectMoviePreview, Ini.MoviePreview, IMoviePreview);
 
 

@@ -2297,7 +2297,7 @@ end;
 
 procedure TScreenSong.StartVideoPreview;
 begin
-  if (Ini.PreviewVolume <> 0) and (Ini.MovieSize < 2) then
+  if (Ini.PreviewVolume <> 0) and (Ini.MovieSize < 3) then
   begin
     if (NOT CatSongs.Song[Interaction].Main) AND (CatSongs.VisibleSongs > 0) then
     begin

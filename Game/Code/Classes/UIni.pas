@@ -131,7 +131,7 @@ const
 
   ISpectrum:      array[0..1] of string = ('Off', 'On');
   ISpectrograph:  array[0..1] of string = ('Off', 'On');
-  IMovieSize:     array[0..2] of string = ('Half', 'Full', 'Off');
+  IMovieSize:     array[0..3] of string = ('Half', 'Full', 'Preview only', 'Off');
   IMoviePreview:  array[0..1] of string = ('Off', 'On');
   IAspectCorrect:    array[0..2] of String  = ('Stretch', 'Crop', 'LetterBox');
 

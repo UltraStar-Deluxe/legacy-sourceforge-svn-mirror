@@ -464,7 +464,7 @@ type
     SelectDepth:            TThemeSelect;
     SelectOscilloscope:     TThemeSelect;
     SelectLineBonus:        TThemeSelect;
-    SelectMovieSize:        TThemeSelect;
+    SelectSlideMovieSize:   TThemeSelectSlide;
     SelectMoviePreview:     TThemeSelect;
     ButtonExit:             TThemeButton;
   end;
@@ -1348,7 +1348,7 @@ begin
       ThemeLoadSelect(OptionsGraphics.SelectDepth, 'OptionsGraphicsSelectDepth');
       ThemeLoadSelect(OptionsGraphics.SelectOscilloscope, 'OptionsGraphicsSelectOscilloscope');
       ThemeLoadSelect(OptionsGraphics.SelectLineBonus, 'OptionsGraphicsSelectLineBonus');
-      ThemeLoadSelect(OptionsGraphics.SelectMovieSize, 'OptionsGraphicsSelectMovieSize');
+      ThemeLoadSelectSlide(OptionsGraphics.SelectSlideMovieSize, 'OptionsGraphicsSelectSlideMovieSize');
       ThemeLoadSelect(OptionsGraphics.SelectMoviePreview, 'OptionsGraphicsSelectMoviePreview');
       ThemeLoadButton(OptionsGraphics.ButtonExit, 'OptionsGraphicsButtonExit');
 
