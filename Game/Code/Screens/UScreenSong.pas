@@ -422,7 +422,7 @@ begin
             (length(getVisibleMedleyArr(msCalculated))>0) then
             StartMedley(5, msCalculated)
           else if (Mode = smNormal) and (Length(getVisibleMedleyArr(msTag)) > 0)
-            and MakeMedley then
+            and not MakeMedley then
             StartMedley(5, msTag);
         end;
 
@@ -882,7 +882,12 @@ begin
           begin
             //Joker spielen
             DoJoker(0, SDL_ModState);
-          end;
+          end else if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(10, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(10, msTag);
         end;
 
       SDLK_2:
@@ -891,7 +896,12 @@ begin
           begin
             //Joker spielen
             DoJoker(1, SDL_ModState);
-          end;
+          end else if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(20, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(20, msTag);
         end;
 
       SDLK_3:
@@ -900,7 +910,83 @@ begin
           begin
             //Joker spielen
             DoJoker(2, SDL_ModState);
-          end;
+          end else if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(30, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(30, msTag);
+        end;
+
+      SDLK_4:
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(40, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(40, msTag);
+        end;
+
+      SDLK_5:
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(50, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(50, msTag);
+        end;
+
+      SDLK_6:
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(60, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(60, msTag);
+        end;
+
+      SDLK_7:
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(70, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(70, msTag);
+        end;
+
+      SDLK_8:
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(80, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(80, msTag);
+        end;
+
+      SDLK_9:
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(90, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(90, msTag);
+        end;
+
+      //stress test :>
+      SDLK_0:
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and not MakeMedley and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(10000, msCalculated)
+          else if (Mode = smNormal) and (SDL_ModState = KMOD_LCTRL) and (Length(getVisibleMedleyArr(msTag)) > 0)
+            and not MakeMedley then
+            StartMedley(10000, msTag);
         end;
     end;
   end;
