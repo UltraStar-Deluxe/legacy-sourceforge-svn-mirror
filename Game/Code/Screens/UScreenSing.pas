@@ -102,6 +102,7 @@ type
       //OnSentenceChange (for Golden Notes)
       procedure onSentenceChange(S: Cardinal);
 
+      procedure SongError();
       procedure LoadNextSong;
       procedure UpdateMedleyStats(medley_end: boolean);
       procedure DrawMedleyCountdown();
@@ -723,10 +724,63 @@ begin
   Log.LogStatus('End', 'onShow');
 end;
 
+procedure TScreenSing.SongError;
+var
+  I, K, len:  integer;
+
+begin
+  if (not ScreenSong.PartyMedley) and (ScreenSong.Mode <> smMedley) then
+  begin
+    //Error Loading Song -> Go back to Song Screen and Show some Error Message
+
+    FadeTo(@ScreenSong);
+    ScreenSong.SongIndex := -1;
+    ScreenSong.onShow;
+    if (ScreenSong.Mode = smParty) then
+      ScreenSong.SelectRandomSong;
+
+    ScreenPopupError.ShowPopup (Language.Translate('ERROR_CORRUPT_SONG'));
+    Exit;
+  end else if (ScreenSong.PartyMedley or (ScreenSong.Mode = smMedley))  then
+  begin
+    if (PlaylistMedley.CurrentMedleySong<PlaylistMedley.NumMedleySongs) then
+    begin
+      //Error Loading Song in Medley Mode -> skip actual Medley Song an go on if possible
+      len := Length(PlaylistMedley.Song);
+      for I := PlaylistMedley.CurrentMedleySong-1 to len - 1 do
+        PlaylistMedley.Song[I] := PlaylistMedley.Song[I+1];
+
+      SetLength(PlaylistMedley.Song, Len-1);
+      Dec(PlaylistMedley.NumMedleySongs);
+      LoadNextSong;
+      Exit;
+    end else
+    begin
+      if (PlaylistMedley.NumMedleySongs=1) then
+      begin
+        //Error Loading Song in Medley Mode -> Go back to Song Screen and Show some Error Message
+        FadeTo(@ScreenSong);
+        ScreenSong.SongIndex := -1;
+        ScreenSong.onShow;
+        ScreenPopupError.ShowPopup (Language.Translate('ERROR_CORRUPT_SONG'));
+        Exit;
+      end else
+      begin
+        //Error Loading Song in Medley Mode -> Finish actual round
+        len := Length(PlaylistMedley.Song);
+        SetLength(PlaylistMedley.Song, len-1);
+        Dec(PlaylistMedley.NumMedleySongs);
+        Finish;
+        Exit;
+      end;
+    end;
+  end;
+end;
+
 procedure TScreenSing.LoadNextSong;
 var
-  P:        integer;
-  numNotes: integer;
+  P:          integer;
+  numNotes:   integer;
 begin
   // load notes
   ResetSingTemp;
@@ -741,23 +795,15 @@ begin
   try
     if not LoadSong(CatSongs.Song[CatSongs.Selected].Path + CatSongs.Song[CatSongs.Selected].FileName, SONG_LOAD_COMPLETE) then
     begin
-      //Error Loading Song -> Go back to Song Screen and Show some Error Message
-      FadeTo(@ScreenSong);
-      //Select New Song in Party Mode
-      if ScreenSong.Mode = smParty then
-        ScreenSong.SelectRandomSong;
-      ScreenPopupError.ShowPopup (Language.Translate('ERROR_CORRUPT_SONG'));
+      SongError;
       Exit;
     end;
+
   except
-    //Error Loading Song -> Go back to Song Screen and Show some Error Message
-    FadeTo(@ScreenSong);
-    //Select New Song in Party Mode
-      if ScreenSong.Mode = smParty then
-        ScreenSong.SelectRandomSong;
-    ScreenPopupError.ShowPopup (Language.Translate('ERROR_CORRUPT_SONG'));
+    SongError;
     Exit;
   end;
+  
   AktSong.Path := CatSongs.Song[CatSongs.Selected].Path;
   //  AktSong.GAP := AktSong.GAP + 40 {4096 = 100ms for buffer} + 20 {microphone} + 60000 / AktSong.BPM[0].BPM / 2; // temporary until UMain will be fixed
 

@@ -18,8 +18,8 @@ type
 
   TScreenSong = class(TMenu)
     private
-      SkippedSongs: array of integer;  //for M2-MOD
-      ChooseableSongs: integer;        //for M2-MOD
+      SkippedSongs: array of integer;
+      ChooseableSongs: integer;
 
     public
       TextArtist:   integer;
@@ -1814,9 +1814,6 @@ begin
         PlaylistMan.SetPlayList(PlaylistMan.CurPlayList);
       end;
 
-      if (CatSongs.VisibleSongs - PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow))=0 then
-        PartySessionM2.ResetSongsPlayed(CatSongs.CatNumShow);
-
       RandomSongChallenge;
       //SkipTo(Random(CatSongs.VisibleSongs - PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow)));
 
@@ -1855,7 +1852,6 @@ begin
 
     SongIndex := -1;
     SetScroll;
-    UpdateLCD;
   end;
 
   SetJoker;
@@ -1867,6 +1863,9 @@ var
   VisArr: array of integer;
   I:      integer;
 begin
+  if (CatSongs.VisibleSongs - PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow))=0 then
+    PartySessionM2.ResetSongsPlayed(CatSongs.CatNumShow);
+
   SetLength(VisArr, 0);
   for I := 0 to Length(CatSongs.Song) - 1 do
   begin
@@ -1910,7 +1909,8 @@ begin
     Music.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3);
 
   //When hide then Stop Music (For Party Mode Popup on Exit)
-  if (Display.NextScreen <> @ScreenSing) and (Display.NextScreen <> @ScreenSingModi) and (Music <> nil) then
+  if (Display.NextScreen <> @ScreenSong) and (Display.NextScreen <> @ScreenSing) and
+    (Display.NextScreen <> @ScreenSingModi) and (Music <> nil) then
     Music.Stop;
 end;
 
