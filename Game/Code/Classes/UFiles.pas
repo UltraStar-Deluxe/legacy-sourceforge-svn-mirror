@@ -751,7 +751,7 @@ begin
     if TempC = '-' then begin
       if isNewSentence then
       begin
-        Log.LogError('Double sentence break in file: "' + Name + '" (LoadSong)');
+        Log.LogError('Double sentence break in file: "' + Name + '"; Line '+IntToStr(FileLineNo)+' (LoadSong)');
         Result := False;
         Exit;
       end;
