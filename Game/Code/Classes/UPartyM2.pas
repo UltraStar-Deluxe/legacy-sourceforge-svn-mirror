@@ -461,7 +461,8 @@ begin
     SetLength (Rounds, 0);
 
   //Reset SongsPlayed-Array
-  SetLength (PartySessionM2.SongsPlayed, 0);
+  SetLength(PartySessionM2.SongsPlayed, 0);
+  SetLength(ScreenSong.MedleyPlayed, 0);
 end;
 
 //----------

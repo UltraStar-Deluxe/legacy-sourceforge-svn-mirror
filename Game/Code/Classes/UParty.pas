@@ -167,6 +167,10 @@ begin
     Teams.Teaminfo[I].Joker := Round(NumRounds*0.7)+NumMedleys;
     Teams.Teaminfo[I].Score := 0;
   end;
+
+  //Reset Played-array
+  SetLength(ScreenSong.MedleyPlayed, 0);
+  SetLength(ScreenSong.PartyPlayed, 0);
 end;
 
 //----------

@@ -611,6 +611,8 @@ begin
               //Start Singing
               if not ScreenSong.PartyMedley then
               begin
+                SetLength(ScreenSong.PartyPlayed, Length(ScreenSong.PartyPlayed)+1);
+                ScreenSong.PartyPlayed[Length(ScreenSong.PartyPlayed)-1] := ScreenSong.Interaction;
                 ScreenSong.StartSong;
                 Visible := False;
               end else
