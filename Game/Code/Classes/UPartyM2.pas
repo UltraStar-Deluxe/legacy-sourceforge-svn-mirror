@@ -476,71 +476,39 @@ Type
     Nr:     integer;
   end;
 
-  function getTimesPlayed(order: TOrder): integer;
-  var
-    I: integer;
-  begin
-    for I := 0 to Length(Plugins) - 1 do
-    begin
-      if (order.ID = Plugins[I].ID) and (order.medley = Plugins[I].medley) then
-      begin
-        Result:=Plugins[I].TimesPlayed;
-        break;
-      end;
-    end;
-  end;
-
 var
-  I, J, K, num: Integer;
+  I, J, K:      Integer;
   plugin_order: array of TOrder;
   temp:         TOrder;
-  min:          integer;
+  min, len:     integer;
 
 begin
+  //search for min played
   min := high(min);
-  SetLength(plugin_order, Length(Plugins));
   for I := 0 to Length(Plugins) - 1 do
   begin
-    plugin_order[I].ID := Plugins[I].ID;
-    plugin_order[I].medley := Plugins[I].Medley;
-    plugin_order[I].surprise := Plugins[I].MedleySurprise;
-    plugin_order[I].Nr := I;
     if Plugins[I].TimesPlayed < min then
       min := Plugins[I].TimesPlayed;
   end;
 
-  //sort  ASC by TimesPlayed
-  for J := 0 to Length(Plugins) - 2 do
+  //fill plugin list
+  SetLength(plugin_order, 0);
+  for I := 0 to Length(Plugins) - 1 do
   begin
-    for K := J+1 to Length(Plugins) - 1 do
+    if (Plugins[I].TimesPlayed = min) then
     begin
-      if getTimesPlayed(plugin_order[J]) > getTimesPlayed(plugin_order[K]) then
-      begin
-        temp := plugin_order[J];
-        plugin_order[J] := plugin_order[K];
-        plugin_order[K] := temp;
-      end;
+      len := Length(plugin_order);
+      SetLength(plugin_order, len+1);
+      plugin_order[len].ID := Plugins[I].ID;
+      plugin_order[len].medley := Plugins[I].Medley;
+      plugin_order[len].surprise := Plugins[I].MedleySurprise;
+      plugin_order[len].Nr := I;
     end;
   end;
 
-  //set filter
-  num := 0;
-  for I := 0 to Length(Plugins) - 1 do
-  begin
-    if Plugins[I].TimesPlayed <= min then
-      Inc(num);
-  end;
+  K := random(Length(plugin_order));
+  Inc(Plugins[plugin_order[K].Nr].TimesPlayed);
 
-  K := random(num);
-  for I := 0 to Length(Plugins) - 1 do
-  begin
-    if (plugin_order[K].ID = Plugins[I].ID) and
-      (plugin_order[K].medley = Plugins[I].medley) then
-    begin
-      Inc(Plugins[I].TimesPlayed);
-      break;
-    end;
-  end;
   medley := plugin_order[K].medley;
   surprise := plugin_order[K].surprise;
   nr := plugin_order[K].Nr;
