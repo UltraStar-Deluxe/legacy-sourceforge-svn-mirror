@@ -3131,11 +3131,14 @@ begin
     begin
       for I := 0 to Length(CatSongs.Song) - 1 do
       begin
-        if CatSongs.Song[I].Visible and (CatSongs.Song[I].Medley.Source >= MinS) and not PartyPlayedMedley(I)
+        if (CatSongs.Song[I].Medley.Source >= MinS) and not PartyPlayedMedley(I)
           and not SongSkipped(I) then
         begin
-          SetLength(res, Length(res)+1);
-          res[Length(res)-1] := I;
+          if (PlaylistMan.Mode<>0) or ((PlaylistMan.Mode=0) and CatSongs.Song[I].Visible)  then
+          begin
+            SetLength(res, Length(res)+1);
+            res[Length(res)-1] := I;
+          end;
         end;
       end;
     end else
