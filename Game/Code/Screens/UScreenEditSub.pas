@@ -890,7 +890,7 @@ begin
         begin
           if (MP3Volume<100) then
             MP3Volume := MP3Volume+5;
-            Music.SetVolume(MP3Volume);
+            Music.SetMusicVolume(MP3Volume);
             Text[TextDebug].Text := 'MP3 Volume: ' + IntToStr(MP3Volume) + '%';
         end;
 
@@ -899,7 +899,7 @@ begin
         begin
           if (MP3Volume>0) then
             MP3Volume := MP3Volume-5;
-            Music.SetVolume(MP3Volume);
+            Music.SetMusicVolume(MP3Volume);
             Text[TextDebug].Text := 'MP3 Volume: ' + IntToStr(MP3Volume) + '%';
         end;
 

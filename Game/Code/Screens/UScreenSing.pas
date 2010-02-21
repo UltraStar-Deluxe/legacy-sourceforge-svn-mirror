@@ -21,6 +21,8 @@ type
       NumEmptySentences: integer;
     public
       //TextTime:           integer;
+      MP3Volume:        integer;
+      MP3VolumeHandler: THandler;
 
       //TimeBar mod
        StaticTimeProgress:  integer;
@@ -106,6 +108,7 @@ type
       procedure LoadNextSong;
       procedure UpdateMedleyStats(medley_end: boolean);
       procedure DrawMedleyCountdown();
+      procedure DrawVolume;
   end;
 
 implementation
@@ -120,6 +123,30 @@ begin
   If (PressedDown) Then
   begin // Key Down
     case PressedKey of
+      //MP3-Volume Up
+      SDLK_PAGEUP:
+        begin
+          if (MP3Volume<100) then
+          begin
+            MP3Volume := MP3Volume+5;
+            Music.SetMusicVolume(MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
+      //MP3-Volume Down
+      SDLK_PAGEDOWN:
+        begin
+          if (MP3Volume>0) then
+          begin
+            MP3Volume := MP3Volume-5;
+            Music.SetMusicVolume(MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
       SDLK_K:
         begin
           if Music.VocalRemoverActivated() then
@@ -130,7 +157,8 @@ begin
 
       SDLK_TAB:
         begin
-          Pause;
+          if not paused then
+            Pause;
           ScreenPopupHelp.ShowPopup();
         end;
 
@@ -289,6 +317,8 @@ begin
   LyricMain := TLyric.Create;
   LyricSub :=  TLyric.Create;
   UVideo.Init;
+
+  MP3Volume := 100;
 end;
 
 procedure TScreenSing.onShow;
@@ -311,6 +341,8 @@ begin
   AspectHandler.changed := false;
   Text[VideoAspectText].Visible := false;
   Static[VideoAspectStatic].Visible := false;
+
+  MP3VolumeHandler.changed := false;
 
   //Reset Player Medley stats
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley  then
@@ -941,9 +973,9 @@ begin
 
   // play music (II)
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
-    Music.Fade(10, 100, AktSong.Medley.FadeIn_time)
+    Music.Fade(10, MP3Volume, AktSong.Medley.FadeIn_time)
   else
-    Music.SetVolume(100);
+    Music.SetMusicVolume(MP3Volume);
 
   Music.Play;
 
@@ -1320,6 +1352,61 @@ begin
     MedleyHandler.changed:=false;
     Static[SongNameStatic].Visible := false;
     Text[SongNameText].Visible := false;
+  end;
+
+  if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
+  begin
+    MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
+    DrawVolume;
+  end else
+    MP3VolumeHandler.changed := false;
+end;
+
+procedure TScreenSing.DrawVolume();
+const
+  step = 5;
+
+var
+  txt:  PChar;
+  w, h: real;
+  str:  string;
+  x, y: real;
+  I:    integer;
+  num:  integer;
+
+begin
+  x := 10;
+  y := 475;
+  w := 782;
+  h := 12;
+
+  num := round(100/step);
+
+  for I := 1 to num do
+  begin
+    if (I<=round(MP3Volume/step)) then
+    begin
+      glColor4f(0.0, 0.8, 0.0, 0.8);
+      glEnable(GL_BLEND);
+      glbegin(gl_quads);
+        glVertex2f(x+(I-1)*(w/num), y);
+        glVertex2f(x+(I-1)*(w/num), y+h);
+        glVertex2f(x+(I)*(w/num)-2, y+h);
+        glVertex2f(x+(I)*(w/num)-2, y);
+      glEnd;
+      glDisable(GL_BLEND);
+    end else
+    begin
+      glColor4f(0.7, 0.7, 0.7, 0.6);
+      glEnable(GL_BLEND);
+      glbegin(gl_quads);
+        glVertex2f(x+(I-1)*(w/num), y);
+        glVertex2f(x+(I-1)*(w/num), y+h);
+        glVertex2f(x+(I)*(w/num)-2, y+h);
+        glVertex2f(x+(I)*(w/num)-2, y);
+      glEnd;
+      glDisable(GL_BLEND);
+    end;
   end;
 end;
 

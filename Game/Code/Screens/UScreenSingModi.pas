@@ -708,9 +708,15 @@ end;
     ((ScreenSong.Mode=smChallenge) and
     (DLLMan.Plugins[PartySessionM2.Rounds[PartySessionM2.CurRound].Plugin].Name='PLUGIN_HAUDENLUKAS_NAME')) then
   begin
-
+    //TODO!
   end;
 
+  if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
+  begin
+    MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
+    DrawVolume;
+  end else
+    MP3VolumeHandler.changed := false;
 end;
 
 procedure TScreenSingModi.Finish;

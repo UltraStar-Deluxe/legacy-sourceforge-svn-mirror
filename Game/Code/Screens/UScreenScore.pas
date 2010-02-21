@@ -529,11 +529,11 @@ begin
         //If Song Fading is activated then don't Play directly, and Set Volume to Null, else Play normal
         if (Ini.PreviewFading = 0) then
         begin
-          Music.SetMusicVolume (Ini.PreviewVolume * 10);
+          Music.SetMusicVolume (ScreenSong.MP3Volume);
           Music.Play;
         end else
         begin
-          Music.Fade(0, Ini.PreviewVolume*10, Ini.PreviewFading);
+          Music.Fade(0, ScreenSong.MP3Volume, Ini.PreviewFading);
           Music.Play;
         end;
       end;

@@ -19,9 +19,11 @@ type
   TScreenSong = class(TMenu)
     private
       SkippedSongs: array of integer;
-      ChooseableSongs: integer;
+      ChooseableSongs:  integer;
 
     public
+      MP3Volume:        integer;
+      MP3VolumeHandler: THandler;
       TextArtist:   integer;
       TextTitle:    integer;
       TextNumber:   integer;
@@ -162,9 +164,12 @@ type
       function  getVisibleMedleyArr(MinS: TMedleySource): TVisArr;
       procedure StartMedley(num: integer; MinS: TMedleySource);
       procedure DrawAspect;
+      procedure DrawVolume;
 
       function PartyPlayedSong(SongNr: integer): boolean;
       function PartyPlayedMedley(SongNr: integer): boolean;
+
+
   end;
 
 implementation
@@ -395,6 +400,30 @@ begin
     end;
 
     case PressedKey of
+      //MP3-Volume Up
+      SDLK_PAGEUP:
+        begin
+          if (MP3Volume<100) then
+          begin
+            MP3Volume := MP3Volume+5;
+            Music.SetMusicVolume(MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
+      //MP3-Volume Down
+      SDLK_PAGEDOWN:
+        begin
+          if (MP3Volume>0) then
+          begin
+            MP3Volume := MP3Volume-5;
+            Music.SetMusicVolume(MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
       SDLK_K:
         begin
           if Music.VocalRemoverActivated() then
@@ -1198,6 +1227,8 @@ begin
 
   if (Length(CatSongs.Song) > 0) then
     Interaction := 0;
+
+  MP3Volume := Ini.PreviewVolume * 10;
 end;
 
 procedure TScreenSong.SetScroll;
@@ -1742,6 +1773,7 @@ begin
 
   StartTry := false;
   AspectHandler.changed := false;
+  MP3VolumeHandler.changed := false;
 
   SetLength(PlaylistMedley.Song, 0);
   SetLength(SkippedSongs, 0);
@@ -2168,6 +2200,13 @@ begin
     (AspectHandler.change_time+3<Czas.Teraz) then
     AspectHandler.changed := false;
 
+  if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
+  begin
+    MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
+    DrawVolume;
+  end else
+    MP3VolumeHandler.changed := false;
+
   DrawExtensions;
 end;
 
@@ -2209,6 +2248,70 @@ begin
   SetFontPos (RenderW/2-w/2, 20);
   txt := Addr(str[1]);
   glPrint(txt);
+end;
+
+procedure TScreenSong.DrawVolume();
+const
+  step = 5;
+
+var
+  txt:  PChar;
+  w, h: real;
+  str:  string;
+  x, y: real;
+  I:    integer;
+  num:  integer;
+
+begin
+  x := 10;
+  y := 530;
+  w := 780;
+  h := 12;
+
+  num := round(100/step);
+
+  for I := 1 to num do
+  begin
+    if (I<=round(MP3Volume/step)) then
+    begin
+      glColor4f(0.0, 0.8, 0.0, 0.8);
+      glEnable(GL_BLEND);
+      glbegin(gl_quads);
+        glVertex2f(x+(I-1)*(w/num), y);
+        glVertex2f(x+(I-1)*(w/num), y+h);
+        glVertex2f(x+(I)*(w/num)-2, y+h);
+        glVertex2f(x+(I)*(w/num)-2, y);
+      glEnd;
+      glDisable(GL_BLEND);
+    end else
+    begin
+      glColor4f(0.7, 0.7, 0.7, 0.6);
+      glEnable(GL_BLEND);
+      glbegin(gl_quads);
+        glVertex2f(x+(I-1)*(w/num), y);
+        glVertex2f(x+(I-1)*(w/num), y+h);
+        glVertex2f(x+(I)*(w/num)-2, y+h);
+        glVertex2f(x+(I)*(w/num)-2, y);
+      glEnd;
+      glDisable(GL_BLEND);
+    end;
+  end;
+
+  {
+  //print Text
+  str := IntToStr(MP3Volume)+ '%';
+
+  glColor4f(1, 1, 1, 1);
+
+  h := 8;
+  SetFontStyle(1);
+  SetFontItalic(false);
+  SetFontSize(h);
+  w := glTextWidth(PChar(str));
+
+  SetFontPos (x+2, y+2);
+  txt := Addr(str[1]);
+  glPrint(txt); }
 end;
 
 procedure TScreenSong.SelectNext;
@@ -2345,11 +2448,11 @@ begin
         //If Song Fading is activated then don't Play directly, and Set Volume to Null, else Play normal
         if (Ini.PreviewFading = 0) then
         begin
-          Music.SetMusicVolume (Ini.PreviewVolume * 10);
+          Music.SetMusicVolume (MP3Volume);
           Music.Play;
         end else
         begin
-          Music.Fade(0, Ini.PreviewVolume*10, Ini.PreviewFading);
+          Music.Fade(0, MP3Volume, Ini.PreviewFading);
           Music.Play;
         end;
       end;
