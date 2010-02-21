@@ -3,7 +3,7 @@ unit UScreenSong;
 interface
 
 uses
-  UMenu, TextGL, SDL, UMusic, UFiles, UTime, UDisplay, USongs, SysUtils, ULog, UThemes, UTexture, ULanguage,
+  UMenu, TextGL, SDL, UMusic, UDraw, UFiles, UTime, UDisplay, USongs, SysUtils, ULog, UThemes, UTexture, ULanguage,
   ULCD, ULight, UIni, UVideo;
 
 type
@@ -164,7 +164,6 @@ type
       function  getVisibleMedleyArr(MinS: TMedleySource): TVisArr;
       procedure StartMedley(num: integer; MinS: TMedleySource);
       procedure DrawAspect;
-      procedure DrawVolume;
 
       function PartyPlayedSong(SongNr: integer): boolean;
       function PartyPlayedMedley(SongNr: integer): boolean;
@@ -180,7 +179,12 @@ uses UGraphic, UMain,
   Windows,
   USkins,
   UHelp,
-  UDLLManager, UDataBase, UParty, UPartyM2, UPlaylist, UScreenSongMenu;
+  UDLLManager,
+  UDataBase,
+  UParty,
+  UPartyM2,
+  UPlaylist,
+  UScreenSongMenu;
 
 // ***** Public methods ****** //
 function  TScreenSong.SongSkipped(SongNr: integer): boolean;
@@ -1760,6 +1764,9 @@ var
   I:  Integer;
 
 begin
+  if Music.VocalRemoverActivated() then
+    Music.DisableVocalRemover;
+
   if SongIndex<>Interaction then
     Music.Stop;
 
@@ -2203,7 +2210,7 @@ begin
   if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
   begin
     MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
-    DrawVolume;
+    DrawVolumeBar(10, 530, 780, 12, MP3Volume);
   end else
     MP3VolumeHandler.changed := false;
 
@@ -2248,70 +2255,6 @@ begin
   SetFontPos (RenderW/2-w/2, 20);
   txt := Addr(str[1]);
   glPrint(txt);
-end;
-
-procedure TScreenSong.DrawVolume();
-const
-  step = 5;
-
-var
-  txt:  PChar;
-  w, h: real;
-  str:  string;
-  x, y: real;
-  I:    integer;
-  num:  integer;
-
-begin
-  x := 10;
-  y := 530;
-  w := 780;
-  h := 12;
-
-  num := round(100/step);
-
-  for I := 1 to num do
-  begin
-    if (I<=round(MP3Volume/step)) then
-    begin
-      glColor4f(0.0, 0.8, 0.0, 0.8);
-      glEnable(GL_BLEND);
-      glbegin(gl_quads);
-        glVertex2f(x+(I-1)*(w/num), y);
-        glVertex2f(x+(I-1)*(w/num), y+h);
-        glVertex2f(x+(I)*(w/num)-2, y+h);
-        glVertex2f(x+(I)*(w/num)-2, y);
-      glEnd;
-      glDisable(GL_BLEND);
-    end else
-    begin
-      glColor4f(0.7, 0.7, 0.7, 0.6);
-      glEnable(GL_BLEND);
-      glbegin(gl_quads);
-        glVertex2f(x+(I-1)*(w/num), y);
-        glVertex2f(x+(I-1)*(w/num), y+h);
-        glVertex2f(x+(I)*(w/num)-2, y+h);
-        glVertex2f(x+(I)*(w/num)-2, y);
-      glEnd;
-      glDisable(GL_BLEND);
-    end;
-  end;
-
-  {
-  //print Text
-  str := IntToStr(MP3Volume)+ '%';
-
-  glColor4f(1, 1, 1, 1);
-
-  h := 8;
-  SetFontStyle(1);
-  SetFontItalic(false);
-  SetFontSize(h);
-  w := glTextWidth(PChar(str));
-
-  SetFontPos (x+2, y+2);
-  txt := Addr(str[1]);
-  glPrint(txt); }
 end;
 
 procedure TScreenSong.SelectNext;
@@ -2394,7 +2337,6 @@ end;
 procedure TScreenSong.SelectPrev;
 var
   Skip:   integer;
-  I:      integer;
   VS:     Integer;
 begin
   VS := CatSongs.VisibleSongs;
@@ -2510,6 +2452,7 @@ end;
 procedure TScreenSong.SkipTo(Target: Cardinal); // 0.5.0
 var
   I:      integer;
+  
 begin
   UnLoadDetailedCover;
 
@@ -2523,9 +2466,6 @@ begin
 end;
 
 procedure TScreenSong.SkipTo2(Target: Cardinal); //new
-var
-  I:      integer;
-
 begin
   UnLoadDetailedCover;
 
@@ -2876,7 +2816,6 @@ end;
 
 procedure TScreenSong.SetJoker;
 var
-  txt:  string;
   h, x, y:    real;
   ptxt: pchar;
 begin

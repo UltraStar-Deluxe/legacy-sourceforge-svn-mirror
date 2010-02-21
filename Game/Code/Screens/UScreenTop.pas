@@ -6,11 +6,18 @@ uses
   UMenu, SDL, SysUtils, UDisplay, UMusic, USongs, UThemes, ULCD, ModiSDK;
 
 type
+  THandler = record
+    changed:  boolean;
+    change_time:  real;
+  end;
+
   TScreenTop = class(TMenu)
     const
       ID='ID_029';   //for help system
 
     public
+      MP3VolumeHandler: THandler;
+
       TextLevel:        integer;
       TextArtistTitle:  integer;
 
@@ -33,13 +40,37 @@ type
 
 implementation
 
-uses UGraphic, UDataBase, UMain, UIni, UPartyM2, DateUtils, UHelp, ULog;
+uses UGraphic, UDataBase, UDraw, UMain, UIni, UPartyM2, UTime, DateUtils, UHelp, ULog;
 
 function TScreenTop.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
   Result := true;
   If (PressedDown) Then begin
     case PressedKey of
+      //MP3-Volume Up
+      SDLK_PAGEUP:
+        begin
+          if (ScreenSong.MP3Volume<100) then
+          begin
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume+5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
+      //MP3-Volume Down
+      SDLK_PAGEDOWN:
+        begin
+          if (ScreenSong.MP3Volume>0) then
+          begin
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume-5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
       SDLK_TAB:
         begin
           ScreenPopupHelp.ShowPopup();
@@ -163,6 +194,8 @@ begin
   end;       
 
   Text[TextLevel].Text := IDifficulty[Ini.Difficulty];
+
+  MP3VolumeHandler.changed := false;
 end;
 
 function TScreenTop.Draw: boolean;
@@ -205,6 +238,13 @@ begin
   end;}
 
   inherited Draw;
+
+  if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
+  begin
+    MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
+    DrawVolumeBar(10, 530, 780, 12, ScreenSong.MP3Volume);
+  end else
+    MP3VolumeHandler.changed := false;
 end;
 
 end.

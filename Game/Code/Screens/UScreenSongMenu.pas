@@ -82,7 +82,7 @@ begin
           ScreenPopupHelp.ShowPopup();
         end;
 
-        //MP3-Volume Up
+      //MP3-Volume Up
       SDLK_PAGEUP:
         begin
           if (ScreenSong.MP3Volume<100) then

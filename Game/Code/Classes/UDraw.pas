@@ -30,6 +30,9 @@ procedure SingDrawLineBonus( const X, Y: Single; Color: TRGB; Alpha: Single; Tex
 //Draw Editor NoteLines
 procedure EditDrawCzesc(Left, Top, Right: real; NrCzesci: integer; Space: integer);
 
+//Draw Volume Bar
+procedure DrawVolumeBar(x, y, w, h: Real; Volume: Integer);
+
 
 type
   TRecR = record
@@ -1457,8 +1460,6 @@ var
   R:   Real;
   G:   Real;
   B:   Real;
-  A:   cardinal;
-  I:   Integer;
 
 begin;
 
@@ -1535,7 +1536,7 @@ end;
 //PhrasenBonus - Line Bonus Mod
 procedure SingDrawLineBonus( const X, Y: Single; Color: TRGB; Alpha: Single; Text: string; Age: Integer);
 var
-Length, X2: Real; //Length of Text
+Length: Real; //Length of Text
 Size: Integer; //Size of Popup
 begin
 if Alpha <> 0 then
@@ -1709,6 +1710,63 @@ begin
  glDisable(GL_TEXTURE_2D);
  glDisable(GL_BLEND);
  glcolor4f(1,1,1,1);
+end;
+
+procedure DrawVolumeBar(x, y, w, h: Real; Volume: Integer);
+const
+  step = 5;
+
+var
+  txt:  PChar;
+  str:  string;
+  I:    integer;
+  num:  integer;
+
+begin
+  num := round(100/step);
+
+  for I := 1 to num do
+  begin
+    if (I<=round(Volume/step)) then
+    begin
+      glColor4f(0.0, 0.8, 0.0, 0.8);
+      glEnable(GL_BLEND);
+      glbegin(gl_quads);
+        glVertex2f(x+(I-1)*(w/num), y);
+        glVertex2f(x+(I-1)*(w/num), y+h);
+        glVertex2f(x+(I)*(w/num)-2, y+h);
+        glVertex2f(x+(I)*(w/num)-2, y);
+      glEnd;
+      glDisable(GL_BLEND);
+    end else
+    begin
+      glColor4f(0.7, 0.7, 0.7, 0.6);
+      glEnable(GL_BLEND);
+      glbegin(gl_quads);
+        glVertex2f(x+(I-1)*(w/num), y);
+        glVertex2f(x+(I-1)*(w/num), y+h);
+        glVertex2f(x+(I)*(w/num)-2, y+h);
+        glVertex2f(x+(I)*(w/num)-2, y);
+      glEnd;
+      glDisable(GL_BLEND);
+    end;
+  end;
+
+  {
+  //print Text
+  str := IntToStr(MP3Volume)+ '%';
+
+  glColor4f(1, 1, 1, 1);
+
+  h := 8;
+  SetFontStyle(1);
+  SetFontItalic(false);
+  SetFontSize(h);
+  w := glTextWidth(PChar(str));
+
+  SetFontPos (x+2, y+2);
+  txt := Addr(str[1]);
+  glPrint(txt); }
 end;
 
 end.

@@ -6,11 +6,18 @@ uses
   UMenu, SDL, SysUtils, UDisplay, UMusic, USongs, UThemes, ULCD, gl;
 
 type
+  THandler = record
+    changed:  boolean;
+    change_time:  real;
+  end;
+
   TScreenScore = class(TMenu)
     const
       ID='ID_022';   //for help system
 
     public
+      MP3VolumeHandler: THandler;
+
       TextArtist:   integer;
       TextTitle:    integer;
 
@@ -59,7 +66,7 @@ type
 implementation
 
 {{$IFDEF TRANSLATE}
-uses UGraphic, UScreenSong, UPartyM2, UMenuStatic, UTime, UMain, UIni, ULanguage, UHelp, ULog;
+uses UGraphic, UDraw, UScreenSong, UPartyM2, UMenuStatic, UTime, UMain, UIni, ULanguage, UHelp, ULog;
 {{$ELSE}{
 uses UGraphic, UScreenSong, UMenuStatic, UTime, UMain, UIni;
 {{$ENDIF}
@@ -68,6 +75,30 @@ begin
   Result := true;
   If (PressedDown) Then begin
     case PressedKey of
+      //MP3-Volume Up
+      SDLK_PAGEUP:
+        begin
+          if (ScreenSong.MP3Volume<100) then
+          begin
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume+5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
+      //MP3-Volume Down
+      SDLK_PAGEDOWN:
+        begin
+          if (ScreenSong.MP3Volume>0) then
+          begin
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume-5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
       SDLK_TAB:
         begin
           ScreenPopupHelp.ShowPopup();
@@ -218,15 +249,15 @@ end;
 procedure TScreenScore.onShow;
 var
   P:    integer;  // player
-  PP:   integer;  // another player variable
-  S:    string;
   I:    integer;
-  Skip: integer;
   V:    array[1..6] of boolean; // visibility array
 begin
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenScore)');
 
+  if Music.VocalRemoverActivated() then
+    Music.DisableVocalRemover;
+    
   // Singstar
   Fadeout := false;
   ActualRound:=0;
@@ -324,6 +355,7 @@ begin
   LCD.WriteText(1, Ini.Name[0]);
   LCD.WriteText(2, 'Score: ' + Text[TextTotalScore[1]].Text);
 
+  MP3VolumeHandler.changed := false;
   StartPreview;
 end;
 
@@ -337,8 +369,9 @@ var
 
   Item:   integer;
   P:      integer;
-  C:      integer;
 begin
+  Item := 0;
+  P := 0;
   if PlayersPlay <= 3 then begin // only for 1 screen mode
     for P := 0 to PlayersPlay-1 do begin
       case PlayersPlay of
@@ -376,6 +409,13 @@ begin
   end;
 
   inherited Draw;
+
+  if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
+  begin
+    MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
+    DrawVolumeBar(10, 530, 780, 12, ScreenSong.MP3Volume);
+  end else
+    MP3VolumeHandler.changed := false;
 end;
 
 procedure TScreenScore.FillPlayer(Item, P: integer);

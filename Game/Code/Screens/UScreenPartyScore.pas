@@ -162,6 +162,9 @@ begin
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenPartyScore)');
 
+  if Music.VocalRemoverActivated() then
+    Music.DisableVocalRemover;
+    
   //Get Maxscore
   MaxScore := 0;
   for I := 0 to ScreenSingModi.PlayerInfo.NumPlayers - 1 do

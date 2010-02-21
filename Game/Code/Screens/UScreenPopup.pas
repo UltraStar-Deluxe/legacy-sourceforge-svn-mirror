@@ -56,8 +56,6 @@ type
 
   TScreenPopupHelp = class(TMenu)
     private
-      CurMenu: Byte; //Num of the cur. Shown Menu
-
       TextsGFX:   array of TResLine;
       msg:        TTextResult;
       Rect:       TRect;
@@ -264,27 +262,15 @@ begin
 end;
 
 procedure TScreenPopupError.onHide;
-var i: integer;
 begin
 end;
 
 procedure TScreenPopupError.ShowPopup(msg: String);
-var i: integer;
+
 begin
   Interaction := 0; //Reset Interaction
   Visible := True;  //Set Visible
 
-{  //dirty hack... Text[0] is invisible for some strange reason
-  for i:=1 to high(Text) do
-    if i-1 <= high(msg) then
-    begin
-      Text[i].Visible:=True;
-      Text[i].Text := msg[i-1];
-    end
-    else
-    begin
-      Text[i].Visible:=False;
-    end;}
   Text[0].Text:=msg;
 
   Button[0].Visible := True;
@@ -341,8 +327,6 @@ begin
 end;
 
 constructor TScreenPopupHelp.Create;
-var
-  I:    integer;
 begin
   inherited Create;
 
@@ -355,8 +339,6 @@ end;
 
 function TScreenPopupHelp.Draw: boolean;
 var
-  msg:  TTextResult;
-  I:    integer;
   abs:  real;
 begin
   inherited Draw;
@@ -392,7 +374,6 @@ begin
 end;
 
 procedure TScreenPopupHelp.onHide;
-var i: integer;
 begin
 end;
 

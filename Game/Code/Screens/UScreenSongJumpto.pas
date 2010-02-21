@@ -54,6 +54,30 @@ begin
           end;
         end;
 
+      //MP3-Volume Up
+      SDLK_PAGEUP:
+        begin
+          if (ScreenSong.MP3Volume<100) then
+          begin
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume+5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          ScreenSong.MP3VolumeHandler.changed := true;
+          ScreenSong.MP3VolumeHandler.change_time := 0;
+        end;
+
+      //MP3-Volume Down
+      SDLK_PAGEDOWN:
+        begin
+          if (ScreenSong.MP3Volume>0) then
+          begin
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume-5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          ScreenSong.MP3VolumeHandler.changed := true;
+          ScreenSong.MP3VolumeHandler.change_time := 0;
+        end;
+
       SDLK_TAB:
         begin
           ScreenPopupHelp.ShowPopup();

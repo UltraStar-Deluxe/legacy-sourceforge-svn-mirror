@@ -14,7 +14,7 @@ type
   TScreenSing = class(TMenu)
     const
       ID='ID_023';   //for help system
-
+      
     protected
       paused: boolean; //Pause Mod
       PauseTime: Real;
@@ -108,7 +108,6 @@ type
       procedure LoadNextSong;
       procedure UpdateMedleyStats(medley_end: boolean);
       procedure DrawMedleyCountdown();
-      procedure DrawVolume;
   end;
 
 implementation
@@ -336,6 +335,9 @@ begin
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenSing)');
 
+  if Music.VocalRemoverActivated() then
+    Music.DisableVocalRemover;
+    
   FadeOut := false; // 0.5.0: early 0.5.0 problems were by this line commented
 
   AspectHandler.changed := false;
@@ -1357,59 +1359,11 @@ begin
   if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
   begin
     MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
-    DrawVolume;
+    DrawVolumeBar(10, 475, 782, 12, MP3Volume);
   end else
     MP3VolumeHandler.changed := false;
 end;
-
-procedure TScreenSing.DrawVolume();
-const
-  step = 5;
-
-var
-  txt:  PChar;
-  w, h: real;
-  str:  string;
-  x, y: real;
-  I:    integer;
-  num:  integer;
-
-begin
-  x := 10;
-  y := 475;
-  w := 782;
-  h := 12;
-
-  num := round(100/step);
-
-  for I := 1 to num do
-  begin
-    if (I<=round(MP3Volume/step)) then
-    begin
-      glColor4f(0.0, 0.8, 0.0, 0.8);
-      glEnable(GL_BLEND);
-      glbegin(gl_quads);
-        glVertex2f(x+(I-1)*(w/num), y);
-        glVertex2f(x+(I-1)*(w/num), y+h);
-        glVertex2f(x+(I)*(w/num)-2, y+h);
-        glVertex2f(x+(I)*(w/num)-2, y);
-      glEnd;
-      glDisable(GL_BLEND);
-    end else
-    begin
-      glColor4f(0.7, 0.7, 0.7, 0.6);
-      glEnable(GL_BLEND);
-      glbegin(gl_quads);
-        glVertex2f(x+(I-1)*(w/num), y);
-        glVertex2f(x+(I-1)*(w/num), y+h);
-        glVertex2f(x+(I)*(w/num)-2, y+h);
-        glVertex2f(x+(I)*(w/num)-2, y);
-      glEnd;
-      glDisable(GL_BLEND);
-    end;
-  end;
-end;
-
+ 
 procedure TScreenSing.UpdateMedleyStats(medley_end: boolean);
 var
   len, num, I : integer;

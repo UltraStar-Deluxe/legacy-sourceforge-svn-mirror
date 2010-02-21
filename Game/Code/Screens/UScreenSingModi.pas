@@ -714,7 +714,7 @@ end;
   if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
   begin
     MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
-    DrawVolume;
+    DrawVolumeBar(10, 475, 782, 12, MP3Volume);
   end else
     MP3VolumeHandler.changed := false;
 end;
