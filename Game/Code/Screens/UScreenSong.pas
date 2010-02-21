@@ -2053,7 +2053,9 @@ begin
 
   for I := 1 to 4 do
   begin
-    if Length(PlaylistMedley.Song)>=I+J then
+    if (Length(PlaylistMedley.Song)>=I+J) and (MakeMedley or
+      ((Mode=smParty) and not PartySession.Rounds[PartySession.CurRound].MedleySurprise) or
+      ((Mode=smChallenge) and not PartySessionM2.Rounds[PartySessionM2.CurRound].MedleySurprise)) then
     begin
       Text[TextMedley[I]].Visible := true;
       Text[TextMedley[I]].Text := IntToStr(I+J)+') ' +
@@ -3134,7 +3136,7 @@ begin
         if (CatSongs.Song[I].Medley.Source >= MinS) and not PartyPlayedMedley(I)
           and not SongSkipped(I) then
         begin
-          if (PlaylistMan.Mode<>0) or ((PlaylistMan.Mode=0) and CatSongs.Song[I].Visible)  then
+          if (PlaylistMan.Mode=0) or ((PlaylistMan.Mode<>0) and CatSongs.Song[I].Visible)  then
           begin
             SetLength(res, Length(res)+1);
             res[Length(res)-1] := I;
