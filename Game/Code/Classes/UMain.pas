@@ -161,11 +161,18 @@ Begin
   Begin
 //    beep;
     Case Event.type_ Of
-      SDL_QUITEV: begin
+      SDL_ACTIVEEVENT: //workaround for alt-tab bug
+        begin
+          if (Event.active.gain=0) then
+            SDL_SetModState(0);
+        end;
+
+      SDL_QUITEV:
+        begin
         Display.Fade := 0;
         Display.NextScreenWithCheck := nil;
         Display.CheckOK := True;
-      end;
+        end;
 {      SDL_MOUSEBUTTONDOWN:
         With Event.button Do
         Begin
