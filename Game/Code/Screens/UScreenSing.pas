@@ -195,6 +195,7 @@ begin
             PlaylistMedley.CurrentMedleySong:=PlaylistMedley.NumMedleySongs+1;
 
           Finish;
+          FadeOut := true;
           Music.PlayBack;
 
           if ScreenSong.Mode<>smParty then
@@ -1398,8 +1399,9 @@ end;
 
 procedure TScreenSing.Finish;
 var
-  I, J: integer;
+  I, J:     integer;
   len, num: integer;
+  points:   string;
 
 begin
   Music.CaptureStop;
@@ -1407,9 +1409,15 @@ begin
 
   if Ini.SavePlayback = 1 then begin
     Log.BenchmarkStart(0);
-    Log.LogVoice(0);
-    //Log.LogVoice(1);
-    //Log.LogVoice(2);
+    for I := 0 to PlayersPlay - 1 do
+    begin
+      points := IntToStr(Player[I].ScoreTotalI);
+      while Length(points) < 5 do
+        points := '0'+points;
+        
+      Log.LogVoice(I, Ini.Name[I], AktSong.Artist, AktSong.Title, points);
+    end;
+
     Log.BenchmarkEnd(0);
     Log.LogBenchmark('Creating files', 0);
   end;

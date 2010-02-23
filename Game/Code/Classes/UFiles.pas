@@ -39,6 +39,7 @@ var
   LanguagesPath:    string;
   PluginPath:       string;
   PlayListPath:     string;
+  RecordingsPath:   string;
 
   SongFile: TextFile;   // all procedures in this unit operates on this file
   FileLineNo: integer;  //Line which is readed at Last, for error reporting
@@ -71,6 +72,7 @@ begin
   LanguagesPath := GamePath + 'Languages\';
   PluginPath := GamePath + 'Plugins\';
   PlaylistPath := GamePath + 'Playlists\';
+  RecordingsPath := GamePath + 'Recordings\';
 
   Writeable := true;
 
@@ -98,6 +100,9 @@ begin
 
   If Writeable And (not DirectoryExists(PlaylistPath)) then
     Writeable := ForceDirectories(PlaylistPath);
+
+  If Writeable And (not DirectoryExists(RecordingsPath)) then
+    Writeable := ForceDirectories(RecordingsPath);
 
   if not Writeable then
     Log.LogError('Error: Dir is Readonly');

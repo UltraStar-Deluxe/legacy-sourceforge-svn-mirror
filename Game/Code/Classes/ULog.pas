@@ -34,7 +34,7 @@ type
     procedure CriticalError(Text: string);
 
     // voice
-    procedure LogVoice(SoundNr: integer);
+    procedure LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string);
 
     // compability
     procedure LogStatus(Log1, Log2: string);
@@ -172,7 +172,7 @@ begin
   end;
 end;
 
-procedure TLog.LogVoice(SoundNr: integer);
+procedure TLog.LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string);
 type
   TRiffHeader = record
     riff: Array[0..3] OF Char;
@@ -208,16 +208,16 @@ begin
   begin
     with riffHdr do
     begin
-        //Schreibe 'RIFF' in die ersten 4 bytes
+        //write 'RIFF'
       riff[0] := 'R'; riff[1] := 'I'; riff[2] := 'F'; riff[3] := 'F';
         // wird spaeter gesetzt;
       filesize := 0;
-        //Schreibe 'WAVE' in die naechsten 4 bytes
+        //write 'WAVE'
       typeStr[0] := 'W'; typeStr[1] := 'A'; typeStr[2] := 'V'; typeStr[3] := 'E';
     end;
     with fmtChunk do
     begin
-        //Schreibe 'fmt' + char($20) in die naechsten 4 bytes
+        //write 'fmt' + char($20)
       id[0] := 'f'; id[1] := 'm'; id[2] := 't'; id[3] := ' ';
       size := 16;
     end;
@@ -232,7 +232,7 @@ begin
     end;
     with dataChunk do
     begin
-        //Schreibe 'data' in die naechsten 4 bytes
+        //write 'data'
       id[0] := 'd'; id[1] := 'a'; id[2] := 't'; id[3] := 'a';
       size := 0;
     end;
@@ -254,17 +254,19 @@ begin
   for Num := 1 to 9999 do begin
     FileName := IntToStr(Num);
     while Length(FileName) < 4 do FileName := '0' + FileName;
-    FileName := LogPath + 'Voice' + FileName + '.wav';
+    FileName := RecordingsPath + Artist + '_' +
+      Title + '_P' + Points + '_' + FileName + '_' + Player + '.wav';
     if not FileExists(FileName) then break
   end;
-
-  FS := TFileStream.Create(FileName, fmCreate);
 
   HeadInit(Header);
   s := 0;
   for BL := 0 to High(Sound[SoundNr].BufferLong) do
     s := s + Sound[SoundNr].BufferLong[BL].Size;
-    
+
+  if (s=0) then
+    exit;
+
   Header.Datachunk.size := s;
   //FileSize = DataSize + HeaderSize
   Header.riffHdr.FileSize := Header.Datachunk.size + 24;
@@ -275,6 +277,7 @@ begin
   ms.Write(Header, sizeof(header));
   ms.Seek(0, soBeginning);
 
+  FS := TFileStream.Create(FileName, fmCreate);
   FS.CopyFrom(ms, ms.Size);
   FS.Seek(0, soEnd);
   ms.Free;
