@@ -163,7 +163,7 @@ Begin
     Case Event.type_ Of
       SDL_ACTIVEEVENT: //workaround for alt-tab bug
         begin
-          if (Event.active.gain=0) then
+          if (Event.active.gain=1) then
             SDL_SetModState(KMOD_NONE);
         end;
 

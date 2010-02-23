@@ -1408,8 +1408,8 @@ begin
   if Ini.SavePlayback = 1 then begin
     Log.BenchmarkStart(0);
     Log.LogVoice(0);
-    Log.LogVoice(1);
-    Log.LogVoice(2);
+    //Log.LogVoice(1);
+    //Log.LogVoice(2);
     Log.BenchmarkEnd(0);
     Log.LogBenchmark('Creating files', 0);
   end;

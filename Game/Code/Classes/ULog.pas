@@ -173,24 +173,114 @@ begin
 end;
 
 procedure TLog.LogVoice(SoundNr: integer);
+type
+  TRiffHeader = record
+    riff: Array[0..3] OF Char;
+    filesize: LongInt;
+    typeStr: Array[0..3] OF Char;
+  end;
+  TChunkRec = record
+    id: Array[0..3] OF Char;
+    size: LongInt;
+  end;
+  TWaveFormatRec = record
+    tag: Word;
+    channels: Word;
+    samplesPerSec: LongInt;
+    bytesPerSec: LongInt;
+    blockAlign: Word;
+    bitsPerSample: Word;
+  end;
+  TPCMWaveFormatRec = record
+    wf: TWaveFormatRec;
+  end;
+  TWAVHeader = record { WAV Format }
+    riffHdr: TRiffHeader;
+    fmtChunk: TChunkRec;
+    fmt: TPCMWaveFormatRec;
+    dataChunk: TChunkRec;
+    { data follows here }
+  end;
+
+procedure HeadInit(var Header: TWAVHeader);
+begin
+  with Header do
+  begin
+    with riffHdr do
+    begin
+        //Schreibe 'RIFF' in die ersten 4 bytes
+      riff[0] := 'R'; riff[1] := 'I'; riff[2] := 'F'; riff[3] := 'F';
+        // wird spaeter gesetzt;
+      filesize := 0;
+        //Schreibe 'WAVE' in die naechsten 4 bytes
+      typeStr[0] := 'W'; typeStr[1] := 'A'; typeStr[2] := 'V'; typeStr[3] := 'E';
+    end;
+    with fmtChunk do
+    begin
+        //Schreibe 'fmt' + char($20) in die naechsten 4 bytes
+      id[0] := 'f'; id[1] := 'm'; id[2] := 't'; id[3] := ' ';
+      size := 16;
+    end;
+    with fmt.wf do
+    begin
+        //its 16 bit, 44.1kHz Mono
+      tag := 1; channels := 1;
+      samplesPerSec := 44100;
+      bytesPerSec := 44100*2;
+      blockAlign := 2;
+      bitsPerSample := 16;
+    end;
+    with dataChunk do
+    begin
+        //Schreibe 'data' in die naechsten 4 bytes
+      id[0] := 'd'; id[1] := 'a'; id[2] := 't'; id[3] := 'a';
+      size := 0;
+    end;
+  end;
+end;
+
+
 var
   FileVoice:    File;
   FS:           TFileStream;
   FileName:     string;
   Num:          integer;
   BL:           integer;
+  Header:       TWAVHeader;
+  ms:           TMemoryStream;
+  s:            LongInt;
+
 begin
   for Num := 1 to 9999 do begin
     FileName := IntToStr(Num);
     while Length(FileName) < 4 do FileName := '0' + FileName;
-    FileName := LogPath + 'Voice' + FileName + '.raw';
+    FileName := LogPath + 'Voice' + FileName + '.wav';
     if not FileExists(FileName) then break
   end;
 
-
   FS := TFileStream.Create(FileName, fmCreate);
 
-  for BL := 0 to High(Sound[SoundNr].BufferLong) do begin
+  HeadInit(Header);
+  s := 0;
+  for BL := 0 to High(Sound[SoundNr].BufferLong) do
+    s := s + Sound[SoundNr].BufferLong[BL].Size;
+    
+  Header.Datachunk.size := s;
+  //FileSize = DataSize + HeaderSize
+  Header.riffHdr.FileSize := Header.Datachunk.size + 24;
+
+  ms := TMemoryStream.Create;
+  ms.Seek(0, soBeginning);
+  //Write Header to Stream
+  ms.Write(Header, sizeof(header));
+  ms.Seek(0, soBeginning);
+
+  FS.CopyFrom(ms, ms.Size);
+  FS.Seek(0, soEnd);
+  ms.Free;
+
+  for BL := 0 to High(Sound[SoundNr].BufferLong) do
+  begin
     Sound[SoundNr].BufferLong[BL].Seek(0, soBeginning);
     FS.CopyFrom(Sound[SoundNr].BufferLong[BL], Sound[SoundNr].BufferLong[BL].Size);
   end;
