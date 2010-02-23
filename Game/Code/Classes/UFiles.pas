@@ -885,7 +885,7 @@ begin
   if Song.NotesGAP    <> 0  then    WriteLn(SongFile, '#NOTESGAP:'    + IntToStr(Song.NotesGAP));
   if Song.Start       <> 0  then    WriteLn(SongFile, '#START:'       + FloatToStr(Song.Start));
   if Song.Finish      <> 0  then    WriteLn(SongFile, '#END:'         + IntToStr(Song.Finish));
-  if Song.PreviewStart<> 0  then    WriteLn(SongFile, '#PREVIEWSTART:'+ FloatToStr(Song.PREVIEWSTART));
+  if Song.PreviewStart<> 0  then    WriteLn(SongFile, '#PREVIEWSTART:'+ FormatFloat('#0.000', Song.PREVIEWSTART));
 
   if (Song.Medley.Source=msTag) and not Relative then
   begin
