@@ -85,6 +85,9 @@ begin
       SDLK_BACKSPACE,
       SDLK_RETURN:
         begin
+          if (Ini.SavePlayback=1) then
+            Music.VoicesClose;
+            
           if (not Fadeout) then begin
             if(ScreenSong.Mode = smNormal) or (ScreenSong.Mode = smMedley) then
               FadeTo(@ScreenSong)

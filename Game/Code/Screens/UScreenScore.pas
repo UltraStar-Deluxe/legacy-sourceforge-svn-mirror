@@ -53,7 +53,9 @@ type
 
       Animation:    real;
       Fadeout:      boolean;
-      ActualRound: integer;
+      ActualRound:  integer;
+      Voice:        integer;
+
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
@@ -61,6 +63,7 @@ type
       procedure FillPlayer(Item, P: integer);
       procedure RefreshTexts;
       procedure StartPreview;
+      procedure StartVoice;
   end;
 
 implementation
@@ -118,13 +121,21 @@ begin
 //            Music.StopShuffle;
             if ScreenSong.PartyMedley and (ScreenSong.Mode=smChallenge) then
             begin
-              ScreenSong.SongIndex := -1;
-              Music.FadeStop(Ini.PreviewFading);
+              if not (Ini.SavePlayback=1) then
+              begin
+                ScreenSong.SongIndex := -1;
+                Music.FadeStop(Ini.PreviewFading);
+              end else
+                Music.VoicesClose;
+
               FadeTo(@ScreenPartyNewRoundM2);
             end else if (ScreenSong.Mode <> smMedley) then
               FadeTo(@ScreenTop)
             else
             begin
+              if (Ini.SavePlayback=1) then
+                Music.VoicesClose;
+
               FadeTo(@ScreenSong);
             end;
             Fadeout := true;
@@ -143,7 +154,10 @@ begin
             Music.PlayChange;
             inc(ActualRound);
             RefreshTexts;
-            StartPreview;
+            if not (Ini.SavePlayback=1) then
+              StartPreview
+            else
+              StartVoice;
           end;
         end;
 
@@ -154,7 +168,10 @@ begin
             Music.PlayChange;
             dec(ActualRound);
             RefreshTexts;
-            StartPreview;
+            if not (Ini.SavePlayback=1) then
+              StartPreview
+            else
+              StartVoice;
           end;
         end;
     end;
@@ -356,7 +373,13 @@ begin
   LCD.WriteText(2, 'Score: ' + Text[TextTotalScore[1]].Text);
 
   MP3VolumeHandler.changed := false;
-  StartPreview;
+  if not (Ini.SavePlayback=1) then
+    StartPreview
+  else
+  begin
+    Voice := -1;
+    StartVoice;
+  end;
 end;
 
 function TScreenScore.Draw: boolean;
@@ -578,6 +601,43 @@ begin
         end;
       end;
     end;
+  end;
+end;
+
+procedure TScreenSCore.StartVoice;
+var
+  changed:  boolean;
+  files:    array of string;
+  I:        integer;
+
+begin
+  //Music.Close;
+  //ScreenSong.SongIndex := -1;
+  changed := false;
+  if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
+  begin
+    if (ActualRound<Length(PlaylistMedley.Stats)-1) and (Voice <> ActualRound)  then
+    begin
+      Voice := ActualRound;
+      changed := true;
+      SetLength(files, PlaylistMedley.NumPlayer);
+      for I := 0 to Length(files) - 1 do
+        files[I] := PlaylistMedley.Stats[Voice].Player[I].VoiceFile;
+    end;
+  end else
+  begin
+    Voice := 0;
+    changed := true;
+    SetLength(files, PlayersPlay);
+    for I := 0 to Length(files) - 1 do
+      files[I] := Player[I].VoiceFile;
+  end;
+
+  if changed then
+  begin
+    Music.VoicesClose;
+    if (Music.VoicesOpen(files)>0) then
+      Music.VoicesPlay;
   end;
 end;
 

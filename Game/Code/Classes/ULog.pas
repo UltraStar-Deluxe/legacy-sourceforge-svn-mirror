@@ -34,7 +34,7 @@ type
     procedure CriticalError(Text: string);
 
     // voice
-    procedure LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string);
+    function LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string): string;
 
     // compability
     procedure LogStatus(Log1, Log2: string);
@@ -172,7 +172,7 @@ begin
   end;
 end;
 
-procedure TLog.LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string);
+function TLog.LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string): string;
 type
   TRiffHeader = record
     riff: Array[0..3] OF Char;
@@ -275,6 +275,7 @@ begin
   end;
 
   FS.Free;
+  LogVoice := FileName;
 end;
 
 procedure TLog.LogStatus(Log1, Log2: string);

@@ -814,7 +814,7 @@ end;
 
 procedure TScreenSing.LoadNextSong;
 var
-  P:          integer;
+  P, I:       integer;
   numNotes:   integer;
 begin
   // load notes
@@ -824,6 +824,10 @@ begin
   begin
     CatSongs.Selected := PlaylistMedley.Song[PlaylistMedley.CurrentMedleySong-1];
     Music.Open(CatSongs.Song[CatSongs.Selected].Path + CatSongs.Song[CatSongs.Selected].Mp3);
+  end else
+  begin
+    for I := 0 to PlayersPlay - 1 do
+      Player[I].VoiceFile := '';
   end;
 
   AktSong := CatSongs.Song[CatSongs.Selected];
@@ -1409,13 +1413,14 @@ begin
 
   if Ini.SavePlayback = 1 then begin
     Log.BenchmarkStart(0);
+
     for I := 0 to PlayersPlay - 1 do
     begin
       points := IntToStr(Player[I].ScoreTotalI);
       while Length(points) < 5 do
         points := '0'+points;
-        
-      Log.LogVoice(I, Ini.Name[I], AktSong.Artist, AktSong.Title, points);
+
+      Player[I].VoiceFile := Log.LogVoice(I, Ini.Name[I], AktSong.Artist, AktSong.Title, points);
     end;
 
     Log.BenchmarkEnd(0);
@@ -1433,10 +1438,12 @@ begin
   begin
     if not FadeOut then
     begin
+      for I := 0 to PlayersPlay - 1 do
+          PlaylistMedley.Stats[Length(PlaylistMedley.Stats)-1].Player[I] := Player[I];
+
       inc(PlaylistMedley.CurrentMedleySong);
       if PlaylistMedley.CurrentMedleySong<=PlaylistMedley.NumMedleySongs then
       begin
-        //AudioPlayback.PlaySound(SoundLib.Applause);
         LoadNextSong;
       end else
       begin

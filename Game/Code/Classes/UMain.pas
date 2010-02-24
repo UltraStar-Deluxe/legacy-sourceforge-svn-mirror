@@ -7,6 +7,7 @@ uses SDL, UGraphic, UMusic, URecord, UTime, SysUtils, UDisplay, UIni, ULog, ULyr
 type
   TPlayer = record
     Name:         string;
+    VoiceFile:    string; //Recorded Voice
 
     Score:        real;
     ScoreLine:    real;
@@ -70,8 +71,8 @@ type
 
   TStats = record
     Player: array of TPlayer;
-    SongArtist:   UTF8String;
-    SongTitle:    UTF8String;
+    SongArtist:   String;
+    SongTitle:    String;
   end;
 
   TMedleyPlaylist = record

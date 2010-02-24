@@ -51,6 +51,8 @@ type
       BassShuffle:        hStream;
       BassApplause:       hStream;
 
+      BassVoices:         array of hStream;
+
       //Custom Sounds
       CustomSounds: array of TCustomSoundEntry;
 
@@ -93,6 +95,12 @@ type
       procedure PlayShuffle;
       procedure StopShuffle;
       procedure PlayApplause;
+
+      function  VoicesOpen(Names: array of string): integer;
+      procedure VoicesPlay;
+      procedure VoicesStop;
+      procedure VoicesClose;
+
       procedure CaptureStart;
       procedure CaptureStop;
       procedure CaptureCard(RecordI, PlayerLeft, PlayerRight: byte);
@@ -313,6 +321,7 @@ begin
     Exit;
   end;
   DSP_VocalRemover := 0;
+  SetLength(BassVoices, 0);
   Log.BenchmarkEnd(4); Log.LogBenchmark('--> Bass Init', 4);
 
   // config playing buffer
@@ -481,7 +490,7 @@ end;
 function TMusic.Open(Name: string): boolean;
 begin
   Loaded := false;
-  
+
   if FileExists(Name) then begin
 {    MediaPlayer.FileName := Name;
     MediaPlayer.Open;}
@@ -948,4 +957,57 @@ begin
   Result := (DSP_VocalRemover <> 0);
 end;
 
+
+function TMusic.VoicesOpen(Names: array of string): integer;
+var
+  I:    integer;
+  num:  integer;
+
+begin
+  SetLength(BassVoices, 0);
+
+  for I := 0 to high(Names) do
+  begin
+    if FileExists(Names[I]) then
+    begin
+      num := high(BassVoices)+1;
+      SetLength(BassVoices, num+1);
+      BassVoices[num] := Bass_StreamCreateFile(false, pchar(Names[I]), 0, 0, 0);
+      DSP_VocalRemover:=0;
+    end;
+  end;
+
+  Result := high(BassVoices)+1;
+end;
+
+procedure TMusic.VoicesPlay;
+var
+  I:  integer;
+begin
+  for I := 0 to high(BassVoices) do
+  begin
+    BASS_ChannelPlay(BassVoices[I], True);
+  end;
+end;
+
+procedure TMusic.VoicesStop;
+var
+  I:  integer;
+begin
+  for I := 0 to high(BassVoices) do
+    Bass_ChannelStop(BassVoices[I]);
+end;
+
+
+procedure TMusic.VoicesClose;
+var
+  I:  integer;
+begin
+  for I := 0 to high(BassVoices) do
+  begin
+    Bass_StreamFree(BassVoices[I]);
+    DSP_VocalRemover:=0;
+  end;
+  SetLength(BassVoices, 0);
+end;
 end.
