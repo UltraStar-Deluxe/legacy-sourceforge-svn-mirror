@@ -179,10 +179,12 @@ type
     filesize: LongInt;
     typeStr: Array[0..3] OF Char;
   end;
+
   TChunkRec = record
     id: Array[0..3] OF Char;
     size: LongInt;
   end;
+
   TWaveFormatRec = record
     tag: Word;
     channels: Word;
@@ -191,13 +193,11 @@ type
     blockAlign: Word;
     bitsPerSample: Word;
   end;
-  TPCMWaveFormatRec = record
-    wf: TWaveFormatRec;
-  end;
+
   TWAVHeader = record { WAV Format }
     riffHdr: TRiffHeader;
     fmtChunk: TChunkRec;
-    fmt: TPCMWaveFormatRec;
+    fmt: TWaveFormatRec;
     dataChunk: TChunkRec;
     { data follows here }
   end;
@@ -208,20 +208,15 @@ begin
   begin
     with riffHdr do
     begin
-        //write 'RIFF'
-      riff[0] := 'R'; riff[1] := 'I'; riff[2] := 'F'; riff[3] := 'F';
-        // wird spaeter gesetzt;
-      filesize := 0;
-        //write 'WAVE'
-      typeStr[0] := 'W'; typeStr[1] := 'A'; typeStr[2] := 'V'; typeStr[3] := 'E';
+      riff := 'RIFF';
+      typeStr := 'WAVE';
     end;
     with fmtChunk do
     begin
-        //write 'fmt' + char($20)
-      id[0] := 'f'; id[1] := 'm'; id[2] := 't'; id[3] := ' ';
+      id := 'fmt ';
       size := 16;
     end;
-    with fmt.wf do
+    with fmt do
     begin
         //its 16 bit, 44.1kHz Mono
       tag := 1; channels := 1;
@@ -232,9 +227,7 @@ begin
     end;
     with dataChunk do
     begin
-        //write 'data'
-      id[0] := 'd'; id[1] := 'a'; id[2] := 't'; id[3] := 'a';
-      size := 0;
+      id := 'data';
     end;
   end;
 end;
@@ -254,8 +247,9 @@ begin
   for Num := 1 to 9999 do begin
     FileName := IntToStr(Num);
     while Length(FileName) < 4 do FileName := '0' + FileName;
-    FileName := RecordingsPath + Artist + '_' +
-      Title + '_P' + Points + '_' + FileName + '_' + Player + '.wav';
+    //FileName := RecordingsPath + Artist + '_' +
+    //  Title + '_P' + Points + '_' + FileName + '_' + Player + '.wav'; //some characters are not allowed; TODO
+    FileName := RecordingsPath + 'V_' + FileName + '.wav';
     if not FileExists(FileName) then break
   end;
 
@@ -269,18 +263,10 @@ begin
 
   Header.Datachunk.size := s;
   //FileSize = DataSize + HeaderSize
-  Header.riffHdr.FileSize := Header.Datachunk.size + 24;
-
-  ms := TMemoryStream.Create;
-  ms.Seek(0, soBeginning);
-  //Write Header to Stream
-  ms.Write(Header, sizeof(header));
-  ms.Seek(0, soBeginning);
+  Header.riffHdr.FileSize := Header.Datachunk.size + sizeof(Header)-8;
 
   FS := TFileStream.Create(FileName, fmCreate);
-  FS.CopyFrom(ms, ms.Size);
-  FS.Seek(0, soEnd);
-  ms.Free;
+  FS.Write(Header, sizeof(header));
 
   for BL := 0 to High(Sound[SoundNr].BufferLong) do
   begin
