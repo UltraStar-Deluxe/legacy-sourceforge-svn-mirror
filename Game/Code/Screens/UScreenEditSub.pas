@@ -2,10 +2,12 @@ unit UScreenEditSub;
 
 interface
 
-uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, USmpeg, UTexture, UMenuText,
+uses UMenu, UVideo, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, USmpeg, UTexture, UMenuText,
   ULyrics, Math, gl, UThemes, MidiOut, UHelp;
 
 type
+  TVidVis = (none, windowed, full);
+
   TMedleyNotes = record
     start: TPos;
     end_: TPos;
@@ -35,6 +37,7 @@ type
       TextNDlugosc: integer;
       TextNTon:     integer;
       TextNText:    integer;
+      TextVideoGap:integer;
       AktNuta:      integer;
 
       PlaySentence:     boolean;
@@ -62,9 +65,16 @@ type
 
       editText:     string; //backup of current text in text-edit-mode
       noteStart:    integer; //Start note when playing sentence
+      lineStart:    integer; //Start line when playing sentence
       LineChanged:  boolean;
 
+      VidVis:       TVidVis; //video visiability
+      PlayVideo:    boolean;
+      StartTry:     boolean;
+      PlayTime:     real;
 
+      procedure StartVideo;
+      procedure StartVideoPreview;
       procedure NewBeat;
       procedure ChangeBPM(newBPM: real);
       procedure CzesciDivide;
@@ -190,6 +200,34 @@ begin
             AktSong.GAP := AktSong.GAP - 10;
           if SDL_ModState = KMOD_LSHIFT then
             AktSong.GAP := AktSong.GAP - 1000;
+        end;
+
+      SDLK_8:
+        begin
+          // Increase VideoGAP
+          if SDL_ModState = 0 then
+            AktSong.VideoGAP := AktSong.VideoGAP + 0.01;
+          if SDL_ModState = KMOD_LSHIFT then
+            AktSong.VideoGAP := AktSong.VideoGAP + 0.10;
+          if SDL_ModState = KMOD_LCTRL then
+            AktSong.VideoGAP := AktSong.VideoGAP + 1.00;
+
+          if PlayVideo then
+            StartVideo;
+        end;
+
+      SDLK_7:
+        begin
+          // Decrease VideoGAP
+          if SDL_ModState = 0 then
+            AktSong.VideoGAP := AktSong.VideoGAP - 0.01;
+          if SDL_ModState = KMOD_LSHIFT then
+            AktSong.VideoGAP := AktSong.VideoGAP - 0.10;
+          if SDL_ModState = KMOD_LCTRL then
+            AktSong.VideoGAP := AktSong.VideoGAP - 1.00;
+
+          if PlayVideo then
+            StartVideo;
         end;
 
       SDLK_KP_PLUS:
@@ -387,6 +425,10 @@ begin
             R := GetTimeFromBeat(Czesci[0].Czesc[MedleyNotes.start.line].Nuta[MedleyNotes.start.note].Start);
             if R <= Music.Length then begin
               Music.MoveTo(R);
+
+              noteStart := AktNuta;
+              lineStart := Czesci[0].Akt;
+
               PlayStopTime := GetTimeFromBeat(
                 Czesci[0].Czesc[MedleyNotes.end_.line].Nuta[MedleyNotes.end_.note].Start +
                 Czesci[0].Czesc[MedleyNotes.end_.line].Nuta[MedleyNotes.end_.note].Dlugosc);
@@ -482,6 +524,10 @@ begin
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then begin
             CopySentence(CopySrc, Czesci[0].Akt);
+          end;
+
+          if SDL_ModState = 0 then begin
+            StartVideo;
           end;
         end;
 
@@ -637,11 +683,13 @@ begin
           if PlaySentenceMidi or PlaySentence then
           begin
             noteStart := AktNuta;
+            lineStart := Czesci[0].Akt;
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
             AktNuta := 0;
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
             Lyric.Selected := AktNuta;
             LineChanged:=false;
+            PlayVideo := false;
           end;
 
         end;
@@ -700,13 +748,6 @@ begin
             Music.Play;
             LastClick := -100;
           end;
-
-
-          if PlaySentence or PlaySentenceMidi then
-          begin
-            noteStart := AktNuta;
-            LineChanged:=false;
-          end;
         end;
       SDLK_RETURN:
         begin
@@ -735,7 +776,9 @@ begin
           if PlaySentenceMidi or PlaySentence then
           begin
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            AktNuta := noteStart;
+            if (lineStart = Czesci[0].Akt) then
+              AktNuta := noteStart;
+
             Dec(AktNuta);
             if AktNuta = -1 then AktNuta := Czesci[0].Czesc[Czesci[0].Akt].HighNut;
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
@@ -803,7 +846,9 @@ begin
           if PlaySentenceMidi or PlaySentence then
           begin
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            AktNuta := noteStart;
+            if (lineStart = Czesci[0].Akt) then
+              AktNuta := noteStart;
+
             Inc(AktNuta);
             if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].IlNut then AktNuta := 0;
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
@@ -1107,6 +1152,84 @@ begin
   end;
 end;
 
+procedure TScreenEditSub.StartVideo;
+var
+  R:  real;
+
+begin
+  // Play Sentences with Video
+  MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+  PlaySentenceMidi := false;
+  PlayOneNoteMidi := false;
+  Click := false;
+  Music.Stop;
+
+  if PlayVideo then
+  begin
+    Czesci[0].Akt := lineStart;
+    AktNuta := noteStart;
+  end;
+  R := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+  if R <= Music.Length then
+  begin
+    Music.MoveTo(R);
+    PlayStopTime := Music.Length;
+    PlaySentence := true;
+    PlayOneNote := false;
+    Music.Play;
+    LastClick := -100;
+  end;
+
+  noteStart := AktNuta;
+  lineStart := Czesci[0].Akt;
+  Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
+  AktNuta := 0;
+  Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
+  Lyric.Selected := AktNuta;
+  LineChanged:=false;
+  PlayTime := 0;
+  PlayVideo := true;
+  StartVideoPreview;
+end;
+
+procedure TScreenEditSub.StartVideoPreview;
+begin
+  if (PlayTime<0.2) and PlayVideo then
+  begin
+    acClose;
+    VidVis := none;
+    StartTry := true;
+  end else if StartTry then
+  begin
+  if (AktSong.Video <> '') and
+    FileExists(AktSong.Path + AktSong.Video) then
+    begin
+      acOpenFile(PAnsiChar(AktSong.Path + AktSong.Video));
+
+      acSkip2(AktSong.VideoGAP, Music.Position);
+      Czas.Teraz := Music.Position;
+      Czas.Razem := Music.Length;
+      StartTry := false;
+      try
+        acGetFrame(Czas.Teraz);
+        VidVis := windowed;
+
+      except
+        //If an Error occurs Reading Video: prevent Video from being Drawn again and Close Video
+        Log.LogError('Error drawing Video, Video has been disabled for this Song/Session.');
+        Log.LogError('Corrupted File: ' + AktSong.Video);
+        AktSong.Video := ''; //dirt fix
+        try
+          acClose;
+          VidVis := none;
+        except
+        end;
+      end;
+    end else
+      VidVis := none;
+  end;
+end;
+
 procedure TScreenEditSub.NewBeat;
 begin
     // click
@@ -1134,6 +1257,8 @@ begin
     begin
       Czesci[0].Czesc[C].Nuta[N].Start :=   ceil(Czesci[0].Czesc[C].Nuta[N].Start *f);
       Czesci[0].Czesc[C].Nuta[N].Dlugosc := floor(Czesci[0].Czesc[C].Nuta[N].Dlugosc *f);
+      if (Czesci[0].Czesc[C].Nuta[N].Dlugosc=0) then
+        Czesci[0].Czesc[C].Nuta[N].Dlugosc := 1;
     end; // N (notes)
     Czesci[0].Czesc[C].Koniec :=    Czesci[0].Czesc[C].Nuta[Czesci[0].Czesc[C].HighNut].Start +
       Czesci[0].Czesc[C].Nuta[Czesci[0].Czesc[C].HighNut].Dlugosc;
@@ -1661,12 +1786,14 @@ begin
   AddText(30, 190,  0, 8, 0, 0, 0, 'Start:');
   AddText(30, 215,  0, 8, 0, 0, 0, 'Duration:');
   AddText(30, 240,  0, 8, 0, 0, 0, 'Tone:');
-  AddText(30, 265,  0, 8, 0, 0, 0, 'Text:');
+  AddText(30, 265,  0, 8, 0, 0, 0, 'Text:');      AddText(500, 265,  0, 8, 0, 0, 0, 'VideoGap:');
 
   TextNStart :=   AddText(180, 190,  0, 8, 0, 0, 0, 'a');
   TextNDlugosc := AddText(180, 215,  0, 8, 0, 0, 0, 'b');
   TextNTon :=     AddText(180, 240,  0, 8, 0, 0, 0, 'c');
   TextNText :=    AddText(180, 265,  0, 8, 0, 0, 0, 'd');
+
+  TextVideoGap :=  AddText(600, 265,  0, 8, 0, 0, 0, 'e');
 
   // debug
   TextDebug :=  AddText(30, 550, 0, 9, 0, 0, 0, '');
@@ -1711,6 +1838,7 @@ begin
     Czesci[0].Akt := 0;
     AktNuta := 0;
     noteStart := 0; //when playing sentence
+    lineStart := 0;
     Czesci[0].Czesc[0].Nuta[0].Color := 2;
 
     if AktSong.Medley.Source <> msNone then
@@ -1763,6 +1891,10 @@ begin
   LineChanged:=false;
   PlaySentence := false;
   PlayOneNote := false;
+
+  StartTry := false;
+  PlayTime := 0;
+  PlayVideo := false;
 end;
 
 function TScreenEditSub.Draw: boolean;
@@ -1775,6 +1907,9 @@ var
   PlayClick:  boolean;
   line, note: integer;
   end_:   boolean;
+
+  Window: TRectCoords;
+  Blend: real;
 begin
   glClearColor(1,1,1,1);
 
@@ -1782,6 +1917,7 @@ begin
   if PlaySentenceMidi or PlaySentence then
   begin
     MidiPos := USTime.GetTime - MidiTime + MidiStart;
+    PlayTime := PlayTime + TimeSkip;
     // click
     if PlaySentence then
     begin
@@ -1828,17 +1964,23 @@ begin
       end;
     end;
   end else
+  begin
     LineChanged := false;
+    PlayVideo := false;
+  end;
 
   // midi music
   if PlaySentenceMidi then begin
 
     // stop the music
-    if end_ then begin
+    if end_ then
+    begin
       MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
       PlaySentenceMidi := false;
       Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-      AktNuta := noteStart;
+      if (Czesci[0].Akt = lineStart) then
+        AktNuta := noteStart;
+        
       Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
       Lyric.Selected := AktNuta;
     end;
@@ -1867,7 +2009,9 @@ begin
       Music.Stop;
       PlaySentence := false;
       Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-      AktNuta := noteStart;
+      if (Czesci[0].Akt = lineStart) then
+        AktNuta := noteStart;
+
       Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
       Lyric.Selected := AktNuta;
     end;
@@ -1973,6 +2117,7 @@ begin
     Text[TextBPM].Text := FloatToStr(AktSong.BPM[0].BPM / 4);
 
   Text[TextGAP].Text := FloatToStr(AktSong.GAP);
+  Text[TextVideoGap].Text := FloatToStr(AktSong.VideoGap);
 
   //Error reading Variables when no Song is loaded
   if not Error then
@@ -2020,12 +2165,72 @@ begin
   // draw text
   Lyric.Draw;
 
+  if UVideo.VideoOpened and PlayVideo then
+  begin
+    Czas.Teraz := Czas.Teraz + TimeSkip;
+    try
+      acGetFrame(Czas.Teraz);
+
+      if VidVis=windowed then
+      begin
+        Window.Left := 500;
+        Window.Right := 770;
+        Window.Upper := 65;
+        Window.Lower := 250;
+        Window.windowed := true;
+
+        {if CoverTime>=Ini.PreviewFading then
+        begin
+          glColor4f(0, 0, 0, 1);
+
+          glbegin(gl_quads);
+            glVertex2f(Window.Left, Window.Upper);
+            glVertex2f(Window.Left, Window.Lower);
+            glVertex2f(Window.Right, Window.Lower);
+            glVertex2f(Window.Right, Window.Upper);
+          glEnd;
+        end; }
+        SetAspectCorrection(acoCrop);
+        Blend := (PlayTime-0.2);
+        if Blend<0 then
+          Blend := 0
+        else if Blend>1 then
+          Blend := 1;
+
+        acDrawGLi(ScreenAct, Window, Blend);
+      end else if VidVis=full then
+      begin
+        acDrawGL(ScreenAct);
+      end;
+
+      //ResetAspectCorrection;
+
+      if (Czas.Teraz>=Czas.Razem) then
+      begin
+        acClose;
+        VidVis := none;
+      end;
+    except
+      //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
+      log.LogError('Error drawing Video, Video has been disabled for this Song/Session.');
+      Log.LogError('Corrupted File: ' + AktSong.Video);
+      try
+        acClose;
+        VidVis := none;
+      except
+
+      end;
+    end;
+  end else
+    StartVideoPreview;
 end;
 
 procedure TScreenEditSub.onHide;
 begin
   MidiOut.Close;
   MidiOut.Free;
+  Music.Close;
+  acClose;
   //Music.SetVolume(100);
 end;
 
