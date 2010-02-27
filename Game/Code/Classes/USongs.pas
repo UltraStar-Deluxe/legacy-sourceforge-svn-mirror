@@ -174,7 +174,7 @@ begin
 
       res := AnalyseFile(Song[SLen]); //TODO Hash?
 
-      if res and (Song[SLen].Medley.Source=msNone) then
+      if res then
       begin
         SetLength(Czesci, 1);
         AktSong := Song[SLen];

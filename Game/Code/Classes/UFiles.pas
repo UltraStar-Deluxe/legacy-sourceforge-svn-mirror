@@ -21,6 +21,7 @@ procedure ResetSingTemp;
 procedure ParseNote(NrCzesci: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: string);
 procedure NewSentence(NrCzesciP: integer; Param1, Param2: integer; LoadFullFile: boolean);
 function LoadSong(Name: string; LoadFullFile: boolean): boolean;
+function CheckSong: boolean;
 function SaveSong(Song: TSong; Czesc: TCzesci; Name: string; Relative: boolean): boolean;
 procedure FindRefrainStart(var Song: TSong);
 procedure SetMedleyMode;
@@ -633,6 +634,104 @@ begin
   Base[NrCzesciP] := 100; // high number
 end;
 
+function CheckSong: boolean;
+var
+  p, line, note:      integer;
+  numLines, numNotes: integer;
+  bt:                 integer;
+  nextBeat:           integer;
+  foundMedleyStart:   boolean;
+  foundMedleyEnd:     boolean;
+  medley:             boolean;
+
+begin
+  Result := false;
+  bt := -32000;
+
+  if(AktSong.Medley.Source = msTag) then
+  begin
+    medley := true;
+    foundMedleyStart := false;
+    foundMedleyEnd := false;
+  end else
+    medley := false;
+
+  for p := 0 to {Length(Czesci)}1 - 1 do //TODO: why doesn't it work?
+  begin
+    numLines := Length(Czesci[p].Czesc);
+
+    if(numLines=0) then
+    begin
+      Log.LogError('Song ' + AktSong.Path + AktSong.Filename + ' has no lines?');
+      Exit;
+    end;
+
+    for line := 0 to numLines - 1 do
+    begin
+      numNotes := Length(Czesci[p].Czesc[line].Nuta);
+
+      if(numNotes=0) then
+      begin
+        Log.LogError('Line ' + IntToStr(line+1) + ' in song ' + AktSong.Path + AktSong.Filename + ' has no notes?');
+        Exit;
+      end;
+
+      if(bt>Czesci[p].Czesc[line].Start) then
+      begin
+        Log.LogError('Beat error line ' + IntToStr(line+1) + ', beat ' + IntToStr(Czesci[p].Czesc[line].Start) +
+          ' in song ' + AktSong.Path + AktSong.Filename);
+        Exit;
+      end;
+      bt := Czesci[p].Czesc[line].Start;
+
+      for note := 0 to numNotes - 1 do
+      begin
+        if(bt>Czesci[p].Czesc[line].Nuta[note].Start) then
+        begin
+          Log.LogError('Beat error line ' + IntToStr(line+1) + ', beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
+            ' in song ' + AktSong.Path + AktSong.Filename);
+          Exit;
+        end;
+        bt := Czesci[p].Czesc[line].Nuta[note].Start;
+
+        if (note<numNotes-1) then
+          nextBeat := Czesci[p].Czesc[line].Nuta[note+1].Start
+        else if (line<numLines-1) then
+          nextBeat := Czesci[p].Czesc[line+1].Start
+        else
+          nextBeat := Czesci[p].Czesc[line].Koniec;
+
+        if (bt+Czesci[p].Czesc[line].Nuta[note].Dlugosc>nextBeat) then
+        begin
+          Log.LogError('Note length error line ' + IntToStr(line+1) + ', beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
+            ' in song ' + AktSong.Path + AktSong.Filename);
+          Exit;
+        end;
+
+        if(medley) then
+        begin
+          if(bt = AktSong.Medley.StartBeat) then
+            foundMedleyStart := true;
+          if(bt+Czesci[p].Czesc[line].Nuta[note].Dlugosc = AktSong.Medley.EndBeat) then
+            foundMedleyEnd := true;
+        end;
+      end;
+    end;
+  end;
+
+  if(medley and not foundMedleyStart) then
+  begin
+    Log.LogError('Error MedleyStartBeat: no corresponding note start (beat) in song ' + AktSong.Path + AktSong.Filename);
+    Exit;
+  end else if(medley and not foundMedleyEnd) then
+  begin
+    Log.LogError('Error MedleyEndBeat: no corresponding note start+length in song ' + AktSong.Path + AktSong.Filename);
+    Exit;
+  end;
+  Result := true;
+end;
+
+
 //--------------------
 // Load a Song
 //--------------------
@@ -719,6 +818,7 @@ begin
     Read(SongFile, TempC);
   until ((TempC = ':') or (TempC = 'F') or (TempC = '*'));
 
+  SetLength(Czesci, 0);
   SetLength(Czesci, 2);
   for Pet := 0 to High(Czesci) do begin
     SetLength(Czesci[Pet].Czesc, 1);
@@ -831,7 +931,7 @@ begin
     exit;
   end;
 
-  Result := true;
+  Result := CheckSong;
 end;
 
 //--------------------
@@ -964,7 +1064,7 @@ var
   len_lines, len_notes: integer;
   found_end:            boolean;
 begin
-  if AktSong.Medley.Source = msTag then    //will be deleted soon
+  if AktSong.Medley.Source = msTag then
     Exit;
 
   //relative is not supported for medley by now!
