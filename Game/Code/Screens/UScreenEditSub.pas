@@ -2,7 +2,7 @@ unit UScreenEditSub;
 
 interface
 
-uses UMenu, UVideo, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, USmpeg, UTexture, UMenuText,
+uses UMenu, UVideo, TextGL, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, USmpeg, UTexture, UMenuText,
   ULyrics, Math, gl, UThemes, MidiOut, UHelp;
 
 type
@@ -17,11 +17,9 @@ type
   end;
 
   TScreenEditSub = class(TMenu)
-    const
-      ID='ID_001';   //for help system
-
     private
-      //Variable is True if no SOng is loaded 
+      AktBeat:      integer;
+      //Variable is True if no SOng is loaded
       Error:        Boolean;
       MP3Volume:    Integer;
       
@@ -97,6 +95,7 @@ type
       //Note Name Mod
       function GetNoteName(Note: Integer): String;
       function GetMedleyLength: real; //returns if availible the length of the medley in seconds, else 0
+      procedure DrawInfoBar(x, y, w, h: integer);
     public
       Tex_Background:     TTexture;
       FadeOut:            boolean;
@@ -115,13 +114,18 @@ type
 implementation
 uses UGraphic, UDraw, UMain, USkins, ULanguage;
 
+const
+      ID='ID_001';   //for help system
+
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
 function TScreenEditSub.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 var
   SDL_ModState:  Word;
-  R:    real;
-  SResult: boolean;
+  R:          real;
+  SResult:    boolean;
+  temp:       integer;
+
 begin
   Result := true;
 
@@ -146,6 +150,9 @@ begin
 
       SDLK_ESCAPE:
         begin
+          Music.Close;
+          acClose;
+          
           FadeTo(@ScreenSong);
         end;
 
@@ -204,28 +211,34 @@ begin
 
       SDLK_8:
         begin
+          temp := round(AktSong.VideoGAP*100);
+
           // Increase VideoGAP
           if SDL_ModState = 0 then
-            AktSong.VideoGAP := AktSong.VideoGAP + 0.01;
+            temp := temp + 1;
           if SDL_ModState = KMOD_LSHIFT then
-            AktSong.VideoGAP := AktSong.VideoGAP + 0.10;
+            temp := temp + 10;
           if SDL_ModState = KMOD_LCTRL then
-            AktSong.VideoGAP := AktSong.VideoGAP + 1.00;
+            temp := temp + 100;
 
+          AktSong.VideoGAP := temp/100;
           if PlayVideo then
             StartVideo;
         end;
 
       SDLK_7:
         begin
+          temp := round(AktSong.VideoGAP*100);
+
           // Decrease VideoGAP
           if SDL_ModState = 0 then
-            AktSong.VideoGAP := AktSong.VideoGAP - 0.01;
+            temp := temp - 1;
           if SDL_ModState = KMOD_LSHIFT then
-            AktSong.VideoGAP := AktSong.VideoGAP - 0.10;
+            temp := temp - 10;
           if SDL_ModState = KMOD_LCTRL then
-            AktSong.VideoGAP := AktSong.VideoGAP - 1.00;
+            temp := temp - 100;
 
+          AktSong.VideoGAP := temp/100;
           if PlayVideo then
             StartVideo;
         end;
@@ -508,7 +521,11 @@ begin
 
       SDLK_R:   //reload
         begin
-          onHide;
+          MidiOut.Close;
+          MidiOut.Free;
+          Music.Close;
+          acClose;
+
           onShow;
         end;
 
@@ -1903,7 +1920,6 @@ var
   Sec:    integer;
   Tekst:  string;
   Pet:    integer;
-  AktBeat:  integer;
   PlayClick:  boolean;
   line, note: integer;
   end_:   boolean;
@@ -2165,6 +2181,8 @@ begin
   // draw text
   Lyric.Draw;
 
+  DrawInfoBar(20, 460, 760, 20);
+
   if UVideo.VideoOpened and PlayVideo then
   begin
     Czas.Teraz := Czas.Teraz + TimeSkip;
@@ -2225,12 +2243,106 @@ begin
     StartVideoPreview;
 end;
 
+procedure TScreenEditSub.DrawInfoBar(x, y, w, h: integer);
+var
+  start, end_:        integer;
+  ww:                 integer;
+
+  pos:                real;
+  br:                 real;
+
+  line, note:         integer;
+  numLines, numNotes: integer;
+
+begin
+  numLines := Length(Czesci[0].Czesc);
+
+  if(numLines=0) then
+    Exit;
+
+  start := Czesci[0].Czesc[0].Start;
+  end_ := Czesci[0].Czesc[numLines-1].Koniec;
+  ww := end_ - start;
+
+  glColor4f(0, 0, 0, 1);
+  glDisable(GL_BLEND);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  glColor4f(0.9, 0.9, 0.9, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+
+  for line := 0 to numLines - 1 do
+  begin
+    if (line = Czesci[0].Akt) and not (PlaySentence or PlaySentenceMidi) then
+      glColor4f(0.4, 0.4, 0, 1)
+    else
+      glColor4f(1, 0.6, 0, 1);
+
+
+    start := Czesci[0].Czesc[line].Nuta[0].Start;
+    end_ := Czesci[0].Czesc[line].Nuta[Czesci[0].Czesc[line].HighNut].Start+
+      Czesci[0].Czesc[line].Nuta[Czesci[0].Czesc[line].HighNut].Dlugosc;
+
+    pos := start/ww*w;
+    br := (end_-start)/ww*w;
+
+    glbegin(gl_quads);
+      glVertex2f(x+pos, y);
+      glVertex2f(x+pos, y+h);
+      glVertex2f(x+pos+br, y+h);
+      glVertex2f(x+pos+br, y);
+    glEnd;
+    {
+    numNotes := Length(Czesci[0].Czesc[line].Nuta);
+
+    for note := 0 to numNotes - 1 do
+    begin
+
+    end;  }
+  end;
+
+  if(PlaySentence or PlaySentenceMidi) then
+  begin
+    glColor4f(0, 0, 0, 0.5);
+    pos := 0;
+    br := AktBeat/ww*w;
+    if (br>w) then
+      br := w;
+  end else
+  begin
+    glColor4f(1, 0, 0, 1);
+    pos := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start/ww*w;
+    br := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc/ww*w;
+    if (br<1) then
+      br := 1;
+  end;
+
+  glEnable(GL_BLEND);
+  glbegin(gl_quads);
+    glVertex2f(x+pos, y);
+    glVertex2f(x+pos, y+h);
+    glVertex2f(x+pos+br, y+h);
+    glVertex2f(x+pos+br, y);
+  glEnd;
+  glDisable(GL_BLEND);
+end;
+
 procedure TScreenEditSub.onHide;
 begin
   MidiOut.Close;
   MidiOut.Free;
-  Music.Close;
-  acClose;
   //Music.SetVolume(100);
 end;
 
