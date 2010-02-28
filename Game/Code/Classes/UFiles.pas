@@ -672,13 +672,13 @@ begin
 
       if(numNotes=0) then
       begin
-        Log.LogError('Line ' + IntToStr(line+1) + ' in song ' + AktSong.Path + AktSong.Filename + ' has no notes?');
+        Log.LogError('Sentence ' + IntToStr(line+1) + ' in song ' + AktSong.Path + AktSong.Filename + ' has no notes?');
         Exit;
       end;
 
       if(bt>Czesci[p].Czesc[line].Start) then
       begin
-        Log.LogError('Beat error line ' + IntToStr(line+1) + ', beat ' + IntToStr(Czesci[p].Czesc[line].Start) +
+        Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Start) +
           ' in song ' + AktSong.Path + AktSong.Filename);
         Exit;
       end;
@@ -688,7 +688,7 @@ begin
       begin
         if(bt>Czesci[p].Czesc[line].Nuta[note].Start) then
         begin
-          Log.LogError('Beat error line ' + IntToStr(line+1) + ', beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
+          Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
           Exit;
         end;
@@ -703,7 +703,7 @@ begin
 
         if (bt+Czesci[p].Czesc[line].Nuta[note].Dlugosc>nextBeat) then
         begin
-          Log.LogError('Note length error line ' + IntToStr(line+1) + ', beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
+          Log.LogError('Note length error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
           Exit;
         end;
