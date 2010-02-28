@@ -22,6 +22,7 @@ type
     Tabs_at_startup:integer; //Tabs at Startup fix
     Sorting:        integer;
     Debug:          integer;
+    LoadFaultySongs:integer;
 
     // Graphics
     Screens:        integer;
@@ -118,6 +119,7 @@ const
   sArtist2 = 7;
 
   IDebug:         array[0..1] of string = ('Off', 'On');
+  ILoadFaultySongs: array[0..1] of string = ('Off', 'On');
 
   IScreens:       array[0..1] of string = ('1', '2');
   IFullScreen:    array[0..1] of string = ('Off', 'On');
@@ -245,6 +247,11 @@ begin
   Tekst := IniFile.ReadString('Game', 'Debug', IDebug[0]);
   for Pet := 0 to High(IDebug) do
     if Tekst = IDebug[Pet] then Ini.Debug := Pet;
+
+  // Load faulty songs
+  Tekst := IniFile.ReadString('Game', 'LoadFaultySongs', ILoadFaultySongs[0]);
+  for Pet := 0 to High(IDebug) do
+    if Tekst = IDebug[Pet] then Ini.LoadFaultySongs := Pet;
 
   //if Ini.Debug = 1 then SongPath := 'E:\UltraStar 03\Songs\';
 
@@ -620,6 +627,10 @@ begin
     // Debug
     Tekst := IDebug[Ini.Debug];
     IniFile.WriteString('Game',     'Debug',   Tekst);
+
+    // Load faulty songs
+    Tekst := IDebug[Ini.Debug];
+    IniFile.WriteString('Game',     'LoadFaultySongs',   Tekst);
 
     // Screens
     Tekst := IScreens[Ini.Screens];

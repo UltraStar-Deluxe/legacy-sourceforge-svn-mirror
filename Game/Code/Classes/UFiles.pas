@@ -663,7 +663,8 @@ begin
     if(numLines=0) then
     begin
       Log.LogError('Song ' + AktSong.Path + AktSong.Filename + ' has no lines?');
-      Exit;
+      if (Ini.LoadFaultySongs=0) then
+        Exit;
     end;
 
     for line := 0 to numLines - 1 do
@@ -673,14 +674,16 @@ begin
       if(numNotes=0) then
       begin
         Log.LogError('Sentence ' + IntToStr(line+1) + ' in song ' + AktSong.Path + AktSong.Filename + ' has no notes?');
-        Exit;
+        if (Ini.LoadFaultySongs=0) then
+          Exit;
       end;
 
       if(bt>Czesci[p].Czesc[line].Start) then
       begin
         Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Start) +
           ' in song ' + AktSong.Path + AktSong.Filename);
-        Exit;
+        if (Ini.LoadFaultySongs=0) then
+          Exit;
       end;
       bt := Czesci[p].Czesc[line].Start;
 
@@ -690,7 +693,8 @@ begin
         begin
           Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
-          Exit;
+          if (Ini.LoadFaultySongs=0) then
+            Exit;
         end;
         bt := Czesci[p].Czesc[line].Nuta[note].Start;
 
@@ -705,7 +709,7 @@ begin
         begin
           Log.LogError('Note length error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
-          Exit;
+          //Exit;
         end;
 
         if(medley) then
@@ -722,11 +726,13 @@ begin
   if(medley and not foundMedleyStart) then
   begin
     Log.LogError('Error MedleyStartBeat: no corresponding note start (beat) in song ' + AktSong.Path + AktSong.Filename);
-    Exit;
+    if (Ini.LoadFaultySongs=0) then
+      Exit;
   end else if(medley and not foundMedleyEnd) then
   begin
     Log.LogError('Error MedleyEndBeat: no corresponding note start+length in song ' + AktSong.Path + AktSong.Filename);
-    Exit;
+    if (Ini.LoadFaultySongs=0) then
+      Exit;
   end;
   Result := true;
 end;
