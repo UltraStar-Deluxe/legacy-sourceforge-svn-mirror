@@ -14,6 +14,8 @@ type
     FileError:        TextFile;
     FileErrorO:       boolean; // opened
 
+    NumErrors:        integer;
+
     Title: String; //Application Title
 
     //Should Log Files be written
@@ -145,6 +147,7 @@ procedure TLog.LogError(Text: string);
 begin
   if Enabled AND (not FileErrorO) then begin
     FileErrorO := true;
+    NumErrors := 0;
     AssignFile(FileError, LogPath + 'Error.log');
     {$I-}
     Rewrite(FileError);
@@ -166,6 +169,7 @@ begin
     try
       WriteLn(FileError, Text);
       Flush(FileError);
+      Inc(NumErrors);
     except
       FileErrorO := false;
     end;

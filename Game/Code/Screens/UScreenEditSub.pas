@@ -543,8 +543,13 @@ begin
             CopySentence(CopySrc, Czesci[0].Akt);
           end;
 
-          if SDL_ModState = 0 then begin
+          if SDL_ModState = 0 then
             StartVideo;
+
+          if SDL_ModState = KMOD_LSHIFT then
+          begin
+            StartVideo;
+            Click := true;
           end;
         end;
 
@@ -2182,6 +2187,7 @@ begin
   Lyric.Draw;
 
   DrawInfoBar(20, 460, 760, 20);
+  glLineWidth(1); //bad fix...
 
   if UVideo.VideoOpened and PlayVideo then
   begin

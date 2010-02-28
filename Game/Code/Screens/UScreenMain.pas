@@ -14,6 +14,8 @@ type
       TextDescription:        integer;
       TextDescriptionLong:    integer;
 
+      ShowNumErrors:          boolean;
+
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
@@ -262,6 +264,7 @@ begin
   AddButton(Theme.Main.ButtonExit);
 
   Interaction := 0;
+  ShowNumErrors := false;
 end;
 
 procedure TScreenMain.onShow;
@@ -273,6 +276,12 @@ begin
   PlaylistMan.Mode := 0;
   if not Help.SetHelpID(ID) then
       Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenMain)');
+
+  if ShowNumErrors then
+  begin
+    ShowNumErrors := false;
+    ScreenPopupError.ShowPopup(IntToStr(Log.NumErrors) + ' errors on loading, see Error.log for details');
+  end;
 end;
 
 procedure TScreenMain.InteractNext;

@@ -316,6 +316,10 @@ begin
   Log.BenchmarkStart(3);
 
   LoadScreens;
+
+  if Log.NumErrors>0 then
+    ScreenMain.ShowNumErrors := true;
+
   Display.ActualScreen^.FadeTo(@ScreenMain);
 
   Log.BenchmarkEnd(2);
