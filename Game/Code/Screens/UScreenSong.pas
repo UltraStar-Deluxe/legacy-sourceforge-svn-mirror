@@ -33,6 +33,8 @@ type
       TextP2:       integer;  //for M2-MOD: show actual player-name p2
 
       TextMedley:   array[1..4] of integer;
+      TextTop:      array[0..2] of integer;
+      StaticTop:    integer;
 
       FoundCAT: boolean;      //for M2-MOD: a cat is chosen, see whats next...
 
@@ -141,6 +143,7 @@ type
       procedure Refresh; //Refresh Song Sorting
       procedure DrawEqualizer;
       procedure ChangeMusic;
+      procedure LoadTop;
       procedure StartVideoPreview;
       //Party Mode
       procedure SelectRandomSong;
@@ -1085,6 +1088,12 @@ begin
   for I := 1 to 4 do
     TextMedley[I] := AddText(Theme.Song.TextMedley[I]);
 
+  for I := 0 to 2 do
+    TextTop[I] := AddText(Theme.Song.TextTop[I]);
+
+  StaticTop := AddStatic(Theme.Song.StaticTop);
+  Static[StaticTop].Texture.Alpha := 0.5;
+
   //for M2-MOD-mode:
   TextP1 := AddText(Theme.Song.TextP1);
   TextP2 := AddText(Theme.Song.TextP2);
@@ -1788,6 +1797,11 @@ begin
   if Ini.Players <= 3 then PlayersPlay := Ini.Players + 1;
   if Ini.Players = 4 then PlayersPlay := 6;
 
+  for I := 0 to 2 do
+    Text[TextTop[I]].Visible := false;
+
+  Static[StaticTop].Visible := false;
+
   //Cat Mod etc
   if (Ini.Tabs_at_startup = 1) AND (CatSongs.CatNumShow = -1) AND
     (PlaylistMan.Mode=0) then
@@ -1935,6 +1949,7 @@ begin
     begin
       StartVideoPreview;
       CoverTime := 0;
+      LoadTop;
     end;
 
     SongIndex := -1;
@@ -2214,6 +2229,14 @@ begin
   end else
     MP3VolumeHandler.changed := false;
 
+  if MakeMedley or PartyMedley then
+  begin
+    for I := 0 to 2 do
+      Text[TextTop[I]].Visible := false;
+
+    Static[StaticTop].Visible := false;
+  end;
+  
   DrawExtensions;
 end;
 
@@ -2372,6 +2395,8 @@ end;
 
 //Procedure Change current played Preview
 procedure TScreenSong.ChangeMusic;
+var
+  I:  integer;
 begin
   //When Music Preview is avtivated -> then Change Music
   if (Ini.PreviewVolume <> 0) then
@@ -2400,6 +2425,48 @@ begin
       end;
     end else
       Music.Stop;
+  end;
+
+  LoadTop;
+end;
+
+procedure TScreenSong.LoadTop;
+var
+  I: integer;
+begin
+  //Load Top 3
+  if (NOT CatSongs.Song[Interaction].Main) AND (CatSongs.VisibleSongs > 0) and
+    not MakeMedley and not PartyMedley then
+  begin
+    AktSong := CatSongs.Song[Interaction];
+    DataBase.ReadScore(AktSong, 3, {Ini.SumPlayers}0);
+
+    for I := 0 to 2 do
+    begin
+      Text[TextTop[I]].Text := IntToStr(I+1)+'. ';
+    end;
+
+    if Length(AktSong.Score[Ini.Difficulty])>0 then
+      Static[StaticTop].Visible := true
+    else
+      Static[StaticTop].Visible := false;
+
+    for I := 0 to Length(AktSong.Score[Ini.Difficulty])-1 do
+    begin
+      Text[TextTop[I]].Visible := true;
+
+      Text[TextTop[I]].Text := Text[TextTop[I]].Text + AktSong.Score[Ini.Difficulty, I].Name + '\n' +
+        AktSong.Score[Ini.Difficulty, I].Date + ' (' + IntToStr(AktSong.Score[Ini.Difficulty, I].Score) + ')';
+    end;
+
+    for I := Length(AktSong.Score[Ini.Difficulty]) to 2 do
+      Text[TextTop[I]].Visible := false;
+  end else
+  begin
+    for I := 0 to 2 do
+      Text[TextTop[I]].Visible := false;
+
+    Static[StaticTop].Visible := false;
   end;
 end;
 

@@ -46,7 +46,7 @@ begin
         begin
           //SelectLoadAnimation Hidden because it is useless atm
           //if SelInteraction = 7 then begin
-          if SelInteraction = 6 then begin
+          if SelInteraction = 7 then begin
             Ini.Save;
             Music.PlayBack;
             FadeTo(@ScreenOptions);
@@ -60,7 +60,7 @@ begin
         begin
           //SelectLoadAnimation Hidden because it is useless atm
           //if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
             Music.PlayOption;
             InteractInc;
           end;
@@ -69,7 +69,7 @@ begin
         begin
           //SelectLoadAnimation Hidden because it is useless atm
           //if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
             Music.PlayOption;
             InteractDec;
           end;
@@ -94,6 +94,7 @@ begin
   AddSelectSlide(Theme.OptionsAdvanced.SelectOnSongClick, Ini.OnSongClick, IOnSongClick);
   AddSelect(Theme.OptionsAdvanced.SelectAskbeforeDel, Ini.AskbeforeDel, IAskbeforeDel);
   AddSelect(Theme.OptionsAdvanced.SelectPartyPopup, Ini.PartyPopup, IPartyPopup);
+  AddSelect(Theme.OptionsAdvanced.SelectSumPlayers, Ini.SumPlayers, ISumPlayers);
 
   AddButton(Theme.OptionsAdvanced.ButtonExit);
   if (Length(Button[0].Text)=0) then

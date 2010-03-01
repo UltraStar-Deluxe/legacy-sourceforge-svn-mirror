@@ -329,7 +329,7 @@ begin
     if not FileExists(FileName) then break
   end;
 
-  glReadPixels(0, 0, ScreenW, ScreenH, GL_BGRA_EXT, GL_UNSIGNED_BYTE, @PrintScreenData[0]);
+  glReadPixels(0, 0, ScreenW, ScreenH, GL_RGBA, GL_UNSIGNED_BYTE, @PrintScreenData[0]);
   Bitmap := TBitmap.Create;
   Bitmap.Width := ScreenW;
   Bitmap.Height := ScreenH;

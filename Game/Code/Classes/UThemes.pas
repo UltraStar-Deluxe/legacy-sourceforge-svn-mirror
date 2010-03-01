@@ -255,6 +255,8 @@ type
     TextP2:           TThemeText;
 
     TextMedley:       array[1..4] of TThemeText;
+    TextTop:          array[0..2] of TThemeText;
+    StaticTop:        TThemeStatic;
 
     //Video Icon Mod
     VideoIcon:        TThemeStatic;
@@ -510,6 +512,7 @@ type
     SelectAskbeforeDel:   TThemeSelect;
     SelectOnSongClick:    TThemeSelectSlide;
     SelectPartyPopup:     TThemeSelect;
+    SelectSumPlayers:     TThemeSelect;
     ButtonExit:           TThemeButton;
   end;
 
@@ -1086,6 +1089,11 @@ begin
       for I := 1 to 4 do
         ThemeLoadText(Song.TextMedley[I], 'SongTextMedley' + IntToStr(I));
 
+      for I := 0 to 2 do
+        ThemeLoadText(Song.TextTop[I], 'SongTextTop' + IntToStr(I+1));
+
+      ThemeLoadStatic(Song.StaticTop, 'SongStaticTop');
+
       //Video Icon Mod
       ThemeLoadStatic(Song.VideoIcon, 'SongVideoIcon');
       
@@ -1400,6 +1408,7 @@ begin
       ThemeLoadSelectSlide  (OptionsAdvanced.SelectOnSongClick, 'OptionsAdvancedSelectSlideOnSongClick');
       ThemeLoadSelect       (OptionsAdvanced.SelectAskbeforeDel, 'OptionsAdvancedSelectAskbeforeDel');
       ThemeLoadSelect       (OptionsAdvanced.SelectPartyPopup, 'OptionsAdvancedSelectPartyPopup');
+      ThemeLoadSelect       (OptionsAdvanced.SelectSumPlayers, 'OptionsAdvancedSelectSumPlayers');
       ThemeLoadButton       (OptionsAdvanced.ButtonExit, 'OptionsAdvancedButtonExit');
 
       //error and check popup

@@ -47,7 +47,7 @@ type
     Destructor Free;
 
     Procedure Init(const Filename: string);
-    procedure ReadScore(var Song: TSong);
+    procedure ReadScore(var Song: TSong; max, sum: integer);
     procedure AddScore(var Song: TSong; Level: integer; Name: string; Score: integer; TimeStamp: integer);
     procedure WriteScore(var Song: TSong);
 
@@ -248,20 +248,48 @@ end;
 
 //--------------------
 //ReadScore - Read Scores into SongArray
+//
+//sum:
+//  0=never
+//  1=only, if more then max entries (dynamic)
+//  2=always
 //--------------------
-procedure TDataBaseSystem.ReadScore(var Song: TSong);
+procedure TDataBaseSystem.ReadScore(var Song: TSong; max, sum: integer);
 var
-  TableData: TSqliteTable;
-  Difficulty: Byte;
-  I: integer;
+  TableData:    TSqliteTable;
+  Difficulty:   Byte;
+  I:            integer;
   PlayerListed: boolean;
-  DateStr: string;
+  DateStr:      string;
+  num:          array[0..2] of integer; //num entries easy, medium, hard
 
 begin
   if not Assigned(ScoreDB) then
     Exit;
 
   try
+    //count num entries
+    if(sum=1) then
+    begin
+      num[0] := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
+        'WHERE `Difficulty` = 0 and '+
+        '`SongID` = (SELECT `ID` FROM `us_songs` WHERE `Artist` = "' +
+        Song.Artist + '" AND `Title` = "' + Song.Title +
+        '" LIMIT 1);');
+
+      num[1] := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
+        'WHERE `Difficulty` = 1 and '+
+        '`SongID` = (SELECT `ID` FROM `us_songs` WHERE `Artist` = "' +
+        Song.Artist + '" AND `Title` = "' + Song.Title +
+        '" LIMIT 1);');
+
+      num[2] := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
+        'WHERE `Difficulty` = 2 and '+
+        '`SongID` = (SELECT `ID` FROM `us_songs` WHERE `Artist` = "' +
+        Song.Artist + '" AND `Title` = "' + Song.Title +
+        '" LIMIT 1);');
+    end;
+
     //Search Song in DB
     TableData := ScoreDB.GetTable('SELECT `Difficulty`, `Player`, `Score`, `Date` '+
       'FROM `us_scores` WHERE '+
@@ -279,7 +307,7 @@ begin
       // Add one Entry to Array
       Difficulty := StrToInt(TableData.FieldAsString(TableData.FieldIndex['Difficulty']));
       if ((Difficulty >= 0) and (Difficulty <= 2)) and
-         (Length(Song.Score[Difficulty]) < 8) then
+         (Length(Song.Score[Difficulty]) < max) then
       begin
         //filter player
         PlayerListed:=false;
@@ -295,7 +323,10 @@ begin
           end;
         end;
 
-        if not PlayerListed then
+        if (sum=0) or
+          ((sum=1) and (num[Difficulty]<=max)) or
+          ((sum=1) and (num[Difficulty]>max) and not PlayerListed) or
+          ((sum=2) and not PlayerListed) then
         begin
           SetLength(Song.Score[Difficulty], Length(Song.Score[Difficulty]) + 1);
 

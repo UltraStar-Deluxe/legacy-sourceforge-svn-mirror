@@ -172,7 +172,7 @@ begin
   if sung then
     DataBase.WriteScore(AktSong);
 
-  DataBase.ReadScore(AktSong);
+  DataBase.ReadScore(AktSong, 8, Ini.SumPlayers);
 
   Text[TextArtistTitle].Text := AktSong.Artist + ' - ' + AktSong.Title;
 
@@ -194,7 +194,7 @@ begin
     Text[TextName[I]].Visible := false;
     Text[TextScore[I]].Visible := false;
     Text[TextDate[I]].Visible := false;
-  end;       
+  end;
 
   Text[TextLevel].Text := IDifficulty[Ini.Difficulty];
 
