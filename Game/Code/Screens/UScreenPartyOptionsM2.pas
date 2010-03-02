@@ -717,11 +717,7 @@ begin
       PluginList[Len].TimesPlayed := 0;
       PluginList[Len].Medley := false;
       PluginList[Len].MedleySurprise := false;
-
-      if I=ID_DUELL then
-        PluginList[Len].Selected := true
-      else
-        PluginList[Len].Selected := false;
+      PluginList[Len].Selected := true;
 
       PluginList[Len].Name := Language.Translate(DLLMan.Plugins[I].Name);
       PluginList[Len].Desc := Language.Translate(DLLMan.Plugins[I].PluginDesc);

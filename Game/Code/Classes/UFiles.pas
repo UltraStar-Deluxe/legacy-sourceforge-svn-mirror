@@ -645,7 +645,7 @@ var
   medley:             boolean;
 
 begin
-  Result := false;
+  Result := true;
   bt := -32000;
 
   if(AktSong.Medley.Source = msTag) then
@@ -664,7 +664,7 @@ begin
     begin
       Log.LogError('Song ' + AktSong.Path + AktSong.Filename + ' has no lines?');
       if (Ini.LoadFaultySongs=0) then
-        Exit;
+        Result := false;
     end;
 
     for line := 0 to numLines - 1 do
@@ -675,7 +675,7 @@ begin
       begin
         Log.LogError('Sentence ' + IntToStr(line+1) + ' in song ' + AktSong.Path + AktSong.Filename + ' has no notes?');
         if (Ini.LoadFaultySongs=0) then
-          Exit;
+          Result := false;
       end;
 
       if(bt>Czesci[p].Czesc[line].Start) then
@@ -683,7 +683,7 @@ begin
         Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Start) +
           ' in song ' + AktSong.Path + AktSong.Filename);
         if (Ini.LoadFaultySongs=0) then
-          Exit;
+          Result := false;
       end;
       bt := Czesci[p].Czesc[line].Start;
 
@@ -694,7 +694,7 @@ begin
           Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
           if (Ini.LoadFaultySongs=0) then
-            Exit;
+            Result := false;
         end;
         bt := Czesci[p].Czesc[line].Nuta[note].Start;
 
@@ -727,14 +727,13 @@ begin
   begin
     Log.LogError('Error MedleyStartBeat: no corresponding note start (beat) in song ' + AktSong.Path + AktSong.Filename);
     if (Ini.LoadFaultySongs=0) then
-      Exit;
+      Result := false;
   end else if(medley and not foundMedleyEnd) then
   begin
     Log.LogError('Error MedleyEndBeat: no corresponding note start+length in song ' + AktSong.Path + AktSong.Filename);
     if (Ini.LoadFaultySongs=0) then
-      Exit;
+      Result := false;
   end;
-  Result := true;
 end;
 
 
