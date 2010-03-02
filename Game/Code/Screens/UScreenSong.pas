@@ -1092,7 +1092,7 @@ begin
     TextTop[I] := AddText(Theme.Song.TextTop[I]);
 
   StaticTop := AddStatic(Theme.Song.StaticTop);
-  Static[StaticTop].Texture.Alpha := 0.5;
+  Static[StaticTop].Texture.Alpha := 0.4;
 
   //for M2-MOD-mode:
   TextP1 := AddText(Theme.Song.TextP1);
@@ -2229,7 +2229,8 @@ begin
   end else
     MP3VolumeHandler.changed := false;
 
-  if MakeMedley or PartyMedley then
+  if MakeMedley or PartyMedley or
+    ((CatSongs.VisibleSongs > 0) and CatSongs.Song[Interaction].Main) then
   begin
     for I := 0 to 2 do
       Text[TextTop[I]].Visible := false;

@@ -215,11 +215,11 @@ begin
 
           // Increase VideoGAP
           if SDL_ModState = 0 then
-            temp := temp + 1;
+            temp := temp + 1;         //10ms
           if SDL_ModState = KMOD_LSHIFT then
-            temp := temp + 10;
+            temp := temp + 10;        //100ms
           if SDL_ModState = KMOD_LCTRL then
-            temp := temp + 100;
+            temp := temp + 100;       //1000ms
 
           AktSong.VideoGAP := temp/100;
           if PlayVideo then
@@ -232,11 +232,11 @@ begin
 
           // Decrease VideoGAP
           if SDL_ModState = 0 then
-            temp := temp - 1;
+            temp := temp - 1;        //10ms
           if SDL_ModState = KMOD_LSHIFT then
-            temp := temp - 10;
+            temp := temp - 10;       //100ms
           if SDL_ModState = KMOD_LCTRL then
-            temp := temp - 100;
+            temp := temp - 100;      //1000ms
 
           AktSong.VideoGAP := temp/100;
           if PlayVideo then
@@ -495,13 +495,15 @@ begin
       SDLK_D:
         begin
           // Divide lengths by 2
-          CzesciDivide;
+          if (SDL_ModState = KMOD_LSHIFT) then
+            CzesciDivide;
         end;
 
       SDLK_M:
         begin
           // Multiply lengths by 2
-          CzesciMultiply;
+          if (SDL_ModState = KMOD_LSHIFT) then
+            CzesciMultiply;
         end;
 
       SDLK_C:
