@@ -131,6 +131,7 @@ begin
   Song.GAP := 0;
   Song.Start := 0;
   Song.Finish := 0;
+  Song.Relative := false;
 
   //Additional Information
   Song.Background := '';
