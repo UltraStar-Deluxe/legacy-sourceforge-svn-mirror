@@ -1,3 +1,32 @@
+Ultrastar Deluxe v1.0.1a Challenge MOD r7 (0x.03.2010)
+-----------------------------
+New: (General)     Experimental karaoke function (tries to hide the singing voice, please don't take it too seriously): enable/disable with "K"
+New: (General)     MP3 volume adjustment during playback use "PAGE UP/DOWN"
+New: (General)     "CTRL" + "PRINT" saves screenshots directly as *.jpg
+New: (General)     It's now possible to combine the high scores. Additionally there is a new dynamic mode in advanced options.
+New: (General)     Set "SavePlayback = On" in the config.ini to record the vocals of every player and every song as WAVE files in the "Recordings" folder (includes each individual medley song). Scorescreen and topscreen will also play all the pre-recorded voices instead of the MP3. Note: This feature is experimental! The wave files are uncompressed (88.2 kb/s) per player and song (= two players ca. 635MB/h)! Don't forget this folder and delete the files if necessary!
+New: (Editor)      Editor now features a timebar, which displays the rows and the current note. When playing with "P" or "V" it also displays a progress bar to give you an insight, where you are currently in the song.
+New: (Editor)      It's now possible to change the BPM directly into the editor (with "F5") (thx to blindguard for providing his code)
+New: (Editor)      It's now possible to change the VideoGap directly into the editor (with "7" (-0.01) and "8" (+0.01), additional you can press "SHIFT" + "7" or "8" to de-/increase in 0.1 steps and "CTRL" + "7" or "8" for 1 steps
+New: (Editor)      New video preview (with "V") - "SHIFT" + "V" = with additional clicks
+New: (Medley)      You can start 10 up to 90 random medley-songs at once with "CTRL" +"1" up to "9" and "CTRL" + "SHIFT" + "1" up to "9" for songs with already calculated medley parts. It's also possible to save ALL Medley songs into a playlist (with "0" or "CTRL" + "0"). 
+New: (Party)       No song will be selected twice anymore (unless there aren't enough songs).
+New: (Party)       No medley song will be selected twice in party, classic and challenge mode (unless there aren't enough songs).
+New: (Song-menu)   Shows Top 3 High Scores
+New: (Video)       new option: only show video in preview
+Upd: (Editor)      "M" and "D" are replaced by "SHIFT" + "M" and "D". "S" and "SPACE" were too close together (to D and M).
+Upd: (Editor)      "CTRL"+"-" now will half the selected notes instead of a "-" a tilde "~" is (with space by default) appended. Part is a note of length 1 is taken in a space.
+Upd: (Videos)      Acinerella.dll (video decoding) updated
+Fix: (General)     At start all the songs will be scanned and possibly discarded if there are errors. An information will pop-up with the numbers of errors. Set "LoadFaultySongs = On" in config.ini to stop this behaviour (e.g. for song makers).
+Fix: (General)     "relative" MP3s are (currently) not medley compatible. These songs are written into the error.log. The program won't crash with such songs anymore.
+Fix: (General)     If you press "TAB" at the singscreen to trigger the help, quit it with "TAB" and then press "TAB" again, the song kept running despite the help screen
+Fix: (Challenge)   Track errors doesn't quit the mode anymore.
+Fix: (Editor)      When playing a single note ("SPACE") it only will playe this note, even if it overlaps with others.
+Fix: (Editor)      If you play a line with "P" and hit "LEFT" or "RIGHT" the cursor will now move back to the note which has recently been highlighted.
+Fix: (Medley)      For Medley Surprise the remaining 4 songs will not be used from the same folder only.
+Fix: (Plugins)     Random plugin selection improved.
+Info:(Help)        The English translation of the help sections is unfortunately not done yet.
+
 Ultrastar Deluxe v1.0.1a Challenge MOD r6b (17.02.2010)
 -----------------------------
 Fix: (Medley)      #Relative tag and medley does not work (for now). Added message and fixed crash.

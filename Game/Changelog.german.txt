@@ -1,3 +1,32 @@
+Ultrastar Deluxe v1.0.1a Challenge MOD r7 vom 0x.03.2010
+-----------------------------
+New: (Allgemein) Experimentelle Karaoke-Funktion (Singstimme ausblenden, bitte nicht zu ernst nehmen): mit K ein/ausschalten
+New: (Allgemein) Lautstärkeanpassung beim Abspielen der MP3 mit Bild rauf/ Bild runter
+New: (Allgemein) Man kann Screenshots mit Strg+Druck auch direkt als jpg speichern.
+New: (Allgemein) Man kann einstellen, ob die Highscores zusammengefasst werden sollen oder nicht. Zusätzlich gibt es noch einen dynamischen Modus (einstellbar unter Erweiterte Optionen).
+New: (Allgemein) Wenn man in der config.ini die Option "SavePlayback=On" einstellt, dann werden die Gesangstimmen als WAVE-Dateien im Ordner "Recordings" pro Spieler und Lied (auch jedes einzelne Medley-Song) abgelegt. Im ScoreScreen und TopScreen werden zudem nicht die MP3, sondern alle zuvor aufgezeichneten Stimmen abgespielt. Achtung: Diese Funktion ist experimentell! Die wave-Dateien sind unkomprimiert und verbrauchen 88,2kb/s pro Spieler und Lied (=bei zwei Spielern ca. 635MB pro Stunde)! Schaut also regelmäßig in diesen Ordner und löscht ggf.!
+New: (Editor) Im Editor wird nun eine Art Zeitstrahl eingeblendet, auf dem alle Zeilen und die aktuelle Note markiert sind. Beim Abspielen mit P oder V gibt es zudem einen Fortschrittsbalken. So kann man sich vielleicht etwas besser vorstellen, wo im Song man sich gerade befindet.
+New: (Editor) Man kann nun die BPM direkt im Editor ändern (mit F5). Bisher waren nur vielfache von 2 möglich (teilen/multiplizieren) (thx to BlindGuard fürs zusenden seines Codes).
+New: (Editor) VideoGap nun direkt im Editor änderbar. Mit 7 (-0,01) und 8 (+0,01); mit shift +-0,1 und mit strg +-1
+New: (Editor) Videovorschau mit V (mit Shift+V auch mit Klicks).
+New: (Medley) 10, 20, ... 90 Medley-Songs per random auf einmal starten: mit CTRL+1..9 bzw. CTRL+SHIFT+1..9 für Songs mit errechneten Medley-Stellen (analog zur bisherigen Funktion D); Mit 0 bzw. CTRL+0 werden ALLE Medley-Songs in eine Playlist getan.
+New: (Party) Auch im Party-Classic-Modus wird kein Lied mehr zweimal gesungen! (es sei denn, die Lieder reichen nicht)
+New: (Party) Medley-Songs werden sowohl im Party-Classic als auch im Challenge-modus nicht mehr 2x gesungen (es sei denn, die Lieder reichen nicht).
+New: (Songauswahl) Top 3 Anzeige.
+New: (Video) Neue Option: Video nur in Videovorschau aber nicht im SingScreen.
+Upd: (Editor) M und D sind nun auf Shift+M udn Shift+D gelegt. Die S-Taste und Leerzeichen sind zu nah dran gewesen.
+Upd: (Editor) Noten werden mittels [Ctrl]+[-] halbiert statt der Aufteilung in die Länge 1 und (bisherige Länge)-1. Hierbei wird statt einem "-" eine Tilde "~" (mit Space) standardmäßig angehängt. Teil man eine Note der Länge 1 wird ein Leerzeichen genommen.
+Upd: (Videos) Neuere Acinerella.dll (Videodecodierung).
+Fix: (Allgemein)  Bei Programmstart werden alle Lieder geprüft und ggf. aussortiert. Ein Popup informiert über die Anzahl der Fehler. Man kann in der Config.ini dieses Verhalten für einige Fehler abstellen (Game->LoadFaultySongs).
+Fix: (Allgemein) "Relative" Lieder sind (derzeit) nicht Medley-tauglich. Entsprechende Lieder werden in der Error.log erwähnt. Das Programm stürzt bei solchen Liedern nicht mehr ab.
+Fix: (Allgemein) Wenn man im Singscreen Tab für die Hilfe gedrückt hat, diese mit Tab verlassen hat und dann nochmal Tab gedrückt hat, so lief das Lied trotz Hilfebildschirm weiter.
+Fix: (Challenge) Bei Song-Fehler wird der Modus nicht mehr verlassen.
+Fix: (Editor) Beim Abspielen einer einzelnen Note (mittels Space) wird auch wirklich nur diese gespielt, auch wenn sie mit anderen Noten überlappt.
+Fix: (Editor) Wenn man eine Zeile mittels P abspielt und dann plötzlich Links oder Rechts drückt, so wandert der Cursor sofort zu der Note zurück, die zuletzt markiert war.
+Fix: (Medley) Bei Medley Surprise wurden die restlichen 4 Lieder aus dem gleichen Ordner genommen.
+Fix: (Plugins) Zufällige Auswahl der Plugins verbessert.
+Info: (Hilfe) Die Übersetzung der Hilfetexte ins Englische ist leider noch nicht abgeschlossen.
+
 Ultrastar Deluxe v1.0.1a Challenge MOD r6b vom 17.02.2010
 -----------------------------
 Fix: (Medley) #Relative und Medley vertragen sich (noch) nicht. Wird nun abgefangen.
