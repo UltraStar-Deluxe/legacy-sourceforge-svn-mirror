@@ -7,15 +7,15 @@ uses
 
 type
   TScreenOptionsSound = class(TMenu)
-    const
-      ID='ID_012';   //for help system
-
     public
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
   end;
 
+const
+  ID='ID_012';   //for help system
+  
 implementation
 
 uses UGraphic, UHelp, ULog;

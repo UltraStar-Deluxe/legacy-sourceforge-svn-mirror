@@ -7,15 +7,15 @@ uses
 
 type
   TScreenLevel = class(TMenu)
-    const
-      ID='ID_002';   //for help system
-
-    public
+  public
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
+
+const
+  ID='ID_002';   //for help system
 
 implementation
 

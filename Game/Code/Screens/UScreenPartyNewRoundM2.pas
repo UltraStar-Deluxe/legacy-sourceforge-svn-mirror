@@ -7,9 +7,6 @@ uses
 
 type
   TScreenPartyNewRoundM2 = class(TMenu)
-    const
-      ID='ID_019';   //for help system
-
     public
       //Texts:
       TextRound: array [1..9] of cardinal;
@@ -41,6 +38,9 @@ type
       procedure Update;
   end;
 
+const
+  ID='ID_019';   //for help system
+  
 implementation
 
 uses UGraphic, UMain, UIni, UTexture, UPartyM2, UDLLManager, ULanguage, ULog, UHelp;

@@ -7,9 +7,6 @@ uses
 
 type
   TScreenPartyOptions = class(TMenu)
-    const
-      ID='ID_015';   //for help system
-
     public
       SelectLevel: Cardinal;
       SelectPlayList: Cardinal;
@@ -51,6 +48,7 @@ const
     '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
     '21', '22', '23', '24', '25', '26', '27', '28', '29', '30',
     '31', '32');
+  ID='ID_015';   //for help system
 
 implementation
 

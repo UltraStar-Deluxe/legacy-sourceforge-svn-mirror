@@ -7,9 +7,6 @@ uses
 
 type
   TScreenOptionsGame = class(TMenu)
-    const
-      ID='ID_008';   //for help system
-
     public
       old_Tabs, old_Sorting: integer;
       constructor Create; override;
@@ -18,6 +15,9 @@ type
       procedure RefreshSongs;
   end;
 
+const
+  ID='ID_008';   //for help system
+  
 implementation
 
 uses UGraphic, UHelp, ULog;

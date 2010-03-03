@@ -7,9 +7,6 @@ uses
 
 type
   TScreenOptionsRecord = class(TMenu)
-    const
-      ID='ID_011';   //for help system
-
     private
       SelectSlideInput:       integer;
       SelectSlideChannelL:    integer;
@@ -21,6 +18,9 @@ type
       procedure UpdateCard;
   end;
 
+const
+  ID='ID_011';   //for help system
+  
 implementation
 
 uses SysUtils, UGraphic, URecord, UHelp, ULog;

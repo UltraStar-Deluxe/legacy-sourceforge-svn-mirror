@@ -12,9 +12,6 @@ type
   end;
 
   TScreenScore = class(TMenu)
-    const
-      ID='ID_022';   //for help system
-
     public
       MP3VolumeHandler: THandler;
 
@@ -66,10 +63,14 @@ type
       procedure StartVoice;
   end;
 
+const
+  ID='ID_022';   //for help system
+  
 implementation
 
 {{$IFDEF TRANSLATE}
 uses UGraphic, UDraw, UScreenSong, UPartyM2, UMenuStatic, UTime, UMain, UIni, ULanguage, UHelp, ULog;
+
 {{$ELSE}{
 uses UGraphic, UScreenSong, UMenuStatic, UTime, UMain, UIni;
 {{$ENDIF}

@@ -7,9 +7,6 @@ uses
 
 type
   TScreenPartyScore = class(TMenu)
-    const
-      ID='ID_017';   //for help system
-
     public
       TextScoreTeam1:    Cardinal;
       TextScoreTeam2:    Cardinal;
@@ -40,6 +37,9 @@ type
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
+
+const
+  ID='ID_017';   //for help system
 
 implementation
 

@@ -7,9 +7,6 @@ uses
 
 type
   TScreenPartyPlayer = class(TMenu)
-    const
-      ID='ID_016';   //for help system
-
     public
       Team1Name: Cardinal;
       Player1Name: Cardinal;
@@ -34,6 +31,9 @@ type
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
+
+const
+  ID='ID_016';   //for help system
 
 implementation
 

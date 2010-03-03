@@ -111,11 +111,11 @@ type
       procedure onHide; override;
   end;
 
+const
+  ID='ID_001';   //for help system
+
 implementation
 uses UGraphic, UDraw, UMain, USkins, ULanguage;
-
-const
-      ID='ID_001';   //for help system
 
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;

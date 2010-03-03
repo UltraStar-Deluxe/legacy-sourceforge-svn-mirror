@@ -7,14 +7,14 @@ uses
 
 type
   TScreenOptionsGraphics = class(TMenu)
-    const
-      ID='ID_009';   //for help system
-
     public
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
-  end;
+    end;
+
+const
+  ID='ID_009';   //for help system
 
 implementation
 

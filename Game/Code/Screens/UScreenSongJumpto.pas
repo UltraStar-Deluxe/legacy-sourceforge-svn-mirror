@@ -7,8 +7,6 @@ uses
 
 type
   TScreenSongJumpto = class(TMenu)
-  const
-      ID='ID_031';   //for help system
     private
       //For ChangeMusic
       LastPlayed: Integer;
@@ -34,6 +32,8 @@ var
   IType: Array [0..2] of String;
   SelectType: Integer;
 
+const
+  ID='ID_031';   //for help system
 
 implementation
 

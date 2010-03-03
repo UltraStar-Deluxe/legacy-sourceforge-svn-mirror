@@ -7,9 +7,6 @@ uses
 
 type
   TScreenPartyWin = class(TMenu)
-    const
-      ID='ID_018';   //for help system
-
     public
       TextScoreTeam1:    Cardinal;
       TextScoreTeam2:    Cardinal;
@@ -34,6 +31,9 @@ type
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
+const
+  ID='ID_018';   //for help system
+  
 implementation
 
 uses UGraphic, UMain, UParty, UScreenSingModi, ULanguage, UHelp, ULog;

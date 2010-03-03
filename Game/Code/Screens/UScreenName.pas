@@ -7,9 +7,6 @@ uses
 
 type
   TScreenName = class(TMenu)
-    const
-      ID='ID_004';   //for help system
-
     public
       Goto_SingScreen: Boolean; //If True then next Screen in SingScreen
       constructor Create; override;
@@ -17,6 +14,9 @@ type
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
+
+const
+  ID='ID_004';   //for help system
 
 implementation
 

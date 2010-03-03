@@ -12,9 +12,6 @@ type
   end;
 
   TScreenSing = class(TMenu)
-    const
-      ID='ID_023';   //for help system
-      
     protected
       paused: boolean; //Pause Mod
       PauseTime: Real;
@@ -110,10 +107,13 @@ type
       procedure DrawMedleyCountdown();
   end;
 
+const
+  ID='ID_023';   //for help system
+
 implementation
 uses UGraphic, UDataBase, UDraw, UMain, Classes, URecord, ULanguage, UHelp, math,
   UPartyM2, UParty;
-
+  
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
 function TScreenSing.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;

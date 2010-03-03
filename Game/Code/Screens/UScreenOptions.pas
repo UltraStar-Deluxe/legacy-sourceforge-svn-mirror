@@ -7,9 +7,6 @@ uses
 
 type
   TScreenOptions = class(TMenu)
-    const
-      ID='ID_006';   //for help system
-
     public
       TextDescription:    integer;
       constructor Create; override;
@@ -20,6 +17,9 @@ type
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
+const
+  ID='ID_006';   //for help system
+  
 implementation
 
 uses UGraphic, UHelp, ULog;

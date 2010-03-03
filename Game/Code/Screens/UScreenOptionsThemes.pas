@@ -7,9 +7,6 @@ uses
 
 type
   TScreenOptionsThemes = class(TMenu)
-    const
-      ID='ID_013';   //for help system
-
     private
       procedure ReloadTheme;
     public
@@ -20,6 +17,9 @@ type
       procedure InteractInc; override;
       procedure InteractDec; override;
   end;
+
+const
+  ID='ID_013';   //for help system
 
 implementation
 

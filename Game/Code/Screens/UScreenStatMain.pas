@@ -7,9 +7,6 @@ uses
 
 type
   TScreenStatMain = class(TMenu)
-    const
-      ID='ID_028';   //for help system
-
     private
       //Some Stat Value that don't need to be calculated 2 times
       SongswithVid: Cardinal;
@@ -23,6 +20,9 @@ type
       procedure SetOverview;
   end;
 
+const
+  ID='ID_028';   //for help system
+  
 implementation
 
 uses UGraphic, UDataBase, USongs, ULanguage, windows, ULog, UHelp;

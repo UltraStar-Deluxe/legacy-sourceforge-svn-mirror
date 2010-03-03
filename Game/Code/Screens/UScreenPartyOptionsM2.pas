@@ -17,9 +17,6 @@ uses
 
 type
   TScreenPartyOptionsM2 = class(TMenu)
-    const
-      ID='ID_020';   //for help system
-
     public
       ID_DUELL:         Byte;
       SelectLevel:      cardinal;
@@ -64,6 +61,7 @@ var
 const
   IPlayers: array[0..7] of String = ('2', '3', '4', '5', '6', '7', '8', '9');
   MAX_ROUNDS: Integer = 100;
+  ID='ID_020';   //for help system
 
 implementation
 

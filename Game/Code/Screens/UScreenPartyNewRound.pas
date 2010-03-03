@@ -7,9 +7,6 @@ uses
 
 type
   TScreenPartyNewRound = class(TMenu)
-    const
-      ID='ID_014';   //for help system
-
     private
       ScreenRound:  Integer;
       procedure Update;
@@ -52,6 +49,9 @@ type
       procedure SetAnimationProgress(Progress: real); override;
   end;
 
+const
+  ID='ID_014';   //for help system
+  
 implementation
 
 uses UGraphic, UMain, UIni, UTexture, UParty, UDLLManager, ULanguage, UHelp, ULog;

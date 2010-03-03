@@ -7,15 +7,15 @@ uses
 
 type
   TScreenPartyPlayerM2 = class(TMenu)
-    const
-      ID='ID_021';   //for help system
-
     public
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
   end;
+
+const
+  ID='ID_021';   //for help system
 
 implementation
 

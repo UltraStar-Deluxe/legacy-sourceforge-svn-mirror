@@ -7,9 +7,6 @@ uses
 
 type
   TScreenStatDetail = class(TMenu)
-    const
-      ID='ID_027';   //for help system
-
     public
       Typ:  Byte;
       Page: CardinaL;
@@ -28,6 +25,9 @@ type
       procedure SetTitle;
       Procedure SetPage(NewPage: Cardinal);
   end;
+
+const
+  ID='ID_027';   //for help system
 
 implementation
 

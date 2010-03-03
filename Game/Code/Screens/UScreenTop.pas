@@ -12,9 +12,6 @@ type
   end;
 
   TScreenTop = class(TMenu)
-    const
-      ID='ID_029';   //for help system
-
     public
       MP3VolumeHandler: THandler;
 
@@ -38,6 +35,9 @@ type
       //procedure DrawScores(difficulty: integer);  TODO
   end;
 
+const
+  ID='ID_029';   //for help system
+  
 implementation
 
 uses UGraphic, UDataBase, UDraw, UMain, UIni, UPartyM2, UTime, DateUtils, UHelp, ULog;

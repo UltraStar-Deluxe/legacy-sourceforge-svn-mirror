@@ -7,9 +7,6 @@ uses
 
 type
   TScreenMain = class(TMenu)
-    const
-      ID='ID_003';   //for help system
-
     public
       TextDescription:        integer;
       TextDescriptionLong:    integer;
@@ -28,6 +25,9 @@ type
       //function Draw: boolean; override;
   end;
 
+const
+  ID='ID_003';   //for help system
+  
 implementation
 
 uses Windows, UPlaylist, UGraphic, UMain, UIni, UTexture, USongs, Textgl, opengl, ULanguage, UParty, UDLLManager, UScreenCredits, USkins, ULog;
