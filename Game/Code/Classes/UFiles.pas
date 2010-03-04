@@ -699,6 +699,14 @@ begin
         end;
         bt := Czesci[p].Czesc[line].Nuta[note].Start;
 
+        if (Czesci[p].Czesc[line].Nuta[note].Dlugosc<1) then
+        begin
+          Log.LogError('Note length <1 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
+            ' in song ' + AktSong.Path + AktSong.Filename);
+          if (Ini.LoadFaultySongs=0) then
+            Result := false;
+        end;
+
         if (note<numNotes-1) then
           nextBeat := Czesci[p].Czesc[line].Nuta[note+1].Start
         else if (line<numLines-1) then

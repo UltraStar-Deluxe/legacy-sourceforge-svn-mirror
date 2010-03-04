@@ -167,9 +167,10 @@ begin
 
   if FileErrorO then begin
     try
-      WriteLn(FileError, Text);
-      Flush(FileError);
       Inc(NumErrors);
+      WriteLn(FileError, IntToStr(NumErrors) + ') ' + Text);
+      WriteLn(FileError, '');
+      Flush(FileError);
     except
       FileErrorO := false;
     end;
