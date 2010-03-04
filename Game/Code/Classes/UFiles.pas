@@ -813,7 +813,7 @@ begin
     ReadLn(SongFile, Tekst);
     Inc(FileLineNo);
     
-    if (EoF(SongFile)) then
+    if (EoF(SongFile)) or (Length(Tekst)=0) then
     begin //Song File Corrupted - No Notes
       CloseFile(SongFile);
       FileMode := fmOpenReadWrite;
@@ -821,9 +821,11 @@ begin
       Result := False;
       Exit;
     end;
+
     Read(SongFile, TempC);
   until ((TempC = ':') or (TempC = 'F') or (TempC = '*'));
-
+  Inc(FileLineNo);
+  
   SetLength(Czesci, 0);
   SetLength(Czesci, 2);
   for Pet := 0 to High(Czesci) do begin
@@ -837,8 +839,6 @@ begin
     Czesci[Pet].Czesc[0].HighNut := -1;
   end;
 
-//  TempC := ':';
-//  TempC := Tekst[1]; // read from backup variable, don't use default ':' value
   isNewSentence := false;
   while (TempC <> 'E') AND (not EOF(SongFile)) do begin
     if (TempC = ':') or (TempC = '*') or (TempC = 'F') then begin
@@ -919,7 +919,10 @@ begin
       end;
     end;
 
-    Read(SongFile, TempC);
+    Repeat
+      Read(SongFile, TempC);
+    Until ((TempC <> #13) AND (TempC <> #10)) or (TempC = 'E') or (EOF(SongFile));
+
     Inc(FileLineNo);
   end; // while}
 
@@ -933,7 +936,7 @@ begin
 
     end;
     Result := false;
-    Log.LogError('Error Loading File: "' + Name + '" in Line ' + inttostr(FileLineNo+1));
+    Log.LogError('Error Loading File: "' + Name + '" in Line ' + inttostr(FileLineNo));
     exit;
   end;
 

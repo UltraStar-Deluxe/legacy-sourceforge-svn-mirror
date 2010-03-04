@@ -1807,7 +1807,7 @@ begin
     (PlaylistMan.Mode=0) then
   begin
     CatSongs.ShowCategoryList;
-    SelectNext;
+    //SelectNext;
     //Show Cat in Top Left Mod
     HideCatTL;
   end else if (PlaylistMan.Mode=0) and (Ini.Tabs_at_startup = 1) AND (CatSongs.CatNumShow = -3) then
@@ -1944,11 +1944,13 @@ begin
 
   if Length(CatSongs.Song) > 0 then begin
     if SongIndex<>Interaction then
-      ChangeMusic
-    else
     begin
-      StartVideoPreview;
       CoverTime := 0;
+      ChangeMusic;
+    end else
+    begin
+      CoverTime := 0;
+      StartVideoPreview;
       LoadTop;
     end;
 
