@@ -1,4 +1,4 @@
-Ultrastar Deluxe v1.0.1a Challenge MOD r7 (0x.03.2010)
+Ultrastar Deluxe v1.0.1a Challenge MOD r7 (04.03.2010)
 -----------------------------
 New: (General)     Experimental karaoke function (tries to hide the singing voice, please don't take it too seriously): enable/disable with "K"
 New: (General)     MP3 volume adjustment during playback use "PAGE UP/DOWN"

@@ -1969,9 +1969,10 @@ begin
           begin
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
             AktNuta := 0;
-            Inc(Czesci[0].Akt);
-            if Czesci[0].Akt > Length(Czesci[0].Czesc)-1 then //useful?
-              Czesci[0].Akt := 0;
+            Czesci[0].Akt := line;
+            //Inc(Czesci[0].Akt);
+            //if Czesci[0].Akt > Length(Czesci[0].Czesc)-1 then //useful?
+            //  Czesci[0].Akt := 0;
             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 1;
             Lyric.AddCzesc(Czesci[0].Akt);
             Lyric.Selected := AktNuta;
@@ -2060,8 +2061,13 @@ begin
         begin
           Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
           if not LineChanged then
-            Inc(AktNuta)
-          else
+          begin
+            AktNuta := note;
+            Czesci[0].Akt := line;
+            //Inc(AktNuta);
+            //if AktNuta > Length(Czesci[0].Czesc[Czesci[0].Akt].Nuta)-1 then
+            //  Dec(AktNuta);
+          end else
             LineChanged := false;
 
           Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
