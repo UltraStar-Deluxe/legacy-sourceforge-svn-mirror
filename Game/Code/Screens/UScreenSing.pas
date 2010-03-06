@@ -872,9 +872,9 @@ begin
     acOpenFile(PAnsiChar(AktSong.Path + AktSong.Video));
 
     if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
-      acSkip(AktSong.VideoGAP, MedleyStart)
+      acSkip2(AktSong.VideoGAP, MedleyStart)
     else
-      acSkip(AktSong.VideoGAP, AktSong.Start);
+      acSkip2(AktSong.VideoGAP, AktSong.Start);
 
     if (UVideo.VideoOpened) then
       AktSong.VideoLoaded := true;
