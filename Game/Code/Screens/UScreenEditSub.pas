@@ -223,6 +223,10 @@ begin
             temp := temp + 100;       //1000ms
 
           AktSong.VideoGAP := temp/100;
+          
+          if AktSong.VideoGAP<0 then
+            AktSong.Start := (AktSong.VideoGAP*-1);
+
           if PlayVideo then
             StartVideo;
         end;
@@ -240,6 +244,10 @@ begin
             temp := temp - 100;      //1000ms
 
           AktSong.VideoGAP := temp/100;
+
+          if AktSong.VideoGAP<0 then
+            AktSong.Start := (AktSong.VideoGAP*-1);
+
           if PlayVideo then
             StartVideo;
         end;
