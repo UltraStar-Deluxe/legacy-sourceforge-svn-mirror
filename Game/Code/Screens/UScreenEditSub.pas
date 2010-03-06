@@ -96,6 +96,7 @@ type
       function GetNoteName(Note: Integer): String;
       function GetMedleyLength: real; //returns if availible the length of the medley in seconds, else 0
       procedure DrawInfoBar(x, y, w, h: integer);
+      procedure DrawStatics;
     public
       Tex_Background:     TTexture;
       FadeOut:            boolean;
@@ -1765,19 +1766,21 @@ begin
 
   //Theme:
   //bg
-  AddStatic(0, 0, 800, 600, 0.3, 0.5, 0.6, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
+
+  //AddStatic(0, 0, 800, 600, 0.3, 0.5, 0.6, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
 
   // Line
-  AddStatic(20, 5, 200, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
+  //AddStatic(20, 5, 200, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
   AddText(40, 14, 1, 8, 0, 0, 0, 'Line:');
   TextSentence := AddText(110, 14, 1, 8, 0, 0, 0, '0 / 0');
 
   // Note
-  AddStatic(260, 5, 200, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
+  //AddStatic(260, 5, 200, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
   AddText(282, 14, 1, 8, 0, 0, 0, 'Note:');
   TextNote := AddText(360, 14, 1, 8, 0, 0, 0, '0 / 0');
 
   // some borders
+  {
   AddStatic(18, 53, 764, 240, 0, 0, 0, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
   AddStatic(20, 55, 760, 236, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
 
@@ -1786,7 +1789,7 @@ begin
 
   AddStatic(18, 498, 764, 44, 0, 0, 0, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
   AddStatic(20, 500, 760, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-
+   }
 
   AddText(30, 65,  0, 8, 0, 0, 0, 'Title:');
   AddText(30, 90,  0, 8, 0, 0, 0, 'Artist:');
@@ -1934,6 +1937,8 @@ var
   Window: TRectCoords;
   Blend: real;
 begin
+  DrawStatics;
+
   glClearColor(1,1,1,1);
 
   PlayClick := false;
@@ -2255,6 +2260,119 @@ begin
     end;
   end else
     StartVideoPreview;
+end;
+
+procedure TScreenEditSub.DrawStatics;
+var
+  x, y, w, h: Integer;
+begin
+  //Theme:
+  //bg
+  glDisable(GL_BLEND);
+
+  x := 0;
+  y := 0;
+  w := 800;
+  h := 600;
+  glColor4f(0.3, 0.5, 0.6, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  // Line
+  glColor4f(0.95, 0.95, 0.95, 1);
+  x := 20;
+  y := 5;
+  w := 200;
+  h := 40;
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  // Note
+  x := 260;
+  y := 5;
+  w := 200;
+  h := 40;
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+
+  // some borders
+  x := 20;
+  y := 55;
+  w := 760;
+  h := 236;
+  glColor4f(0.95, 0.95, 0.95, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  glColor4f(0, 0, 0, 1);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  x := 20;
+  y := 305;
+  w := 760;
+  h := 135;
+  glColor4f(0.95, 0.95, 0.95, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  glColor4f(0, 0, 0, 1);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  x := 20;
+  y := 500;
+  w := 760;
+  h := 40;
+  glColor4f(0.95, 0.95, 0.95, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  glColor4f(0, 0, 0, 1);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  glLineWidth(1);
 end;
 
 procedure TScreenEditSub.DrawInfoBar(x, y, w, h: integer);
