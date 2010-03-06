@@ -699,9 +699,17 @@ begin
         end;
         bt := Czesci[p].Czesc[line].Nuta[note].Start;
 
-        if (Czesci[p].Czesc[line].Nuta[note].Dlugosc<1) then
+        if (Czesci[p].Czesc[line].Nuta[note].Dlugosc<0) then
         begin
-          Log.LogError('Note length <1 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
+          Log.LogError('Note length <0 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
+            ' in song ' + AktSong.Path + AktSong.Filename);
+          if (Ini.LoadFaultySongs=0) then
+            Result := false;
+        end;
+
+        if (Czesci[p].Czesc[line].Nuta[note].Dlugosc=0) and not Czesci[p].Czesc[line].Nuta[note].FreeStyle then
+        begin
+          Log.LogError('Note length =0 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
           if (Ini.LoadFaultySongs=0) then
             Result := false;
