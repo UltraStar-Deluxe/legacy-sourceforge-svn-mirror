@@ -2667,11 +2667,23 @@ begin
   if PartyMedley then
   begin
     if (Length(getVisibleMedleyArr(MinSource))<=0) then
-      SetLength(MedleyPlayed, 0);
+    begin
+      if (GetSongsSkipped()>0) then
+        SetLength(SkippedSongs, 0);
+
+      if (Length(getVisibleMedleyArr(MinSource))<=0) then
+        SetLength(MedleyPlayed, 0);
+    end;
   end else
   begin
     if (CatSongs.VisibleSongs-Length(PartyPlayed)<=0) then
-      SetLength(PartyPlayed, 0);
+    begin
+      if (GetSongsSkipped()>0) then
+        SetLength(SkippedSongs, 0);
+
+      if (CatSongs.VisibleSongs-Length(PartyPlayed)<=0) then
+        SetLength(PartyPlayed, 0);
+    end;
   end;
 
   Case PlaylistMan.Mode of
@@ -3158,8 +3170,8 @@ begin
     SetLength(SkippedSongs, Length(SkippedSongs)+1);
     SkippedSongs[Length(SkippedSongs)-1] := Interaction;
 
-    SetLength(PartyPlayed, Length(PartyPlayed)+1);
-    PartyPlayed[Length(PartyPlayed)-1] := Interaction;
+    //SetLength(PartyPlayed, Length(PartyPlayed)+1);
+    //PartyPlayed[Length(PartyPlayed)-1] := Interaction;
 
     SelectRandomSong;
     SetJoker;
@@ -3174,8 +3186,8 @@ begin
       SetLength(SkippedSongs, Length(SkippedSongs)+1);
       SkippedSongs[Length(SkippedSongs)-1] := Interaction;
 
-      SetLength(MedleyPlayed, Length(MedleyPlayed)+1);
-      MedleyPlayed[Length(MedleyPlayed)-1] := Interaction;
+      //SetLength(MedleyPlayed, Length(MedleyPlayed)+1);
+      //MedleyPlayed[Length(MedleyPlayed)-1] := Interaction;
 
       SelectRandomSong;
       SetJoker;
@@ -3192,8 +3204,8 @@ begin
       SetLength(SkippedSongs, Length(SkippedSongs)+1);
       SkippedSongs[Length(SkippedSongs)-1] := Interaction;
 
-      SetLength(MedleyPlayed, Length(MedleyPlayed)+1);
-      MedleyPlayed[Length(MedleyPlayed)-1] := Interaction;
+      //SetLength(MedleyPlayed, Length(MedleyPlayed)+1);
+      //MedleyPlayed[Length(MedleyPlayed)-1] := Interaction;
 
       SelectRandomSong;
       SetJoker;
@@ -3351,8 +3363,8 @@ begin
     AddSong(Interaction);
     PlaylistMedley.NumMedleySongs := Length(PlaylistMedley.Song);
 
-    SetLength(SkippedSongs, Length(SkippedSongs)+1);
-    SkippedSongs[Length(SkippedSongs)-1] := Interaction;
+    //SetLength(SkippedSongs, Length(SkippedSongs)+1);
+    //SkippedSongs[Length(SkippedSongs)-1] := Interaction;
 
     SetLength(MedleyPlayed, Length(MedleyPlayed)+1);
     MedleyPlayed[Length(MedleyPlayed)-1] := Interaction;
