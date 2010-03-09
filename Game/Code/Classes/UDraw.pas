@@ -1604,15 +1604,15 @@ begin
           if isMedley or isStartPreview then
           begin
             case Wartosc of
-              0: glColor4f(0, 1, 1, 0.35);
+              0: glColor4f(0, 1, 1, 0.45);
               1: glColor4f(0, 1, 1, 0.85);
               2: glColor4f(0, 1, 0.3, 0.85);
             end; // case
           end else
           begin
             case Wartosc of
-              0: glColor4f(1, 1, 1, 0.35);    //freestyle
-              1: glColor4f(1, 1, 1, 0.85);    //normal
+              0: glColor4f(0.8, 0.8, 0.8, 0.5);    //freestyle
+              1: glColor4f(0.8, 0.8, 0.8, 0.9);    //normal
               2: glColor4f(1, 1, 0.3, 0.85);  //golden     (green)
             end; // case
           end;
