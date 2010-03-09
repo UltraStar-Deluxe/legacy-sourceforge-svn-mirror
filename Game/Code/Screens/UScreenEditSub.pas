@@ -1168,8 +1168,11 @@ begin
       SDLK_BACKSPACE:
         begin
           strBPM := Text[TextBPM].Text;
-          Delete(strBPM, Length(strBPM)-1, 2);
-          Text[TextBPM].Text := strBPM + '|';
+          if Length(strBPM)>1 then
+          begin
+            Delete(strBPM, Length(strBPM)-1, 2);
+            Text[TextBPM].Text := strBPM + '|';
+          end;
         end;
     end;
   end;
