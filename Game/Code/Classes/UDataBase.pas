@@ -439,10 +439,15 @@ begin
 
   //Create Query
   Case Typ of
-    0: Query := 'SELECT `Player` , `Difficulty` , `Score` , `Artist` , `Title` , `Date` FROM `US_Scores` INNER JOIN `US_Songs` ON (`SongID` = `ID`) ORDER BY `Score`';
-    1: Query := 'SELECT `Player` , ROUND (Sum(`Score`) / COUNT(`Score`)), COUNT(`rowid`) FROM `US_Scores` GROUP BY `Player` ORDER BY (Sum(`Score`) / COUNT(`Score`))';
-    2: Query := 'SELECT `Artist` , `Title` , `TimesPlayed` FROM `US_Songs` ORDER BY `TimesPlayed`';
-    3: Query := 'SELECT `Artist` , Sum(`TimesPlayed`) FROM `US_Songs` GROUP BY `Artist` ORDER BY Sum(`TimesPlayed`)';
+    0: Query := 'SELECT `Player` , `Difficulty` , `Score` , `Artist` , `Title` , `Date` '+
+      'FROM `US_Scores` INNER JOIN `US_Songs` ON (`SongID` = `ID`) ORDER BY `Score`';
+    1: Query := 'SELECT `Player` , ROUND (Sum(`Score`) / COUNT(`Score`)), '+
+      'COUNT(`rowid`) FROM `US_Scores` GROUP BY `Player` '+
+      'ORDER BY (Sum(`Score`) / COUNT(`Score`))';
+    2: Query := 'SELECT `Artist` , `Title` , `TimesPlayed` '+
+      'FROM `US_Songs` WHERE `TimesPlayed` > 0 ORDER BY `TimesPlayed`';
+    3: Query := 'SELECT `Artist` , Sum(`TimesPlayed`) '+
+      'FROM `US_Songs` WHERE `TimesPlayed` > 0 GROUP BY `Artist` ORDER BY Sum(`TimesPlayed`)';
   end;
 
   //Add Order Direction
@@ -521,8 +526,10 @@ begin
   Case Typ of
     0: Query := 'SELECT COUNT(`SongID`) FROM `US_Scores`;';
     1: Query := 'SELECT COUNT(DISTINCT `Player`) FROM `US_Scores`;';
-    2: Query := 'SELECT COUNT(`ID`) FROM `US_Songs`;';
-    3: Query := 'SELECT COUNT(DISTINCT `Artist`) FROM `US_Songs`;';
+    2: Query := 'SELECT COUNT(`ID`) FROM `US_Songs` '+
+      'WHERE `TimesPlayed` > 0;';
+    3: Query := 'SELECT COUNT(DISTINCT `Artist`) FROM `US_Songs` '+
+      'WHERE `TimesPlayed` > 0;';
   end;
 
   Result := ScoreDB.GetTableValue(Query);
