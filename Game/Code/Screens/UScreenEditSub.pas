@@ -212,20 +212,15 @@ begin
 
       SDLK_8:
         begin
-          temp := round(AktSong.VideoGAP*100);
-
           // Increase VideoGAP
           if SDL_ModState = 0 then
-            temp := temp + 1;         //10ms
+            temp := 1;         //10ms
           if SDL_ModState = KMOD_LSHIFT then
-            temp := temp + 10;        //100ms
+            temp := 10;        //100ms
           if SDL_ModState = KMOD_LCTRL then
-            temp := temp + 100;       //1000ms
+            temp := 100;       //1000ms
 
-          AktSong.VideoGAP := temp/100;
-          
-          if AktSong.VideoGAP<0 then
-            AktSong.Start := (AktSong.VideoGAP*-1);
+          AktSong.VideoGap := (round(AktSong.VideoGAP*100) + temp)/100;
 
           if PlayVideo then
             StartVideo;
@@ -233,20 +228,15 @@ begin
 
       SDLK_7:
         begin
-          temp := round(AktSong.VideoGAP*100);
-
           // Decrease VideoGAP
           if SDL_ModState = 0 then
-            temp := temp - 1;        //10ms
+            temp := -1;        //10ms
           if SDL_ModState = KMOD_LSHIFT then
-            temp := temp - 10;       //100ms
+            temp := -10;       //100ms
           if SDL_ModState = KMOD_LCTRL then
-            temp := temp - 100;      //1000ms
+            temp := -100;      //1000ms
 
-          AktSong.VideoGAP := temp/100;
-
-          if AktSong.VideoGAP<0 then
-            AktSong.Start := (AktSong.VideoGAP*-1);
+          AktSong.VideoGap := (round(AktSong.VideoGAP*100) + temp)/100;
 
           if PlayVideo then
             StartVideo;
