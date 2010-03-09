@@ -455,8 +455,11 @@ begin
   if Volume > 100 then
     Volume := 100;
 
-  //Set Volume
+  //Set MP3 Volume
   BASS_ChannelSetAttributes (Bass, -1, Volume, -101);
+
+  //Set Applause Volume
+  BASS_ChannelSetAttributes (BassApplause, -1, Volume, -101);
 end;
 
 procedure TMusic.Fade(InitVolume, TargetVolume: Integer; FadeTime: real);
@@ -499,7 +502,7 @@ begin
     Loaded := true;
     DSP_VocalRemover:=0;
     //Set Max Volume
-    SetMusicVolume (100);
+    //SetMusicVolume (100);
   end;
 
   Result := Loaded;

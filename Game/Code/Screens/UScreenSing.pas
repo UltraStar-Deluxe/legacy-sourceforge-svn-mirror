@@ -1397,7 +1397,7 @@ begin
   begin
     PlaylistMedley.ApplausePlayed:=true;
     Music.PlayApplause;
-    Music.Fade(100, 10, AktSong.Medley.FadeOut_time);
+    Music.Fade(MP3Volume, 10, AktSong.Medley.FadeOut_time);
   end;
 end;
 
