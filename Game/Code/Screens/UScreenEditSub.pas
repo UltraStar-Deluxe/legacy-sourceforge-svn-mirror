@@ -265,7 +265,11 @@ begin
           if SDL_ModState = 0 then begin
             // Insert start of sentece
             if AktNuta > 0 then
+            begin
               DivideSentence;
+              FixTimings;
+              Lyric.Selected := AktNuta;
+            end;
           end;
 
           if SDL_ModState = KMOD_LSHIFT then begin
@@ -509,7 +513,11 @@ begin
         begin
           // Capitalize letter at the beginning of line
           if SDL_ModState = 0 then
+          begin
             LyricsCapitalize;
+            Text[TextDebug].Text := Language.Translate('EDITOR_CAPITALIZE_LETTER');
+            Lyric.Selected := AktNuta;
+          end;
 
           // Correct spaces
           if SDL_ModState = KMOD_LSHIFT then
@@ -586,6 +594,8 @@ begin
         begin
           // Fixes timings between sentences
           FixTimings;
+          Text[TextDebug].Text := Language.Translate('EDITOR_FIX_TIMINGS');
+          Lyric.Selected := AktNuta;
         end;
 
       SDLK_F4:
@@ -1482,7 +1492,6 @@ begin
   AktNuta := 0;
   Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
   Lyric.AddCzesc(Czesci[0].Akt);
-
 end;
 
 procedure TScreenEditSub.JoinSentence;
@@ -1550,7 +1559,7 @@ begin
     Czesci[0].Czesc[C].Nuta[AktNuta].Dlugosc;
 
   if (Czesci[0].Czesc[C].Nuta[AktNuta+1].Dlugosc>0) then
-    Czesci[0].Czesc[C].Nuta[AktNuta+1].Tekst := '~ '
+    Czesci[0].Czesc[C].Nuta[AktNuta+1].Tekst := '~'
   else
     Czesci[0].Czesc[C].Nuta[AktNuta+1].Tekst := ' ';
 
@@ -2446,13 +2455,37 @@ begin
     end;  }
   end;
 
+
   if(PlaySentence or PlaySentenceMidi) then
   begin
+    glColor4f(1, 0, 0, 1);
+    pos := AktBeat/ww*w;
+    br := 1;
+
+    glbegin(gl_quads);
+      glVertex2f(x+pos, y);
+      glVertex2f(x+pos, y+h);
+      glVertex2f(x+pos+br, y+h);
+      glVertex2f(x+pos+br, y);
+    glEnd;
+
+    start := Czesci[0].Czesc[Czesci[0].Akt].Nuta[0].Start;
+    end_ := Czesci[0].Czesc[Czesci[0].Akt].Nuta[Czesci[0].Czesc[Czesci[0].Akt].HighNut].Start+
+      Czesci[0].Czesc[Czesci[0].Akt].Nuta[Czesci[0].Czesc[Czesci[0].Akt].HighNut].Dlugosc;
+
+    pos := start/ww*w;
+    br := (end_-start)/ww*w;
+
     glColor4f(0, 0, 0, 0.5);
-    pos := 0;
-    br := AktBeat/ww*w;
-    if (br>w) then
-      br := w;
+
+    glEnable(GL_BLEND);
+    glbegin(gl_quads);
+      glVertex2f(x+pos, y);
+      glVertex2f(x+pos, y+h);
+      glVertex2f(x+pos+br, y+h);
+      glVertex2f(x+pos+br, y);
+    glEnd;
+    glDisable(GL_BLEND);
   end else
   begin
     glColor4f(1, 0, 0, 1);
@@ -2460,16 +2493,14 @@ begin
     br := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc/ww*w;
     if (br<1) then
       br := 1;
-  end;
 
-  glEnable(GL_BLEND);
-  glbegin(gl_quads);
-    glVertex2f(x+pos, y);
-    glVertex2f(x+pos, y+h);
-    glVertex2f(x+pos+br, y+h);
-    glVertex2f(x+pos+br, y);
-  glEnd;
-  glDisable(GL_BLEND);
+    glbegin(gl_quads);
+      glVertex2f(x+pos, y);
+      glVertex2f(x+pos, y+h);
+      glVertex2f(x+pos+br, y+h);
+      glVertex2f(x+pos+br, y);
+    glEnd;
+  end;
 end;
 
 procedure TScreenEditSub.onHide;

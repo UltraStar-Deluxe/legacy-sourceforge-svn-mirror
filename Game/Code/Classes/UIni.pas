@@ -252,8 +252,8 @@ begin
 
   // Load faulty songs
   Tekst := IniFile.ReadString('Game', 'LoadFaultySongs', ILoadFaultySongs[0]);
-  for Pet := 0 to High(IDebug) do
-    if Tekst = IDebug[Pet] then Ini.LoadFaultySongs := Pet;
+  for Pet := 0 to High(ILoadFaultySongs) do
+    if Tekst = ILoadFaultySongs[Pet] then Ini.LoadFaultySongs := Pet;
 
   //if Ini.Debug = 1 then SongPath := 'E:\UltraStar 03\Songs\';
 
@@ -635,7 +635,7 @@ begin
     IniFile.WriteString('Game',     'Debug',   Tekst);
 
     // Load faulty songs
-    Tekst := IDebug[Ini.Debug];
+    Tekst := ILoadFaultySongs[Ini.LoadFaultySongs];
     IniFile.WriteString('Game',     'LoadFaultySongs',   Tekst);
 
     // Screens

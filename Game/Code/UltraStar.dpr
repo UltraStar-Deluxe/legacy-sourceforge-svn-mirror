@@ -124,7 +124,7 @@ uses
   acinerella in 'lib\acinerella\acinerella.pas';
 
 const
-  Version = 'UltraStar Deluxe v1.0.1a Challenge-MOD r7a 2010-03-06';
+  Version = 'UltraStar Deluxe v1.0.1a Challenge-MOD r7b beta 2010-03-18';
 
 var
   WndTitle: string;
