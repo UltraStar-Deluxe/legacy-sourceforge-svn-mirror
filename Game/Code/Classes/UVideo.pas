@@ -158,7 +158,7 @@ begin
   VideoTime      := 0;
   LastFrameTime  := 0;
   TimeDifference := 0;
-
+  Counter := 0;
   acClose;
 
   if not FileExists(FileName) then
@@ -546,7 +546,7 @@ begin
       end else if (mmfps>75) then
       begin
         if(SkipLines>0) and (Counter<=100) then
-          Counter := round(Counter+50/mmfps)
+          Counter := round(Counter+70/mmfps)
         else if (SkipLines>0) and (Counter>=100) then
         begin
           Dec(SkipLines);

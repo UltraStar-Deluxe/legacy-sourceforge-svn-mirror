@@ -3,9 +3,13 @@ unit UScreenPartyPlayer;
 Interface
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes;
+  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes, Math;
 
 type
+
+  TArrayElement = String;
+  TArray = array of TArrayElement;
+
   TScreenPartyPlayer = class(TMenu)
     public
       Team1Name: Cardinal;
@@ -30,7 +34,10 @@ type
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
       procedure SetAnimationProgress(Progress: real); override;
+      procedure ShuffleNames(var aArray: TArray);
   end;
+
+
 
 const
   ID='ID_016';   //for help system
@@ -41,8 +48,9 @@ uses UGraphic, UMain, UIni, UTexture, UParty, UHelp, ULog;
 
 function TScreenPartyPlayer.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 var
-  I, J:    integer;
+  I, J, countPlayer:    integer;
   SDL_ModState:  Word;
+  randomNames:   TArray;   //new for randomize names
   procedure IntNext;
   begin
     repeat
@@ -55,14 +63,181 @@ var
       InteractPrev;
     until Button[Interaction].Visible;
   end;
+
 begin
+
   Result := true;
   If (PressedDown) Then
-
+  begin // Key Down
     SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT);
+    
+    if (SDL_ModState = KMOD_LCTRL) then
+    begin
+      case PressedKey of
+        //-------------------------------------randomize player names---------- mod by merc
+        // TODO: rewrite! (some for loops?)
+       SDLK_KP_MULTIPLY, SDLK_R:
+         begin
 
-  begin // Key Down
+           countPlayer := 0;
+           SetLength(randomNames, 12);
+
+           If (PartySession.Teams.NumTeams>=1) then
+           begin
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=1) then
+             begin
+               randomNames[countPlayer] := Button[1].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=2) then
+             begin
+               randomNames[countPlayer] := Button[2].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=3) then
+             begin
+               randomNames[countPlayer] := Button[3].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=4) then
+             begin
+               randomNames[countPlayer] := Button[4].Text[0].Text;
+               inc(countPlayer);
+             end;
+           end;
+
+           If (PartySession.Teams.NumTeams>=2) then
+           begin
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=1) then
+             begin
+               randomNames[countPlayer] := Button[6].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=2) then
+             begin
+               randomNames[countPlayer] := Button[7].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=3) then
+             begin
+               randomNames[countPlayer] := Button[8].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=4) then
+             begin
+               randomNames[countPlayer] := Button[9].Text[0].Text;
+               inc(countPlayer);
+             end;
+           end;
+
+           If (PartySession.Teams.NumTeams>=3) then
+           begin
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=1) then
+             begin
+               randomNames[countPlayer] := Button[11].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=2) then
+             begin
+               randomNames[countPlayer] := Button[12].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=3) then
+             begin
+               randomNames[countPlayer] := Button[13].Text[0].Text;
+               inc(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=4) then
+             begin
+               randomNames[countPlayer] := Button[14].Text[0].Text;
+               inc(countPlayer);
+             end;
+           end;
+
+           SetLength(randomNames, countPlayer);
+           ShuffleNames(randomNames);
+
+
+           //Write Names back to Players
+           dec(countPlayer);
+           If (PartySession.Teams.NumTeams>=1) then
+           begin
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=1) then
+             begin
+               Button[1].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=2) then
+             begin
+               Button[2].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=3) then
+             begin
+               Button[3].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[0].NumPlayers >=4) then
+             begin
+               Button[4].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+           end;
+
+           If (PartySession.Teams.NumTeams>=2) then
+           begin
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=1) then
+             begin
+               Button[6].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=2) then
+             begin
+               Button[7].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=3) then
+             begin
+               Button[8].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[1].NumPlayers >=4) then
+             begin
+               Button[9].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+           end;
+
+           If (PartySession.Teams.NumTeams>=3) then
+           begin
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=1) then
+             begin
+               Button[11].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=2) then
+             begin
+               Button[12].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=3) then
+             begin
+               Button[13].Text[0].Text := randomNames[countPlayer];
+               dec(countPlayer);
+             end;
+             If (PartySession.Teams.Teaminfo[2].NumPlayers >=4) then
+             begin
+               Button[14].Text[0].Text := randomNames[countPlayer];
+               //dec(countPlayer);  useless...
+             end;
+           end;
+         end;
+      end;
+
+    end else
+    begin
+
     case PressedKey of
       SDLK_TAB:
         begin
@@ -78,7 +253,7 @@ begin
       SDLK_F1:
        if (SDL_ModState = KMOD_LALT) then
          begin
-           Ini.NameTemplate[0] := Button[Interaction].Text[0].Text;
+          Ini.NameTemplate[0] := Button[Interaction].Text[0].Text;
          end
          else
          begin
@@ -223,11 +398,10 @@ begin
       SDLK_LEFT:    IntPrev;
     end;
   end;
+  end;
 end;
 
 constructor TScreenPartyPlayer.Create;
-var
-  I:    integer;
 begin
   inherited Create;
 
@@ -275,7 +449,8 @@ begin
     Button[5].Text[0].Text := Ini.NameTeam[1];
     Button[10].Text[0].Text := Ini.NameTeam[2];
     // Templates for Names Mod end
-  
+
+
   If (PartySession.Teams.NumTeams>=1) then
   begin
     Button[0].Visible := True;
@@ -335,6 +510,20 @@ var
 begin
   for I := 0 to high(Button) do
     Button[I].Texture.ScaleW := Progress;
+end;
+
+  // perfektes Mischen nach Fisher-Yates (for randomize PlayerNames - merc)
+procedure TScreenPartyPlayer.ShuffleNames(var aArray: TArray);
+  var
+    i,j: Integer;
+    tmp: TArrayElement;
+begin
+  for i := Low(aArray) to High(aArray) do begin
+    j := i +Random(Length(aArray) -i +Low(aArray));
+    tmp := aArray[j];
+    aArray[j] := aArray[i];
+    aArray[i] := tmp;
+  end;
 end;
 
 end.

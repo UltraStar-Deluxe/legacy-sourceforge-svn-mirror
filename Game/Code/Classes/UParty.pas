@@ -2,7 +2,7 @@ unit UParty;
 
 interface
 
-uses ModiSDK;
+uses ModiSDK, UIni;
 
 type
   TRoundInfo = record
@@ -53,6 +53,7 @@ type
 
 var
   PartySession: TParty_Session;
+    Placings: Array [0..5] of Byte;
 
 implementation
 
@@ -320,7 +321,7 @@ end;
 //----------
 procedure TParty_Session.EndRound;
 var
-  I, MaxScore: Integer;
+  I, J, MaxScore: Integer;
 begin
   //Copy Winner
   if Rounds[CurRound].Medley then
@@ -362,8 +363,40 @@ begin
       Rounds[CurRound].Winner := 0;
   end else
     Rounds[CurRound].Winner := ScreenSingModi.Winner;
+
   //Set Scores
-  GenScores;
+
+  if (Ini.NewPartyPoints = 1) then
+  begin
+
+    MaxScore := 0;
+    for I := 0 to ScreenSingModi.PlayerInfo.NumPlayers-1 do
+      if (ScreenSingModi.PlayerInfo.Playerinfo[I].Score > MaxScore) then
+        MaxScore := ScreenSingModi.PlayerInfo.Playerinfo[I].Score;
+
+
+    if (MaxScore > 0) then
+    begin
+      //New Points
+      //Get Placings
+      for I := 0 to Teams.NumTeams-1 do
+      begin
+        Placings[I] := 0;
+        for J := 0 to Teams.NumTeams-1 do
+          If (ScreenSingModi.PlayerInfo.Playerinfo[J].Score > ScreenSingModi.PlayerInfo.Playerinfo[I].Score) then
+            Inc(Placings[I]);
+      end;
+
+      for I := 0 to Teams.NumTeams-1 do
+        Teams.Teaminfo[I].Score := Teams.Teaminfo[I].Score + ((Placings[I] - (Teams.NumTeams-1)) * -1);
+    end
+  end
+  else
+    //Old Points
+    GenScores;
+
+
+
 
   //Increase TimesPlayed 4 all Players
   For I := 0 to Teams.NumTeams-1 do

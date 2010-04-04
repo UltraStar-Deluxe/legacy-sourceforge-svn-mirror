@@ -23,6 +23,7 @@ type
     Sorting:        integer;
     Debug:          integer;
     LoadFaultySongs:integer;
+    NewPartyPoints: integer;
 
     // Graphics
     Screens:        integer;
@@ -122,6 +123,7 @@ const
 
   IDebug:         array[0..1] of string = ('Off', 'On');
   ILoadFaultySongs: array[0..1] of string = ('Off', 'On');
+  INewPartyPoints: array[0..1] of string = ('Off', 'On');
 
   IScreens:       array[0..1] of string = ('1', '2');
   IFullScreen:    array[0..1] of string = ('Off', 'On');
@@ -256,6 +258,11 @@ begin
   Tekst := IniFile.ReadString('Game', 'LoadFaultySongs', ILoadFaultySongs[0]);
   for Pet := 0 to High(ILoadFaultySongs) do
     if Tekst = ILoadFaultySongs[Pet] then Ini.LoadFaultySongs := Pet;
+
+  // NewPartyPoints
+  Tekst := IniFile.ReadString('Game', 'NewPartyPoints', INewPartyPoints[1]);
+  for Pet := 0 to High(INewPartyPoints) do
+    if Tekst = INewPartyPoints[Pet] then Ini.NewPartyPoints := Pet;
 
   //if Ini.Debug = 1 then SongPath := 'E:\UltraStar 03\Songs\';
 
@@ -644,6 +651,10 @@ begin
     // Load faulty songs
     Tekst := ILoadFaultySongs[Ini.LoadFaultySongs];
     IniFile.WriteString('Game',     'LoadFaultySongs',   Tekst);
+
+    // NewPartyPoints
+    Tekst := INewPartyPoints[Ini.NewPartyPoints];
+    IniFile.WriteString('Game',     'NewPartyPoints',   Tekst);
 
     // Screens
     Tekst := IScreens[Ini.Screens];
