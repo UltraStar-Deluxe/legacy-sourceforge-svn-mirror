@@ -27,6 +27,7 @@ uses SDL,
      math,
      gl,
      glu,
+     glext,
      SysUtils,
      {$ifdef DebugDisplay}
      {$ifdef win32}
@@ -34,6 +35,10 @@ uses SDL,
      {$endif}
      {$ENDIF}
      UIni;
+
+const
+  //PIXEL_FORMAT = GL_RGB;
+  numBytes = 3;
 
 type
   TRectCoords = record         //from 1.1
@@ -43,6 +48,8 @@ type
   end;
   
   TAspectCorrection = (acoStretch, acoCrop, acoLetterBox); //from 1.1
+
+
 
 procedure Init;
 procedure acOpenFile(FileName: pAnsiChar);
@@ -59,11 +66,17 @@ procedure GetVideoRect(var ScreenRect, TexRect: TRectCoords; Window: TRectCoords
 procedure SetAspectCorrection(aspect: TAspectCorrection);
 procedure ResetAspectCorrection;
 
+
+
 var
   VideoOpened, VideoPaused: Boolean;
   VideoTex: glUint;
-  TexData: array of Byte;
+  //TexData: array of Byte;
   VideoStreamIndex: Integer;
+  SkipLines: Integer;
+  LastSkipLines: Integer;
+  mmfps: Real;
+  Counter: Integer;
   //myBuffer: pByte;
   TexX, TexY, dataX, dataY: Cardinal;
   VideoTimeBase, VideoTime, LastFrameTime, TimeDifference, NegativeSkipTime: Extended;
@@ -89,10 +102,12 @@ var
   mtime: PChar;           //for debug
   mtime_str: string;      //for debug
 
+  pbo:  glUint;
+  pbo_supported: boolean;
 implementation
 
 uses
-  UGraphic, ULog;
+  UGraphic, ULog, UDisplay;
 
 function read_proc(sender: Pointer; buf: PByte; size: integer): integer; cdecl;
 begin
@@ -115,10 +130,20 @@ begin
   VideoPaused:=False;
   fName := '';
 
-  glGenTextures(1, PglUint(@VideoTex));
-  SetLength(TexData,0);
+  glGenTextures(1, @VideoTex);
+
+  //pbo_supported := glext_LoadExtension('GL_ARB_pixel_buffer_object') and
+  //  glext_LoadExtension('GL_version_1_5');
+  pbo_supported := false;
+  if (pbo_supported) then
+    glGenBuffers(1, @pbo);
+
+  //SetLength(TexData,0);
 
   fAspectCorrection := TAspectCorrection(Ini.AspectCorrect);
+  SkipLines := 0;
+  LastSkipLines := 0;
+  Counter := 0;
 end;
 
 procedure acOpenFile(FileName: pAnsiChar);
@@ -129,7 +154,7 @@ begin
 
   VideoPaused    := False;
   VideoTimeBase  := 0;
-  rTimeBase:=0;
+  rTimeBase      := 0;
   VideoTime      := 0;
   LastFrameTime  := 0;
   TimeDifference := 0;
@@ -188,7 +213,9 @@ begin
   TexY := videodecoder^.stream_info.additional_info.video_info.frame_height;
   dataX := Round(Power(2, Ceil(Log2(TexX))));
   dataY := Round(Power(2, Ceil(Log2(TexY))));
-  SetLength(TexData,TexX*TexY*3);
+  //SetLength(TexData, TexX*numBytes);
+  //for I := 0 to TexX*numBytes - 1 do
+  //  TexData[I]:=0;
 
   // calculate some information for video display
   VideoAspect:=videodecoder^.stream_info.additional_info.video_info.pixel_aspect;
@@ -201,14 +228,32 @@ begin
 
   VideoTimeBase:=info.additional_info.video_info.frames_per_second;
 
-  //from 1.1
   glBindTexture(GL_TEXTURE_2D, VideoTex);
-  glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-  glTexImage2D(GL_TEXTURE_2D, 0, 3, dataX, dataY, 0,
-      GL_RGB, GL_UNSIGNED_BYTE, nil);
+
+  glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_PRIORITY, 1.0);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  glTexImage2D(GL_TEXTURE_2D, 0, 3, dataX, dataY, 0,
+    GL_RGB, GL_UNSIGNED_BYTE, nil);
+
+  glBindTexture(GL_TEXTURE_2D, 0);
+  if(pbo_supported) then
+  begin
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, numBytes*TexX*TexY, nil, GL_STREAM_DRAW);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+  end;
+
+  //SkipLines := 0;
+  //LastSkipLines := 0;
+  //Counter := 0;
+  mmfps := 50;
 end;
 
 procedure acClose;
@@ -223,7 +268,7 @@ begin
     inst := nil;
     fs.Free;
     fs:=nil;
-    SetLength(TexData,0);
+    //SetLength(TexData,0);
     VideoOpened:=False;
     fName := '';
   end;
@@ -382,11 +427,15 @@ var
   FrameFinished: Integer;
   errnum, x, y: Integer;
   FrameDataPtr: PByteArray;
+  FrameDataPtr2: PByteArray;
   linesize: integer;
   myTime: Extended;
   DropFrame: Boolean;
   droppedFrames: Integer;
   I, J: Integer;
+
+  glError: glEnum;
+  glErrorStr: String;
 const
   FRAMEDROPCOUNT=3;
 begin
@@ -479,14 +528,118 @@ begin
   end;
 
   errnum:=1;       //TODO!!
-  if errnum >=0 then begin
-    FrameDataPtr:=Pointer(videodecoder^.buffer);
+  if errnum >=0 then
+  begin
+    mmfps := (Display.mFPS+mmfps)/2;
+    if(Ini.PerformanceMode=1) then
+    begin
+      if (mmfps<45) then
+      begin
+        if(SkipLines<3) and (Counter<100) then
+          Counter := round(Counter+70/mmfps)
+        else if (SkipLines<3) and (Counter>=100) then
+        begin
+          Inc(SkipLines);
+          mmfps:=50;
+          Counter := 0;
+        end;
+      end else if (mmfps>75) then
+      begin
+        if(SkipLines>0) and (Counter<=100) then
+          Counter := round(Counter+50/mmfps)
+        else if (SkipLines>0) and (Counter>=100) then
+        begin
+          Dec(SkipLines);
+          LastSkipLines := SkipLines;
+          Counter := 0;
+        end;
+      end else Counter := 0;
+    end;
 
-    glBindTexture(GL_TEXTURE_2D, VideoTex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY, GL_RGB, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
+    if(not pbo_supported) then
+    begin
+      FrameDataPtr:=Pointer(videodecoder^.buffer);
+
+      glBindTexture(GL_TEXTURE_2D, VideoTex);
+
+      if(SkipLines>0)then
+      begin
+        for I := 0 to TexY - 1 do
+        begin
+          if(I mod (SkipLines+1) = 0) then
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (I div (SkipLines+1)), TexX, 1,
+              GL_RGB, GL_UNSIGNED_BYTE, @FrameDataPtr[I*numBytes*TexX]);
+        end;
+      end else
+          glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
+            GL_RGB, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    end else
+    begin
+      glGetError();
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
 
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video "glBindBuffer"');
+        Exit;
+      end;
+
+      FrameDataPtr := glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video pbo "glMapBuffer"');
+        Exit;
+      end;
+
+      FrameDataPtr2:=Pointer(videodecoder^.buffer);
+      move(FrameDataPtr2[0], FrameDataPtr[0], numBytes*TexX*TexY);
+
+      glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video pbo "glUnmapBuffer"');
+        Exit;
+      end;    
+
+      glBindTexture(GL_TEXTURE_2D, VideoTex);
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video pbo "glBindTexture"');
+        Exit;
+      end;
+
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
+        GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        case glError of
+              GL_INVALID_ENUM: glErrorStr:='INVALID_ENUM';
+              GL_INVALID_VALUE: glErrorStr:='INVALID_VALUE';
+              GL_INVALID_OPERATION: glErrorStr:='INVALID_OPERATION';
+              GL_STACK_OVERFLOW: glErrorStr:='STACK_OVERFLOW';
+              GL_STACK_UNDERFLOW: glErrorStr:='STACK_UNDERFLOW';
+              GL_OUT_OF_MEMORY: glErrorStr:='OUT_OF_MEMORY';
+              else glErrorStr:='unknown error';
+            end;
+        Log.LogError('Error drawing Video pbo "glTexSubImage2D" ('+glErrorStr+')');
+        Exit;
+      end;
+      glBindTexture(GL_TEXTURE_2D, 0);
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    end;
     VideoTime := videodecoder^.timecode;
 
     if Ini.Debug = 1 then
@@ -588,7 +741,7 @@ begin
   TexRect.Left  := 0;
   TexRect.Right := TexX  / dataX;
   TexRect.Upper := 0;
-  TexRect.Lower := TexY / dataY;
+  TexRect.Lower := (TexY/(SkipLines+1)) / dataY;
 end;
 
 procedure acDrawGL(Screen: integer);
@@ -608,12 +761,23 @@ var
   text: string;
   test: PChar;
   ScreenRect, TexRect: TRectCoords;
+  FrameDataPtr: PByteArray;
+  FrameDataPtr2: PByteArray;
+  Offset: Integer;
+
 begin
   // have a nice black background to draw on (even if there were errors opening the vid)
   if (Screen=1) and not Window.windowed then begin
-    glClearColor(0,0,0,0);
+    glDisable(GL_BLEND);
+    //glDisable(GL_DEPTH_TEST);
+    //glDepthMask(GL_FALSE);
+    //glDisable(GL_CULL_FACE);
+
+    glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
-  end;
+  end else
+    glEnable(GL_BLEND);
+
   // exit if there's nothing to draw
   if not VideoOpened then Exit;
   // if we're still inside negative skip, then exit
@@ -621,7 +785,7 @@ begin
 
   GetVideoRect(ScreenRect, TexRect, Window);
 
-  glEnable(GL_BLEND);
+
 
   glScissor(round((Window.Left)*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(Screen-1)),
     round((RenderH-Window.Lower)*ScreenH/RenderH),
@@ -633,6 +797,7 @@ begin
   glEnable(GL_TEXTURE_2D);
   glColor4f(1, 1, 1, Blend);
   glBindTexture(GL_TEXTURE_2D, VideoTex);
+
   glbegin(gl_quads);
     // upper-left coord
     glTexCoord2f(TexRect.Left, TexRect.Upper);
@@ -649,6 +814,7 @@ begin
 
   glEnd;
   glDisable(GL_TEXTURE_2D);
+  //glBindBuffer(GL_PIXEL_UNPACK_BUFFER_EXT, 0);
   glDisable(GL_SCISSOR_TEST);
   glDisable(GL_BLEND);
 
@@ -706,31 +872,37 @@ begin
     glColor4f(0, 0, 0, 0.2);
     glbegin(gl_quads);
       glVertex2f(0, 50);
-      glVertex2f(0, 140);
-      glVertex2f(250, 140);
+      glVertex2f(0, 160);
+      glVertex2f(250, 160);
       glVertex2f(250, 50);
     glEnd;
 
     glColor4f(1,1,1,1);
     SetFontStyle (1);
     SetFontItalic(False);
-    SetFontSize(9);
+    SetFontSize(7);
     SetFontPos (5, 50);
     text:= 'vtime: ' + FormatFloat('#0.00', VideoTime);
     test := Addr(text[1]);
     glPrint(test);
-    SetFontPos (5, 70);
+    SetFontPos (5, 65);
     //text:= 'vtime: ' + FormatFloat('#0.00', videodecoder^.timecode);
     //test := Addr(text[1]);
     glPrint(timediff);
-    SetFontPos (5, 90);
+    SetFontPos (5, 80);
     glPrint(mtime);
-    SetFontPos (5, 110);
+    SetFontPos (5, 95);
     case fAspectCorrection of
       acoCrop      : glPrint('Crop');
       acoStretch   : glPrint('Stretch');
       acoLetterBox : glPrint('LetterBox');
     end;
+
+    SetFontPos (5, 110);
+    glPrint(PChar('mmfps: '+FormatFloat('#0.00', mmfps)));
+
+    SetFontPos (5, 125);
+    glPrint(PChar('skipL: '+inttostr(SkipLines)));
   end;
 end;
 

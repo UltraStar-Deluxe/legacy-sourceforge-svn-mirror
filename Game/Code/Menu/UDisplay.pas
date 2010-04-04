@@ -32,6 +32,7 @@ type
     //FPS Counter
     FPSCounter: Cardinal;
     LastFPS:    Cardinal;
+    mFPS:       Real;
     NextFPSSwap:Cardinal;
     
     //For Debug OSD
@@ -121,6 +122,7 @@ var
   currentTime: Cardinal;
   glError: glEnum;
   glErrorStr: String;
+  Ticks: Cardinal;
   // end
 begin
   Result := True;
@@ -298,6 +300,19 @@ begin
       end;
     end; // if
 
+    //Calculate FPS
+    Ticks := GetTickCount;
+    if (Ticks >= NextFPSSwap) then
+    begin
+      LastFPS := FPSCounter * 4;
+
+      mFPS := (mFPS+LastFPS)/2;
+
+      FPSCounter := 0;
+      NextFPSSwap := Ticks + 250;
+    end;
+    Inc(FPSCounter);
+
     //Draw OSD only on first Screen if Debug Mode is enabled
     if ((Ini.Debug = 1) OR (Params.Debug)) AND (S=1) then
       DrawDebugInformation;
@@ -408,17 +423,16 @@ end;
 // DrawDebugInformation - Procedure draw FPS and some other Informations on Screen
 //------------
 procedure TDisplay.DrawDebugInformation;
-var Ticks: Cardinal;
 begin
   //Some White Background for information
   glEnable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
   glColor4f(1, 1, 1, 0.5);
   glBegin(GL_QUADS);
-    glVertex2f(690, 44);
+    glVertex2f(690, 57);
     glVertex2f(690, 0);
     glVertex2f(800, 0);
-    glVertex2f(800, 44);
+    glVertex2f(800, 57);
   glEnd;
   glDisable(GL_BLEND);
 
@@ -428,29 +442,21 @@ begin
   SetFontItalic(False);
   glColor4f(0, 0, 0, 1);
 
-  //Calculate FPS
-  Ticks := GetTickCount;
-  if (Ticks >= NextFPSSwap) then
-  begin
-    LastFPS := FPSCounter * 4;
-    FPSCounter := 0;
-    NextFPSSwap := Ticks + 250;
-  end;
-
-  Inc(FPSCounter);
-
   //Draw Text
 
   //FPS
   SetFontPos(695, 0);
-  glPrint (PChar('FPS: ' + InttoStr(LastFPS)));
+  glPrint (PChar('aFPS: ' + InttoStr(LastFPS)));
+
+  SetFontPos(695, 13);
+  glPrint (PChar('mFPS: ' + InttoStr(round(mFPS))));
 
   //RSpeed
-  SetFontPos(695, 13);
+  SetFontPos(695, 26);
   glPrint (PChar('RSpeed: ' + InttoStr(Round(1000 * TimeMid))));
 
   //LastError
-  SetFontPos(695, 26);
+  SetFontPos(695, 39);
   glColor4f(1, 0, 0, 1);
   glPrint (PChar(OSD_LastError));
 

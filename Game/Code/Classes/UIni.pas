@@ -37,6 +37,7 @@ type
     MovieSize:      integer;
     MoviePreview:   integer;
     AspectCorrect:  integer;
+    PerformanceMode:integer;
 
     // Sound
     MicBoost:       integer;
@@ -136,7 +137,8 @@ const
   ISpectrograph:  array[0..1] of string = ('Off', 'On');
   IMovieSize:     array[0..3] of string = ('Half', 'Full', 'Preview only', 'Off');
   IMoviePreview:  array[0..1] of string = ('Off', 'On');
-  IAspectCorrect:    array[0..2] of String  = ('Stretch', 'Crop', 'LetterBox');
+  IAspectCorrect: array[0..2] of String  = ('Stretch', 'Crop', 'LetterBox');
+  IPerformanceMode:array[0..1] of string = ('Off', 'On');
 
   IMicBoost:      array[0..3] of string = ('Off', '+6dB', '+12dB', '+18dB');
   IClickAssist:   array[0..1] of string = ('Off', 'On');
@@ -360,6 +362,11 @@ begin
   Tekst := IniFile.ReadString('Graphics', 'AspectCorrect', IAspectCorrect[2]);
   for Pet := 0 to High(IAspectCorrect) do
     if Tekst = IAspectCorrect[Pet] then Ini.AspectCorrect := Pet;
+
+  // PerformanceMode
+  Tekst := IniFile.ReadString('Graphics', 'PerformanceMode', IPerformanceMode[1]);
+  for Pet := 0 to High(IPerformanceMode) do
+    if Tekst = IPerformanceMode[Pet] then Ini.PerformanceMode := Pet;
 
   // MicBoost
   Tekst := IniFile.ReadString('Sound',    'MicBoost',    'Off');
@@ -685,6 +692,10 @@ begin
     // AspectCorrect
     Tekst := IAspectCorrect[Ini.AspectCorrect];
     IniFile.WriteString('Graphics', 'AspectCorrect', Tekst);
+
+    // PerformanceMode
+    Tekst := IPerformanceMode[Ini.PerformanceMode];
+    IniFile.WriteString('Graphics', 'PerformanceMode', Tekst);
 
     // MicBoost
     Tekst := IMicBoost[Ini.MicBoost];
