@@ -366,7 +366,7 @@ begin
 
   //Set Scores
 
-  if (Ini.NewPartyPoints = 1) then
+  if (Ini.NewPartyPoints = 1) and (Rounds[CurRound].Winner <> 0) then
   begin
 
     MaxScore := 0;
