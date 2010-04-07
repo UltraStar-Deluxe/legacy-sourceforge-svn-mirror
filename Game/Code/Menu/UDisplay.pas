@@ -20,13 +20,13 @@ type
 
     Fade: Real;
     // fade-mod
-    doFade: Boolean;
-    canFade: Boolean;
-    DoneOnShow: Boolean;
-    myFade: integer;
-    lastTime: Cardinal;
-    pTexData : Pointer;
-    pTex : array[1..2] of glUInt;
+    doFade:       Boolean;
+    canFade:      Boolean;
+    DoneOnShow:   Boolean;
+    myFade:       integer;
+    lastTime:     Cardinal;
+    pTex:         array[1..2] of glUInt;
+    TexW, TexH:   Cardinal;
     // end
 
     //FPS Counter
@@ -54,10 +54,12 @@ var
 
 implementation
 
-uses UGraphic, UTime, Graphics, Jpeg, UFiles, UTexture, UIni, TextGL, UCommandLine;
+uses UGraphic, UTime, Math, Graphics, Jpeg, UFiles, UTexture, UIni, TextGL, UCommandLine;
 
 constructor TDisplay.Create;
-var i: integer;
+var
+  i: integer;
+
 begin
   inherited Create;
 
@@ -77,28 +79,32 @@ begin
     doFade:=False;
 
   canFade:=True;
-  // generate texture for fading between screens
-  GetMem(pTexData, 512*512*3);
-  if pTexData <> NIL then
+
   for i:= 1 to 2 do
   begin
+    TexW := Round(Power(2, Ceil(Log2(ScreenW div Screens))));
+    TexH := Round(Power(2, Ceil(Log2(ScreenH))));
+
+    glGetError();
+
     glGenTextures(1, pTex[i]);
     if glGetError <> GL_NO_ERROR then canFade := False;
+
     glBindTexture(GL_TEXTURE_2D, pTex[i]);
     if glGetError <> GL_NO_ERROR then canFade := False;
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, pTexData);
+
+    //glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    //if glGetError <> GL_NO_ERROR then canFade := False;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, TexW, TexH, 0, GL_RGB, GL_UNSIGNED_BYTE, nil);
     if glGetError <> GL_NO_ERROR then canFade := False;
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     if glGetError <> GL_NO_ERROR then canFade := False;
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     if glGetError <> GL_NO_ERROR then canFade := False;
-  end
-  else
-  begin
-    canFade:=False;
   end;
-  FreeMem(pTexData);
-  // end
 
   //Set LastError for OSD to No Error
   OSD_LastError := 'No Errors';
@@ -115,14 +121,15 @@ end;
 
 function TDisplay.Draw: Boolean;
 var
-  S:    integer;
-  Col: Real;
+  S:            integer;
+  Col:          Real;
   // fade mod
-  myFade2: Real;
-  currentTime: Cardinal;
-  glError: glEnum;
-  glErrorStr: String;
-  Ticks: Cardinal;
+  myFade2:      Real;
+  FadeW, FadeH: Real;
+  currentTime:  Cardinal;
+  glError:      glEnum;
+  glErrorStr:   String;
+  Ticks:        Cardinal;
   // end
 begin
   Result := True;
@@ -197,11 +204,14 @@ begin
         //Create Fading texture if we're just starting
         if myfade = 0 then
         begin
-          glViewPort(0, 0, 512, 512);
+          //glViewPort(0, 0, 512, 512);
           ActualScreen.Draw;
           glGetError();
+
           glBindTexture(GL_TEXTURE_2D, pTex[S]);
-          glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 512, 512, 0);
+          glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (S-1) * ScreenW div Screens, 0,
+            ScreenW div Screens, ScreenH);
+
           glError:=glGetError;
           if glError <> GL_NO_ERROR then
           begin
@@ -217,7 +227,7 @@ begin
             end;
             ScreenPopupError.ShowPopup('Error copying\nfade texture\n('+glErrorStr+')\nfading\ndisabled'); //show error message
           end;
-          glViewPort((S-1) * ScreenW div Screens, 0, ScreenW div Screens, ScreenH);
+          //glViewPort((S-1) * ScreenW div Screens, 0, ScreenW div Screens, ScreenH);
 
           lastTime:=GetTickCount;
           if (S=2) or (Screens = 1) then
@@ -257,16 +267,27 @@ begin
 
       // and draw old screen over it... slowly fading out
         myfade2:=(myfade*myfade)/10000;
+        FadeW := (ScreenW div Screens)/TexW;
+        FadeH := ScreenH/TexH;
+
         glBindTexture(GL_TEXTURE_2D, pTex[S]);
         glColor4f(1, 1, 1, (1000-myfade*myfade)/1000); // strange calculation - alpha gets negative... but looks good this way
+
         glEnable(GL_TEXTURE_2D);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_BLEND);
         glBegin(GL_QUADS);
-          glTexCoord2f(0+myfade2,0+myfade2);glVertex2f(0,   600);
-          glTexCoord2f(0+myfade2,1-myfade2);glVertex2f(0,   0);
-          glTexCoord2f(1-myfade2,1-myfade2);glVertex2f(800, 0);
-          glTexCoord2f(1-myfade2,0+myfade2);glVertex2f(800, 600);
+          glTexCoord2f((0+myfade2)*FadeW, (0+myfade2)*FadeH);
+          glVertex2f(0,   RenderH);
+
+          glTexCoord2f((0+myfade2)*FadeW, (1-myfade2)*FadeH);
+          glVertex2f(0,   0);
+
+          glTexCoord2f((1-myfade2)*FadeW, (1-myfade2)*FadeH);
+          glVertex2f(RenderW, 0);
+
+          glTexCoord2f((1-myfade2)*FadeW, (0+myfade2)*FadeH);
+          glVertex2f(RenderW, RenderH);
         glEnd;
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
@@ -275,7 +296,6 @@ begin
         // blackscreen hack
         if (not BlackScreen) AND (S = 1) then
           NextScreen.OnShow;
-
 
       if ((myfade > 40) or (not doFade) or (not canFade)) And (S = 1) then begin // fade out complete...
         //if not DoneOnShow then
@@ -311,7 +331,9 @@ begin
       FPSCounter := 0;
       NextFPSSwap := Ticks + 250;
     end;
-    Inc(FPSCounter);
+
+    if(S = 1) then
+      Inc(FPSCounter);
 
     //Draw OSD only on first Screen if Debug Mode is enabled
     if ((Ini.Debug = 1) OR (Params.Debug)) AND (S=1) then

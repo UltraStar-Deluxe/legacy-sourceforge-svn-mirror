@@ -90,21 +90,22 @@ begin
   LoadFromTheme(Theme.OptionsRecord);
 
   SetLength(ICard, Length(Recording.SoundCard));
+
   for SC := 0 to High(Recording.SoundCard) do
     ICard[SC] := Recording.SoundCard[SC].Description;
 //  end;
 
-//  if Length(Recording.SoundCard[Ini.Card].Input) > 0 then begin
+  if (Length(Recording.SoundCard)>0) then
+  begin
     SetLength(IInput, Length(Recording.SoundCard[Ini.Card].Input));
     for SCI := 0 to High(Recording.SoundCard[Ini.Card].Input) do
       IInput[SCI] := Recording.SoundCard[Ini.Card].Input[SCI].Name;
-//  end;
 
-
-  AddSelectSlide(Theme.OptionsRecord.SelectSlideCard, Ini.Card, ICard);
-  SelectSlideInput    := AddSelectSlide(Theme.OptionsRecord.SelectSlideInput, Ini.CardList[0].Input, IInput);
-  SelectSlideChannelL := AddSelectSlide(Theme.OptionsRecord.SelectSlideChannelL, Ini.CardList[0].ChannelL, IChannel);
-  SelectSlideChannelR := AddSelectSlide(Theme.OptionsRecord.SelectSlideChannelR, Ini.CardList[0].ChannelR, IChannel);
+    AddSelectSlide(Theme.OptionsRecord.SelectSlideCard, Ini.Card, ICard);
+    SelectSlideInput    := AddSelectSlide(Theme.OptionsRecord.SelectSlideInput, Ini.CardList[0].Input, IInput);
+    SelectSlideChannelL := AddSelectSlide(Theme.OptionsRecord.SelectSlideChannelL, Ini.CardList[0].ChannelL, IChannel);
+    SelectSlideChannelR := AddSelectSlide(Theme.OptionsRecord.SelectSlideChannelR, Ini.CardList[0].ChannelR, IChannel);
+  end;
 
   AddButton(Theme.OptionsRecord.ButtonExit);
   if (Length(Button[0].Text)=0) then

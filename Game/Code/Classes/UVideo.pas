@@ -767,14 +767,23 @@ var
 
 begin
   // have a nice black background to draw on (even if there were errors opening the vid)
-  if (Screen=1) and not Window.windowed then begin
+  if Not Window.windowed then
+  begin
     glDisable(GL_BLEND);
     //glDisable(GL_DEPTH_TEST);
     //glDepthMask(GL_FALSE);
     //glDisable(GL_CULL_FACE);
+    
+    glScissor(round((ScreenW/Screens)*(Screen-1)),
+      0,
+      round(ScreenW/Screens),
+      round(ScreenH));
+    glEnable(GL_SCISSOR_TEST);
 
     glClearColor(0,0,0,1);
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+
+    glDisable(GL_SCISSOR_TEST);
   end else
     glEnable(GL_BLEND);
 
@@ -786,13 +795,14 @@ begin
   GetVideoRect(ScreenRect, TexRect, Window);
 
 
-
-  glScissor(round((Window.Left)*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(Screen-1)),
-    round((RenderH-Window.Lower)*ScreenH/RenderH),
-    round((Window.Right-Window.Left)*(ScreenW/Screens)/RenderW),
-    round((Window.Lower-Window.Upper)*ScreenH/RenderH));
-  glEnable(GL_SCISSOR_TEST);
-
+  if Window.windowed then
+  begin
+    glScissor(round((Window.Left)*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(Screen-1)),
+      round((RenderH-Window.Lower)*ScreenH/RenderH),
+      round((Window.Right-Window.Left)*(ScreenW/Screens)/RenderW),
+      round((Window.Lower-Window.Upper)*ScreenH/RenderH));
+    glEnable(GL_SCISSOR_TEST);
+  end;
 
   glEnable(GL_TEXTURE_2D);
   glColor4f(1, 1, 1, Blend);

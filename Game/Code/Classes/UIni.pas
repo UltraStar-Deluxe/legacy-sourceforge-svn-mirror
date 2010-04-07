@@ -428,7 +428,7 @@ begin
 
   //Theme List Patch
 
-    //I2 Saves the no of the Deluxe (Standard-) Theme
+    //I2 Saves the no of the (Standard-) Theme
     I2 := 0;
     //I counts is the cur. Theme no
     I := 0;
@@ -441,8 +441,8 @@ begin
       Tekst := UpperCase(ThemeIni.ReadString('Theme','Name',GetFileName(SR.Name)));
       ThemeIni.Free;
 
-      //if Deluxe Theme then save Themeno to I2
-      if (Tekst = 'DELUXE') then
+      //if Default Theme then save Themeno to I2
+      if (Tekst = 'Blue Sensation') then
         I2 := I;
 
       //Search for Skins for this Theme  

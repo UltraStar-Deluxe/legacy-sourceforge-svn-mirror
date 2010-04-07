@@ -19,10 +19,10 @@ type
 
 const
   ID='ID_006';   //for help system
-  
+
 implementation
 
-uses UGraphic, UHelp, ULog;
+uses UGraphic, UHelp, ULog, URecord, ULanguage;
 
 function TScreenOptions.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
@@ -74,8 +74,12 @@ begin
           end;
 
           if SelInteraction = 5 then begin
-            Music.PlayStart;
-            FadeTo(@ScreenOptionsRecord);
+            if (Length(Recording.SoundCard)>0) then
+            begin
+              Music.PlayStart;
+              FadeTo(@ScreenOptionsRecord);
+            end else
+              ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SOUND_INPUT'));
           end;
 
           if SelInteraction = 6 then begin
