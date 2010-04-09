@@ -12,8 +12,11 @@ type
   TVidVis = (none, windowed, full);
 
   THandler = record
-    changed:  boolean;
+    changed:      boolean;
     change_time:  real;
+    lastIndex:    integer;
+    lastCat:      integer;
+    active:       boolean;
   end;
 
   TScreenSong = class(TMenu)
@@ -52,6 +55,9 @@ type
 
       //VideoAspect
       AspectHandler:  THandler;
+
+      //Wait timer
+      WaitHandler:  THandler;
 
       //Medley Icons
       MedleyIcon: cardinal;
@@ -352,6 +358,44 @@ begin
 
   If (PressedDown) Then
   begin // Key Down
+
+    if (WaitHandler.active) and not (PressedKey = SDLK_RETURN) then
+    begin
+      if (Ini.Tabs_at_startup=1) then
+      begin
+        //Search Cat
+        for I := WaitHandler.lastIndex downto low(CatSongs.Song) do
+        begin
+          if CatSongs.Song[I].Main then
+            break;
+        end;
+
+        //Choose Cat
+        CatSongs.ShowCategoryList;
+        ShowCatTL (I);
+
+        CatSongs.ClickCategoryButton(I);
+      end;
+
+      //Choose Song
+      SkipTo2(WaitHandler.lastIndex);
+
+
+      ChangeMusic;
+      SetScroll4;
+    end;
+
+    if (Mode = smNormal) and not MakeMedley and (Ini.ShuffleTime>0) then
+    begin
+      WaitHandler.changed := true;
+      WaitHandler.change_time := 0;
+      if (WaitHandler.active) then
+      begin
+        WaitHandler.active := false;
+        if (PressedKey<>SDLK_RETURN) then
+          Exit;
+      end;
+    end;
 
     SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT);
@@ -829,7 +873,7 @@ begin
           if (Mode = smNormal) then
             OpenEditor;
         end;
-        
+
       SDLK_R:
         begin
           if (Length(Songs.Song) > 0) and (Mode = smNormal) then
@@ -1960,6 +2004,14 @@ begin
 
   SetJoker;
   SetStatics;
+
+  if (Mode = smNormal) and (Ini.ShuffleTime>0) then
+  begin
+    WaitHandler.changed := true;
+    WaitHandler.change_time := 0;
+  end;
+
+  WaitHandler.active := false;
 end;
 
 procedure TScreenSong.RandomSongChallenge();
@@ -2034,11 +2086,13 @@ end;
 
 function TScreenSong.Draw: boolean;
 var
-  dx:   real;
-  dt:   real;
-  I, J:    Integer;
+  dx:     real;
+  dt:     real;
+  I, I2, J:   Integer;
   Window: TRectCoords;
-  Blend: real;
+  Blend:  real;
+  VisArr: array of integer;
+
 begin
   dx := SongTarget-SongCurrent;
   dt := TimeSkip*7;
@@ -2239,7 +2293,89 @@ begin
 
     Static[StaticTop].Visible := false;
   end;
-  
+
+  if (Mode = smNormal) and (Ini.ShuffleTime>0) and
+    not MakeMedley and not CatSongs.Song[Interaction].Main and
+    (Length(CatSongs.Song)-CatSongs.CatCount>1) then
+  begin
+    if (WaitHandler.changed and
+      (((Ini.ShuffleTime<9) and (WaitHandler.change_time + TimeSkip>Ini.ShuffleTime*15))
+      or (Music.Finished))) then
+    begin
+      WaitHandler.change_time := 0;
+      if (not WaitHandler.active) then
+      begin
+        WaitHandler.active := true;
+        WaitHandler.lastIndex := Interaction;
+        WaitHandler.lastCat := CatSongs.CatNumShow;
+      end;
+
+      if(Ini.Tabs_at_startup<>1) then
+      begin
+        //Random in one Category
+        SetLength(VisArr, 0);
+
+        for I := 0 to Length(CatSongs.Song) - 1 do
+        begin
+          if CatSongs.Song[I].Visible and not (I=Interaction)then
+          begin
+            SetLength(VisArr, Length(VisArr)+1);
+            VisArr[Length(VisArr)-1] := I;
+          end;
+        end;
+
+        if (Length(VisArr)>0) then
+        begin
+          I := Random(Length(VisArr));
+          I := VisArr[I];
+
+          //Choose Song
+          SkipTo2(I);
+        end;
+      end else
+      begin
+        //random in All Categorys
+        SetLength(VisArr, 0);
+
+        for I := 0 to Length(CatSongs.Song) - 1 do
+        begin
+          if not CatSongs.Song[I].Main and (I<>Interaction)then
+          begin
+            SetLength(VisArr, Length(VisArr)+1);
+            VisArr[Length(VisArr)-1] := I;
+          end;
+        end;
+
+        if (Length(VisArr)>0) then
+        begin
+          I2 := Random(Length(VisArr));
+          I2 := VisArr[I2];
+
+          //Search Cat
+          for I := I2 downto low(CatSongs.Song) do
+          begin
+            if CatSongs.Song[I].Main then
+            break;
+          end;
+
+          //Choose Cat
+          CatSongs.ShowCategoryList;
+          ShowCatTL (I);
+
+          CatSongs.ClickCategoryButton(I);
+
+          //Choose Song
+          SkipTo2(I2);
+        end;
+      end;
+
+      Music.PlayChange;
+      ChangeMusic;
+      SetScroll4;
+    end else
+      WaitHandler.change_time := WaitHandler.change_time + TimeSkip;
+  end;
+
   DrawExtensions;
 end;
 
@@ -2389,11 +2525,11 @@ begin
 end;
 
 procedure TScreenSong.UpdateLCD;
-begin
+begin{
   LCD.HideCursor;
   LCD.Clear;
   LCD.WriteText(1, Text[TextArtist].Text);
-  LCD.WriteText(2, Text[TextTitle].Text);
+  LCD.WriteText(2, Text[TextTitle].Text); }
 end;
 
 //Procedure Change current played Preview
@@ -3120,6 +3256,7 @@ end;
 
 procedure TScreenSong.StartSong;
 begin
+  WaitHandler.changed := false;
   CatSongs.Selected := Interaction;
   Music.Stop;
   //Party Mode
@@ -3218,7 +3355,7 @@ end;
 procedure TScreenSong.UnLoadDetailedCover;
 begin
   CoverTime := 0;
-  
+
   Button[Interaction].Texture := Texture.GetTexture(Button[Interaction].Texture.Name, 'Plain', true); // 0.5.0: show cached texture
   Button[Interaction].Texture2.Alpha := 0;
 

@@ -21,6 +21,7 @@ type
     Tabs:           integer;
     Tabs_at_startup:integer; //Tabs at Startup fix
     Sorting:        integer;
+    ShuffleTime:    integer;
     Debug:          integer;
     LoadFaultySongs:integer;
     NewPartyPoints: integer;
@@ -121,6 +122,17 @@ const
   sTitle2 = 6;
   sArtist2 = 7;
 
+  IShuffleTime:   array[0..9] of string = ('Off',
+                                          '15 Sec',
+                                          '30 Sec',
+                                          '45 Sec',
+                                          '60 Sec',
+                                          '75 Sec',
+                                          '90 Sec',
+                                          '105 Sec',
+                                          '120 Sec',
+                                          'MAX');
+
   IDebug:         array[0..1] of string = ('Off', 'On');
   ILoadFaultySongs: array[0..1] of string = ('Off', 'On');
   INewPartyPoints: array[0..1] of string = ('Off', 'On');
@@ -161,12 +173,12 @@ const
   // Advanced
   ILoadAnimation: array[0..1] of string = ('Off', 'On');
   IEffectSing:    array[0..1] of string = ('Off', 'On');
-  IScreenFade: array [0..1] of String =('Off', 'On');
+  IScreenFade:    array [0..1] of String =('Off', 'On');
   IAskbeforeDel:  array[0..1] of string = ('Off', 'On');
   IOnSongClick:   array[0..2] of string = ('Sing', 'Select Players', 'Open Menu');
-  ILineBonus:  array[0..2] of string = ('Off', 'At Score', 'At Notes');
-  IPartyPopup: array[0..1] of string = ('Off', 'On');
-  ISumPlayers: array[0..2] of string = ('Never', 'Dynamic', 'Always');
+  ILineBonus:     array[0..2] of string = ('Off', 'At Score', 'At Notes');
+  IPartyPopup:    array[0..1] of string = ('Off', 'On');
+  ISumPlayers:    array[0..2] of string = ('Never', 'Dynamic', 'Always');
 
   IJoypad:        array[0..1] of string = ('Off', 'On');
   ILPT:           array[0..2] of string = ('Off', 'LCD', 'Lights');
@@ -248,6 +260,11 @@ begin
   Tekst := IniFile.ReadString('Game', 'Sorting', ISorting[0]);
   for Pet := 0 to High(ISorting) do
     if Tekst = ISorting[Pet] then Ini.Sorting := Pet;
+
+  // ShuffleTime
+  Tekst := IniFile.ReadString('Game', 'ShuffleTime', 'Off');
+  for Pet := 0 to High(IShuffleTime) do
+    if Tekst = IShuffleTime[Pet] then Ini.ShuffleTime := Pet;
 
   // Debug
   Tekst := IniFile.ReadString('Game', 'Debug', IDebug[0]);
@@ -410,7 +427,7 @@ begin
     if Tekst = IPreviewFading[Pet] then Ini.PreviewFading := Pet;
 
   // Lyrics Font
-  Tekst := IniFile.ReadString('Lyrics',    'LyricsFont',   ILyricsFont[1]);
+  Tekst := IniFile.ReadString('Lyrics',    'LyricsFont',   ILyricsFont[2]);
   for Pet := 0 to High(ILyricsFont) do
     if Tekst = ILyricsFont[Pet] then Ini.LyricsFont := Pet;
 
@@ -442,7 +459,7 @@ begin
       ThemeIni.Free;
 
       //if Default Theme then save Themeno to I2
-      if (Tekst = 'Blue Sensation') then
+      if (Tekst = 'BLUE SENSATION') then
         I2 := I;
 
       //Search for Skins for this Theme  
@@ -644,6 +661,10 @@ begin
     Tekst := ISorting[Ini.Sorting];
     IniFile.WriteString('Game',     'Sorting',   Tekst);
 
+    //ShuffleTime
+    Tekst := IShuffleTime[Ini.ShuffleTime];
+    IniFile.WriteString('Game', 'ShuffleTime', Tekst);
+
     // Debug
     Tekst := IDebug[Ini.Debug];
     IniFile.WriteString('Game',     'Debug',   Tekst);
@@ -808,7 +829,7 @@ begin
     Tekst := IPartyPopup[Ini.PartyPopup];
     IniFile.WriteString('Advanced', 'PartyPopup', Tekst);
 
-    //Party SumPlayers
+    //SumPlayers
     Tekst := ISumPlayers[Ini.SumPlayers];
     IniFile.WriteString('Advanced', 'SumPlayers', Tekst);
 

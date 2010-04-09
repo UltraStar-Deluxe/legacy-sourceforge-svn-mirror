@@ -456,6 +456,7 @@ type
     SelectLanguage:     TThemeSelectSlide;
     SelectTabs:         TThemeSelect;
     SelectSorting:      TThemeSelectSlide;
+    SelectShuffleTime:  TThemeSelectSlide;
     SelectDebug:        TThemeSelect;
     ButtonExit:         TThemeButton;
   end;
@@ -1345,6 +1346,7 @@ begin
       ThemeLoadSelectSlide(OptionsGame.SelectLanguage, 'OptionsGameSelectSlideLanguage');
       ThemeLoadSelect(OptionsGame.SelectTabs, 'OptionsGameSelectTabs');
       ThemeLoadSelectSlide(OptionsGame.SelectSorting, 'OptionsGameSelectSlideSorting');
+      ThemeLoadSelectSlide(OptionsGame.SelectShuffleTime, 'OptionsGameSelectShuffleTime');
       ThemeLoadSelect(OptionsGame.SelectDebug, 'OptionsGameSelectDebug');
       ThemeLoadButton(OptionsGame.ButtonExit, 'OptionsGameButtonExit');
 

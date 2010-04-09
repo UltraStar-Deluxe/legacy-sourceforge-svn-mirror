@@ -46,7 +46,7 @@ begin
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 6 then begin
+          if SelInteraction = 7 then begin
             Music.PlayBack;
             RefreshSongs;
             FadeTo(@ScreenOptions);
@@ -58,14 +58,14 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
             Music.PlayOption;
             InteractInc;
           end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
             Music.PlayOption;
             InteractDec;
           end;
@@ -91,6 +91,7 @@ begin
   AddSelectSlide(Theme.OptionsGame.SelectLanguage, Ini.Language, ILanguage);
   AddSelect(Theme.OptionsGame.SelectTabs, Ini.Tabs, ITabs);
   AddSelectSlide(Theme.OptionsGame.SelectSorting, Ini.Sorting, ISorting);
+  AddSelectSlide(Theme.OptionsGame.SelectShuffleTime, Ini.ShuffleTime, IShuffleTime);
   AddSelect(Theme.OptionsGame.SelectDebug, Ini.Debug, IDebug);
 
 
