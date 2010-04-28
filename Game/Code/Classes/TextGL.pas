@@ -54,8 +54,6 @@ uses UMain, Windows, SysUtils, UGraphic;
 
 procedure BuildFont;			                // Build Our Bitmap Font
 var
-  font:     HFONT;              	          // Windows Font ID
-  h_dc:     hdc;
   Rejestr:  TResourceStream;
   Pet:      integer;
 begin

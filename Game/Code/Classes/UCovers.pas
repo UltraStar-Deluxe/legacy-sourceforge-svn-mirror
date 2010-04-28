@@ -48,7 +48,6 @@ end;
 procedure TCovers.Load;
 var
   F:      File;
-  C:      integer; // cover number
   W:      word;
   H:      word;
   Bits:   byte;
@@ -102,13 +101,14 @@ begin
 end;
 
 procedure TCovers.Save;
+{
 var
   F:      File;
   C:      integer; // cover number
   W:      word;
   H:      word;
   NLen:   word;
-  Bits:   byte;
+  Bits:   byte;  }
 begin
 {  AssignFile(F, GamePath + 'covers.cache');
   Rewrite(F, 1);
@@ -133,9 +133,9 @@ end;
 
 procedure TCovers.AddCover(Name: string);
 var
-  B:      integer;
+  //B:      integer;
   F:      File;
-  C:      integer; // cover number
+  //C:      integer; // cover number
   NLen:   word;
   Bits:   byte;
 begin

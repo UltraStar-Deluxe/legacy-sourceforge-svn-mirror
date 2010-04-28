@@ -84,8 +84,8 @@ begin
 end;
 
 constructor TScreenStatMain.Create;
-var
-  I:    integer;
+{var
+  I:    integer;}
 begin
   inherited Create;
 
@@ -114,16 +114,19 @@ begin
     AddButtonText(14, 20, Theme.Options.Description[4]);
 
   Interaction := 0;
+end;
 
+procedure TScreenStatMain.onShow;
+var
+  I:    Integer;
+  
+begin
   //Set Songs with Vid
   SongswithVid := 0;
   For I := 0 to high(Songs.Song) do
     if (Songs.Song[I].Video <> '') then
       Inc(SongswithVid);
-end;
 
-procedure TScreenStatMain.onShow;
-begin
   //Set Overview Text:
   SetOverview;
   if not Help.SetHelpID(ID) then
@@ -133,7 +136,7 @@ end;
 procedure TScreenStatMain.SetOverview;
 var
   Overview, Formatstr: String;
-  I: Integer;
+  //I: Integer;
   //Some Vars to Save Attributes to
   A1, A2, A3: Integer;
   A4, A5: String;

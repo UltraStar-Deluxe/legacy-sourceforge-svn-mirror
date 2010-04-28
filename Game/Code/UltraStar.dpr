@@ -13,7 +13,7 @@ uses
   glu in 'lib\JEDI-SDLv1.0\OpenGL\Pas\glu.pas',
   glext in 'lib\JEDI-SDLv1.0\OpenGL\Pas\glext.pas',
   sdl_ttf in 'lib\JEDI-SDLv1.0\SDL_ttf\Pas\sdl_ttf.pas',
-  smpeg in 'lib\JEDI-SDLv1.0\smpeg\Pas\smpeg.pas',
+  //smpeg in 'lib\JEDI-SDLv1.0\smpeg\Pas\smpeg.pas',
   bass in 'lib\bass\delphi\bass.pas',
   PNGImage in 'lib\PNGImage\PNGImage.pas',
   PNGzLib in 'lib\PNGImage\PNGzLib.pas',
@@ -52,14 +52,14 @@ uses
   USongs in 'Classes\USongs.pas',
   UIni in 'Classes\UIni.pas',
   UHelp in 'Classes\UHelp.pas',
-  USmpeg in 'SMpeg\USmpeg.pas',
+  //USmpeg in 'SMpeg\USmpeg.pas',
   ULyrics in 'Classes\ULyrics.pas',
   USkins in 'Classes\USkins.pas',
   UThemes in 'Classes\UThemes.pas',
   ULog in 'Classes\ULog.pas',
   UJoystick in 'Classes\UJoystick.pas',
-  ULCD in 'Classes\ULCD.pas',
-  ULight in 'Classes\ULight.pas',
+  //ULCD in 'Classes\ULCD.pas',
+  //ULight in 'Classes\ULight.pas',
   UDataBase in 'Classes\UDataBase.pas',
   UCovers in 'Classes\UCovers.pas',
   UCatCovers in 'Classes\UCatCovers.pas',
@@ -124,7 +124,7 @@ uses
   acinerella in 'lib\acinerella\acinerella.pas';
 
 const
-  Version = 'UltraStar Deluxe v1.0.1a Challenge-MOD r7b beta 7 2010-04-09';
+  Version = 'UltraStar Deluxe v1.0.1a Challenge-Mod r7b RC2 2010-04-28';
 
 var
   WndTitle: string;
@@ -222,28 +222,6 @@ begin
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Loading Ini', 1);
 
-  // LCD
-  Log.BenchmarkStart(1);
-  Log.LogStatus('Load LCD', 'Initialization');                LCD := TLCD.Create;
-  if Ini.LPT = 1 then begin
-//  LCD.HalfInterface := true;
-    LCD.Enable;
-    LCD.Clear;
-    LCD.WriteText(1, '  UltraStar    ');
-    LCD.WriteText(2, '  Loading...   ');
-  end;
-  Log.BenchmarkEnd(1);
-  Log.LogBenchmark('Loading LCD', 1);
-
-  // Light
-  Log.BenchmarkStart(1);
-  Log.LogStatus('Load Light', 'Initialization');              Light := TLight.Create;
-  if Ini.LPT = 2 then begin
-    Light.Enable;
-  end;
-  Log.BenchmarkEnd(1);
-  Log.LogBenchmark('Loading Light', 1);
-
   // Theme
   Log.BenchmarkStart(1);
   Log.LogStatus('Load Themes', 'Initialization');             Theme := TTheme.Create('Themes\' + ITheme[Ini.Theme] + '.ini', Ini.Color);
@@ -262,14 +240,6 @@ begin
   CatCovers:= TCatCovers.Create;
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Loading Category Covers Array', 1);
-
-  // Songs
-  //Log.BenchmarkStart(1);
-  Log.LogStatus('Creating Song Array', 'Initialization');     Songs := TSongs.Create;
-  Songs.LoadSongList;
-  Log.LogStatus('Creating 2nd Song Array', 'Initialization'); CatSongs := TCatSongs.Create;
-  Log.BenchmarkEnd(1);
-  Log.LogBenchmark('Loading Songs', 1);
 
   // PluginManager
   Log.BenchmarkStart(1);
@@ -297,6 +267,17 @@ begin
   Log.LogStatus('Initialize 3D', 'Initialization');           Initialize3D(WndTitle);
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Initializing 3D', 1);
+
+  // Songs
+  //Log.BenchmarkStart(1);
+  Log.LogStatus('Creating Song Array', 'Initialization');     Songs := TSongs.Create;
+  Songs.LoadSongList;
+  Log.LogStatus('Creating 2nd Song Array', 'Initialization'); CatSongs := TCatSongs.Create;
+  Log.BenchmarkEnd(1);
+  Log.LogBenchmark('Loading Songs', 1);
+
+  // Refresh ScreenSong
+  ScreenSong.Refresh(true);
 
   // Sound
   Log.BenchmarkStart(1);
@@ -357,8 +338,8 @@ begin
   //------------------------------
   //Finish Application
   //------------------------------
-  if Ini.LPT = 1 then LCD.Clear;
-  if Ini.LPT = 2 then Light.TurnOff;
+  //if Ini.LPT = 1 then LCD.Clear;
+  //if Ini.LPT = 2 then Light.TurnOff;
 
   Log.Free;
 end.

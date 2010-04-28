@@ -23,7 +23,7 @@ uses UGraphic, UMain, UIni, UTexture, UPartyM2, UHelp, ULog;
 
 function TScreenPartyPlayerM2.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 var
-  I, J:    integer;
+  {I,} J:    integer;
   SDL_ModState:  Word;
   procedure IntNext;
   begin
@@ -40,11 +40,11 @@ var
 begin
   Result := true;
   If (PressedDown) Then
-
+  begin // Key Down
     SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT);
 
-  begin // Key Down
+
     case PressedKey of
       SDLK_TAB:
         begin
@@ -204,8 +204,8 @@ begin
 end;
 
 constructor TScreenPartyPlayerM2.Create;
-var
-  I:    integer;
+{var
+  I:    integer;}
 begin
   inherited Create;
 

@@ -239,13 +239,11 @@ end;
 
 
 var
-  FileVoice:    File;
   FS:           TFileStream;
   FileName:     string;
   Num:          integer;
   BL:           integer;
   Header:       TWAVHeader;
-  ms:           TMemoryStream;
   s:            LongInt;
 
 begin
@@ -308,5 +306,4 @@ begin
 end;
 
 end.
-
 

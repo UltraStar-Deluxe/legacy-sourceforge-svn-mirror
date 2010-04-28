@@ -2,7 +2,7 @@ unit UGraphic;
 
 interface
 uses
-  SDL, gl, glext, UTexture, TextGL, ULog, SysUtils, ULyrics, UScreenLoading,
+  SDL, gl, glext, UVideo, UTexture, ULanguage, TextGL, ULog, SysUtils, ULyrics, UScreenLoading,
   UScreenWelcome, UScreenMain, UScreenName, UScreenLevel, UScreenOptions, UScreenOptionsGame,
   UScreenOptionsGraphics, UScreenOptionsSound, UScreenOptionsLyrics, UScreenOptionsThemes, UScreenOptionsRecord, UScreenOptionsAdvanced,
   UScreenSong, UScreenSing, UScreenScore, UScreenTop, UScreenEditSub,
@@ -188,7 +188,7 @@ procedure LoadTextures;
 procedure InitializeScreen;
 procedure LoadScreens( aShowLoading : boolean = true );
 procedure UnLoadScreens;
-
+procedure UpdateScreenLoading(txt: string);
 
 implementation
 uses UMain, UIni, UDisplay, UCommandLine, Graphics, Classes, Windows;
@@ -248,11 +248,11 @@ begin
 end;
 
 procedure Initialize3D (Title: string);
-var
-  Icon: TIcon;
-  Res:  TResourceStream;
-  ISurface: PSDL_Surface;
-  Pixel: PByteArray;
+//var
+  //Icon: TIcon;
+  //Res:  TResourceStream;
+  //ISurface: PSDL_Surface;
+  //Pixel: PByteArray;
 begin
   Log.LogStatus('LoadOpenGL', 'Initialize3D');
   Log.BenchmarkStart(2);
@@ -317,7 +317,7 @@ begin
 
   LoadScreens;
 
-  if Log.NumErrors>0 then
+  if (Ini.LoadFaultySongs=1) and (Log.NumErrors>0) then
     ScreenMain.ShowNumErrors := true;
 
   Display.ActualScreen^.FadeTo(@ScreenMain);
@@ -331,10 +331,10 @@ end;
 procedure SwapBuffers;
 begin
   SDL_GL_SwapBuffers;
-  glMatrixMode(GL_PROJECTION);
+  {glMatrixMode(GL_PROJECTION);
     glLoadIdentity;
     glOrtho(0, 800, 600, 0, -1, 100);
-  glMatrixMode(GL_MODELVIEW);
+  glMatrixMode(GL_MODELVIEW);}
 end;
 
 procedure Reinitialize3D;
@@ -346,21 +346,18 @@ end;
 
 procedure InitializeScreen;
 var
-  S:      string;
-  I:      integer;
-  W, H:   integer;
-  Depth:  Integer;
+  S:          String;
+  I:          Integer;
+  W, H:       Integer;
+  Depth:      Integer;
+  videoFlags: Integer;
+  videoInfo:  PSDL_VideoInfo;
+
 begin
   if (Params.Screens <> -1) then
     Screens := Params.Screens + 1
   else
     Screens := Ini.Screens + 1;
-
-  SDL_GL_SetAttribute(SDL_GL_RED_SIZE,      5);
-  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,    5);
-  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,     5);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,    16);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,  1);
 
   // If there is a resolution in Parameters, use it, else use the Ini value
   I := Params.Resolution;
@@ -373,15 +370,6 @@ begin
   W := StrToInt(Copy(S, 1, I-1)) * Screens;
   H := StrToInt(Copy(S, I+1, 1000));
 
-  {if ParamStr(1) = '-fsblack' then begin
-    W := 800;
-    H := 600;
-  end;
-  if ParamStr(1) = '-320x240' then begin
-    W := 320;
-    H := 240;
-  end; }
-
   If (Params.Depth <> -1) then
     Depth := Params.Depth
   else
@@ -389,18 +377,58 @@ begin
 
 
   Log.LogStatus('SDL_SetVideoMode', 'Initialize3D');
-//  SDL_SetRefreshrate(85);
-//  SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+
+  videoInfo := SDL_GetVideoInfo;
+  if ( videoInfo = nil ) then
+  begin
+    Log.LogError('Could not get video info: ' + SDL_GetError, 'Initialize3D' );
+    Exit;
+  end;
+
+  videoFlags := SDL_OPENGL or
+                SDL_DOUBLEBUF or
+                SDL_HWPALETTE;
+
+  if ( videoInfo.hw_available <> 0 ) then
+    videoFlags := videoFlags or SDL_HWSURFACE
+  else
+    videoFlags := videoFlags or SDL_SWSURFACE;
+
+  if ( videoInfo.blit_hw <> 0 ) then videoFlags := videoFlags or SDL_HWACCEL;
+
+  SDL_GL_SetAttribute(SDL_GL_RED_SIZE,      5);
+  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,    5);
+  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,     5);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,    16);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,  1);
+
+  SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE,  8 );
+
+  pbo_supported := false;
+  if (Ini.EnablePBO=1) then
+  begin
+    try
+      pbo_supported := glext_LoadExtension('GL_ARB_pixel_buffer_object') and
+        glext_LoadExtension('GL_version_1_5');
+    except
+      pbo_supported := false;
+      Log.LogError('The device does not support Pixel Buffer Object (UVideo)!');
+    end;
+  end;
+
   if (Ini.FullScreen = 0) and (Not Params.FullScreen) then
-    screen := SDL_SetVideoMode(W, H, (Depth+1) * 16, SDL_OPENGL)
+    screen := SDL_SetVideoMode(W, H, (Depth+1) * 16, videoFlags)
   else begin
-    screen := SDL_SetVideoMode(W, H, (Depth+1) * 16, SDL_OPENGL or SDL_FULLSCREEN or SDL_HWSURFACE);
+    screen := SDL_SetVideoMode(W, H, (Depth+1) * 16, videoFlags or SDL_FULLSCREEN);
     SDL_ShowCursor(0);
   end;
+
   if (screen = nil) then begin
     Log.LogError('SDL_SetVideoMode Failed', 'Initialize3D');
     exit;
   end;
+
+
 
   // clear screen once window is being shown
   glClearColor(1, 1, 1, 1);
@@ -426,7 +454,7 @@ begin
     Display.Draw;
     SwapBuffers;
   end;
-  
+
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Loading', 3); Log.BenchmarkStart(3);
 { ScreenWelcome :=          TScreenWelcome.Create; //'BG', 4, 3);
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Welcome', 3); Log.BenchmarkStart(3);}
@@ -436,8 +464,13 @@ begin
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Name', 3); Log.BenchmarkStart(3);
   ScreenLevel :=            TScreenLevel.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Level', 3); Log.BenchmarkStart(3);
+
   ScreenSong :=             TScreenSong.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Song', 3); Log.BenchmarkStart(3);
+
+  if(aShowLoading) then
+    UpdateScreenLoading(Language.Translate('SING_LOADING'));
+
   ScreenSongMenu :=             TScreenSongMenu.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Song Menu', 3); Log.BenchmarkStart(3);
   ScreenSing :=             TScreenSing.Create;
@@ -563,6 +596,14 @@ begin
   //freeandnil( ScreenPartyWinM2     );
   freeandnil( ScreenPartyOptionsM2  );
   freeandnil( ScreenPartyPlayerM2   );
+end;
+
+procedure UpdateScreenLoading(txt: string);
+begin
+  ScreenLoading.Text[0].Text := txt;
+  ScreenLoading.Draw;
+  //Display.Draw;
+  SwapBuffers;
 end;
 
 end.

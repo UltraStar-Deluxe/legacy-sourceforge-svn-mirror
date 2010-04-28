@@ -73,8 +73,6 @@ begin
 end;
 
 constructor TScreenOptionsLyrics.Create;
-var
-  I:      integer;
 begin
   inherited Create;
 

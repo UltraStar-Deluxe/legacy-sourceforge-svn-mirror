@@ -102,7 +102,8 @@ unit MidiIn;
 interface
 
 uses
-  Classes, SysUtils, WinTypes, Messages, WinProcs, MMSystem, MidiDefs, MidiType,
+  Classes, SysUtils, WinTypes, Messages, WinProcs, MMSystem,
+  MidiDefs, MidiType,
   MidiCons, Circbuf, Delphmcb;
 
 type
@@ -259,7 +260,7 @@ begin
  { Create the window for callback notification }
   if not (csDesigning in ComponentState) then
   begin
-    Handle := AllocateHwnd(MidiInput);
+    Handle := Classes.AllocateHwnd(MidiInput);
   end;
 
   FState := misClosed;
@@ -280,7 +281,7 @@ begin
   if (PCtlInfo <> nil) then
     GlobalSharedLockedFree(PCtlinfo^.hMem, PCtlInfo);
 
-  DeallocateHwnd(Handle);
+  Classes.DeallocateHwnd(Handle);
   inherited Destroy;
 end;
 

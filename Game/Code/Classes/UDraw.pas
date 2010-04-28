@@ -227,7 +227,6 @@ var
   Rec:      TRecR;
   Pet:      integer;
   TempR:    real;
-  R,G,B:    real;
 
   GoldenStarPos : real;
 begin
@@ -317,10 +316,6 @@ var
   TempR:    real;
   Rec:      TRecR;
   N:        integer;
-  R:        real;
-  G:        real;
-  B:        real;
-  A:        real;
   NotesH2:  real;
   begin
 //  Log.LogStatus('Player notes', 'SingDraw');
@@ -407,7 +402,7 @@ var
         //if (Start+Dlugosc-1 = Czas.AktBeatD) then
         if Perfect and (Ini.EffectSing=1) then begin
 //          A := sqrt((1+sin(Music.Position * 3))/2);
-          A := 1 - 2*(Czas.Teraz - GetTimeFromBeat(Start+Dlugosc));
+          //A := 1 - 2*(Czas.Teraz - GetTimeFromBeat(Start+Dlugosc));
           if not (Start+Dlugosc-1 = Czas.AktBeatD) then
 
             //Star animation counter
@@ -467,7 +462,6 @@ var
   Rec:      TRecR;
   Pet:      integer;
   TempR:    real;
-  R,G,B:    real;
   X1, X2, X3, X4: real;
   W, H:     real;
 begin
@@ -606,7 +600,7 @@ var
   Rec:      TRecR;
   TexRec:   TRecR;
   NR:       TRecR;
-  FS:       real;
+  //FS:       real;
   BarFrom:  integer;
   BarAlpha: real;
   BarWspol: real;
@@ -618,7 +612,7 @@ var
 
 
   //SingBar Mod
-  A: Integer;
+  A: Cardinal;
   E: Integer;
   I: Integer;
   //end Singbar Mod
@@ -664,7 +658,7 @@ begin
   ScreenSing.LyricSub.Draw;
 
   // rysuje pasek, podpowiadajacy poczatek spiwania w scenie
-  FS := 1.3;
+  //FS := 1.3;
   BarFrom := Czesci[0].Czesc[Czesci[0].Akt].StartNote - Czesci[0].Czesc[Czesci[0].Akt].Start;
   if BarFrom > 40 then BarFrom := 40;
   if (Czesci[0].Czesc[Czesci[0].Akt].StartNote - Czesci[0].Czesc[Czesci[0].Akt].Start > 8) and  // dluga przerwa //16->12 for more help bars and then 12->8 for even more
@@ -998,7 +992,7 @@ var
   Rec:      TRecR;
   TexRec:   TRecR;
   NR:       TRecR;
-  FS:       real;
+  //FS:       real;
   BarFrom:  integer;
   BarAlpha: real;
   BarWspol: real;
@@ -1010,7 +1004,7 @@ var
 
 
   //SingBar Mod
-  A: Integer;
+  A: Cardinal;
   E: Integer;
   I: Integer;
   //end Singbar Mod
@@ -1059,7 +1053,7 @@ begin
     ScreenSingModi.LyricSub.Draw;
 
     // rysuje pasek, podpowiadajacy poczatek spiwania w scenie
-    FS := 1.3;
+    //FS := 1.3;
     BarFrom := Czesci[0].Czesc[Czesci[0].Akt].StartNote - Czesci[0].Czesc[Czesci[0].Akt].Start;
     if BarFrom > 40 then BarFrom := 40;
     if (Czesci[0].Czesc[Czesci[0].Akt].StartNote - Czesci[0].Czesc[Czesci[0].Akt].Start > 8) and  // dluga przerwa //16->12 for more help bars and then 12->8 for even more
@@ -1477,6 +1471,9 @@ begin;
   glEnd;
 
   //SingBar coloured Bar
+  R := 1;
+  G := 0;
+  B := 0;
   Case Percent of
     0..22: begin
           R := 1;
@@ -1717,8 +1714,6 @@ const
   step = 5;
 
 var
-  txt:  PChar;
-  str:  string;
   I:    integer;
   num:  integer;
 
@@ -1770,4 +1765,3 @@ begin
 end;
 
 end.
-

@@ -80,9 +80,8 @@ Type
   end;
 
 var
-  I, J, K:      Integer;
+  I, K:         Integer;
   plugin_order: array of TOrder;
-  temp:         TOrder;
   min, len:     integer;
 
 begin
@@ -123,8 +122,8 @@ end;
 //----------
 procedure TParty_Session.StartNewParty(NumRounds: Byte);
 var
-  TeamMode: Boolean;
-  Len:  Integer;
+  //TeamMode: Boolean;
+  //Len:  Integer;
   I, J:  Integer;
   NumMedleys: Integer;
 
@@ -153,13 +152,13 @@ begin
   PlayersPlay := Teams.NumTeams;
 
   //Get Teammode and Set Joker, also set TimesPlayed
-  TeamMode := True;
+  //TeamMode := True;
   For I := 0 to Teams.NumTeams-1 do
   begin
-    if Teams.Teaminfo[I].NumPlayers < 2 then
+    {if Teams.Teaminfo[I].NumPlayers < 2 then
     begin
       TeamMode := False;
-    end;
+    end;}
     //Set Player Attributes
     For J := 0 to Teams.TeamInfo[I].NumPlayers-1 do
     begin

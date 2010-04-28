@@ -2,7 +2,7 @@ unit UScreenEditSub;
 
 interface
 
-uses UMenu, UVideo, TextGL, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, USmpeg, UTexture, UMenuText,
+uses UMenu, UVideo, TextGL, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, UMenuText,
   ULyrics, Math, gl, UThemes, MidiOut, UHelp;
 
 type
@@ -1136,7 +1136,7 @@ end;
 
 function TScreenEditSub.ParseInputEditBPM(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 var
-  SDL_ModState: Word;
+  //SDL_ModState: Word;
   strBPM:       string;
   temp:         real;
 
@@ -1144,8 +1144,8 @@ begin
   // used when in Text Edit Mode
   Result := true;
 
-  SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
-    + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
+  //SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
+  //  + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   // check normal keys
   if (ScanCode in [48..57, 44]) then
@@ -1339,7 +1339,7 @@ end;
 procedure TScreenEditSub.LyricsCapitalize;
 var
   C:    integer;
-  N:    integer; // temporary
+  //N:    integer; // temporary
   S:    string;
 begin
   // temporary
@@ -1936,9 +1936,9 @@ end;
 
 function TScreenEditSub.Draw: boolean;
 var
-  Min:    integer;
-  Sec:    integer;
-  Tekst:  string;
+  //Min:    integer;
+  //Sec:    integer;
+  //Tekst:  string;
   Pet:    integer;
   PlayClick:  boolean;
   line, note: integer;
@@ -2387,14 +2387,14 @@ end;
 
 procedure TScreenEditSub.DrawInfoBar(x, y, w, h: integer);
 var
-  start, end_:        integer;
-  ww:                 integer;
+  start, end_:  integer;
+  ww:           integer;
 
-  pos:                real;
-  br:                 real;
+  pos:          real;
+  br:           real;
 
-  line, note:         integer;
-  numLines, numNotes: integer;
+  line:         integer;
+  numLines:     integer;
 
 begin
   numLines := Length(Czesci[0].Czesc);

@@ -117,9 +117,6 @@ begin
 end;
 
 procedure TSelectSlide.SetSelect(Value: boolean);
-var
-  SO:     integer;
-  I:      integer;
 begin
   SelectBool := Value;
   if Value then begin
@@ -173,11 +170,10 @@ end;
 procedure TSelectSlide.SetSelectOpt(Value: integer);
 var
   SO:     integer;
-  Sel:    integer;
   HalfL:  integer;
   HalfR:  integer;
 
-procedure DoSelection(Sel: Cardinal);
+procedure DoSelection(Sel: Integer);
     var I: Integer;
   begin
     for I := low(TextOpt) to high(TextOpt) do
@@ -205,7 +201,7 @@ begin
 
     if (Value <= 0) then
     begin //First Option Selected
-      Value := 0;
+      //Value := 0;
 
       for SO := low (TextOpt) to high(TextOpt) do
       begin
@@ -216,7 +212,7 @@ begin
     end
     else if (Value >= high(TextOptT)) then
     begin //Last Option Selected
-    Value := high(TextOptT);
+      //Value := high(TextOptT);
 
       for SO := high(TextOpt) downto low (TextOpt) do
       begin

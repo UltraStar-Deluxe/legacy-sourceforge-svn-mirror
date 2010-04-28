@@ -380,7 +380,7 @@ function TSQLiteDatabase.ContainsColumn(Table: String; Column: String) : boolean
 var
   sql: string;
   ds: TSqliteTable;
-  i : integer;
+  
 begin
   sql := 'PRAGMA TABLE_INFO('+Table+');';
   ds := self.GetTable(sql);
@@ -802,4 +802,3 @@ end;
 
 
 end.
-

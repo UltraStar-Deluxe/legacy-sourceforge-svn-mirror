@@ -144,13 +144,14 @@ var
 begin
   SetLength(List, 0);
 
-  if FindFirst(LanguagesPath + '*.ini', 0, SR) = 0 then begin
+  if FindFirst(LanguagesPath + '*.ini', 0, SR) = 0 then
+  begin
     repeat
       SetLength(List, Length(List)+1);
       SR.Name := ChangeFileExt(SR.Name, '');
       List[High(List)].Name := SR.Name;
     until FindNext(SR) <> 0;
-  SysUtils.FindClose(SR);
+    SysUtils.FindClose(SR);
   end; // if FindFirst
 end;
 
@@ -310,7 +311,7 @@ end;
 
 function THelp.SetHelpID(ID: String):boolean;
 var
-  E, J:   integer; // entry
+  E:   integer; // entry
 begin
   Result := false;
   ScrollPos := 0.0;
@@ -357,7 +358,7 @@ end;
 function THelp.GetHelpStr(): TTextResult;
 var
   K, I, J:   Integer;
-  w: real;
+
 begin
   SetLength(Result.Sections, Length(AEntry.Sections));
   for K := 0 to Length(AEntry.Sections) - 1 do

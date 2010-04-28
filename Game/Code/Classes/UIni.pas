@@ -40,6 +40,7 @@ type
     MoviePreview:   integer;
     AspectCorrect:  integer;
     PerformanceMode:integer;
+    EnablePBO:      integer;
 
     // Sound
     MicBoost:       integer;
@@ -153,6 +154,7 @@ const
   IMoviePreview:  array[0..1] of string = ('Off', 'On');
   IAspectCorrect: array[0..2] of String  = ('Stretch', 'Crop', 'LetterBox');
   IPerformanceMode:array[0..1] of string = ('Off', 'On');
+  IEnablePBO:     array[0..1] of string = ('Off', 'On');
 
   IMicBoost:      array[0..3] of string = ('Off', '+6dB', '+12dB', '+18dB');
   IClickAssist:   array[0..1] of string = ('Off', 'On');
@@ -391,6 +393,11 @@ begin
   Tekst := IniFile.ReadString('Graphics', 'PerformanceMode', IPerformanceMode[1]);
   for Pet := 0 to High(IPerformanceMode) do
     if Tekst = IPerformanceMode[Pet] then Ini.PerformanceMode := Pet;
+
+  // enable Pixel Buffer Object
+  Tekst := IniFile.ReadString('Graphics', 'EnablePBO', IEnablePBO[0]);
+  for Pet := 0 to High(IEnablePBO) do
+    if Tekst = IEnablePBO[Pet] then Ini.EnablePBO := Pet;
 
   // MicBoost
   Tekst := IniFile.ReadString('Sound',    'MicBoost',    'Off');
@@ -729,6 +736,10 @@ begin
     Tekst := IPerformanceMode[Ini.PerformanceMode];
     IniFile.WriteString('Graphics', 'PerformanceMode', Tekst);
 
+    // enable Pixel Buffer Object
+    Tekst := IEnablePBO[Ini.EnablePBO];
+    IniFile.WriteString('Graphics', 'EnablePBO', Tekst);
+
     // MicBoost
     Tekst := IMicBoost[Ini.MicBoost];
     IniFile.WriteString('Sound',    'MicBoost',    Tekst);
@@ -867,7 +878,7 @@ end;
 procedure TIni.SaveLevel;
 var
   IniFile:    TIniFile;
-  I:          integer;
+
 begin
   //if not FileIsReadOnly(GamePath + 'config.ini') then begin
     //IniFile := TIniFile.Create(GamePath + 'config.ini');

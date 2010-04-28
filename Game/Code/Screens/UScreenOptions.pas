@@ -102,8 +102,6 @@ begin
 end;
 
 constructor TScreenOptions.Create;
-var
-  I:    integer;
 begin
   inherited Create;
 

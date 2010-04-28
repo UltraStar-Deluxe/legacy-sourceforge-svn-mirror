@@ -75,16 +75,10 @@ begin
 end;
 
 constructor TScreenOptionsGame.Create;
-var
-  I:      integer;
 begin
   inherited Create;
 
   LoadFromTheme(Theme.OptionsGame);
-
-  //Refresh Songs Patch
-  old_Sorting := Ini.Sorting;
-  old_Tabs    := Ini.Tabs;
 
   AddSelect(Theme.OptionsGame.SelectPlayers, Ini.Players, IPlayers);
   AddSelect(Theme.OptionsGame.SelectDifficulty, Ini.Difficulty, IDifficulty);
@@ -104,8 +98,12 @@ end;
 //Refresh Songs Patch
 procedure TScreenOptionsGame.RefreshSongs;
 begin
-if (ini.Sorting <> old_Sorting) or (ini.Tabs <> old_Tabs) then
-    ScreenSong.Refresh;
+  if (ini.Sorting <> old_Sorting) or (ini.Tabs <> old_Tabs) then
+  begin
+    //Tabs at Startup fix
+    Ini.Tabs_at_startup := Ini.Tabs;
+    ScreenSong.Refresh(false);
+  end;
 end;
 
 procedure TScreenOptionsGame.onShow;
@@ -113,6 +111,10 @@ begin
 //  Interaction := 0;
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenOptionsGame)');
+
+  //Refresh Songs Patch
+  old_Sorting := Ini.Sorting;
+  old_Tabs    := Ini.Tabs;
 end;
 
 end.

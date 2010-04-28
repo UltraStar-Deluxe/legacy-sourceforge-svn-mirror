@@ -183,8 +183,8 @@ type
 
     // playing attributes
     playing: boolean;
-    PlayStartTime: integer;
-    currentTime: integer; // Current playtime in msec
+    PlayStartTime: Cardinal;
+    currentTime: Cardinal; // Current playtime in msec
     currentPos: Double; // Current Position in ticks
 
     procedure OnTrackReady;
@@ -210,9 +210,9 @@ type
     procedure StopPlaying;
     procedure ContinuePlaying;
 
-    procedure PlayToTime(time: integer);
-    procedure GoToTime(time: integer);
-    function GetCurrentTime: integer;
+    procedure PlayToTime(time: Cardinal);
+    procedure GoToTime(time: Cardinal);
+    function GetCurrentTime: Cardinal;
     function GetFusPerTick : Double;
     function  GetTrackLength:integer;
     function  Ready: boolean;
@@ -424,7 +424,7 @@ end;
 constructor TMidifile.Create(AOwner: TComponent);
 begin
   inherited Create(AOWner);
-  MIDIFileHandle:=AllocateHWnd(WndProc);
+  MIDIFileHandle:=Classes.AllocateHWnd(WndProc);
   chunkData := nil;
   chunkType := illegal;
   Tracks := TList.Create;
@@ -444,7 +444,7 @@ begin
 
   if MIDITimerID<>0 then KillMIDITimer;
 
-  DeallocateHWnd(MIDIFileHandle);
+  Classes.DeallocateHWnd(MIDIFileHandle);
 
   inherited Destroy;
 end;
@@ -514,17 +514,17 @@ begin
   SetPriorityClass(MIDIFileHandle,FPriority);
 end;
 
-function TMidiFile.GetCurrentTime: integer;
+function TMidiFile.GetCurrentTime: Cardinal;
 begin
   Result := currentTime;
 end;
 
-procedure TMidifile.PlayToTime(time: integer);
+procedure TMidifile.PlayToTime(time: Cardinal);
 var
   i: integer;
-  track: TMidiTrack;
   pos: integer;
   deltaTime: integer;
+  
 begin
   // calculate the pos in the file.
   // pos is actually tick
@@ -541,11 +541,11 @@ begin
   currentTime := time;
 end;
 
-procedure TMidifile.GoToTime(time: integer);
+procedure TMidifile.GoToTime(time: Cardinal);
 var
   i: integer;
-  track: TMidiTrack;
   pos: integer;
+
 begin
   // this function should be changed because FusPerTick might not be constant
   pos := round((time * 1000) / FusPerTick);
@@ -639,10 +639,9 @@ var
   dTime: integer;
   event: integer;
   len: integer;
-  str: string;
   midiEvent: PMidiEvent;
-  i: integer;
   us_per_quarter: integer;
+
 begin
   chunkIndex := chunkData;
 //  inc(chunkIndex);
@@ -953,4 +952,3 @@ begin
 end;
 
 end.
-

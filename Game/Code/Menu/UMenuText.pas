@@ -73,7 +73,7 @@ var
 
   Function GetNextPos: Boolean;
   var
-    T1, T2, T3: Cardinal;
+    T1, T3: Cardinal;
   begin
     LastPos := NextPos;
 

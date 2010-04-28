@@ -3,7 +3,7 @@ unit UScreenScore;
 interface
 
 uses
-  UMenu, SDL, SysUtils, UDisplay, UMusic, USongs, UThemes, ULCD, gl;
+  UMenu, SDL, SysUtils, UDisplay, UMusic, USongs, UThemes, gl;
 
 type
   THandler = record
@@ -367,11 +367,6 @@ begin
   end;
 
   RefreshTexts;
-
-  LCD.HideCursor;
-  LCD.Clear;
-  LCD.WriteText(1, Ini.Name[0]);
-  LCD.WriteText(2, 'Score: ' + Text[TextTotalScore[1]].Text);
 
   MP3VolumeHandler.changed := false;
   if not (Ini.SavePlayback=1) then

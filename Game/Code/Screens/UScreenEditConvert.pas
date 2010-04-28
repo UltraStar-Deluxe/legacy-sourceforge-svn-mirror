@@ -71,8 +71,8 @@ implementation
 uses UGraphic, SysUtils, UDrawTexture, TextGL, UFiles, UMain, UIni, gl, USkins;
 
 function TScreenEditConvert.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
-var
-  T:    integer;
+{var
+  T:    integer;}
 begin
   Result := true;
   If (PressedDown) Then

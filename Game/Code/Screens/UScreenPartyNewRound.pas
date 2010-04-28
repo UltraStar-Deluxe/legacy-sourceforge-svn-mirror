@@ -112,8 +112,8 @@ begin
 end;
 
 constructor TScreenPartyNewRound.Create;
-var
-  I:    integer;
+{var
+  I:    integer;}
 begin
   inherited Create;
 
@@ -171,8 +171,8 @@ begin
 end;
 
 procedure TScreenPartyNewRound.onShow;
-var
-  I: Integer;
+//var
+  //I: Integer;
   function GetTeamPlayers(const Num: Byte): String;
   var
     Players: Array of String;
@@ -322,7 +322,7 @@ var
   T: Integer;
   NumRounds: Integer;
 begin
-  N:=0;
+  //N:=0;
   //current round-number
   R:=PartySession.CurRound;
 

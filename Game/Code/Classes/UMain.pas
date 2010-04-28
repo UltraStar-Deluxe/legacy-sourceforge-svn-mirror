@@ -2,7 +2,7 @@ unit UMain;
 
 interface
 uses SDL, UGraphic, UMusic, URecord, UTime, SysUtils, UDisplay, UIni, ULog, ULyrics, UScreenSing,
-  gl, zlportio {you can disable it and all PortWriteB calls}, ULCD, ULight, UThemes{, UScreenPopup};
+  gl, zlportio {you can disable it and all PortWriteB calls}, UThemes{, UScreenPopup};
 
 type
   TPlayer = record
@@ -112,7 +112,7 @@ function GetTimeFromBeat(Beat: integer): real;
 procedure ClearScores(PlayerNum: integer);
 
 implementation
-uses USongs, UJoystick, math, UCommandLine;
+uses USongs, UJoystick, math, UCommandLine, UVideo;
 
 procedure MainLoop;
 var
@@ -132,12 +132,9 @@ begin
     done := not Display.Draw;
     SwapBuffers;
 
-    // light
-    Light.Refresh;
-
     // delay
     CountMidTime;
-//    if 1000*TimeMid > 100 then beep;
+
     Delay := Floor(1000 / 100 - 1000 * TimeMid);
     if Delay >= 1 then
       SDL_Delay(Delay); // dynamic, maximum is 100 fps
@@ -154,18 +151,27 @@ begin
 End;
 
 Procedure CheckEvents;
-//var
-//  p:    pointer;
 Begin
   if not Assigned(Display.NextScreen) then
   While SDL_PollEvent( @event ) = 1 Do
   Begin
-//    beep;
     Case Event.type_ Of
       SDL_ACTIVEEVENT: //workaround for alt-tab bug
         begin
           if (Event.active.gain=1) then
+          begin
             SDL_SetModState(KMOD_NONE);
+            if (Ini.FullScreen = 1) or (Params.FullScreen) then
+              SDL_ShowCursor(0);
+            EnableVideoDraw := true;
+          end;
+
+          if (Event.active.gain=0) then
+          begin
+            if (Ini.FullScreen = 1) or (Params.FullScreen) then
+              SDL_ShowCursor(1);
+            EnableVideoDraw := false;
+          end;
         end;
 
       SDL_QUITEV:
@@ -457,8 +463,6 @@ begin
     else
       LyricSub.Clear;
   end;
-
-  Sender.UpdateLCD;
   
   //On Sentence Change...
   Sender.onSentenceChange(Czesci[0].Akt);
@@ -475,12 +479,6 @@ begin
     if (Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet].Start = Czas.AktBeat) then begin
       // operates on currently beated note
       Sender.LyricMain.Selected := Pet;
-
-//      LCD.MoveCursor(1, ScreenSing.LyricMain.SelectedLetter);
-//      LCD.ShowCursor;
-
-      LCD.MoveCursorBR(Sender.LyricMain.SelectedLetter);
-      LCD.ShowCursor;
 
     end;
 end;
@@ -503,10 +501,6 @@ begin
     //LPT_1 := 0;
 //    Light.LightOne(0, 150);
 
-    Light.LightOne(1, 200); // beat light
-    if ParamStr(1) = '-doublelights' then
-      Light.LightOne(0, 200); // beat light
-
 
 {    if ((Czas.AktBeatC + Czesci[0].Resolution + Czesci[0].NotesGAP) mod (Czesci[0].Resolution * 2) = 0) then
       Light.LightOne(0, 150)
@@ -519,10 +513,6 @@ begin
       // click assist
       if Ini.ClickAssist = 1 then
         Music.PlayClick;
-
-        //LPT_2 := 0;
-        if ParamStr(1) <> '-doublelights' then
-        Light.LightOne(0, 150); //125
 
 
       // drum machine
@@ -743,4 +733,3 @@ begin
 end;
 
 end.
-

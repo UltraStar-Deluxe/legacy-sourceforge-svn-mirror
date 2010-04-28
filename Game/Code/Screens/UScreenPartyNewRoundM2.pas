@@ -237,7 +237,6 @@ var
   T: Integer;
   NumRounds: Integer;
 begin
-  N:=0;
   //current round-number
   R:=PartySessionM2.CurRound;
 

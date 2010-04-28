@@ -282,8 +282,8 @@ begin
   if Name <> '' then begin
 //    BackImg := Texture.LoadTexture(false, PChar(Skin.SkinPath + FileName), 'JPG', 'Plain', 0); // new theme system
     BackImg := Texture.GetTexture(Skin.GetTextureFileName(Name), 'Plain');
-    BackImg.W := 800;
-    BackImg.H := 600;
+    BackImg.W := RenderW;
+    BackImg.H := RenderH;
     BackW := 1;
     BackH := 1;
   end;
@@ -383,15 +383,11 @@ begin
 end;
 
 function TMenu.AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; Name, Format, Typ: string): integer;
-var
-  StatNum:  integer;
 begin
   Result := AddStatic(X, Y, W, H, ColR, ColG, ColB, Name, Format, Typ, $FFFFFF);
 end;
 
 function TMenu.AddStatic(X, Y, W, H, Z: real; ColR, ColG, ColB: real; Name, Format, Typ: string): integer;
-var
-  StatNum:  integer;
 begin
   Result := AddStatic(X, Y, W, H, Z, ColR, ColG, ColB, Name, Format, Typ, $FFFFFF);
 end;
@@ -417,8 +413,6 @@ begin
 end;
 
 function TMenu.AddStatic(X, Y, W, H: real; ColR, ColG, ColB: real; Name, Format, Typ: string; Color: integer): integer;
-var
-  StatNum:  integer;
 begin
   Result := AddStatic(X, Y, W, H, 0, ColR, ColG, ColB, Name, Format, Typ, Color);
 end;
@@ -516,7 +510,7 @@ function TMenu.AddButton(ThemeButton: TThemeButton): integer;
 var
   BT:     integer;
   BTLen:  integer;
-  temp:   integer;
+
 begin
 {  Result := AddButton(ThemeButton.X, ThemeButton.Y, ThemeButton.W, ThemeButton.H,
     ThemeButton.ColR, ThemeButton.ColG, ThemeButton.ColB, ThemeButton.Int,
@@ -636,8 +630,30 @@ begin
 end;
 
 procedure TMenu.ClearButtons;
+var
+  I:                Integer;
+  num:              Integer;
+
 begin
-  Setlength(Button, 0);
+  num := 0;
+  for I := 0 to Length(Interactions) - 1 do
+  begin
+    if (Interactions[I].Typ <> iButton) then
+    begin
+      Interactions[num].Typ := Interactions[I].Typ;
+      Interactions[num].Num := num;
+      Inc(num);
+    end;
+  end;
+
+  SetLength(Interactions, num);
+  SetLength(Button, 0);
+
+  //Set ButtonPos to Autoset Length
+  ButtonPos := -1;
+  SelInteraction := 0;
+  if(num>0) then
+    Interaction := 0;
 end;
 
 // Method to draw our TMenu and all his child buttons
@@ -822,10 +838,6 @@ end;
 
 
 procedure TMenu.InteractCustom(CustomSwitch: integer);
-var
-  Num:    integer;
-  Typ:    integer;
-  Again:  boolean;
 begin
   //Code Commented atm, because it needs to be Rewritten
   //it doesn't work with Button Collections
@@ -1445,4 +1457,3 @@ begin
 end;
 
 end.
-

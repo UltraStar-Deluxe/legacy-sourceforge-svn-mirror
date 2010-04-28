@@ -461,7 +461,7 @@ end;
 //--------------------
 function AnalyseFile(var Song: TSong): boolean;
 begin
-Result := False;
+//Result := False;
 {try }
   //Reset LineNo
   FileLineNo := 0;
@@ -514,8 +514,6 @@ end;
 // Parses Note Infos and save them to Array
 //--------------------
 procedure ParseNote(NrCzesci: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: string);
-var
-  Space:  boolean;
 begin
   case Ini.Solmization of
     1:  // european
@@ -1210,7 +1208,7 @@ begin
   //set PreviewStart if not set
   if Song.PreviewStart=0 then
   begin
-    len_notes := length(Czesci[0].Czesc[len_lines-1].Nuta);
+    //len_notes := length(Czesci[0].Czesc[len_lines-1].Nuta);
     if Song.Medley.Source = msCalculated then
       Song.PreviewStart := GetTimeFromBeat(Song.Medley.StartBeat);{
     else

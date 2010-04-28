@@ -22,12 +22,12 @@ implementation
 uses UGraphic, UMain, UIni, UTexture, ULog;
 
 function TScreenLevel.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
-var
-  SDL_ModState: Word;
+{var
+  SDL_ModState: Word; }
 begin
   Result := true;
-  SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
-    + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
+  //SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
+  //  + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   If (PressedDown) Then
   begin // Key Down
@@ -71,8 +71,6 @@ begin
 end;
 
 constructor TScreenLevel.Create;
-var
-  I:    integer;
 begin
   inherited Create;
 

@@ -71,8 +71,8 @@ begin
 end;
 
 constructor TScreenPartyWin.Create;
-var
-  I:    integer;
+{var
+  I:    integer;}
 begin
   inherited Create;
 

@@ -2,13 +2,13 @@ unit UScreenOpen;
 
 interface
 
-uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, USmpeg, UTexture, UMenuText,
+uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, UMenuText,
   ULyrics, Math, gl, UThemes;
 
 type
   TScreenOpen = class(TMenu)
     private
-      TextF:    array[0..1] of integer;
+      //TextF:    array[0..1] of integer;
       TextN:    integer;
     public
       Tex_Background:     TTexture;
@@ -162,4 +162,3 @@ begin
 end;*)
 
 end.
-

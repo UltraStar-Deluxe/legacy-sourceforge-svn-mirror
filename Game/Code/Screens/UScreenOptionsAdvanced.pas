@@ -79,8 +79,8 @@ begin
 end;
 
 constructor TScreenOptionsAdvanced.Create;
-var
-  I:      integer;
+{var
+  I:      integer;}
 begin
   inherited Create;
 

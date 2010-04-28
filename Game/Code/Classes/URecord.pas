@@ -128,6 +128,7 @@ begin
 
   // prepare to analyze
   MaxW := 0;
+  MaxT := 0;
 
   // analyze all 12 halftones
   for T := 0 to 35 do begin // to 11, then 23, now 35 (for Whitney and my high voice)
@@ -207,8 +208,6 @@ var
   L:    integer;
   S:    integer;
   PB:   pbytearray;
-  PW:   pwordarray;
-  SI:   smallintarray;
   PSI:  psmallintarray;
   I:    integer;
   Skip: integer;
@@ -224,6 +223,7 @@ begin
     1:  Boost := 2;
     2:  Boost := 4;
     3:  Boost := 8;
+    else Boost := 1;
   end;
 
   // boost buffer
@@ -367,5 +367,4 @@ begin
   end; // while
 end;
 end.
-
 

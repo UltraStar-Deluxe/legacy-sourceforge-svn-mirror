@@ -437,8 +437,8 @@ begin
 end;
 
 constructor TScreenPartyOptions.Create;
-var
-  I:    integer;
+{var
+  I:    integer;}
 begin
   inherited Create;
   //Fill IPlaylist

@@ -3,7 +3,7 @@ unit UScreenSingModi;
 interface
 
 uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, ULyrics,
-  TextGL, gl, BASS, UThemes, ULCD, UScreenSing, ModiSDK, UVideo;
+  TextGL, gl, BASS, UThemes, UScreenSing, ModiSDK, UVideo;
 
 type
   TScreenSingModi = class(TScreenSing)
@@ -528,7 +528,7 @@ end; //ShowScore
 if DLLMan.Selected.LoadSong then
 begin
   // update static menu with time ...
-  CurTime := Czas.Razem - Czas.Teraz;
+  //CurTime := Czas.Razem - Czas.Teraz;
 
   // update static menu with time ...
   if ScreenSong.PartyMedley then

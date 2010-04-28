@@ -73,8 +73,6 @@ begin
 end;
 
 constructor TScreenOptionsSound.Create;
-var
-  I:      integer;
 begin
   inherited Create;
 

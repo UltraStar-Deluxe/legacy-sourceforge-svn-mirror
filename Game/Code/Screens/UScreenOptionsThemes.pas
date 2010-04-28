@@ -9,8 +9,10 @@ type
   TScreenOptionsThemes = class(TMenu)
     private
       procedure ReloadTheme;
+
     public
-      SkinSelect: Integer;
+      AktualTheme:  Integer;
+      SkinSelect:   Integer;
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
@@ -46,10 +48,12 @@ begin
           Ini.Save;
 
           // Reload all screens, after Theme changed
-          // Todo : JB - Check if theme was actually changed
-          UGraphic.UnLoadScreens();
-          UGraphic.LoadScreens( false );          
-
+          if(AktualTheme<>Ini.Theme) then
+          begin
+            UGraphic.UnLoadScreens();
+            UGraphic.LoadScreens( true );
+            ScreenSong.Refresh(true);
+          end;
           Music.PlayBack;
           FadeTo(@ScreenOptions);
         end;
@@ -60,10 +64,12 @@ begin
             Ini.Save;
 
             // Reload all screens, after Theme changed
-            // Todo : JB - Check if theme was actually changed
-            UGraphic.UnLoadScreens();
-            UGraphic.LoadScreens( false );
-
+            if(AktualTheme<>Ini.Theme) then
+            begin
+              UGraphic.UnLoadScreens();
+              UGraphic.LoadScreens( true );
+              ScreenSong.Refresh(true);
+            end;
             Music.PlayBack;
             FadeTo(@ScreenOptions);
           end;
@@ -119,8 +125,8 @@ begin
 end;
 
 constructor TScreenOptionsThemes.Create;
-var
-  I:      integer;
+{var
+  I:      integer;}
 begin
   inherited Create;
   
@@ -143,6 +149,8 @@ begin
   Interaction := 0;
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenOptionsThemes)');
+
+  AktualTheme := Ini.Theme;
 end;
 
 procedure TScreenOptionsThemes.ReloadTheme;
@@ -159,6 +167,8 @@ begin
 
   Display.Draw;
   SwapBuffers;
+
+  ScreenOptionsThemes.AktualTheme := self.AktualTheme;
 
   freeandnil( self );
 end;

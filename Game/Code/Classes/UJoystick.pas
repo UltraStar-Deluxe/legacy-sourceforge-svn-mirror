@@ -42,7 +42,7 @@ uses SysUtils, Windows, ULog;
 
 constructor TJoy.Create;
 var
-  B, N:    integer;
+  B{, N}:    integer;
 begin
   //Old Corvus5 Method
   {// joystick support
@@ -99,7 +99,7 @@ begin
     Log.LogError('Could not Init Joystick');
     exit;
   end;
-  N := SDL_JoystickNumButtons(SDL_Joy);
+  //N := SDL_JoystickNumButtons(SDL_Joy);
   //if N < 6 then beep;
 
   for B := 0 to 5 do begin

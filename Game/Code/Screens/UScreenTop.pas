@@ -3,7 +3,7 @@ unit UScreenTop;
 interface
 
 uses
-  UMenu, SDL, SysUtils, UDisplay, UMusic, USongs, UThemes, ULCD, ModiSDK;
+  UMenu, SDL, SysUtils, UDisplay, UMusic, USongs, UThemes, ModiSDK;
 
 type
   THandler = record

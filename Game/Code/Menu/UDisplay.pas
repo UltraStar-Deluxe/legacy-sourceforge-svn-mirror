@@ -93,9 +93,6 @@ begin
     glBindTexture(GL_TEXTURE_2D, pTex[i]);
     if glGetError <> GL_NO_ERROR then canFade := False;
 
-    //glTexEnvi(GL_TEXTURE_2D, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    //if glGetError <> GL_NO_ERROR then canFade := False;
-
     glTexImage2D(GL_TEXTURE_2D, 0, 3, TexW, TexH, 0, GL_RGB, GL_UNSIGNED_BYTE, nil);
     if glGetError <> GL_NO_ERROR then canFade := False;
 

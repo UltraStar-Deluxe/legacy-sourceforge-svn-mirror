@@ -145,6 +145,7 @@ var
   found: boolean;
 begin
   found:=false;
+  Result := 0;
   for i := 0 to length(SongsPlayed) - 1 do
   begin
     if SongsPlayed[i].cat = cat then
@@ -478,9 +479,8 @@ Type
   end;
 
 var
-  I, J, K:      Integer;
+  I, K:         Integer;
   plugin_order: array of TOrder;
-  temp:         TOrder;
   min, len:     integer;
 
 begin

@@ -991,7 +991,6 @@ end;
 function TTheme.LoadTheme(FileName: string; sColor: integer): boolean;
 var
   I, J:    integer;
-  Path: string;
 begin
   create_theme_objects();
 
@@ -1941,8 +1940,6 @@ begin
 end;
 
 procedure TTheme.ThemeLoadSelect(var ThemeSelect: TThemeSelect; Name: string);
-var
-  C:    integer;
 begin
   DecimalSeparator := '.';
 
@@ -1987,8 +1984,6 @@ begin
 end;
 
 procedure TTheme.ThemeLoadSelectSlide(var ThemeSelectS: TThemeSelectSlide; Name: string);
-var
-  C:    integer;
 begin
   DecimalSeparator := '.';
 
@@ -2043,8 +2038,7 @@ var
   SL:     TStringList;
   C:      integer;
   S:      string;
-  Col:    integer;
-  RGB:    TRGB;
+
 begin
   SL := TStringList.Create;
   ThemeIni.ReadSection('Colors', SL);

@@ -126,7 +126,7 @@ function TTextureUnit.GetTexture(Name, Typ: string; FromCache: boolean): TTextur
 var
   T:    integer; // texture
   C:    integer; // cover
-  Data: array of byte;
+
 begin
   // find texture entry
   T := FindTexture(Name);
@@ -801,13 +801,8 @@ end;
 
 function TTextureUnit.CreateTexture(var Data: array of byte; Name: string; W, H: word; Bits: byte): TTexture;
 var
-  Pet:        integer;
-  Pet2:       integer;
-  Pix:        integer;
-  ColInt:     real;
-  PPix:       PByteArray;
-  TempA:      integer;
   Error:      integer;
+  
 begin
   Mipmapping := false;
 

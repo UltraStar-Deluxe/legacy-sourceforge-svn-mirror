@@ -3,8 +3,22 @@ unit UScreenSong;
 interface
 
 uses
-  UMenu, TextGL, SDL, UMusic, UDraw, UFiles, UTime, UDisplay, USongs, SysUtils, ULog, UThemes, UTexture, ULanguage,
-  ULCD, ULight, UIni, UVideo;
+  UMenu,
+  TextGL,
+  SDL,
+  UMusic,
+  UDraw,
+  UFiles,
+  UTime,
+  UDisplay,
+  USongs,
+  SysUtils,
+  ULog,
+  UThemes,
+  UTexture,
+  ULanguage,
+  UIni,
+  UVideo;
 
 type
   TVisArr = array of integer;
@@ -137,16 +151,15 @@ type
       procedure onHide; override;
       procedure SelectNext;
       procedure SelectPrev;
-      procedure UpdateLCD;
       procedure SkipTo(Target: Cardinal);
       procedure RandomSongChallenge();
-      procedure SkipTo2(Target: Cardinal); //skipt exactly to the target song nr.
+      procedure SkipTo2(Target: Integer); //skipt exactly to the target song nr.
       procedure FixSelected; //Show Wrong Song when Tabs on Fix
       procedure FixSelected2; //Show Wrong Song when Tabs on Fix
       procedure ShowCatTL(Cat: Integer);// Show Cat in Top left
       procedure ShowCatTLCustom(Caption: String);// Show Custom Text in Top left
       procedure HideCatTL;// Show Cat in Tob left
-      procedure Refresh; //Refresh Song Sorting
+      procedure Refresh(GiveStats: boolean); //Refresh Song Sorting
       procedure DrawEqualizer;
       procedure ChangeMusic;
       procedure LoadTop;
@@ -337,7 +350,6 @@ function TScreenSong.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDow
 var
   I:      integer;
   I2:     integer;
-  HS:     integer;
   SDL_ModState:  Word;
   Letter: Char;
   VisArr: array of integer;
@@ -359,7 +371,8 @@ begin
   If (PressedDown) Then
   begin // Key Down
 
-    if (WaitHandler.active) and not (PressedKey = SDLK_RETURN) then
+    if (WaitHandler.active) and not (PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
+      SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) then
     begin
       if (Ini.Tabs_at_startup=1) then
       begin
@@ -392,7 +405,8 @@ begin
       if (WaitHandler.active) then
       begin
         WaitHandler.active := false;
-        if (PressedKey<>SDLK_RETURN) then
+        if (not PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
+          SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) then
           Exit;
       end;
     end;
@@ -421,7 +435,6 @@ begin
 
             ChangeMusic;
             SetScroll4;
-            UpdateLCD;
             //Break and Exit
             Exit;
           end;
@@ -440,7 +453,6 @@ begin
 
             ChangeMusic;
             SetScroll4;
-            UpdateLCD;
 
             //Break and Exit
             Exit;
@@ -547,6 +559,7 @@ begin
 
       SDLK_F:
         begin
+          WaitHandler.change_time := 0;
           if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT) and MakeMedley then
           begin
             if Length(PlaylistMedley.Song)>0 then
@@ -567,6 +580,7 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
+        WaitHandler.change_time := 0;
         if (Mode = smNormal) or ((Mode = smChallenge) and not PartyMedley and not FoundCAT) then
         begin
           //On Escape goto Cat-List Hack
@@ -683,6 +697,8 @@ begin
                   end;
                 end else
                 begin
+                  WaitHandler.changed := false;
+                  CatSongs.Selected := Interaction;
                   //Do the Action that is specified in Ini
                   case Ini.OnSongClick of
                     0: StartSong;
@@ -723,6 +739,8 @@ begin
         begin
           if (Length(Songs.Song) > 0) and (Mode <> smChallenge) then begin //not in M2-Mode
             if (Mode = smNormal) then begin
+              WaitHandler.changed := false;
+              CatSongs.Selected := Interaction;
               if not CatSongs.Song[Interaction].Main then begin // clicked on Song
                 if CatSongs.CatNumShow = -3 then
                   ScreenSongMenu.MenuShow(SM_Playlist)
@@ -740,8 +758,11 @@ begin
 
       SDLK_P: //Show Playlist Menu
         begin
-          if (Length(Songs.Song) > 0) AND (Mode = smNormal) then begin //not in party-modes
-              ScreenSongMenu.MenuShow(SM_Playlist_Load);
+          if (Length(Songs.Song) > 0) AND (Mode = smNormal) then
+          begin //not in party-modes
+            WaitHandler.changed := false;
+            CatSongs.Selected := Interaction;
+            ScreenSongMenu.MenuShow(SM_Playlist_Load);
           end;
         end;
 
@@ -750,6 +771,8 @@ begin
           if (Length(Songs.Song) > 0) AND (Mode = smNormal) then //not in party-modes
           begin
             VidVis := windowed;
+            WaitHandler.changed := false;
+            CatSongs.Selected := Interaction;
             ScreenSongJumpto.Visible := True;
           end else if (Mode=smChallenge) and not PartyMedley then  //M2-MOD-mode
             DoJokerM2
@@ -849,8 +872,6 @@ begin
             SelectNext;
             ChangeMusic;
             SetScroll4;
-            UpdateLCD;
-            Light.LightOne(1, 200);
           end;
         end;
 
@@ -863,15 +884,16 @@ begin
             SelectPrev;
             ChangeMusic;
             SetScroll4;
-            UpdateLCD;
-            Light.LightOne(0, 200);
           end;
         end;
 
       SDLK_E:
         begin
           if (Mode = smNormal) then
+          begin
+            WaitHandler.changed := false;
             OpenEditor;
+          end;
         end;
 
       SDLK_R:
@@ -1117,7 +1139,7 @@ constructor TScreenSong.Create;
 var
   Pet:    integer;
   I:      integer;
-Label CreateSongButtons;
+
 begin
   inherited Create;
 
@@ -1203,87 +1225,18 @@ begin
 
   // Song List
 //  Songs.LoadSongList; // moved to the UltraStar unit
-  CatSongs.Refresh;
+  
+  //Refresh;
 
-  if (length(CatSongs.Song) > 0) then
-  begin
-    //Set Length of Button Array one Time Instead of one time for every Song
-    SetButtonLength(Length(CatSongs.Song));
-
-    I := 0;
-    CreateSongButtons:
-
-    try
-      for Pet := I to High(CatSongs.Song) do begin // creating all buttons
-        // new
-        Texture.Limit := 512;// 256 0.4.2 value, 512 in 0.5.0
-
-        if not FileExists(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover) then
-          CatSongs.Song[Pet].Cover := ''; // 0.5.0: if cover not found then show 'no cover'
-
-        if CatSongs.Song[Pet].Cover = '' then
-          AddButton(300 + Pet*250, 140, 200, 200, Skin.GetTextureFileName('SongCover'), 'JPG', 'Plain', Theme.Song.Cover.Reflections)
-        else begin
-          // cache texture if there is a need to this
-          if not Covers.CoverExists(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover) then begin
-            Texture.CreateCacheMipmap := true;
-            Texture.GetTexture(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover, 'Plain', true); // preloads textures and creates cache mipmap
-            Texture.CreateCacheMipmap := false;
-
-            // puts this texture to the cache file
-            Covers.AddCover(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover);
-
-            // unload full size texture
-            Texture.UnloadTexture(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover, false);
-
-            // we should also add mipmap texture by calling createtexture and use mipmap cache as data source
-          end;
-
-          // and now load it from cache file (small place for the optimization by eliminating reading it from file, but not here)
-          AddButton(300 + Pet*250, 140, 200, 200, CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover, 'JPG', 'Plain', Theme.Song.Cover.Reflections);
-        end;
-        Texture.Limit := 1024*1024;
-        I := -1;
-      end;
-    except
-      //When Error is reported the First time for this Song
-      if (I <> Pet) then
-      begin
-        //Some Error reporting:
-        Log.LogError('Could not load Cover: ' + CatSongs.Song[Pet].Cover);
-
-        //Change Cover to NoCover and Continue Loading
-        CatSongs.Song[Pet].Cover := '';
-        I := Pet;
-      end
-      else //when Error occurs Multiple Times(NoSong Cover is damaged), then start loading next Song
-      begin
-        Log.LogError('NoCover Cover is damaged!');
-        try
-          AddButton(300 + Pet*250, 140, 200, 200, '', 'JPG', 'Plain', Theme.Song.Cover.Reflections);
-        except
-          Messagebox(0, PChar('No Cover Image is damage. Could not Workaround Song Loading, Ultrastar will exit now.'), PChar(Language.Translate('US_VERSION')), MB_ICONERROR or MB_OK);
-          Halt;
-        end;
-        I := Pet + 1;
-      end;
-    end;
-
-    if (I <> -1) then
-      GoTo CreateSongButtons;
-
-  end;
 
   // Randomize Patch
   Randomize;
   //Equalizer
   SetLength(EqualizerBands, Theme.Song.Equalizer.Bands);
+  
   //ClearArray
   For I := low(EqualizerBands) to high(EqualizerBands) do
     EqualizerBands[I] := 3;
-
-  if (Length(CatSongs.Song) > 0) then
-    Interaction := 0;
 
   MP3Volume := Ini.PreviewVolume * 10;
 end;
@@ -1494,8 +1447,8 @@ end;
 procedure TScreenSong.SetScroll1;
 var
   B:      integer;    // button
-  BMin:   integer;    // button min
-  BMax:   integer;    // button max
+  //BMin:   integer;    // button min
+  //BMax:   integer;    // button max
   Src:    integer;
 //  Dst:    integer;
   Count:  integer;    // Dst is not used. Count is used.
@@ -1630,8 +1583,8 @@ end;
 procedure TScreenSong.SetScroll2;
 var
   B:      integer;
-  Wsp:    integer; // wspolczynnik przesuniecia wzgledem srodka ekranu
-  Wsp2:   real;
+  //Wsp:    integer; // wspolczynnik przesuniecia wzgledem srodka ekranu
+  //Wsp2:   real;
 begin
   // liniowe
   for B := 0 to High(Button) do
@@ -1657,8 +1610,8 @@ end;
 procedure TScreenSong.SetScroll3; // with slide
 var
   B:      integer;
-  Wsp:    integer; // wspolczynnik przesuniecia wzgledem srodka ekranu
-  Wsp2:   real;
+  //Wsp:    integer; // wspolczynnik przesuniecia wzgledem srodka ekranu
+  //Wsp2:   real;
 begin
   SongTarget := Interaction;
 
@@ -1720,7 +1673,7 @@ begin
     end;
   end;
 end;
-
+{ old version
 procedure TScreenSong.SetScroll5; // rotate
 var
   B:      integer;
@@ -1731,14 +1684,6 @@ var
   X:        Real;
 begin
   VS := CatSongs.VisibleSongs; // cache Visible Songs
-  {Vars
-  Theme.Song.CoverW: Radius des Kreises
-  Theme.Song.CoverX: X Pos Linke Kante des gewählten Covers
-  Theme.Song.CoverX: Y Pos Obere Kante des gewählten Covers
-  Theme.Song.CoverH: Höhe der Cover
-
-  (CatSongs.VisibleIndex(B) - SongCurrent)/VS = Abstand zum MIttleren Cover in %
-  }
 
   //Change Pos of all Buttons
   for B := low(Button) to high(Button) do
@@ -1752,7 +1697,7 @@ begin
       else if (Pos > VS/2) then
         Pos := Pos - VS;
 
-      if (Abs(Pos) < 2.5) then {fixed Positions}
+      if (Abs(Pos) < 2.5) then //fixed Positions
       begin
       Angle := Pi * (Pos / 5);
       //Button[B].Visible := False;
@@ -1764,7 +1709,8 @@ begin
 
       Button[B].Z := 0.95 - Abs(Pos) * 0.01;
 
-      Button[B].Y := (Theme.Song.Cover.Y  + (Theme.Song.Cover.H - Abs(Theme.Song.Cover.H * cos(Angle))) * 0.5);
+      Button[B].Y := (Theme.Song.Cover.Y  +
+        (Theme.Song.Cover.H - Abs(Theme.Song.Cover.H * cos(Angle))) * 0.5);
 
       Button[B].W := Button[B].H;
 
@@ -1777,7 +1723,7 @@ begin
 
       end
       else
-      begin {Behind the Front Covers}
+      begin //Behind the Front Covers
 //      Button[B].Visible := False;
 //        if VS/2-abs(Pos)>VS*0.4 then Button[B].Visible := False;
 
@@ -1799,7 +1745,7 @@ begin
 //        Button[B].Reflectionspacing := 15 * Button[B].H/Theme.Song.Cover.H;
         Button[B].DeSelectReflectionspacing := 15 * Button[B].H/Theme.Song.Cover.H;
 
-        Diff := (Button[B].H - Theme.Song.Cover.H)/2;
+        //Diff := (Button[B].H - Theme.Song.Cover.H)/2;
 
         Button[B].X :=  Theme.Song.Cover.X+Theme.Song.Cover.H/2-Button[b].H/2 + (Theme.Song.Cover.H)*sin(Angle/2)*1.52;
 
@@ -1810,7 +1756,94 @@ begin
 
     end;
   end;
+end; }
+
+//new version from 1.1 (copy)
+procedure TScreenSong.SetScroll5;
+var
+  B:      integer;
+  Angle:    real;
+  Pos:    real;
+  VS:     integer;
+  Padding:     real;
+  X:        real;
+  {
+  Theme.Song.CoverW: circle radius
+  Theme.Song.CoverX: x-pos. of the left edge of the selected cover
+  Theme.Song.CoverY: y-pos. of the upper edge of the selected cover
+  Theme.Song.CoverH: cover height
+  }
+begin
+  VS := CatSongs.VisibleSongs();
+
+  // Update positions of all buttons
+  for B := 0 to High(Button) do
+  begin
+    Button[B].Visible := CatSongs.Song[B].Visible; // adjust visibility
+    if Button[B].Visible then // Only change pos for visible buttons
+    begin
+      // Pos is the distance to the centered cover in the range [-VS/2..+VS/2]
+      Pos := (CatSongs.VisibleIndex(B) - SongCurrent);
+      if (Pos < -VS/2) then
+        Pos := Pos + VS
+      else if (Pos > VS/2) then
+        Pos := Pos - VS;
+
+      // Avoid overlapping of the front covers.
+      // Use an alternate position for the five front covers. 
+      if (Abs(Pos) < 2.5) then
+      begin
+        Angle := Pi * (Pos / 5); // Range: (-1/4*Pi .. +1/4*Pi)
+
+        Button[B].H := Abs(Theme.Song.Cover.H * cos(Angle*0.8));
+        Button[B].W := Button[B].H;
+
+        //Button[B].Reflectionspacing := 15 * Button[B].H/Theme.Song.Cover.H;
+        Button[B].DeSelectReflectionspacing := 15 * Button[B].H/Theme.Song.Cover.H;
+
+        Padding := (Button[B].H - Theme.Song.Cover.H)/2;
+        X := Sin(Angle*1.3) * 0.9;
+
+        Button[B].X := Theme.Song.Cover.X + Theme.Song.Cover.W * X - Padding;
+        Button[B].Y := (Theme.Song.Cover.Y  + (Theme.Song.Cover.H - Abs(Theme.Song.Cover.H * cos(Angle))) * 0.5);
+        Button[B].Z := 0.95 - Abs(Pos) * 0.01;
+      end
+      { only draw 3 visible covers in the background
+        (the 3 that are on the opposite of the front covers}
+      else if (Abs(Pos) > floor(VS/2) - 1.5) then
+      begin
+        // Transform Pos to range [-1..-3/4, +3/4..+1]
+        { the 3 covers at the back will show up in the gap between the
+          front cover and its neighbors
+          one cover will be hiddenbehind the front cover,
+          but this will not be a lack of performance ;) }
+        if Pos < 0 then
+          Pos := (Pos - 2 + ceil(VS/2))/8 - 0.75
+        else
+          Pos := (Pos + 2 - floor(VS/2))/8 + 0.75;
+
+        // angle in radians [-2Pi..-Pi, +Pi..+2Pi]
+        Angle := 2*Pi * Pos;
+
+        Button[B].H := 0.6*(Theme.Song.Cover.H-Abs(Theme.Song.Cover.H * cos(Angle/2)*0.8));
+        Button[B].W := Button[B].H;
+
+        Padding := (Button[B].H - Theme.Song.Cover.H)/2;
+
+        Button[B].X :=  Theme.Song.Cover.X+Theme.Song.Cover.H/2-Button[b].H/2+Theme.Song.Cover.W/320*((Theme.Song.Cover.H)*sin(Angle/2)*1.52);
+        Button[B].Y := Theme.Song.Cover.Y  - (Button[B].H - Theme.Song.Cover.H)*0.75;
+        Button[B].Z := (0.4 - Abs(Pos/4)) -0.00001; //z < 0.49999 is behind the cover 1 is in front of the covers
+
+        //Button[B].Reflectionspacing := 15 * Button[B].H/Theme.Song.Cover.H;
+        Button[B].DeSelectReflectionspacing := 15 * Button[B].H/Theme.Song.Cover.H;
+      end
+      { all other covers are not visible }
+      else
+      Button[B].Visible := false;
+    end;
+  end;
 end;
+
 
 procedure TScreenSong.onShow;
 var
@@ -2381,7 +2414,6 @@ end;
 
 procedure TScreenSong.DrawAspect();
 var
-  txt: PChar;
   w, h: real;
   str: string;
 
@@ -2408,21 +2440,20 @@ begin
 
   glColor4f(1, 1, 1, 1);
 
-  h := 11*ScreenH/RenderH;
+  h := 12;
   SetFontStyle(1);
   SetFontItalic(false);
   SetFontSize(h);
   w := glTextWidth(PChar(str));
 
-  SetFontPos (RenderW/2-w/2, 20);
-  txt := Addr(str[1]);
-  glPrint(txt);
+  SetFontPos (RenderW/2-w/2, 21);
+  glPrint(PChar(str));
 end;
 
 procedure TScreenSong.SelectNext;
 var
   Skip, Skip2:   integer;
-  I:      integer;
+  //I:      integer;
   VS:     Integer;
 begin
   VS := CatSongs.VisibleSongs;
@@ -2524,18 +2555,8 @@ begin
   end;
 end;
 
-procedure TScreenSong.UpdateLCD;
-begin{
-  LCD.HideCursor;
-  LCD.Clear;
-  LCD.WriteText(1, Text[TextArtist].Text);
-  LCD.WriteText(2, Text[TextTitle].Text); }
-end;
-
 //Procedure Change current played Preview
 procedure TScreenSong.ChangeMusic;
-var
-  I:  integer;
 begin
   //When Music Preview is avtivated -> then Change Music
   if (Ini.PreviewVolume <> 0) then
@@ -2543,6 +2564,7 @@ begin
     if (NOT CatSongs.Song[Interaction].Main) AND(CatSongs.VisibleSongs > 0) then
     begin
       Music.Close;
+      acClose;
       if Music.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3) then
       begin
         if (CatSongs.Song[Interaction].PreviewStart>0) then
@@ -2671,7 +2693,7 @@ begin
   FixSelected2;
 end;
 
-procedure TScreenSong.SkipTo2(Target: Cardinal); //new
+procedure TScreenSong.SkipTo2(Target: Integer); //new
 begin
   UnLoadDetailedCover;
 
@@ -3002,7 +3024,6 @@ begin
   Music.PlayChange;
   ChangeMusic;
   SetScroll;
-  UpdateLCD;
 end;
 
 //do Joker in M2-MOD mode
@@ -3033,9 +3054,6 @@ begin
 end;
 
 procedure TScreenSong.SetJoker;
-var
-  h, x, y:    real;
-  ptxt: pchar;
 begin
   //If Party Mode
   if Mode = smParty then //Show Joker that are available
@@ -3363,14 +3381,94 @@ begin
     Texture.UnloadTexture(Button[Interaction].Texture.Name, false);
 end;
 
-procedure TScreenSong.Refresh;
-begin {
-CatSongs.Refresh;
-CatSongs.ShowCategoryList;
-Interaction := 0;
-SelectNext;
-FixSelected; }
+procedure TScreenSong.Refresh(GiveStats: boolean);
+var
+  Pet:    integer;
+  I:      integer;
+Label CreateSongButtons;
 
+begin
+  ClearButtons();
+  CatSongs.Refresh;
+
+  if (length(CatSongs.Song) > 0) then
+  begin
+    //Set Length of Button Array one Time Instead of one time for every Song
+    SetButtonLength(Length(CatSongs.Song));
+
+    I := 0;
+    Pet := 0;
+    CreateSongButtons:
+
+    try
+      for Pet := I to High(CatSongs.Song) do
+      begin // creating all buttons
+        // new
+        Texture.Limit := 512;// 256 0.4.2 value, 512 in 0.5.0
+
+        if not FileExists(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover) then
+          CatSongs.Song[Pet].Cover := ''; // 0.5.0: if cover not found then show 'no cover'
+
+        if CatSongs.Song[Pet].Cover = '' then
+          AddButton(300 + Pet*250, 140, 200, 200, Skin.GetTextureFileName('SongCover'), 'JPG', 'Plain', Theme.Song.Cover.Reflections)
+        else begin
+          // cache texture if there is a need to this
+          if not Covers.CoverExists(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover) then begin
+            Texture.CreateCacheMipmap := true;
+            Texture.GetTexture(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover, 'Plain', true); // preloads textures and creates cache mipmap
+            Texture.CreateCacheMipmap := false;
+
+            // puts this texture to the cache file
+            Covers.AddCover(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover);
+
+            // unload full size texture
+            Texture.UnloadTexture(CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover, false);
+
+            // we should also add mipmap texture by calling createtexture and use mipmap cache as data source
+          end;
+
+          // and now load it from cache file (small place for the optimization by eliminating reading it from file, but not here)
+          AddButton(300 + Pet*250, 140, 200, 200, CatSongs.Song[Pet].Path + CatSongs.Song[Pet].Cover, 'JPG', 'Plain', Theme.Song.Cover.Reflections);
+        end;
+        Texture.Limit := 1024*1024;
+        I := -1;
+        if GiveStats then
+        begin
+          if (Pet mod 10 = 0) then
+            UpdateScreenLoading('Songs: '+IntToStr(Pet));
+        end;
+        
+      end;
+    except
+      //When Error is reported the First time for this Song
+      if (I <> Pet) then
+      begin
+        //Some Error reporting:
+        Log.LogError('Could not load Cover: ' + CatSongs.Song[Pet].Cover);
+
+        //Change Cover to NoCover and Continue Loading
+        CatSongs.Song[Pet].Cover := '';
+        I := Pet;
+      end
+      else //when Error occurs Multiple Times(NoSong Cover is damaged), then start loading next Song
+      begin
+        Log.LogError('NoCover Cover is damaged!');
+        try
+          AddButton(300 + Pet*250, 140, 200, 200, '', 'JPG', 'Plain', Theme.Song.Cover.Reflections);
+        except
+          Messagebox(0, PChar('No Cover Image is damage. Could not Workaround Song Loading, Ultrastar will exit now.'), PChar(Language.Translate('US_VERSION')), MB_ICONERROR or MB_OK);
+          Halt;
+        end;
+        I := Pet + 1;
+      end;
+    end;
+
+    if (I <> -1) then
+      GoTo CreateSongButtons;
+
+  end;
+
+  FixSelected;
 end;
 
 function TScreenSong.getVisibleMedleyArr(MinS: TMedleySource): TVisArr;

@@ -76,8 +76,6 @@ begin
 end;
 
 constructor TScreenOptionsGraphics.Create;
-var
-  I:      integer;
 begin
   inherited Create;
 

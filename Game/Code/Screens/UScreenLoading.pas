@@ -17,7 +17,7 @@ type
 
 implementation
 
-uses UGraphic, UTime;
+uses UGraphic, UTime, UDisplay;
 
 function TScreenLoading.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin

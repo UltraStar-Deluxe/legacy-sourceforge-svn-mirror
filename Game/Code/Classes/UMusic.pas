@@ -232,8 +232,8 @@ uses UGraphic, URecord, UFiles, UIni, UMain, UThemes, UTime;
 //from http://www.un4seen.com/forum/?topic=5943.0;hl=sbvocalcut16
 procedure SBVocalCut16(handle: DWORD; channel: DWORD; buffer: Pointer; length: DWORD; user: DWORD); stdcall;
 var
-  i, k: DWORD;
-  dmch: Smallint;
+  i:        DWORD;
+  dmch:     Smallint;
   lch, rch: PSmallint;
 
 begin
@@ -305,15 +305,12 @@ begin
 end;
 
 procedure TMusic.InitializePlayback;
-var
-  Pet:  integer;
-  S:    integer;
 begin
   Log.BenchmarkStart(4);
   Log.LogStatus('Initializing Playback Subsystem', 'Music Initialize');
   Loaded := false;
   Loop := false;
-  fHWND := AllocateHWND( nil);
+  fHWND := Classes.AllocateHWND( nil);
 
   if BASS_Init(1, 44100, 0, fHWND, nil) = false then 
   begin
@@ -367,14 +364,7 @@ end;
 procedure TMusic.InitializeRecord;
 var
   S:        integer;
-  device:   integer;
-  descr:    string;
-  input:    integer;
-  input2:   integer;
-  flags:    integer;
-  mic:      array[0..15] of integer;
-  SC:       integer; // soundcard
-  SCI:      integer; // soundcard input
+
 begin
   if RecordSystem = 1 then begin
     SetLength(Sound, 6 {max players});//Ini.Players+1);
@@ -566,7 +556,7 @@ function TMusic.Length: real;
 var
   bytes:    integer;
 begin
-  Result := 60;
+  //Result := 60;
 
   bytes  := BASS_ChannelGetLength( Bass );
   Result := BASS_ChannelBytes2Seconds(Bass, bytes);
@@ -582,7 +572,7 @@ function TMusic.Position: real;
 var
   bytes:    integer;
 begin
-  Result := 0;//MediaPlayer.Position / 1000;
+  //Result := 0;//MediaPlayer.Position / 1000;
   bytes := BASS_ChannelGetPosition(BASS);
   Result := BASS_ChannelBytes2Seconds(BASS, bytes);
 end;
@@ -902,8 +892,8 @@ end;
 
 //Equalizer
 function TMusic.GetFFTData: TFFTData;
-var
-Data: TFFTData;
+{var
+Data: TFFTData;}
 begin
   //Get Channel Data Mono and 256 Values
   BASS_ChannelGetData(Bass, @Result, BASS_DATA_FFT512);

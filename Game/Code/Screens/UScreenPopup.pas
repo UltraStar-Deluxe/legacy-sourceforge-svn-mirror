@@ -18,8 +18,8 @@ type
   end;
 
   TScreenPopupError = class(TMenu)
-    private
-      CurMenu: Byte; //Num of the cur. Shown Menu
+    {private
+      CurMenu: Byte; //Num of the cur. Shown Menu}
     public
       Visible: Boolean; //Whether the Menu should be Drawn
 
@@ -356,7 +356,7 @@ begin
     glColor4f(0.2, 0.2, 0.2, 0.8); glVertex2f(Rect.left-5, Rect.bottom+5);
   glEnd;
   glDisable(GL_BLEND);
-  //glScissor(Rect.left-1, ScreenH-Rect.bottom-1, Rect.right-Rect.left+2, Rect.bottom-Rect.top+2);
+  glScissor(Rect.left-1, ScreenH-Rect.bottom-1, Rect.right-Rect.left+2, Rect.bottom-Rect.top+2);
   glScissor(round((Rect.left-1)*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(ScreenAct-1)),
     round((RenderH-Rect.bottom-1)*ScreenH/RenderH),
     round((Rect.right-Rect.left+2)*(ScreenW/Screens)/RenderW),
@@ -787,35 +787,28 @@ end;
 
 procedure TScreenPopupHelp.DrawLine(line, index, Y: integer);
 begin
-  //glEnable(GL_BLEND);
   glColor4f(1, 1, 1, 1);
   glLineWidth(2);
   glBegin(GL_LINES);
     glVertex2f(TextsGFX[line].lines[index].fX, TextsGFX[line].lines[index].fY - Y);
     glVertex2f(TextsGFX[line].lines[index].tX, TextsGFX[line].lines[index].tY - Y);
   glEnd;
-  //glDisable(GL_BLEND);
 end;
 
 procedure TScreenPopupHelp.DrawText(line, index, Y: integer);
-var
-  text: PChar;
-
 begin
   glColor4f(1, 1, 1, 1);
   SetFontStyle(TextsGFX[line].texts[index].Style);
   SetFontItalic(TextsGFX[line].texts[index].Italic);
   SetFontSize(TextsGFX[line].texts[index].Size);
   SetFontPos (TextsGFX[line].texts[index].X, TextsGFX[line].texts[index].Y - Y);
-  text := Addr(TextsGFX[line].texts[index].text[1]);
-  glPrint(text);
+  glPrint(PChar(TextsGFX[line].texts[index].text));
 end;
 
 procedure TScreenPopupHelp.DrawScroll(X, Y, W, H: integer; pos, len: double);
 var
   fY, tY: double;
 begin
-  //glEnable(GL_BLEND);
   glColor4f(1, 1, 1, 1);
 
   glLineWidth(1);
@@ -837,7 +830,6 @@ begin
     glVertex2f(X+W, tY);
     glVertex2f(X, tY);
   glEnd;
-  //glDisable(GL_BLEND);
 end;
 
 end.

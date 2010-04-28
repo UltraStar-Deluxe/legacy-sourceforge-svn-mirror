@@ -81,8 +81,6 @@ begin
   Result.P2m := 1;
   P1m := 0;
   P2m := 0;
-  P1c := 0;
-  P2c := 0;
 
   try
     P1c := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
@@ -362,7 +360,7 @@ end;
 procedure TDataBaseSystem.AddScore(var Song: TSong; Level: integer; Name: string; Score: integer; TimeStamp: integer);
 var
 ID: Integer;
-TableData: TSqliteTable;
+//TableData: TSqliteTable;
 begin
   //ScoreDB := TSqliteDatabase.Create(sFilename);
   try

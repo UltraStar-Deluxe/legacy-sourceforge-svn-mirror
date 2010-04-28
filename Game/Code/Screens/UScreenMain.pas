@@ -3,7 +3,7 @@ unit UScreenMain;
 interface
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes, ULCD, ULight, UHelp;
+  UMenu, SDL, UDisplay, UMusic, UFiles, SysUtils, UThemes, UHelp;
 
 type
   TScreenMain = class(TMenu)
@@ -20,7 +20,6 @@ type
       procedure InteractPrev; override;
       procedure InteractInc; override;
       procedure InteractDec; override;
-      procedure UpdateLCD;
       procedure SetAnimationProgress(Progress: real); override;
       //function Draw: boolean; override;
   end;
@@ -35,8 +34,8 @@ uses Windows, UPlaylist, UGraphic, UMain, UIni, UTexture, USongs, Textgl, opengl
 
 function TScreenMain.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 var
-I: Integer;
 SDL_ModState:  Word;
+
 begin
   Result := true;
 
@@ -235,8 +234,6 @@ begin
 end;
 
 constructor TScreenMain.Create;
-var
-  I:    integer;
 begin
   inherited Create;
 
@@ -269,8 +266,6 @@ end;
 
 procedure TScreenMain.onShow;
 begin
-  LCD.WriteText(1, '  Choose mode:  ');
-  UpdateLCD;
   ScreenSong.Mode := smNormal;
   ScreenSong.SongIndex := -1;
   PlaylistMan.Mode := 0;
@@ -289,8 +284,6 @@ begin
   inherited InteractNext;
   Text[TextDescription].Text := Theme.Main.Description[Interaction];
   Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
-  UpdateLCD;
-  Light.LightOne(1, 200);
 end;
 
 procedure TScreenMain.InteractPrev;
@@ -298,8 +291,6 @@ begin
   inherited InteractPrev;
   Text[TextDescription].Text := Theme.Main.Description[Interaction];
   Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
-  UpdateLCD;
-  Light.LightOne(0, 200);
 end;
 
 procedure TScreenMain.InteractDec;
@@ -307,8 +298,6 @@ begin
   inherited InteractDec;
   Text[TextDescription].Text := Theme.Main.Description[Interaction];
   Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
-  UpdateLCD;
-  Light.LightOne(0, 200);
 end;
 
 procedure TScreenMain.InteractInc;
@@ -316,18 +305,6 @@ begin
   inherited InteractInc;
   Text[TextDescription].Text := Theme.Main.Description[Interaction];
   Text[TextDescriptionLong].Text := Theme.Main.DescriptionLong[Interaction];
-  UpdateLCD;
-  Light.LightOne(1, 200);
-end;
-
-procedure TScreenMain.UpdateLCD;
-begin
-  case Interaction of
-    0:  LCD.WriteText(2, '      sing      ');
-    1:  LCD.WriteText(2, '     multi      ');
-    2:  LCD.WriteText(2, '    options     ');
-    3:  LCD.WriteText(2, '      exit      ');
-  end
 end;
 
 procedure TScreenMain.SetAnimationProgress(Progress: real);

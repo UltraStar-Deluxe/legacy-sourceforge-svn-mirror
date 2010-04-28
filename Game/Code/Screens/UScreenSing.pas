@@ -3,7 +3,7 @@ unit UScreenSing;
 interface
 
 uses UMenu, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, ULyrics,
-  TextGL, gl, BASS, UThemes, ULCD, UGraphicClasses, UVideo;
+  TextGL, gl, BASS, UThemes, UGraphicClasses, UVideo;
 
 type
   THandler = record
@@ -93,7 +93,6 @@ type
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       function Draw: boolean; override;
       procedure Finish; virtual;
-      procedure UpdateLCD;
       procedure Pause; //Pause Mod(Toggles Pause)
 
       //OnSentenceEnd for LineBonus + Singbar
@@ -249,16 +248,10 @@ end;
 //Pause Mod End
 
 constructor TScreenSing.Create;
-var
-  I:    integer;
-  P:    integer;
 begin
   inherited Create;
 
   LoadFromTheme(Theme.Sing);
-
-  // time
-  //TextTime := AddText(75, 14, 1, 8, 0.25, 0.25, 0.25, '00:00');
 
   //TimeBar mod
     StaticTimeProgress :=  AddStatic(Theme.Sing.StaticTimeProgress);
@@ -323,7 +316,6 @@ end;
 
 procedure TScreenSing.onShow;
 var
-  P:        integer;
   V1:       boolean;
   V1TwoP:   boolean; //added for ps3 skin
   V1ThreeP: boolean; //added for ps3 skin
@@ -405,7 +397,14 @@ begin
           V2M      := true;
           V3R      := true;
         end;
-
+    else begin    //should not happen
+          V1       := true;
+          V1TwoP   := false;
+          V1ThreeP := false;
+          V2R      := false;
+          V2M      := false;
+          V3R      := false;
+        end;
   end;
 
   //Added for ps3 skin
@@ -761,7 +760,7 @@ end;
 
 procedure TScreenSing.SongError;
 var
-  I, K, len:  integer;
+  I, len:  integer;
 
 begin
   if (not ScreenSong.PartyMedley) and (ScreenSong.Mode <> smMedley) then
@@ -815,7 +814,7 @@ end;
 procedure TScreenSing.LoadNextSong;
 var
   P, I:       integer;
-  numNotes:   integer;
+
 begin
   // load notes
   ResetSingTemp;
@@ -844,7 +843,6 @@ begin
   end;
   
   AktSong.Path := CatSongs.Song[CatSongs.Selected].Path;
-  //  AktSong.GAP := AktSong.GAP + 40 {4096 = 100ms for buffer} + 20 {microphone} + 60000 / AktSong.BPM[0].BPM / 2; // temporary until UMain will be fixed
 
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
   begin
@@ -863,7 +861,6 @@ begin
     if MedleyStart<0 then
       MedleyStart := 0;
 
-    //that one is better:
     MedleyEnd := GetTimeFromBeat(AktSong.Medley.EndBeat) + AktSong.Medley.FadeOut_time;
   end;
 
@@ -895,8 +892,6 @@ begin
     Tex_Background.TexNum := -1;
 
   // play music+timer (I)
-  Music.CaptureStart;
-
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
   begin
     Music.MoveTo(MedleyStart);
@@ -924,14 +919,12 @@ begin
   LyricSub.AddCzesc(1);
   LyricSub.Selected := -1;
 
-  UpdateLCD;
-
   //Deactivate Pause
   Paused := False;
 
   //Kill all Stars not Killed yet
   //GoldenStarsTwinkle Mod
-    GoldenRec.SentenceChange;
+  GoldenRec.SentenceChange;
   //GoldenStarsTwinkle Mod End
 
   //Set Num of Empty Sentences for Phrasen Bonus
@@ -952,6 +945,8 @@ begin
     Text[SongNameText].Visible := false;
   end;
 
+  Music.CaptureStart;
+  
   if ((ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley)
     and (PlaylistMedley.CurrentMedleySong>1) then
     onShowFinish;
@@ -1367,13 +1362,37 @@ begin
     DrawVolumeBar(10, 475, 782, 12, MP3Volume);
   end else
     MP3VolumeHandler.changed := false;
+
+
+  if (Ini.Debug=1) then
+  begin
+    glEnable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
+    glColor4f(1, 1, 1, 0.6);
+    glBegin(GL_QUADS);
+      glVertex2f(0, 180);
+      glVertex2f(0, 210);
+      glVertex2f(400, 210);
+      glVertex2f(400, 180);
+    glEnd;
+    glDisable(GL_BLEND);
+
+    SetFontStyle(1);
+    SetFontItalic(false);
+    SetFontSize(8);
+    glColor4f(0, 0, 0, 1);
+
+    SetFontPos (5, 184);
+    glPrint(PChar('lt: ' + FormatFloat('#0.00', Czas.Teraz) +
+      ' mt: ' + FormatFloat('#0.00', Music.Position) +
+      ' dt: ' + FormatFloat('#0.000', Czas.Teraz-Music.Position)));
+  end;
 end;
  
 procedure TScreenSing.UpdateMedleyStats(medley_end: boolean);
 var
   len, num, I : integer;
-  lastline: boolean;
-  vol:  real;
+
 begin
   len := Length(PlaylistMedley.Stats);
   num := PlaylistMedley.NumPlayer;
@@ -1498,7 +1517,7 @@ begin
             PlaylistMedley.Stats[len].Player[I].ScoreLine / len);
 
           PlaylistMedley.Stats[len].Player[I].ScoreGolden := round(
-            PlaylistMedley.Stats[J].Player[I].ScoreGolden / len);
+            PlaylistMedley.Stats[len].Player[I].ScoreGolden / len);
 
           PlaylistMedley.Stats[len].Player[I].ScoreI := round(
             PlaylistMedley.Stats[len].Player[I].ScoreI / len);
@@ -1549,22 +1568,6 @@ begin
     PlaylistMedley.Stats[0].SongArtist := AktSong.Artist;
     PlaylistMedley.Stats[0].SongTitle := AktSong.Title;
   end;
-end;
-
-procedure TScreenSing.UpdateLCD;
-var
-  T:    string;
-begin
-  LCD.HideCursor;
-  LCD.Clear;
-
-  T := LyricMain.Text;
-  if Copy(T, Length(T), 1) <> ' ' then T := T + ' ';
-  LCD.AddTextBR(T);
-
-  T := LyricSub.Text;
-  if Copy(T, Length(T), 1) <> ' ' then T := T + ' ';
-  LCD.AddTextBR(T);
 end;
 
 procedure TScreenSing.onSentenceEnd(S: Cardinal);
@@ -1686,27 +1689,26 @@ end;
 
 procedure TScreenSing.DrawMedleyCountdown();
 var
-  txt: PChar;
   w, h: real;
   timeDiff: real;
   t:  real;
+
 begin
   if (Czas.Teraz < GetTimeFromBeat(AktSong.Medley.StartBeat)) then
   begin
     timeDiff := GetTimeFromBeat(AktSong.Medley.StartBeat)-Czas.Teraz+1;
     t := frac(timeDiff);
-    CountDownText := IntToStr(round(timeDiff-t));
+
     glColor4f(0.15, 0.30, 0.6, t);
 
-    h := 130*t*ScreenH/RenderH;
+    h := 100*t*ScreenH/RenderH;
     SetFontStyle(1);
     SetFontItalic(false);
     SetFontSize(h);
     w := glTextWidth(PChar(CountDownText));
 
     SetFontPos (RenderW/2-w/2, RenderH/2-h/2*3);
-    txt := Addr(CountDownText[1]);
-    glPrint(txt);
+    glPrint(PChar(IntToStr(round(timeDiff-t))));
   end;
 end;
 

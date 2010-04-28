@@ -134,6 +134,12 @@ begin
         begin
           Music.PlayBack;
           Visible := False;
+          if(ScreenSong.Mode = smNormal) and not ScreenSong.MakeMedley then
+          begin
+            ScreenSong.WaitHandler.changed := true;
+            ScreenSong.WaitHandler.change_time := 0;
+          end;
+          CatSongs.Selected := Interaction;
         end;
 
       SDLK_RETURN:
@@ -192,8 +198,8 @@ begin
 end;
 
 constructor TScreenSongMenu.Create;
-var
-  I:    integer;
+{var
+  I:    integer;}
 begin
   inherited Create;
   
@@ -540,6 +546,8 @@ begin
           4: //Button 4
             begin
               PlaylistMan.AddItem(ScreenSong.Interaction, SelectValue);
+              ScreenSong.WaitHandler.changed := true;
+              ScreenSong.WaitHandler.change_time := 0;
               Visible := False;
             end;
         end;
@@ -559,6 +567,8 @@ begin
               PlaylistMan.AddItem(
               ScreenSong.Interaction,
               PlaylistMan.AddPlaylist(Button[0].Text[0].Text));
+              ScreenSong.WaitHandler.changed := true;
+              ScreenSong.WaitHandler.change_time := 0;
               Visible := False;
             end;
 
@@ -570,6 +580,8 @@ begin
 
           4: //Button 4
             begin
+              ScreenSong.WaitHandler.changed := true;
+              ScreenSong.WaitHandler.change_time := 0;
               Visible := False;
             end;
         end;
@@ -583,6 +595,8 @@ begin
             begin
               //Delete
               PlayListMan.DelItem(PlayListMan.GetIndexbySongID(ScreenSong.Interaction));
+              ScreenSong.WaitHandler.changed := true;
+              ScreenSong.WaitHandler.change_time := 0;
               Visible := False;
             end;
 
@@ -604,6 +618,8 @@ begin
             begin
               //Load Playlist
               PlaylistMan.SetPlayList(SelectValue);
+              ScreenSong.WaitHandler.changed := true;
+              ScreenSong.WaitHandler.change_time := 0;
               Visible := False;
             end;
         end;
@@ -617,6 +633,8 @@ begin
             begin
               //Delete
               PlayListMan.DelPlaylist(PlaylistMan.CurPlayList);
+              ScreenSong.WaitHandler.changed := true;
+              ScreenSong.WaitHandler.change_time := 0;
               Visible := False;
             end;
 

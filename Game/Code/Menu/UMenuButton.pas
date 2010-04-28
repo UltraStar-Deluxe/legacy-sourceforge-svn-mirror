@@ -83,34 +83,14 @@ implementation
 uses UDrawTexture, SysUtils, windows;
 
 procedure TButton.SetX(Value: real);
-var
-  dx:   real;
-  T:    integer;    // text
 begin
-  {dY := Value - Texture.y;
-
-  Texture.X := Value;
-
-  for T := 0 to High(Text) do
-    Text[T].X := Text[T].X + dY;}
-
   PosX := Value;
   if (FadeTex.TexNum = -1) then
     Texture.X := Value;
-
 end;
 
 procedure TButton.SetY(Value: real);
-var
-  dY:   real;
-  T:    integer;    // text
 begin
-  {dY := Value - PosY;
-
-
-  for T := 0 to High(Text) do
-    Text[T].Y := Text[T].Y + dY;}
-    
   PosY := Value;
   if (FadeTex.TexNum = -1) then
     Texture.y := Value;
@@ -267,6 +247,7 @@ var
   Tick: Cardinal;
   Spacing: Real;
 begin
+  T := 0;
   if Visible then begin
     //Fade Mod
     if Fade then

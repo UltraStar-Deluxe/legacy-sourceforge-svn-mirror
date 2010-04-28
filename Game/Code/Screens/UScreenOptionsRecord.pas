@@ -81,7 +81,7 @@ end;
 
 constructor TScreenOptionsRecord.Create;
 var
-  I:      integer;
+  //I:      integer;
   SC:     integer;
   SCI:    integer;
 begin

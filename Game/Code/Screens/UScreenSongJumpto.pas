@@ -104,6 +104,11 @@ begin
             CatSongs.SetFilter('', 0);
             SetTextFound(0);
           end;
+          if(ScreenSong.Mode = smNormal) and not ScreenSong.MakeMedley then
+          begin
+            ScreenSong.WaitHandler.changed := true;
+            ScreenSong.WaitHandler.change_time := 0;
+          end;
         end;
 
       // Up and Down could be done at the same time,
@@ -142,8 +147,8 @@ begin
 end;
 
 constructor TScreenSongJumpto.Create;
-var
-  I:    integer;
+{var
+  I:    integer;}
 begin
   inherited Create;
 

@@ -88,7 +88,7 @@ end;
 
 constructor TScreenPartyScore.Create;
 var
-  I:    integer;
+  //I:    integer;
   Tex:  TTexture;
   R, G, B: Real;
   Color: Integer;

@@ -36,10 +36,6 @@ uses SDL,
      {$ENDIF}
      UIni;
 
-const
-  //PIXEL_FORMAT = GL_RGB;
-  numBytes = 3;
-
 type
   TRectCoords = record         //from 1.1
     Left, Right:  double;
@@ -69,45 +65,61 @@ procedure ResetAspectCorrection;
 
 
 var
-  VideoOpened, VideoPaused: Boolean;
-  VideoTex: glUint;
-  //TexData: array of Byte;
-  VideoStreamIndex: Integer;
-  SkipLines: Integer;
-  LastSkipLines: Integer;
-  mmfps: Real;
-  Counter: Integer;
-  //myBuffer: pByte;
-  TexX, TexY, dataX, dataY: Cardinal;
-  VideoTimeBase, VideoTime, LastFrameTime, TimeDifference, NegativeSkipTime: Extended;
-  ScaledVideoWidth, ScaledVideoHeight: Real;
-  VideoAspect: Real;
-  VideoSkipTime: Single;
-  ActualH, ActualW: Integer;
+  VideoOpened:        Boolean;
+  VideoPaused:        Boolean;
+  VideoTex:           glUint;
 
-  inst: PAc_instance;
-  pack: PAc_package;
-  info: TAc_stream_info;
-  videodecoder: PAc_decoder;
+  VideoStreamIndex:   Integer;
+  SkipLines:          Integer;
+  LastSkipLines:      Integer;
+  mmfps:              Real;
+  Counter:            Integer;
 
-  fAspect: real;        //**< width/height ratio   (from 1.1)
-  fAspectCorrection: TAspectCorrection;            //from 1.1
+  TexX, TexY:         Integer;
+  dataX, dataY:       Integer;
 
-  fs: TFileStream;
-  fName: string;
+  VideoTimeBase:      Extended;
+  VideoTime:          Extended;
+  LastFrameTime:      Extended;
+  TimeDifference:     Extended;
+  NegativeSkipTime:   Extended;
+
+  ScaledVideoWidth:   Real;
+  ScaledVideoHeight:  Real;
+
+  VideoAspect:        Real;
+  VideoSkipTime:      Single;
+  ActualH, ActualW:   Integer;
+
+  inst:               PAc_instance;
+  pack:               PAc_package;
+  info:               TAc_stream_info;
+  videodecoder:       PAc_decoder;
+
+  fAspect:            Real;               //**< width/height ratio (from 1.1)
+  fAspectCorrection:  TAspectCorrection; //from 1.1
+
+  fs:                 TFileStream;
+  fName:              String;
+
+  timediff_str:       String;   //for debug
+  mtime_str:          String;      //for debug
+
+  pbo:                glUint;
+  pbo_supported:      Boolean;
+
+  PIXEL_FORMAT:       glUint;
+  numBytes:           Integer;
+
+  EnableVideoDraw:    boolean;
 
 
-  timediff: PChar;        //for debug
-  timediff_str: string;   //for debug
-  mtime: PChar;           //for debug
-  mtime_str: string;      //for debug
-
-  pbo:  glUint;
-  pbo_supported: boolean;
 implementation
 
 uses
-  UGraphic, ULog, UDisplay;
+  UGraphic,
+  ULog,
+  UDisplay;
 
 function read_proc(sender: Pointer; buf: PByte; size: integer): integer; cdecl;
 begin
@@ -131,30 +143,27 @@ begin
   fName := '';
 
   glGenTextures(1, @VideoTex);
-
-  //pbo_supported := glext_LoadExtension('GL_ARB_pixel_buffer_object') and
-  //  glext_LoadExtension('GL_version_1_5');
-  pbo_supported := false;
+  
   if (pbo_supported) then
     glGenBuffers(1, @pbo);
-
-  //SetLength(TexData,0);
 
   fAspectCorrection := TAspectCorrection(Ini.AspectCorrect);
   SkipLines := 0;
   LastSkipLines := 0;
   Counter := 0;
+  PIXEL_FORMAT := GL_RGB;
+  numBytes := 3;
+  EnableVideoDraw := true;
 end;
 
 procedure acOpenFile(FileName: pAnsiChar);
 var
   I: integer;
-  rTimeBase: Extended;
+
 begin
 
   VideoPaused    := False;
   VideoTimeBase  := 0;
-  rTimeBase      := 0;
   VideoTime      := 0;
   LastFrameTime  := 0;
   TimeDifference := 0;
@@ -213,9 +222,6 @@ begin
   TexY := videodecoder^.stream_info.additional_info.video_info.frame_height;
   dataX := Round(Power(2, Ceil(Log2(TexX))));
   dataY := Round(Power(2, Ceil(Log2(TexY))));
-  //SetLength(TexData, TexX*numBytes);
-  //for I := 0 to TexX*numBytes - 1 do
-  //  TexData[I]:=0;
 
   // calculate some information for video display
   VideoAspect:=videodecoder^.stream_info.additional_info.video_info.pixel_aspect;
@@ -238,11 +244,10 @@ begin
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glTexImage2D(GL_TEXTURE_2D, 0, 3, dataX, dataY, 0,
-    GL_RGB, GL_UNSIGNED_BYTE, nil);
-
+    PIXEL_FORMAT, GL_UNSIGNED_BYTE, nil);
   glBindTexture(GL_TEXTURE_2D, 0);
+
   if(pbo_supported) then
   begin
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
@@ -250,9 +255,6 @@ begin
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
   end;
 
-  //SkipLines := 0;
-  //LastSkipLines := 0;
-  //Counter := 0;
   mmfps := 50;
 end;
 
@@ -262,13 +264,14 @@ begin
 
     if videodecoder <> nil then
       ac_free_decoder(videodecoder);
+
     videodecoder:=nil;
     ac_close(inst);
     ac_free(inst);
     inst := nil;
     fs.Free;
     fs:=nil;
-    //SetLength(TexData,0);
+
     VideoOpened:=False;
     fName := '';
   end;
@@ -281,25 +284,13 @@ begin
 end;
 
 procedure acSkip2(Gap: Single; Start: Single);
-var
-  seek_target: uint64;
 begin
   VideoSkiptime:=Gap;
   NegativeSkipTime:=Start+Gap;
   if Start+Gap > 0 then
   begin
     VideoTime:=Start+Gap;
-    //ac_seek(videodecoder, 0, Floor((Start+Gap)*1000));
     ac_seek(videodecoder, -1, Floor((Start+Gap)*1000));
-    //acSearch(Gap+Start);
-    {if (ac_seek(videodecoder, -1, Floor((Start+Gap)*1000))=0) then
-      if (ac_seek(videodecoder, 0, Floor((Start+Gap)*1000))=0) then
-      begin
-        ac_seek(videodecoder, 0, 0);
-        VideoTime:=0;
-        //acSearch(Gap+Start);
-
-      end; }
   end else
   begin
     ac_seek(videodecoder, 0, 0);
@@ -308,8 +299,6 @@ begin
 end;
 
 procedure acSkip(Gap: Single; Start: Single);
-var
-  seek_target: uint64;
 begin
   VideoSkiptime:=Gap;
   NegativeSkipTime:=Start+Gap;
@@ -336,7 +325,6 @@ var
   errnum: Integer;
   FrameDataPtr: PByteArray;
   myTime: Extended;
-  DropFrame: Boolean;
 
 begin
   Result := 0;
@@ -346,39 +334,15 @@ begin
 
   myTime:=Time+VideoSkipTime;
   TimeDifference:=myTime-VideoTime;
-  if Ini.Debug = 1 then
-  begin
-    timediff_str:= 't-diff: ' + FormatFloat('#0.00', TimeDifference);
-    timediff := Addr(timediff_str[1]);
-    mtime_str:= 'mytime: ' + FormatFloat('#0.00', myTime);
-    mtime := Addr(mtime_str[1]);
-  end;
-  DropFrame:=False;
 
   if (VideoTime <> 0) and (TimeDifference <= VideoTimeBase) then begin
-    if Ini.Debug = 1 then
-    begin
-      // frame delay debug display
-      GoldenRec.Spawn(200,65,1,16,0,-1,ColoredStar,$00ff00);
-    end;
     Exit;// we don't need a new frame now
-  end;
-
-  if TimeDifference >= 2*VideoTimeBase then
-  begin // skip frames
-    if Ini.Debug = 1 then
-    begin
-      //frame drop debug display
-      GoldenRec.Spawn(200,105,1,16,0,-1,ColoredStar,$ff0000);
-    end;
-
-    DropFrame:=True;
   end;
 
   pack := ac_read_package(inst);
   FrameFinished:=0;
   // read packets until we have a finished frame (or there are no more packets)
-  while ({(FrameFinished=0) or }(VideoTime < Time-VideoTimeBase)) and (pack <> nil) do
+  while ((VideoTime < Time-VideoTimeBase)) and (pack <> nil) do
   begin
     // if we got a packet from the video stream, then decode it
     if (videodecoder^.stream_index = pack^.stream_index) then
@@ -386,13 +350,12 @@ begin
       FrameFinished := ac_decode_package(pack, videodecoder);
       VideoTime := videodecoder^.timecode;
       ac_free_package(pack);
-      if ((VideoTime < Time-VideoTimeBase) {or (FrameFinished=0)}) then
+      if ((VideoTime < Time-VideoTimeBase)) then
         pack := ac_read_package(inst);
     end else
     begin
       ac_free_package(pack);
       pack := ac_read_package(inst);
-      //TimeDifference:=myTime-VideoTime;
     end;
   end;
   if (pack<>nil) then
@@ -401,7 +364,6 @@ begin
   // if we did not get an new frame, there's nothing more to do
   if Framefinished=0 then
   begin
-//    GoldenRec.Spawn(220,15,1,16,0,-1,ColoredStar,$0000ff);
     Exit;
   end;
 
@@ -410,9 +372,8 @@ begin
     FrameDataPtr:=Pointer(videodecoder^.buffer);
     Result := 1;
     glBindTexture(GL_TEXTURE_2D, VideoTex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY, GL_RGB, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY, PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
+
     if Ini.Debug = 1 then
     begin
       //frame decode debug display
@@ -424,18 +385,17 @@ end;
 
 procedure acGetFrame(Time: Extended);
 var
-  FrameFinished: Integer;
-  errnum, x, y: Integer;
-  FrameDataPtr: PByteArray;
-  FrameDataPtr2: PByteArray;
-  linesize: integer;
-  myTime: Extended;
-  DropFrame: Boolean;
-  droppedFrames: Integer;
-  I, J: Integer;
+  FrameFinished:  Integer;
+  errnum:         Integer;
+  FrameDataPtr:   PByteArray;
+  FrameDataPtr2:  PByteArray;
+  myTime:         Extended;
+  DropFrame:      Boolean;
+  droppedFrames:  Integer;
+  I:              Integer;
 
-  glError: glEnum;
-  glErrorStr: String;
+  glError:        glEnum;
+  glErrorStr:     String;
 const
   FRAMEDROPCOUNT=3;
 begin
@@ -445,13 +405,13 @@ begin
 
   myTime:=Time+VideoSkipTime;
   TimeDifference:=myTime-VideoTime;
+
   if Ini.Debug = 1 then
   begin
     timediff_str:= 't-diff: ' + FormatFloat('#0.00', TimeDifference);
-    timediff := Addr(timediff_str[1]);
     mtime_str:= 'mytime: ' + FormatFloat('#0.00', myTime);
-    mtime := Addr(mtime_str[1]);
   end;
+
   DropFrame:=False;
 
   if (VideoTime <> 0) and (TimeDifference <= VideoTimeBase) then begin
@@ -568,13 +528,11 @@ begin
         begin
           if(I mod (SkipLines+1) = 0) then
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (I div (SkipLines+1)), TexX, 1,
-              GL_RGB, GL_UNSIGNED_BYTE, @FrameDataPtr[I*numBytes*TexX]);
+              PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[I*numBytes*TexX]);
         end;
       end else
           glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
-            GL_RGB, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
     end else
     begin
       glGetError();
@@ -619,7 +577,7 @@ begin
       end;
 
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
-        GL_RGB, GL_UNSIGNED_BYTE, 0);
+        PIXEL_FORMAT, GL_UNSIGNED_BYTE, nil);
 
       glError := glGetError;
       if glError <> GL_NO_ERROR then
@@ -658,8 +616,6 @@ begin
     acoStretch   : fAspectCorrection := acoLetterBox;
     acoLetterBox : fAspectCorrection := acoCrop;
   end;
-  //Ini.AspectCorrect := integer(fAspectCorrection);
-  //Ini.Save;
 end;
 
 procedure SetAspectCorrection(aspect: TAspectCorrection);
@@ -741,7 +697,10 @@ begin
   TexRect.Left  := 0;
   TexRect.Right := TexX  / dataX;
   TexRect.Upper := 0;
-  TexRect.Lower := (TexY/(SkipLines+1)) / dataY;
+  if (not pbo_supported) then
+    TexRect.Lower := (TexY/(SkipLines+1)) / dataY
+  else
+    TexRect.Lower := TexY/ dataY;
 end;
 
 procedure acDrawGL(Screen: integer);
@@ -758,22 +717,14 @@ end;
 
 procedure acDrawGLi(Screen: integer; Window: TRectCoords; Blend: real);
 var
-  text: string;
-  test: PChar;
   ScreenRect, TexRect: TRectCoords;
-  FrameDataPtr: PByteArray;
-  FrameDataPtr2: PByteArray;
-  Offset: Integer;
 
 begin
   // have a nice black background to draw on (even if there were errors opening the vid)
   if Not Window.windowed then
   begin
-    glDisable(GL_BLEND);
-    //glDisable(GL_DEPTH_TEST);
-    //glDepthMask(GL_FALSE);
-    //glDisable(GL_CULL_FACE);
-    
+    //glDisable(GL_BLEND);
+
     glScissor(round((ScreenW/Screens)*(Screen-1)),
       0,
       round(ScreenW/Screens),
@@ -784,16 +735,17 @@ begin
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
     glDisable(GL_SCISSOR_TEST);
-  end else
-    glEnable(GL_BLEND);
+  end;{ else if EnableVideoDraw then
+    glEnable(GL_BLEND);}
+
+  if not EnableVideoDraw then
+    Exit;
 
   // exit if there's nothing to draw
-  if not VideoOpened then Exit;
-  // if we're still inside negative skip, then exit
-  //if (NegativeSkipTime < 0) then Exit;
+  if not VideoOpened then
+    Exit;
 
   GetVideoRect(ScreenRect, TexRect, Window);
-
 
   if Window.windowed then
   begin
@@ -807,7 +759,7 @@ begin
   glEnable(GL_TEXTURE_2D);
   glColor4f(1, 1, 1, Blend);
   glBindTexture(GL_TEXTURE_2D, VideoTex);
-
+  //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
   glbegin(gl_quads);
     // upper-left coord
     glTexCoord2f(TexRect.Left, TexRect.Upper);
@@ -823,41 +775,44 @@ begin
     glVertex2f(ScreenRect.Right, ScreenRect.Upper);
 
   glEnd;
+  //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glDisable(GL_TEXTURE_2D);
-  //glBindBuffer(GL_PIXEL_UNPACK_BUFFER_EXT, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
   glDisable(GL_SCISSOR_TEST);
-  glDisable(GL_BLEND);
+  //glDisable(GL_BLEND);
 
-  if (Ini.MovieSize < 1) then  //HalfSize BG
+  if (Ini.MovieSize < 1) and not Window.windowed then  //HalfSize BG
   begin
     // draw fading bars over top and bottom of background/video
     glEnable(GL_BLEND);
     glBegin(GL_QUADS);
       (* black top *)
-      glColor4f(0,0,0,1);
+      glColor4f(0, 0, 0, 1);
       glVertex2f(0, 0);
-      glVertex2f(800,0);
-      glVertex2f(800,110);
-      glVertex2f(0,110);
+      glVertex2f(RenderW, 0);
+      glVertex2f(RenderW, 110);
+      glVertex2f(0, 110);
+
       (* top gradient *)
       glVertex2f(0, 110);
-      glVertex2f(800,110);
-      glColor4f(0,0,0,0);
-      glVertex2f(800,130);
-      glVertex2f(0,130);
+      glVertex2f(RenderW, 110);
+      glColor4f(0, 0, 0, 0);
+      glVertex2f(RenderW, 130);
+      glVertex2f(0, 130);
 
       (* bottom gradient *)
-      glColor4f(0,0,0,0);
-      glVertex2f(0, 600-130);
-      glVertex2f(800,600-130);
-      glColor4f(0,0,0,1);
-      glVertex2f(800,600-110);
-      glVertex2f(0,600-110);
+      glColor4f(0, 0, 0, 0);
+      glVertex2f(0, RenderH-130);
+      glVertex2f(RenderW, RenderH-130);
+      glColor4f(0, 0, 0, 1);
+      glVertex2f(RenderW, RenderH-110);
+      glVertex2f(0, RenderH-110);
+      
       (* black bottom *)
-      glVertex2f(0, 600-110);
-      glVertex2f(800,600-110);
-      glVertex2f(800,600);
-      glVertex2f(0,600);
+      glVertex2f(0, RenderH-110);
+      glVertex2f(RenderW, RenderH-110);
+      glVertex2f(RenderW, RenderH);
+      glVertex2f(0, RenderH);
 
     glEnd;
     glDisable(GL_BLEND);
@@ -892,15 +847,14 @@ begin
     SetFontItalic(False);
     SetFontSize(7);
     SetFontPos (5, 50);
-    text:= 'vtime: ' + FormatFloat('#0.00', VideoTime);
-    test := Addr(text[1]);
-    glPrint(test);
+    glPrint(PChar('vtime: ' + FormatFloat('#0.00', VideoTime)));
+
     SetFontPos (5, 65);
-    //text:= 'vtime: ' + FormatFloat('#0.00', videodecoder^.timecode);
-    //test := Addr(text[1]);
-    glPrint(timediff);
+    glPrint(PChar(timediff_str));
+
     SetFontPos (5, 80);
-    glPrint(mtime);
+    glPrint(PChar(mtime_str));
+
     SetFontPos (5, 95);
     case fAspectCorrection of
       acoCrop      : glPrint('Crop');

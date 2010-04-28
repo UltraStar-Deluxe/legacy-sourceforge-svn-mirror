@@ -802,6 +802,8 @@ begin
 
   if MenuPluginOpen then
     Draw_MenuPlugin;
+
+  Result := true;
 end;
 
 procedure TScreenPartyOptionsM2.SetAnimationProgress(Progress: real);
