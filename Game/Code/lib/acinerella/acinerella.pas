@@ -157,8 +157,8 @@ type
 
     {The timecode of the currently decoded picture in seconds.}
     timecode: double;
-
-    video_clock: double;
+	
+	video_clock: double;
 
     {Contains information about the stream the decoder is attached to.}
     stream_info: TAc_stream_info;
@@ -175,12 +175,6 @@ type
 
   {Contains information about an Acinerella package.}
   TAc_package = record
-    {The data of the package. This data may not be accessible, because
-     currently FFMpeg doesn't reserve this memory area using the Acinerella
-     memory manager.}
-    data: PByte;
-    {The size of the package data.}
-    size: integer;
     {The stream the package belongs to.}
     stream_index: integer;
   end;

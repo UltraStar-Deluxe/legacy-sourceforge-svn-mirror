@@ -1,3 +1,31 @@
+Ultrastar Deluxe v1.0.1a Challenge MOD r7c (01.05.2010)
+-----------------------------
+Fix: (Videos)      Fixed some problems with wmv-videos.
+
+Ultrastar Deluxe v1.0.1a Challenge MOD r7b (29.04.2010)
+-----------------------------
+Add: (General)	   Added dutch translation (thx to Bruut).
+Add: (Theme) 	   Blue Sensation is now the default theme.
+Add: (Themes)      Added missing files for iStar theme.
+New: (General)     The loading screen shows a song-counter.
+New: (General) 	   You can turn on ShuffleMode in game options: The game shuffles songs if you idle in song screen.
+New: (General) 	   You can change the sorting and tabs on/off without the need of restarting.
+New: (Party) 	   Press Left-Ctrl + * (* on Numpad) or CTRL+R to Shuffle Player Names in Classic Party Mode "Team- and Player Names"-Screen (by merc).
+New: (Party) 	   Set "NewPartyPoints" in config.ini to "On" to give Winner Team 2Points and 2nd placed Team 1Point while playing with 3 Teams (by merc).
+New: (Videos) 	   Dynamic video-fps adaption: For slow graphic chips like intel GMA. You can turn it off by "PerformanceMode=Off"
+Fix: (General) 	   Vista/Win7 does not crash any more if you dont have a mic.
+Fix: (General) 	   LoadFaultySongs=On has been overwritten with "Off" after a restart.
+Fix: (General) 	   Better fading and video drawing when using two screens.
+
+Ultrastar Deluxe v1.0.1a Challenge MOD r7a (06.03.2010)
+-----------------------------
+Add: (Editor) 	   Support for negative video gap.
+Add: (Themes)      Added Blue Sensation and iStar Themes (thx to gpm).
+Upd: (General) 	   Freestyle-Notes with zero length are no longer marked as a fault.
+Upd: (Editor)      The editor theme is now 100% hardcoded. Its for compatibility with the other themes.
+Upd: (Videos) 	   Faster seeking of video preview position.
+Fix: (Party) 	   Skipped songs were not shown in the next round.
+
 Ultrastar Deluxe v1.0.1a Challenge MOD r7 (04.03.2010)
 -----------------------------
 New: (General)     Experimental karaoke function (tries to hide the singing voice, please don't take it too seriously): enable/disable with "K"

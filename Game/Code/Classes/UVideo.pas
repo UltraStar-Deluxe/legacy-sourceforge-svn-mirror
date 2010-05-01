@@ -232,7 +232,8 @@ begin
 
   fAspect := VideoAspect;
 
-  VideoTimeBase:=info.additional_info.video_info.frames_per_second;
+  if (info.additional_info.video_info.frames_per_second>0) then
+    VideoTimeBase:=1/info.additional_info.video_info.frames_per_second;
 
   glBindTexture(GL_TEXTURE_2D, VideoTex);
 
@@ -290,10 +291,20 @@ begin
   if Start+Gap > 0 then
   begin
     VideoTime:=Start+Gap;
-    ac_seek(videodecoder, -1, Floor((Start+Gap)*1000));
+    try
+      ac_seek(videodecoder, -1, Floor((Start+Gap)*1000));
+    except
+      Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
+      acClose;
+    end;
   end else
   begin
-    ac_seek(videodecoder, 0, 0);
+    try
+      ac_seek(videodecoder, 0, 0);
+    except
+      Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
+      acClose;
+    end;
     VideoTime:=0;
   end;
 end;

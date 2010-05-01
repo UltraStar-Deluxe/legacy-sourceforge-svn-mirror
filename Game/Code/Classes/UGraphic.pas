@@ -405,7 +405,7 @@ begin
   SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE,  8 );
 
   pbo_supported := false;
-  if (Ini.EnablePBO=1) then
+  {if (Ini.EnablePBO=1) then
   begin
     try
       pbo_supported := glext_LoadExtension('GL_ARB_pixel_buffer_object') and
@@ -414,7 +414,7 @@ begin
       pbo_supported := false;
       Log.LogError('The device does not support Pixel Buffer Object (UVideo)!');
     end;
-  end;
+  end;}
 
   if (Ini.FullScreen = 0) and (Not Params.FullScreen) then
     screen := SDL_SetVideoMode(W, H, (Depth+1) * 16, videoFlags)
@@ -427,9 +427,7 @@ begin
     Log.LogError('SDL_SetVideoMode Failed', 'Initialize3D');
     exit;
   end;
-
-
-
+           
   // clear screen once window is being shown
   glClearColor(1, 1, 1, 1);
   glClear(GL_COLOR_BUFFER_BIT);

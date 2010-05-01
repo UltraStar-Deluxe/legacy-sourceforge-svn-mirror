@@ -1,3 +1,31 @@
+Ultrastar Deluxe v1.0.1a Challenge MOD r7c vom 01.05.2010 
+-----------------------------
+Fix: (Videos) Einige Probleme im Zusammenhang mit wmv-Videos beseitigt.
+
+Ultrastar Deluxe v1.0.1a Challenge MOD r7b vom 29.04.2010 
+-----------------------------
+Add: (Allgemein) Niederländische übersetzung hinzugefügt (thx to Bruut)
+Add: (Theme) Blue Sensation als Standard-Theme.
+Add: (Themes) Fehlende Dateien für Theme iStar hinzugefügt.
+New: (Allgemein) Bei Spielstart werden im Ladebild die Anzahl der aktuell gefundenen Songs aufgelistet.
+New: (Allgemein) Shuffle Modus: Wenn man in der Songauswahl nichts macht, so wird nach einer voreingestellten Zeit zu einem zufällig ausgewählten Lied gesprungen. Einstellen kann man Off, 15s, 30s, ..., 120s und MAX. Bei MAX wird das Lied immer erst zu Ende gespielt.
+New: (Allgemein) Sortierung und Ordnerstruktur wird ohne Neustart übernommen.
+New: (Party) Mit STRG+*(Numlock) oder STRG+R werden die Namen bei der Namenseingabe durcheinandergewürfelt (von merc).
+New: (Party) Wenn man "NewPartyPoints" auf On in der INI setzt, so bekommt das Siegerteam 2 Punkte, das zweite Team einen Punkt wenn man mit drei Teams spielt (von merc).
+New: (Videos) Dynamische, abschaltbare Video-FPS Anpassung (bei langsamen Grafikkarten wie Intels GMA im zusammenhang mit HD-Videos). Abzustellen mit "PerformanceMode=Off".
+Fix: (Allgemein) Kein Absturz mehr unter Vista/Win7 wenn man das Spiel ohne Mic startet.
+Fix: (Allgemein) LoadFaultySongs=On wurde nach einem Neustart mit Off überschrieben
+Fix: (Allgemein) Verbessertes Fading und Videodarstellung bei benutzung von zwei Bildschirmen.
+
+Ultrastar Deluxe v1.0.1a Challenge MOD r7a vom 06.03.2010
+-----------------------------
+Add: (Editor) Negativer VideoGap wird unterstützt.
+Add: (Themes) Blue Sensation und iStar Themes hinzugefügt (thx to gpm).
+Upd: (Allgemein) Freestyle-Noten der Länge Null werden nicht mehr als Fehler eingestuft.
+Upd: (Editor) Theme nun zu 100% fest einprogrammiert. Ist dadurch kompatibler mit den anderen Themes.
+Upd: (Videos) Videosuchlauf in SingScreen nun genau so, wie in VideoPreview. Nicht schön aber schneller.
+Fix: (Party) Übersprungene Lieder wurden fälschlicherweise in der nächsten Runde nicht mehr angezeigt.
+
 Ultrastar Deluxe v1.0.1a Challenge MOD r7 vom 04.03.2010
 -----------------------------
 New: (Allgemein) Experimentelle Karaoke-Funktion (Singstimme ausblenden, bitte nicht zu ernst nehmen): mit K ein/ausschalten
