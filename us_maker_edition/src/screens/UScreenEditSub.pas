@@ -59,19 +59,19 @@ type
       AktBeat:          integer;
       //Variable is True if no Song is loaded
       Error:            boolean;
-      
+
       TextNote:         integer;
       TextSentence:     integer;
-      TextTitle:        integer;
+{      TextTitle:        integer;
       TextArtist:       integer;
       TextMp3:          integer;
       TextBPM:          integer;
-      TextGAP:          integer;
+      TextGAP:          integer;}
       TextDebug:        integer;
-      TextNStart:       integer;
+{      TextNStart:       integer;
       TextNLength:      integer;
       TextNTon:         integer;
-      TextNText:        integer;
+      TextNText:        integer;}
       CurrentNote:      integer;
       PlaySentence:     boolean;
       PlaySentenceMidi: boolean;
@@ -92,6 +92,64 @@ type
 
       TextEditMode:     boolean;
       editText:         UTF8String; //backup of current text in text-edit-mode
+
+      //headers values
+      VolumeAudioIndex,VolumeMidiIndex,VolumeClickIndex: integer; //for update slide
+      //title header
+      TitleSlideId:     integer;
+      TitleData:        integer;
+      TitleVal:         array of UTF8String;
+      SlideTitleIndex:  integer;
+      // artist header
+      ArtistSlideId:     integer;
+      ArtistData:        integer;
+      ArtistVal:         array of UTF8String;
+      SlideArtistIndex:  integer;
+      // mp3 header
+      MP3SlideId:     integer;
+      MP3Data:        integer;
+      MP3Val:         array of UTF8String;
+      SlideMP3Index:  integer;
+      // Cover header
+      CoverSlideId:     integer;
+      CoverData:        integer;
+      CoverVal:         array of UTF8String;
+      SlideCoverIndex:  integer;
+      // Background header
+      BackgroundSlideId:     integer;
+      BackgroundData:        integer;
+      BackgroundVal:         array of UTF8String;
+      SlideBackgroundIndex:  integer;
+      // BPM header
+      BPMSlideId:     integer;
+      BPMData:        integer;
+      BPMVal:         array of UTF8String;
+      SlideBPMIndex:  integer;
+      // GAP header
+      GAPSlideId:     integer;
+      GAPData:        integer;
+      GAPVal:         array of UTF8String;
+      SlideGAPIndex:  integer;
+      // Start header
+      StartSlideId:     integer;
+      StartData:        integer;
+      StartVal:         array of UTF8String;
+      SlideStartIndex:  integer;
+      // Duration header
+      DurationSlideId:     integer;
+      DurationData:        integer;
+      DurationVal:         array of UTF8String;
+      SlideDurationIndex:  integer;
+      // Tone header
+      ToneSlideId:     integer;
+      ToneData:        integer;
+      ToneVal:         array of UTF8String;
+      SlideToneIndex:  integer;
+      // Text header
+      LyricSlideId:     integer;
+      LyricData:        integer;
+      LyricVal:         array of UTF8String;
+      SlideLyricIndex:  integer;
 
       Lyric:            TEditorLyrics;
 
@@ -1478,6 +1536,16 @@ constructor TScreenEditSub.Create;
 begin
   inherited Create;
   SetLength(Player, 1);
+  SetLength(TitleVal, 0);
+  SetLength(ArtistVal, 0);
+  SetLength(MP3Val, 0);
+  SetLength(CoverVal, 0);
+  SetLength(BackgroundVal, 0);
+  SetLength(BPMVal, 0);
+  SetLength(GAPVal, 0);
+  SetLength(ToneVal, 0);
+  SetLength(DurationVal, 0);
+  SetLength(LyricVal, 0);
 
   // line
   AddText(40, 11, 1, 30, 0, 0, 0, 'Line:');
@@ -1489,28 +1557,77 @@ begin
   TextNote := AddText(360, 11, 1, 30, 0, 0, 0, '0 / 0');
 
   // file info
-  AddText(30, 65,  0, 24, 0, 0, 0, 'Title:');
-  AddText(30, 90,  0, 24, 0, 0, 0, 'Artist:');
-  AddText(30, 115, 0, 24, 0, 0, 0, 'Mp3:');
-  AddText(30, 140, 0, 24, 0, 0, 0, 'BPM:');
-  AddText(30, 165, 0, 24, 0, 0, 0, 'GAP:');
+  //  AddText(30, 65,  0, 24, 0, 0, 0, 'Title:');
+  // Title Header
+  TitleSlideId := AddSelectSlide(Theme.EditSub.SlideTitle, Titledata, TitleVal);
+  SelectsS[TitleSlideId].Text.Align := 0;
+  SelectsS[TitleSlideId].Text.X := SelectsS[TitleSlideId].Texture.X + 3;
 
-  TextTitle :=  AddText(180, 65,  0, 24, 0, 0, 0, 'a');
-  TextArtist := AddText(180, 90,  0, 24, 0, 0, 0, 'b');
-  TextMp3 :=    AddText(180, 115, 0, 24, 0, 0, 0, 'c');
-  TextBPM :=    AddText(180, 140, 0, 24, 0, 0, 0, 'd');
-  TextGAP :=    AddText(180, 165, 0, 24, 0, 0, 0, 'e');
+  //  AddText(30, 90,  0, 24, 0, 0, 0, 'Artist:');
+  // Artist Header
+  ArtistSlideId := AddSelectSlide(Theme.EditSub.SlideArtist, Artistdata, ArtistVal);
+  SelectsS[ArtistSlideId].Text.Align := 0;
+  SelectsS[ArtistSlideId].Text.X := SelectsS[ArtistSlideId].Texture.X + 3;
+
+  //AddText(30, 115, 0, 24, 0, 0, 0, 'Mp3:');
+  // Artist Header
+  MP3SlideId := AddSelectSlide(Theme.EditSub.SlideMP3, MP3data, MP3Val);
+  SelectsS[MP3SlideId].Text.Align := 0;
+  SelectsS[MP3SlideId].Text.X := SelectsS[MP3SlideId].Texture.X + 3;
+  // Cover Header
+  CoverSlideId := AddSelectSlide(Theme.EditSub.SlideCover, Coverdata, CoverVal);
+  SelectsS[CoverSlideId].Text.Align := 0;
+  SelectsS[CoverSlideId].Text.X := SelectsS[CoverSlideId].Texture.X + 3;
+  // Background Header
+  BackgroundSlideId := AddSelectSlide(Theme.EditSub.SlideBackground, Backgrounddata, BackgroundVal);
+  SelectsS[BackgroundSlideId].Text.Align := 0;
+  SelectsS[BackgroundSlideId].Text.X := SelectsS[BackgroundSlideId].Texture.X + 3;
+  //  AddText(30, 140, 0, 24, 0, 0, 0, 'BPM:');
+  // BPM Header
+  BPMSlideId := AddSelectSlide(Theme.EditSub.SlideBPM, BPMdata, BPMVal);
+  SelectsS[BPMSlideId].Text.Align := 0;
+  SelectsS[BPMSlideId].Text.X := SelectsS[BPMSlideId].Texture.X + 3;
+  //AddText(30, 165, 0, 24, 0, 0, 0, 'GAP:');
+  // GAP Header
+  GAPSlideId := AddSelectSlide(Theme.EditSub.SlideGAP, GAPdata, GAPVal);
+  SelectsS[GAPSlideId].Text.Align := 0;
+  SelectsS[GAPSlideId].Text.X := SelectsS[GAPSlideId].Texture.X + 3;
+  // Start Header
+  StartSlideId := AddSelectSlide(Theme.EditSub.SlideStart, Startdata, StartVal);
+  SelectsS[StartSlideId].Text.Align := 0;
+  SelectsS[StartSlideId].Text.X := SelectsS[StartSlideId].Texture.X + 3;
+  // Duration Header
+  DurationSlideId := AddSelectSlide(Theme.EditSub.SlideDuration, Durationdata, DurationVal);
+  SelectsS[DurationSlideId].Text.Align := 0;
+  SelectsS[DurationSlideId].Text.X := SelectsS[StartSlideId].Texture.X + 3;
+  // Tone Header
+  ToneSlideId := AddSelectSlide(Theme.EditSub.SlideTone, Tonedata, ToneVal);
+  SelectsS[ToneSlideId].Text.Align := 0;
+  SelectsS[ToneSlideId].Text.X := SelectsS[ToneSlideId].Texture.X + 3;
+  // Text Header
+  LyricSlideId := AddSelectSlide(Theme.EditSub.SlideLyric, Lyricdata, LyricVal);
+  SelectsS[LyricSlideId].Text.Align := 0;
+  SelectsS[LyricSlideId].Text.X := SelectsS[LyricSlideId].Texture.X + 3;
+
+
+
+
+//  TextTitle :=  AddText(180, 65,  0, 24, 0, 0, 0, 'a');
+//  TextArtist := AddText(180, 90,  0, 24, 0, 0, 0, 'b');
+//  TextMp3 :=    AddText(180, 115, 0, 24, 0, 0, 0, 'c');
+//  TextBPM :=    AddText(180, 140, 0, 24, 0, 0, 0, 'd');
+//  TextGAP :=    AddText(180, 165, 0, 24, 0, 0, 0, 'e');
 
   // note info
-  AddText(30, 190,  0, 24, 0, 0, 0, 'Start:');
-  AddText(30, 215,  0, 24, 0, 0, 0, 'Duration:');
-  AddText(30, 240,  0, 24, 0, 0, 0, 'Tone:');
-  AddText(30, 265,  0, 24, 0, 0, 0, 'Text:');      //AddText(500, 265,  0, 8, 0, 0, 0, 'VideoGap:');
+//  AddText(30, 190,  0, 24, 0, 0, 0, 'Start:');
+//  AddText(30, 215,  0, 24, 0, 0, 0, 'Duration:');
+//  AddText(30, 240,  0, 24, 0, 0, 0, 'Tone:');
+//  AddText(30, 265,  0, 24, 0, 0, 0, 'Text:');      //AddText(500, 265,  0, 8, 0, 0, 0, 'VideoGap:');
 
-  TextNStart :=   AddText(180, 190,  0, 24, 0, 0, 0, 'a');
-  TextNLength :=  AddText(180, 215,  0, 24, 0, 0, 0, 'b');
-  TextNTon :=     AddText(180, 240,  0, 24, 0, 0, 0, 'c');
-  TextNText :=    AddText(180, 265,  0, 24, 0, 0, 0, 'd');
+//  TextNStart :=   AddText(180, 190,  0, 24, 0, 0, 0, 'a');
+//  TextNLength :=  AddText(180, 215,  0, 24, 0, 0, 0, 'b');
+//  TextNTon :=     AddText(180, 240,  0, 24, 0, 0, 0, 'c');
+//  TextNText :=    AddText(180, 265,  0, 24, 0, 0, 0, 'd');
 
   //TextVideoGap :=  AddText(600, 265,  0, 24, 0, 0, 0, 'e');
 
@@ -1534,7 +1651,7 @@ begin
 
   ResetSingTemp;
 
-  try 
+  try
     //Check if File is XML
     FileExt := CurrentSong.FileName.GetExtension;
     if FileExt.ToUTF8 = '.xml' then
@@ -1563,9 +1680,90 @@ begin
     MidiOut := TMidiOutput.Create(nil);
     MidiOut.Open;
   {$ENDIF}
-    Text[TextTitle].Text :=   CurrentSong.Title;
-    Text[TextArtist].Text :=  CurrentSong.Artist;
-    Text[TextMp3].Text :=     CurrentSong.Mp3.ToUTF8;
+    //    Text[TextTitle].Text :=   CurrentSong.Title;
+    // Header Title
+    SetLength(TitleVal, 1);
+    TitleVal[0] := CurrentSong.Title;
+    SlideTitleIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideTitle,TitleSlideId,TitleVal,SlideTitleIndex);
+    SelectsS[TitleSlideId].TextOpt[0].Align := 0;
+    SelectsS[TitleSlideId].TextOpt[0].X := SelectsS[TitleSlideId].TextureSBG.X + 5;
+
+    //    Text[TextArtist].Text :=  CurrentSong.Artist;
+    // Header Artist
+    SetLength(ArtistVal, 1);
+    ArtistVal[0] := CurrentSong.Artist;
+    SlideArtistIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideArtist,ArtistSlideId,ArtistVal,SlideArtistIndex);
+    SelectsS[ArtistSlideId].TextOpt[0].Align := 0;
+    SelectsS[ArtistSlideId].TextOpt[0].X := SelectsS[ArtistSlideId].TextureSBG.X + 5;
+
+    //Text[TextMp3].Text :=     CurrentSong.Mp3.ToUTF8;
+    // Header MP3
+    SetLength(MP3Val, 1);
+    MP3Val[0] := CurrentSong.Mp3.ToUTF8;
+    SlideMP3Index := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideMP3,MP3SlideId,MP3Val,SlideMP3Index);
+    SelectsS[MP3SlideId].TextOpt[0].Align := 0;
+    SelectsS[MP3SlideId].TextOpt[0].X := SelectsS[MP3SlideId].TextureSBG.X + 5;
+
+    // Header Cover
+    SetLength(CoverVal, 1);
+    CoverVal[0] := CurrentSong.Cover.ToUTF8;
+    SlideCoverIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideCover,CoverSlideId,CoverVal,SlideCoverIndex);
+    SelectsS[CoverSlideId].TextOpt[0].Align := 0;
+    SelectsS[CoverSlideId].TextOpt[0].X := SelectsS[CoverSlideId].TextureSBG.X + 5;
+
+    // Header Background
+    SetLength(BackgroundVal, 1);
+    BackgroundVal[0] := CurrentSong.Background.ToUTF8;
+    SlideBackgroundIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideBackground,BackgroundSlideId,BackgroundVal,SlideBackgroundIndex);
+    SelectsS[BackgroundSlideId].TextOpt[0].Align := 0;
+    SelectsS[BackgroundSlideId].TextOpt[0].X := SelectsS[BackgroundSlideId].TextureSBG.X + 5;
+    // Header BPM
+    SetLength(BPMVal, 1);
+    BPMVal[0] := '';
+    SlideBPMIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideBPM,BPMSlideId,BPMVal,SlideBPMIndex);
+    SelectsS[BPMSlideId].TextOpt[0].Align := 0;
+    SelectsS[BPMSlideId].TextOpt[0].X := SelectsS[BPMSlideId].TextureSBG.X + 5;
+    // Header GAP
+    SetLength(GAPVal, 1);
+    GAPVal[0] := '';
+    SlideGAPIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideGAP,GAPSlideId,GAPVal,SlideGAPIndex);
+    SelectsS[GAPSlideId].TextOpt[0].Align := 0;
+    SelectsS[GAPSlideId].TextOpt[0].X := SelectsS[GAPSlideId].TextureSBG.X + 5;
+    // Header Start
+    SetLength(StartVal, 1);
+    StartVal[0] := '';
+    SlideStartIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideStart,StartSlideId,StartVal,SlideStartIndex);
+    SelectsS[StartSlideId].TextOpt[0].Align := 0;
+    SelectsS[StartSlideId].TextOpt[0].X := SelectsS[StartSlideId].TextureSBG.X + 5;
+    // Header Duration
+    SetLength(DurationVal, 1);
+    DurationVal[0] := '';
+    SlideDurationIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideDuration,DurationSlideId,DurationVal,SlideDurationIndex);
+    SelectsS[DurationSlideId].TextOpt[0].Align := 0;
+    SelectsS[DurationSlideId].TextOpt[0].X := SelectsS[DurationSlideId].TextureSBG.X + 5;
+    // Header Tone
+    SetLength(ToneVal, 1);
+    ToneVal[0] := '';
+    SlideDurationIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideTone,ToneSlideId,ToneVal,SlideToneIndex);
+    SelectsS[ToneSlideId].TextOpt[0].Align := 0;
+    SelectsS[ToneSlideId].TextOpt[0].X := SelectsS[ToneSlideId].TextureSBG.X + 5;
+    // Header Tone
+    SetLength(LyricVal, 1);
+    LyricVal[0] := '';
+    SlideLyricIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideLyric,LyricSlideId,LyricVal,SlideLyricIndex);
+    SelectsS[LyricSlideId].TextOpt[0].Align := 0;
+    SelectsS[LyricSlideId].TextOpt[0].X := SelectsS[LyricSlideId].TextureSBG.X + 5;
 
     Lines[0].Current := 0;
     CurrentNote := 0;
@@ -1667,30 +1865,49 @@ begin
       end;
     end; // click
   end; // if PlaySentence
-  
+
 
   Text[TextSentence].Text := IntToStr(Lines[0].Current + 1) + ' / ' + IntToStr(Lines[0].Number);
   Text[TextNote].Text := IntToStr(CurrentNote + 1) + ' / ' + IntToStr(Lines[0].Line[Lines[0].Current].HighNote + 1);
 
   // Song info
-  Text[TextBPM].Text := FloatToStr(CurrentSong.BPM[0].BPM / 4);
-  Text[TextGAP].Text := FloatToStr(CurrentSong.GAP);
+  //Text[TextBPM].Text := FloatToStr(CurrentSong.BPM[0].BPM / 4);
+  BPMVal[0] := FloatToStr(CurrentSong.BPM[0].BPM / 4);
+  SelectsS[BPMSlideId].TextOpt[0].Text := BPMVal[0];
+  //Text[TextGAP].Text := FloatToStr(CurrentSong.GAP);
+  GAPVal[0] := FloatToStr(CurrentSong.GAP);
+  SelectsS[GAPSlideId].TextOpt[0].Text := GAPVal[0];
 
   //Error reading Variables when no Song is loaded
   if not Error then
   begin
     // Note info
-    Text[TextNStart].Text :=    IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
-    Text[TextNLength].Text :=  IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
-    Text[TextNTon].Text :=      IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone) + ' ( ' + GetNoteName(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone) + ' )';
-    Text[TextNText].Text :=              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
+    //Text[TextNStart].Text :=    IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+    StartVal[0] := IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+    SelectsS[StartSlideId].TextOpt[0].Text := StartVal[0];
+    //Text[TextNLength].Text :=  IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
+    DurationVal[0] := IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
+    SelectsS[DurationSlideId].TextOpt[0].Text := DurationVal[0];
+    //Text[TextNTon].Text :=      IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone) + ' ( ' + GetNoteName(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone) + ' )';
+    ToneVal[0] := IntToStr(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone) + ' ( ' + GetNoteName(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone) + ' )';
+    SelectsS[ToneSlideId].TextOpt[0].Text := ToneVal[0];
+    //Text[TextNText].Text :=              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
+    LyricVal[0] := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
+    SelectsS[LyricSlideId].TextOpt[0].Text := LyricVal[0];
+
   end;
 
   // Text Edit Mode
   if TextEditMode then
-    Text[TextNText].Text := Text[TextNText].Text + '|'; 
+  begin
+    //Text[TextNText].Text := Text[TextNText].Text + '|';
+    LyricVal[0] := LyricVal[0] + '|';
+    SelectsS[LyricSlideId].TextOpt[0].Text := LyricVal[0];
+
+  end;
 
   // draw static menu
+  DrawBG;
   DrawStatics;
   DrawInfoBar(20, 460, 760, 20);
   //inherited Draw;

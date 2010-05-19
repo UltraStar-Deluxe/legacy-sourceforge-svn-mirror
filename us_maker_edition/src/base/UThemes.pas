@@ -505,6 +505,21 @@ type
     DescriptionLong:      array[0..5] of UTF8string;
   end;
 
+  TThemeEditSub = class(TThemeBasic)
+      //in editor - headers
+      SlideTitle:          TThemeSelectSlide;
+      SlideArtist:         TThemeSelectSlide;
+      SlideMP3:            TThemeSelectSlide;
+      SlideCover:          TThemeSelectSlide;
+      SlideBackground:     TThemeSelectSlide;
+      SlideBPM:            TThemeSelectSlide;
+      SlideGAP:            TThemeSelectSlide;
+      SlideStart:          TThemeSelectSlide;
+      SlideDuration:       TThemeSelectSlide;
+      SlideTone:           TThemeSelectSlide;
+      SlideLyric:          TThemeSelectSlide;                  
+  end;
+
   //Error- and Check-Popup
   TThemeError = class(TThemeBasic)
     Button1: TThemeButton;
@@ -760,6 +775,7 @@ type
     OptionsAdvanced:  TThemeOptionsAdvanced;
     //edit
     Edit:             TThemeEdit;
+    EditSub:          TThemeEditSub;
     //error and check popup
     ErrorPopup:       TThemeError;
     CheckPopup:       TThemeCheck;
@@ -892,7 +908,8 @@ begin
   OptionsAdvanced := TThemeOptionsAdvanced.Create;
 
   Edit := TThemeEdit.Create;
-
+  EditSub := TThemeEditSub.Create;
+  
   ErrorPopup := TThemeError.Create;
   CheckPopup := TThemeCheck.Create;
 
@@ -1381,6 +1398,20 @@ begin
 
       ThemeLoadText(Edit.TextDescription, 'EditTextDescription');
       Edit.TextDescription.Text := Edit.Description[0];
+
+      // editor
+      ThemeLoadBasic (EditSub,               'EditSub');
+      ThemeLoadSelectSlide(EditSub.SlideTitle, 'EditSubTitle');
+      ThemeLoadSelectSlide(EditSub.SlideArtist, 'EditSubArtist');
+      ThemeLoadSelectSlide(EditSub.SlideMP3, 'EditSubMP3');
+      ThemeLoadSelectSlide(EditSub.SlideCover, 'EditSubCover');
+      ThemeLoadSelectSlide(EditSub.SlideBackground, 'EditSubBackground');
+      ThemeLoadSelectSlide(EditSub.SlideBPM, 'EditSubBPM');
+      ThemeLoadSelectSlide(EditSub.SlideGAP, 'EditSubGAP');
+      ThemeLoadSelectSlide(EditSub.SlideStart, 'EditSubStart');
+      ThemeLoadSelectSlide(EditSub.SlideDuration, 'EditSubDuration');
+      ThemeLoadSelectSlide(EditSub.SlideTone, 'EditSubTone');
+      ThemeLoadSelectSlide(EditSub.SlideLyric, 'EditSubLyric');
 
       //error and check popup
       ThemeLoadBasic (ErrorPopup, 'ErrorPopup');
@@ -2460,6 +2491,9 @@ begin
 
   freeandnil(Edit);
   Edit := TThemeEdit.Create;
+
+  freeandnil(EditSub);
+  EditSub := TThemeEditSub.Create;
 
   freeandnil(ErrorPopup);
   ErrorPopup := TThemeError.Create;

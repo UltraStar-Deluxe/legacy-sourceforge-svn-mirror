@@ -1292,6 +1292,7 @@ begin
     AddSelectSlideOption(Values[SO]);
 
   SelectsS[High(SelectsS)].Text.Size := ThemeSelectS.TextSize;
+  SelectsS[High(SelectsS)].Text.Y := ThemeSelectS.Y + (ThemeSelectS.H /2 ) - (ThemeSelectS.TextSize / 2);
 
   SelectsS[High(SelectsS)].Texture.Z := ThemeSelectS.Z;
   SelectsS[High(SelectsS)].TextureSBG.Z := ThemeSelectS.Z;
