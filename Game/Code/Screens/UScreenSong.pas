@@ -2242,10 +2242,78 @@ begin
       Text[TextPlugin].Visible := false;
   end;
 
+  //prepare Video
+  if UVideo.VideoOpened then
+  begin
+    Czas.Teraz := Czas.Teraz + TimeSkip;
+    try
+      acGetFrame(Czas.Teraz);
+
+      if VidVis=windowed then
+      begin
+        Window.Left := Button[Interaction].X;
+        Window.Right := Button[Interaction].X+Button[Interaction].W;
+        Window.Upper := Button[Interaction].Y;
+        Window.Lower := Button[Interaction].Y+Button[Interaction].H;
+        Window.ReflactionSpacing := Button[Interaction].Reflectionspacing;
+        Window.Reflection := Button[Interaction].Reflection;
+        Window.windowed := true;
+
+        SetAspectCorrection(acoCrop);
+        Blend := (CoverTime-1.75)/Ini.PreviewFading;
+        if Blend<0 then
+          Blend := 0
+        else if Blend>1 then
+          Blend := 1;
+      end;
+    except
+      //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
+      log.LogError('Error drawing Video, Video has been disabled for this Song/Session.');
+      Log.LogError('Corrupted File: ' + CatSongs.Song[Interaction].Video);
+      try
+        acClose;
+        VidVis := none;
+      except
+
+      end;
+    end;
+  end;
+
   //Instead of Draw FG Procedure:
-  //We draw Buttons for our own
+  //We draw Buttons for our own (without interaction-button)
   for I := 0 to Length(Button) - 1 do
-    Button[I].Draw;
+  begin
+    if (I<>Interaction) then
+      Button[I].Draw;
+  end;
+
+  //Draw Video preview and interaction-button
+  if UVideo.VideoOpened then
+  begin
+    if (Blend<1) or not EnableVideoDraw then
+      Button[Interaction].Draw;
+
+    try
+      if VidVis=windowed then
+        acDrawGLi(ScreenAct, Window, Blend);
+
+      if (Czas.Teraz>=Czas.Razem) then
+      begin
+        acClose;
+        VidVis := none;
+      end;
+    except
+      //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
+      log.LogError('Error drawing Video, Video has been disabled for this Song/Session.');
+      Log.LogError('Corrupted File: ' + CatSongs.Song[Interaction].Video);
+      try
+        acClose;
+        VidVis := none;
+      except
+      end;
+    end;
+  end else
+    Button[Interaction].Draw;
 
   // Statics
   for I := 0 to Length(Static) - 1 do
@@ -2254,8 +2322,6 @@ begin
   // and texts
   for I := 0 to Length(Text) - 1 do
     Text[I].Draw;
-
-
 
   //Draw Equalizer
   if Theme.Song.Equalizer.Visible then
@@ -2269,43 +2335,9 @@ begin
 
   if UVideo.VideoOpened then
   begin
-    Czas.Teraz := Czas.Teraz + TimeSkip;
     try
-      acGetFrame(Czas.Teraz);
-
-      if VidVis=windowed then
-      begin
-        Window.Left := Button[Interaction].X;
-        Window.Right := Button[Interaction].X+Button[Interaction].W;
-        Window.Upper := Button[Interaction].Y;
-        Window.Lower := Button[Interaction].Y+Button[Interaction].H;
-        Window.windowed := true;
-
-        {if CoverTime>=Ini.PreviewFading then
-        begin
-          glColor4f(0, 0, 0, 1);
-
-          glbegin(gl_quads);
-            glVertex2f(Window.Left, Window.Upper);
-            glVertex2f(Window.Left, Window.Lower);
-            glVertex2f(Window.Right, Window.Lower);
-            glVertex2f(Window.Right, Window.Upper);
-          glEnd;
-        end; }
-        SetAspectCorrection(acoCrop);
-        Blend := (CoverTime-1.75)/Ini.PreviewFading;
-        if Blend<0 then
-          Blend := 0
-        else if Blend>1 then
-          Blend := 1;
-
-        acDrawGLi(ScreenAct, Window, Blend);
-      end else if VidVis=full then
-      begin
+      if VidVis=full then
         acDrawGL(ScreenAct);
-      end;
-
-      //ResetAspectCorrection;
 
       if (Czas.Teraz>=Czas.Razem) then
       begin

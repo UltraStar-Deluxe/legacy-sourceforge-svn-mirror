@@ -38,9 +38,11 @@ uses SDL,
 
 type
   TRectCoords = record         //from 1.1
-    Left, Right:  double;
-    Upper, Lower: double;
-    windowed: boolean;
+    Left, Right:        double;
+    Upper, Lower:       double;
+    windowed:           boolean;
+    Reflection:         boolean;
+    ReflactionSpacing:  real;
   end;
   
   TAspectCorrection = (acoStretch, acoCrop, acoLetterBox); //from 1.1
@@ -723,6 +725,7 @@ begin
   Window.Upper := 0;
   Window.Lower := RenderH;
   Window.windowed := false;
+  Window.Reflection := false;
   acDrawGLi(Screen, Window, 1);
 end;
 
@@ -746,8 +749,8 @@ begin
     glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
     glDisable(GL_SCISSOR_TEST);
-  end;{ else if EnableVideoDraw then
-    glEnable(GL_BLEND);}
+  end else if EnableVideoDraw then
+    glEnable(GL_BLEND);
 
   if not EnableVideoDraw then
     Exit;
@@ -786,11 +789,54 @@ begin
     glVertex2f(ScreenRect.Right, ScreenRect.Upper);
 
   glEnd;
-  //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+  if Window.windowed then
+    glDisable(GL_SCISSOR_TEST);
+
+  glDisable(GL_BLEND);
+
+  //Draw Reflaction
+  if Window.Reflection then
+  begin
+    glScissor(round((Window.Left)*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(Screen-1)),
+      round((RenderH-Window.Lower-Window.ReflactionSpacing-(Window.Lower-Window.Upper)*0.5)*ScreenH/RenderH),
+      round((Window.Right-Window.Left)*(ScreenW/Screens)/RenderW),
+      round((Window.Lower-Window.Upper)*ScreenH/RenderH*0.5));
+    glEnable(GL_SCISSOR_TEST);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //Draw
+    glBegin(GL_QUADS);//Top Left
+      glColor4f(1, 1, 1, Blend-0.3);
+      glTexCoord2f(TexRect.Left, TexRect.Lower);
+      glVertex2f(ScreenRect.Left, ScreenRect.Lower+ Window.ReflactionSpacing);
+
+      //Bottom Left
+      glColor4f(1, 1, 1, 0);
+      glTexCoord2f(TexRect.Left, (TexRect.Lower-TexRect.Upper)*0.5);
+      glVertex2f(ScreenRect.Left,
+        ScreenRect.Lower + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + Window.ReflactionSpacing);
+
+      //Bottom Right
+      glColor4f(1, 1, 1, 0);
+      glTexCoord2f(TexRect.Right, (TexRect.Lower-TexRect.Upper)*0.5);
+      glVertex2f(ScreenRect.Right,
+        ScreenRect.Lower + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + Window.ReflactionSpacing);
+
+      //Top Right
+      glColor4f(1, 1, 1, Blend-0.3);
+      glTexCoord2f(TexRect.Right, TexRect.Lower);
+      glVertex2f(ScreenRect.Right, ScreenRect.Lower + Window.ReflactionSpacing);
+    glEnd;
+
+    glDisable(GL_BLEND);
+    glDisable(GL_SCISSOR_TEST);
+  end;
+
   glDisable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
-  glDisable(GL_SCISSOR_TEST);
-  //glDisable(GL_BLEND);
 
   if (Ini.MovieSize < 1) and not Window.windowed then  //HalfSize BG
   begin
