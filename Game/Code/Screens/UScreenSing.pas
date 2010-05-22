@@ -82,7 +82,6 @@ type
       SongNameStatic:     integer;
       SongNameText:       integer;
       MedleyHandler:      THandler;
-      CountDownText:      string;
 
       MedleyStart, MedleyEnd: real;
       StartNote, EndNote:     TPos;
@@ -1689,9 +1688,10 @@ end;
 
 procedure TScreenSing.DrawMedleyCountdown();
 var
-  w, h: real;
-  timeDiff: real;
-  t:  real;
+  w, h:           real;
+  timeDiff:       real;
+  t:              real;
+  CountDownText:  string;
 
 begin
   if (Czas.Teraz < GetTimeFromBeat(AktSong.Medley.StartBeat)) then
@@ -1705,10 +1705,11 @@ begin
     SetFontStyle(1);
     SetFontItalic(false);
     SetFontSize(h);
+    CountDownText := IntToStr(round(timeDiff-t));
     w := glTextWidth(PChar(CountDownText));
 
     SetFontPos (RenderW/2-w/2, RenderH/2-h/2*3);
-    glPrint(PChar(IntToStr(round(timeDiff-t))));
+    glPrint(PChar(CountDownText));
   end;
 end;
 
