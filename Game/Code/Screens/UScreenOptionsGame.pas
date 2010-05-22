@@ -20,7 +20,7 @@ const
   
 implementation
 
-uses UGraphic, UHelp, ULog;
+uses UGraphic, UHelp, ULog, UPlaylist;
 
 function TScreenOptionsGame.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
@@ -103,6 +103,7 @@ begin
     //Tabs at Startup fix
     Ini.Tabs_at_startup := Ini.Tabs;
     ScreenSong.Refresh(false);
+    PlaylistMan.LoadPlayLists;
   end;
 end;
 

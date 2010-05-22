@@ -374,7 +374,7 @@ begin
     if (WaitHandler.active) and not (PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
       SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) then
     begin
-      if (Ini.Tabs_at_startup=1) then
+      if (Ini.Tabs_at_startup=1) and not (CatSongs.CatNumShow = -3) then
       begin
         //Search Cat
         for I := WaitHandler.lastIndex downto low(CatSongs.Song) do
@@ -2343,7 +2343,7 @@ begin
         WaitHandler.lastCat := CatSongs.CatNumShow;
       end;
 
-      if(Ini.Tabs_at_startup<>1) then
+      if(Ini.Tabs_at_startup<>1) or (CatSongs.CatNumShow = -3) then
       begin
         //Random in one Category
         SetLength(VisArr, 0);

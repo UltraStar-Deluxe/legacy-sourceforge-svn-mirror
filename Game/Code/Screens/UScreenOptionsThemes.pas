@@ -25,7 +25,7 @@ const
 
 implementation
 
-uses UGraphic, USkins, UHelp, ULog;
+uses UGraphic, USkins, UHelp, ULog, UPlaylist;
 
 function TScreenOptionsThemes.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
@@ -53,6 +53,7 @@ begin
             UGraphic.UnLoadScreens();
             UGraphic.LoadScreens( true );
             ScreenSong.Refresh(true);
+            PlaylistMan.LoadPlayLists;
           end;
           Music.PlayBack;
           FadeTo(@ScreenOptions);
@@ -69,6 +70,7 @@ begin
               UGraphic.UnLoadScreens();
               UGraphic.LoadScreens( true );
               ScreenSong.Refresh(true);
+              PlaylistMan.LoadPlayLists;
             end;
             Music.PlayBack;
             FadeTo(@ScreenOptions);
