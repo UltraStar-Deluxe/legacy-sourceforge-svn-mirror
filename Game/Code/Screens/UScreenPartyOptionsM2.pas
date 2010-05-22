@@ -196,6 +196,8 @@ begin
             else
               PlaylistMan.CurPlayList := Playlist2;
 
+            PartySessionM2.ID_DUELL := ID_DUELL;
+
             //Start Party
             PartySessionM2.StartNewParty(NumPlayer+2, Rounds+1);
 
@@ -385,6 +387,8 @@ begin
             end
             else
               PlaylistMan.CurPlayList := Playlist2;
+
+            PartySessionM2.ID_DUELL := ID_DUELL;
 
             //Start Party
             PartySessionM2.StartNewParty(NumPlayer+2, Rounds+1);

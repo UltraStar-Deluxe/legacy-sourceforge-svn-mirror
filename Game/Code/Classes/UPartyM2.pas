@@ -62,6 +62,7 @@ type
     Teams: TTeamInfo;
     Order: PlayerOrderArray;
     Option_Plugins: boolean;
+    ID_DUELL: Byte;
     constructor Create;
 
     procedure GenScores;
@@ -86,6 +87,7 @@ uses
   UGraphic,
   ULanguage,
   UMain,
+  UIni,
   Math,
   ULog;
 
@@ -261,6 +263,7 @@ var
   max_played: integer;
   max_flag: boolean;
   must_sing: integer;
+  DuelRatioFactor: integer;
 
   //debug
   rn: array of TRN;
@@ -445,6 +448,23 @@ begin
   //Set rounds
   if (Length(Plugins) >= 1) then
   begin
+    //set DuelRatioFactor
+    DuelRatioFactor := Round((Ini.DuelRatio*Length(Plugins)-10)/(10-Ini.DuelRatio));
+
+    for I := 0 to Length(Plugins) - 1 do
+    begin
+      if (Plugins[I].ID = ID_DUELL) and
+        not Plugins[I].Medley and not Plugins[I].MedleySurprise then
+      begin
+        for K := 1 to DuelRatioFactor do
+        begin
+          len := Length(Plugins);
+          SetLength(Plugins, len+1);
+          Plugins[len] := Plugins[I];
+        end;
+      end;
+    end;
+
     for I := 0 to NumRounds - 1 do
     begin
       SetLength (Rounds, I+1);

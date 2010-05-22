@@ -82,6 +82,7 @@ type
     LineBonus:      integer;
     PartyPopup:     integer;
     SumPlayers:     integer;
+    DuelRatio:      integer;
 
     // Controller
     Joypad:         integer;
@@ -181,6 +182,7 @@ const
   ILineBonus:     array[0..2] of string = ('Off', 'At Score', 'At Notes');
   IPartyPopup:    array[0..1] of string = ('Off', 'On');
   ISumPlayers:    array[0..2] of string = ('Never', 'Dynamic', 'Always');
+  IDuelRatio:     array[0..9] of string = ('normal', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%');
 
   IJoypad:        array[0..1] of string = ('Off', 'On');
   ILPT:           array[0..2] of string = ('Off', 'LCD', 'Lights');
@@ -610,6 +612,11 @@ begin
   for Pet := 0 to High(ISumPlayers) do
     if Tekst = ISumPlayers[Pet] then Ini.SumPlayers := Pet;
 
+  // DuelRatio
+  Tekst := IniFile.ReadString('Advanced', 'DuelRatio', IDuelRatio[0]);
+  for Pet := 0 to High(IDuelRatio) do
+    if Tekst = IDuelRatio[Pet] then Ini.DuelRatio := Pet;
+
   // Joypad
   Tekst := IniFile.ReadString('Controller',    'Joypad',   IJoypad[0]);
   for Pet := 0 to High(IJoypad) do
@@ -843,6 +850,10 @@ begin
     //SumPlayers
     Tekst := ISumPlayers[Ini.SumPlayers];
     IniFile.WriteString('Advanced', 'SumPlayers', Tekst);
+
+    //DuelRatio
+    Tekst := IDuelRatio[Ini.DuelRatio];
+    IniFile.WriteString('Advanced', 'DuelRatio', Tekst);
 
     // Joypad
     Tekst := IJoypad[Ini.Joypad];
