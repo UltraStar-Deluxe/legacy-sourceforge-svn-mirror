@@ -19,7 +19,6 @@ type
     Difficulty:     integer;
     Language:       integer;
     Tabs:           integer;
-    Tabs_at_startup:integer; //Tabs at Startup fix
     Sorting:        integer;
     ShuffleTime:    integer;
     Debug:          integer;
@@ -256,9 +255,6 @@ begin
   Tekst := IniFile.ReadString('Game', 'Tabs', ITabs[0]);
   for Pet := 0 to High(ITabs) do
     if Tekst = ITabs[Pet] then Ini.Tabs := Pet;
-
-  //Tabs at Startup fix
-  Ini.Tabs_at_startup := Ini.Tabs;
 
   // Sorting
   Tekst := IniFile.ReadString('Game', 'Sorting', ISorting[0]);

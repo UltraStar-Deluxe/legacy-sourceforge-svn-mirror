@@ -374,7 +374,7 @@ begin
     if (WaitHandler.active) and not (PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
       SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) then
     begin
-      if (Ini.Tabs_at_startup=1) and not (CatSongs.CatNumShow = -3) then
+      if (Ini.Tabs=1) and not (CatSongs.CatNumShow = -3) then
       begin
         //Search Cat
         for I := WaitHandler.lastIndex downto low(CatSongs.Song) do
@@ -584,7 +584,7 @@ begin
         if (Mode = smNormal) or ((Mode = smChallenge) and not PartyMedley and not FoundCAT) then
         begin
           //On Escape goto Cat-List Hack
-          if (Ini.Tabs_at_startup = 1) AND (CatSongs.CatNumShow <> -1) then
+          if (Ini.Tabs = 1) AND (CatSongs.CatNumShow <> -1) then
             begin
             //Find Category
             I := Interaction;
@@ -790,7 +790,7 @@ begin
             if (CatSongs.CatNumShow > -2) then
             begin
               //Cat Change Hack
-              if Ini.Tabs_at_startup = 1 then
+              if Ini.Tabs = 1 then
               begin
                 I := Interaction;
                 if I <= 0 then I := 1;
@@ -830,7 +830,7 @@ begin
             if (CatSongs.CatNumShow > -2) then
             begin
               //Cat Change Hack
-              if Ini.Tabs_at_startup = 1 then
+              if Ini.Tabs = 1 then
               begin
                 I := Interaction;
                 I2 := 0;
@@ -900,7 +900,7 @@ begin
         begin
           if (Length(Songs.Song) > 0) and (Mode = smNormal) then
           begin
-            if (SDL_ModState = KMOD_LSHIFT) AND (Ini.Tabs_at_startup = 1) then
+            if (SDL_ModState = KMOD_LSHIFT) AND (Ini.Tabs = 1) then
             //Random Category
             begin
               SetLength(VisArr, 0);
@@ -947,7 +947,7 @@ begin
                 //Choose Song
                 SkipTo2(I);
               end;
-            end else if (SDL_ModState = KMOD_LCTRL) AND (Ini.Tabs_at_startup = 1) then
+            end else if (SDL_ModState = KMOD_LCTRL) AND (Ini.Tabs = 1) then
             //random in All Categorys
             begin
               SetLength(VisArr, 0);
@@ -1017,6 +1017,29 @@ begin
             DoJokerM2
           else if (Mode = smChallenge) and PartyMedley then
             DoJoker(0, SDL_ModState);
+        end;
+
+      SDLK_T:
+        begin
+          if (SDL_ModState = KMOD_LSHIFT) then
+          begin
+            //Change Sorting
+            if (Ini.Sorting<Length(ISorting)-1) then
+              Inc(Ini.Sorting)
+            else
+              Ini.Sorting := 0;
+          end else
+          begin
+            //Change Tabs (on/off)
+            if (Ini.Tabs=1) then
+              Ini.Tabs := 0
+            else
+              Ini.Tabs := 1;
+          end;
+
+          Refresh(false);
+          PlaylistMan.LoadPlayLists;
+          OnShow;
         end;
 
       SDLK_1:
@@ -1280,7 +1303,7 @@ begin
     Text[TextTitle].Text  :=  CatSongs.Song[Interaction].Title;
     if (Mode=smNormal) then
     begin
-      if (Ini.Tabs_at_startup = 1) And (CatSongs.CatNumShow = -1) then
+      if (Ini.Tabs = 1) And (CatSongs.CatNumShow = -1) then
       begin
         Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].OrderNum) + '/' + IntToStr(CatSongs.CatCount);
         Text[TextTitle].Text  := '(' + IntToStr(CatSongs.Song[Interaction].CatNumber) + ' ' + Language.Translate('SING_SONGS_IN_CAT') + ')';
@@ -1288,14 +1311,14 @@ begin
         Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS)
       else if (CatSongs.CatNumShow = -3) then
         Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS)
-      else if (Ini.Tabs_at_startup = 1) then
+      else if (Ini.Tabs = 1) then
         Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].CatNumber) + '/' +
           IntToStr(CatSongs.Song[Interaction - CatSongs.Song[Interaction].CatNumber].CatNumber)
       else
         Text[TextNumber].Text := IntToStr(Interaction+1) + '/' + IntToStr(Length(CatSongs.Song));
     end else if (Mode=smChallenge) and not PartyMedley then
     begin
-      if (Ini.Tabs_at_startup = 1) and (CatSongs.CatNumShow = -1) then
+      if (Ini.Tabs = 1) and (CatSongs.CatNumShow = -1) then
       begin
         Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].OrderNum) + '/' + IntToStr(CatSongs.CatCount);
         Text[TextTitle].Text  := '(' +
@@ -1309,7 +1332,7 @@ begin
         ChooseableSongs := VS - PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow) - GetSongsSkipped();
         Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS) +
           ' (' + IntToStr(ChooseableSongs) + ')';
-      end else if (Ini.Tabs_at_startup = 1) then
+      end else if (Ini.Tabs = 1) then
       begin
         ChooseableSongs:=CatSongs.Song[Interaction - CatSongs.Song[Interaction].CatNumber].CatNumber -
           PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow) - GetSongsSkipped();
@@ -1345,7 +1368,7 @@ begin
         ChooseableSongs := Length(VisArr);
         Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS) +
           ' (' + IntToStr(ChooseableSongs) + ')'; //HERE!
-      end else if (Ini.Tabs_at_startup = 1) then
+      end else if (Ini.Tabs = 1) then
       begin
         for I := 0 to Length(CatSongs.Song) - 1 do
         begin
@@ -1400,7 +1423,7 @@ begin
         ChooseableSongs := Length(VisArr);
         Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS) +
           ' (' + IntToStr(ChooseableSongs) + ')'; //HERE!
-      end else if (Ini.Tabs_at_startup = 1) then
+      end else if (Ini.Tabs = 1) then
       begin
         for I := 0 to Length(CatSongs.Song) - 1 do
         begin
@@ -1880,14 +1903,14 @@ begin
   Static[StaticTop].Visible := false;
 
   //Cat Mod etc
-  if (Ini.Tabs_at_startup = 1) AND (CatSongs.CatNumShow = -1) AND
+  if (Ini.Tabs = 1) AND (CatSongs.CatNumShow = -1) AND
     (PlaylistMan.Mode=0) then
   begin
     CatSongs.ShowCategoryList;
     //SelectNext;
     //Show Cat in Top Left Mod
     HideCatTL;
-  end else if (PlaylistMan.Mode=0) and (Ini.Tabs_at_startup = 1) AND (CatSongs.CatNumShow = -3) then
+  end else if (PlaylistMan.Mode=0) and (Ini.Tabs = 1) AND (CatSongs.CatNumShow = -3) then
   begin
     //Find Category
     I := Interaction;
@@ -1995,7 +2018,7 @@ begin
       RandomSongChallenge;
       //SkipTo(Random(CatSongs.VisibleSongs - PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow)));
 
-      if (Ini.Tabs_at_startup = 1) and (PlaylistMan.Mode <> 2) and
+      if (Ini.Tabs = 1) and (PlaylistMan.Mode <> 2) and
         (PlaylistMan.Mode <> 1) then
         FoundCAT:=false
       else
@@ -2343,7 +2366,7 @@ begin
         WaitHandler.lastCat := CatSongs.CatNumShow;
       end;
 
-      if(Ini.Tabs_at_startup<>1) or (CatSongs.CatNumShow = -3) then
+      if(Ini.Tabs<>1) or (CatSongs.CatNumShow = -3) then
       begin
         //Random in one Category
         SetLength(VisArr, 0);
@@ -2848,7 +2871,7 @@ begin
       0:  //All Songs Just Select Random Song
         begin
           //When Tabs are activated then use Tab Method
-          if (Ini.Tabs_at_startup = 1) then
+          if (Ini.Tabs = 1) then
           begin
             SetLength(VisArr, 0);
             for I := 0 to Length(CatSongs.Song) - 1 do
@@ -3031,7 +3054,7 @@ procedure TScreenSong.DoJokerM2;
 begin
   if (PartySessionM2.Teams.Teaminfo[0].Joker>0) then
   begin
-    if (((not CatSongs.Song[Interaction].Main) or (Ini.Tabs_at_startup=0)) and (ChooseableSongs>1)) then
+    if (((not CatSongs.Song[Interaction].Main) or (Ini.Tabs=0)) and (ChooseableSongs>1)) then
     begin
       if (FoundCAT) then Dec(PartySessionM2.Teams.Teaminfo[0].Joker);
         FoundCAT:=true;

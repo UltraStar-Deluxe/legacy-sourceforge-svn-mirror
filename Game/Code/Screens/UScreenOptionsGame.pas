@@ -100,8 +100,6 @@ procedure TScreenOptionsGame.RefreshSongs;
 begin
   if (ini.Sorting <> old_Sorting) or (ini.Tabs <> old_Tabs) then
   begin
-    //Tabs at Startup fix
-    Ini.Tabs_at_startup := Ini.Tabs;
     ScreenSong.Refresh(false);
     PlaylistMan.LoadPlayLists;
   end;

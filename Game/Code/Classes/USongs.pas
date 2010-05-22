@@ -609,7 +609,7 @@ begin
   end;
   
   //CatNumber Patch - Set CatNumber of Last Category
-  if (ini.Tabs_at_startup = 1) And (high(Song) >=1) then
+  if (Ini.Tabs = 1) And (high(Song) >=1) then
     Song[CatLen - CatNumber].CatNumber := CatNumber;//Set CatNumber of Categroy
   //CatCount Patch
   CatCount := Order;
