@@ -38,6 +38,7 @@ uses
   SDL,
   SysUtils,
   UFiles,
+  UGraphicClasses,  
   UTime,
   USongs,
   USong,
@@ -100,8 +101,6 @@ type
       CurrentEditText:  UTF8String; // current edit text
       editLenghtText:   integer;
       CurrentSlideId:   integer;
-      //headers values
-      VolumeAudioIndex,VolumeMidiIndex,VolumeClickIndex: integer; //for update slide
       //title header
       TitleSlideId:     integer;
       TitleData:        integer;
@@ -157,7 +156,14 @@ type
       LyricData:        integer;
       LyricVal:         array of UTF8String;
       SlideLyricIndex:  integer;
-
+      // Volume Slide
+      VolumeAudioSlideId: integer;
+      VolumeMidiSlideId:  integer;
+      VolumeClickSlideId: integer;
+      VolumeAudioIndex,VolumeMidiIndex,VolumeClickIndex: integer; //for update slide
+      VolumeAudio:    array of UTF8String;
+      VolumeMidi:    array of UTF8String;
+      VolumeClick:    array of UTF8String;
       //  currentX, CurrentY
       CurrentX:   integer;
       CurrentY:   integer;
@@ -348,6 +354,7 @@ begin
           begin
             CopySentence(CopySrc, Lines[0].Current);
           end;
+          GoldenRec.KillAll;
         end;
       SDLK_T:
         begin
@@ -368,6 +375,7 @@ begin
               AudioPlayback.Position := R;
               PlayStopTime := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_);
               PlaySentence := true;
+              AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
               AudioPlayback.Play;
               LastClick := -100;
             end;
@@ -395,12 +403,13 @@ begin
             AudioPlayback.Stop;
             AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start)+0{-0.10};
             PlayStopTime := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_)+0;
+            AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);            
             AudioPlayback.Play;
             LastClick := -100;
           end;
           Exit;
         end;
-      
+
       // Golden Note
       SDLK_G:
         begin
@@ -408,10 +417,10 @@ begin
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
           else
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntGolden;
-          
+          GoldenRec.KillAll;
           Exit;
         end;
-      
+
       // Freestyle Note
       SDLK_F:
         begin
@@ -419,7 +428,7 @@ begin
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
           else
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntFreestyle;
-          
+          GoldenRec.KillAll;
           Exit;
         end;
     end;
@@ -438,6 +447,7 @@ begin
           Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
           if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
             Inc(Lines[0].Line[Lines[0].Current].End_);
+          GoldenRec.KillAll;
         end;
 
       SDLK_EQUALS:
@@ -470,11 +480,13 @@ begin
             CopySentence(CopySrc+1, Lines[0].Current+1);
             CopySentence(CopySrc+2, Lines[0].Current+2);
             CopySentence(CopySrc+3, Lines[0].Current+3);
+            GoldenRec.KillAll;
           end;
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then
           begin
             CopySentences(CopySrc, Lines[0].Current, 4);
+            GoldenRec.KillAll;
           end;
         end;
       SDLK_5:
@@ -486,11 +498,13 @@ begin
             CopySentence(CopySrc+2, Lines[0].Current+2);
             CopySentence(CopySrc+3, Lines[0].Current+3);
             CopySentence(CopySrc+4, Lines[0].Current+4);
+            GoldenRec.KillAll;
           end;
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then
           begin
             CopySentences(CopySrc, Lines[0].Current, 5);
+            GoldenRec.KillAll;
           end;
         end;
 
@@ -518,6 +532,7 @@ begin
             ChangeWholeTone(1);
           if SDL_ModState = KMOD_LSHIFT then
             ChangeWholeTone(12);
+          GoldenRec.KillAll;
         end;
 
       SDLK_KP_MINUS:
@@ -527,6 +542,7 @@ begin
             ChangeWholeTone(-1);
           if SDL_ModState = KMOD_LSHIFT then
             ChangeWholeTone(-12);
+            GoldenRec.KillAll;
         end;
 
       SDLK_SLASH:
@@ -536,6 +552,7 @@ begin
             // Insert start of sentece
             if CurrentNote > 0 then
               DivideSentence;
+            GoldenRec.KillAll;
           end;
 
           if SDL_ModState = KMOD_LSHIFT then
@@ -543,12 +560,14 @@ begin
             // Join next sentence with current
             if Lines[0].Current < Lines[0].High then
               JoinSentence;
+            GoldenRec.KillAll;
           end;
 
           if SDL_ModState = KMOD_LCTRL then
           begin
             // divide note
             DivideNote;
+            GoldenRec.KillAll;
           end;
 
         end;
@@ -575,6 +594,7 @@ begin
           PlayStopTime := (GetTimeFromBeat(
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length));
+          AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);            
           AudioPlayback.Play;
           LastClick := -100;
         end;
@@ -618,6 +638,7 @@ begin
           begin
             // moves text to right in current sentence
             DeleteNote;
+            GoldenRec.KillAll;
           end;
         end;
 
@@ -652,6 +673,7 @@ begin
                 Inc(Lines[0].Line[Lines[0].Current].Start);
               end;
             end;
+            GoldenRec.KillAll;
           end;
 
           // shift + right
@@ -664,6 +686,7 @@ begin
             end;
             if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
               Inc(Lines[0].Line[Lines[0].Current].End_);
+            GoldenRec.KillAll;
           end;
 
           // alt + right
@@ -672,12 +695,14 @@ begin
             Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
             if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
               Inc(Lines[0].Line[Lines[0].Current].End_);
+            GoldenRec.KillAll;
           end;
 
           // alt + ctrl + shift + right = move all from cursor to right
           if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
           begin
             MoveAllToEnd(1);
+            GoldenRec.KillAll;
           end;
 
         end;
@@ -704,6 +729,7 @@ begin
             begin
               Dec(Lines[0].Line[Lines[0].Current].Start);
             end;
+            GoldenRec.KillAll;
           end;
 
           // shift + left
@@ -719,7 +745,7 @@ begin
 
             if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
               Dec(Lines[0].Line[Lines[0].Current].End_);
-
+            GoldenRec.KillAll;
           end;
 
           // alt + left
@@ -731,12 +757,14 @@ begin
               if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
                 Dec(Lines[0].Line[Lines[0].Current].End_);
             end;
+            GoldenRec.KillAll;
           end;
 
           // alt + ctrl + shift + right = move all from cursor to left
           if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
           begin
             MoveAllToEnd(-1);
+            GoldenRec.KillAll;
           end;
 
         end;
@@ -748,6 +776,7 @@ begin
           if SDL_ModState = 0 then
           begin
             {$IFDEF UseMIDIPort}
+            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));            
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
             {$ENDIF}
@@ -763,12 +792,14 @@ begin
             Lyric.Selected := 0;
             AudioPlayback.Stop;
             PlaySentence := false;
+            GoldenRec.KillAll;
           end;
 
           // decrease tone
           if SDL_ModState = KMOD_LCTRL then
           begin
             TransposeNote(-1);
+            GoldenRec.KillAll;
           end;
 
         end;
@@ -780,6 +811,7 @@ begin
           if SDL_ModState = 0 then
           begin
             {$IFDEF UseMIDIPort}
+            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));            
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
             {$endif}
@@ -795,12 +827,14 @@ begin
             Lyric.Selected := 0;
             AudioPlayback.Stop;
             PlaySentence := false;
+            GoldenRec.KillAll;
           end;
 
           // increase tone
           if SDL_ModState = KMOD_LCTRL then
           begin
             TransposeNote(1);
+            GoldenRec.KillAll;
           end;
         end;
 
@@ -936,10 +970,10 @@ var
   Action: TMouseClickAction;
 begin
   // transfer mousecords to the 800x600 raster we use to draw
-  X := Round((X / (Screen.w / Screens)) * RenderW);
+  X := Round((X / (ScreenW / Screens)) * RenderW);
   if (X > RenderW) then
     X := X - RenderW;
-  Y := Round((Y / Screen.h) * RenderH);
+  Y := Round((Y / ScreenH) * RenderH);
 
   CurrentX := X;
   CurrentY := X;
@@ -1008,6 +1042,18 @@ begin
       AudioPlayback.Close;
       AudioPlayback.Open(CurrentSong.Path.Append(CurrentSong.Mp3));
     end;
+
+  if (((VolumeAudioSlideId = Interactions[nBut].Num) or (VolumeMidiSlideId = Interactions[nBut].Num) or (VolumeClickSlideId = Interactions[nBut].Num))
+    and (Action = maLeft) and (SelectsS[Interactions[nBut].Num].SelectedOption > 0)) then
+  begin
+      SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption -1;
+  end;
+
+  if (((VolumeAudioSlideId = Interactions[nBut].Num) or (VolumeMidiSlideId = Interactions[nBut].Num) or (VolumeClickSlideId = Interactions[nBut].Num))
+    and (Action = maRight) and (SelectsS[Interactions[nBut].Num].SelectedOption < Length(SelectsS[Interactions[nBut].Num].TextOptT)-1)) then
+  begin
+      SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption +1;
+  end;
 
   case Action of
     maReturn: Result := ParseInput(SDLK_RETURN, 0, true);
@@ -1723,6 +1769,10 @@ begin
   SetLength(ToneVal, 0);
   SetLength(DurationVal, 0);
   SetLength(LyricVal, 0);
+  //volume
+  SetLength(VolumeAudio,0);
+  SetLength(VolumeMidi,0);
+  SetLength(VolumeClick,0);
 
   // line
   AddText(40, 11, 1, 30, 0, 0, 0, 'Line:');
@@ -1786,8 +1836,9 @@ begin
   SelectsS[LyricSlideId].Text.Align := 0;
   SelectsS[LyricSlideId].Text.X := SelectsS[LyricSlideId].Texture.X + 3;
 
-
-
+  VolumeAudioSlideId := AddSelectSlide(Theme.EditSub.SelectVolAudio, VolumeAudioIndex, VolumeAudio);
+  VolumeMidiSlideId := AddSelectSlide(Theme.EditSub.SelectVolMidi, VolumeMidiIndex, VolumeMidi);
+  VolumeClickSlideId := AddSelectSlide(Theme.EditSub.SelectVolClick, VolumeClickIndex, VolumeClick);
 
 //  TextTitle :=  AddText(180, 65,  0, 24, 0, 0, 0, 'a');
 //  TextArtist := AddText(180, 90,  0, 24, 0, 0, 0, 'b');
@@ -1829,6 +1880,7 @@ begin
   Lyric := TEditorLyrics.Create;
 
   ResetSingTemp;
+  GoldenRec.KillAll;
 
   try
     //Check if File is XML
@@ -1978,6 +2030,23 @@ begin
     SelectsS[LyricSlideId].TextOpt[0].Align := 0;
     SelectsS[LyricSlideId].TextOpt[0].X := SelectsS[LyricSlideId].TextureSBG.X + 5;
 
+    // volume slides
+    for n:=0 to 100 do
+    begin
+      SetLength(VolumeAudio, high(VolumeAudio)+2);
+      SetLength(VolumeMidi, high(VolumeMidi)+2);
+      SetLength(VolumeClick, high(VolumeClick)+2);
+      VolumeAudio[n] := inttostr(n);
+      VolumeMidi[n] := inttostr(n);
+      VolumeClick[n] := inttostr(n);
+    end;
+    VolumeAudioIndex := 100;
+    VolumeMidiIndex := 100;
+    VolumeClickIndex := 100;
+    UpdateSelectSlideOptions(Theme.EditSub.SelectVolAudio,VolumeAudioSlideId,VolumeAudio,VolumeAudioIndex);
+    UpdateSelectSlideOptions(Theme.EditSub.SelectVolMidi,VolumeMidiSlideId,VolumeMidi,VolumeMidiIndex);
+    UpdateSelectSlideOptions(Theme.EditSub.SelectVolClick,VolumeClickSlideId,VolumeClick,VolumeClickIndex);
+
     Lines[0].Current := 0;
     CurrentNote := 0;
     Lines[0].Line[0].Note[0].Color := 2;
@@ -2029,6 +2098,7 @@ begin
     // stop the music
     if (MidiPos > MidiStop) then
     begin
+      MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));    
       MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
       PlaySentenceMidi := false;
     end;
@@ -2046,6 +2116,7 @@ begin
 
           LastClick := AktBeat;
           {$IFDEF UseMIDIPort}
+          MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
           if Pet > 0 then
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[Pet-1].Tone + 60, 127);
           MidiOut.PutShort($91, Lines[0].Line[Lines[0].Current].Note[Pet].Tone + 60, 127);
@@ -2077,6 +2148,7 @@ begin
         for Pet := 0 to Lines[0].Line[Lines[0].Current].HighNote do
           if (Lines[0].Line[Lines[0].Current].Note[Pet].Start = AktBeat) then
           begin
+            SoundLib.Click.Volume := SelectsS[VolumeClickSlideId].SelectedOption / 100;
             AudioPlayback.PlaySound( SoundLib.Click );
             LastClick := AktBeat;
           end;
@@ -2137,7 +2209,7 @@ begin
     SingDrawBeatDelimeters(40, 305, 760, 0);
     EditDrawLine(40, 410, 760, 0, 15);
   end;
-
+  GoldenRec.SpawnRec;
   // draw text
   Lyric.Draw;
 

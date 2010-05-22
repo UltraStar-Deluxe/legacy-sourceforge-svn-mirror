@@ -527,7 +527,8 @@ begin
   Result := maReturn;
 
   // use left sides to inc or dec selection by click
-  AreaW := TextureSbg.W / 20;
+//  AreaW := TextureSbg.W / 20;
+  AreaW := Tex_SelectS_ArrowL.W;
 
   if (Y >= TextureSBG.Y) and (Y <= TextureSBG.Y + TextureSBG.H) then
   begin

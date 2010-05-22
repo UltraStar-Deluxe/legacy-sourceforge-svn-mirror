@@ -517,7 +517,10 @@ type
       SlideStart:          TThemeSelectSlide;
       SlideDuration:       TThemeSelectSlide;
       SlideTone:           TThemeSelectSlide;
-      SlideLyric:          TThemeSelectSlide;                  
+      SlideLyric:          TThemeSelectSlide;
+      SelectVolAudio:      TThemeSelectSlide;
+      SelectVolMidi:       TThemeSelectSlide;
+      SelectVolClick:      TThemeSelectSlide;
   end;
 
   //Error- and Check-Popup
@@ -1412,6 +1415,9 @@ begin
       ThemeLoadSelectSlide(EditSub.SlideDuration, 'EditSubDuration');
       ThemeLoadSelectSlide(EditSub.SlideTone, 'EditSubTone');
       ThemeLoadSelectSlide(EditSub.SlideLyric, 'EditSubLyric');
+      ThemeLoadSelectSlide(EditSub.SelectVolAudio, 'EditSubSelectVolAudio');
+      ThemeLoadSelectSlide(EditSub.SelectVolMidi, 'EditSubSelectVolMidi');
+      ThemeLoadSelectSlide(EditSub.SelectVolClick, 'EditSubSelectVolClick');
 
       //error and check popup
       ThemeLoadBasic (ErrorPopup, 'ErrorPopup');

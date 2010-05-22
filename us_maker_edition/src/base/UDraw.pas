@@ -1044,6 +1044,7 @@ var
   Rec:   TRecR;
   Count: integer;
   TempR: real;
+  GoldenStarPos: real;
 begin
   glColor3f(1, 1, 1);
   glEnable(GL_TEXTURE_2D);
@@ -1076,7 +1077,7 @@ begin
           glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
           glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
         glEnd;
-
+        GoldenStarPos := Rec.Left;
         // middle part
         Rec.Left  := Rec.Right;
         Rec.Right := (Start+Length-Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start) * TempR + Left - NotesW - 0.5 + 10*ScreenX;
@@ -1100,6 +1101,10 @@ begin
           glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
           glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
         glEnd;
+        if (NoteType = ntGolden) and (Ini.EffectSing=1) then
+        begin
+          GoldenRec.SaveGoldenStarsRec(GoldenStarPos, Rec.Top, Rec.Right, Rec.Bottom);
+        end;
 
       end; // with
     end; // for
