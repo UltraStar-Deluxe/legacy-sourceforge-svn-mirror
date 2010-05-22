@@ -31,6 +31,7 @@ type
     lastIndex:    integer;
     lastCat:      integer;
     active:       boolean;
+    txt:          string;
   end;
 
   TScreenSong = class(TMenu)
@@ -67,8 +68,11 @@ type
 
       MakeMedley:   boolean;
 
-      //VideoAspect
-      AspectHandler:  THandler;
+      //InfoHandler
+      InfoHandler: THandler;
+
+      //AspectHandler
+      AspectHandler: THandler;
 
       //Wait timer
       WaitHandler:  THandler;
@@ -185,7 +189,7 @@ type
       procedure DoJokerM2;
       function  getVisibleMedleyArr(MinS: TMedleySource): TVisArr;
       procedure StartMedley(num: integer; MinS: TMedleySource);
-      procedure DrawAspect;
+      procedure DrawInfo(text: string);
 
       function PartyPlayedSong(SongNr: integer): boolean;
       function PartyPlayedMedley(SongNr: integer): boolean;
@@ -353,6 +357,11 @@ var
   SDL_ModState:  Word;
   Letter: Char;
   VisArr: array of integer;
+
+  Artist: string;
+  Title:  string;
+  jump:   boolean;
+
 begin
   Result := true;
 
@@ -1028,18 +1037,86 @@ begin
               Inc(Ini.Sorting)
             else
               Ini.Sorting := 0;
+
+            InfoHandler.txt := 'Sorting: ' + ISorting[Ini.Sorting];
           end else
           begin
             //Change Tabs (on/off)
             if (Ini.Tabs=1) then
-              Ini.Tabs := 0
-            else
+            begin
+              Ini.Tabs := 0;
+              InfoHandler.txt := 'Tabs: off';
+            end else
+            begin
               Ini.Tabs := 1;
+              InfoHandler.txt := 'Tabs: on';
+            end;
           end;
+
+          if not CatSongs.Song[Interaction].Main then
+          begin
+            Artist := CatSongs.Song[Interaction].Artist;
+            Title := CatSongs.Song[Interaction].Title;
+            jump := true;
+          end else
+            jump := false;
 
           Refresh(false);
           PlaylistMan.LoadPlayLists;
-          OnShow;
+          
+          if jump then
+            I2 := PlaylistMan.FindSong(Artist, Title)
+          else
+          begin
+            //Find Category
+            I := Interaction;
+            while not catsongs.Song[I].Main  do
+            begin
+              Dec (I);
+              if (I < low(CatSongs.Song)) then
+                break;
+            end;
+            if (I<= 1) then
+            Interaction := high(catsongs.Song)
+            else
+            Interaction := I - 1;
+
+            CatSongs.ShowCategoryList;
+
+            //Show Cat in Top Left Mod
+            HideCatTL;
+
+            //Show Wrong Song when Tabs on Fix
+            SelectNext;
+            FixSelected;
+          end;
+
+          if (Ini.Tabs=1) and not (CatSongs.CatNumShow = -3) and jump then
+          begin
+            //Search Cat
+            for I := I2 downto low(CatSongs.Song) do
+            begin
+              if CatSongs.Song[I].Main then
+                break;
+            end;
+
+            //Choose Cat
+            CatSongs.ShowCategoryList;
+            ShowCatTL(I);
+            CatSongs.ClickCategoryButton(I);
+          end else
+            HideCatTL;
+
+          //Choose Song
+          if jump then
+          begin
+            SkipTo2(I2);
+            SongCurrent := SongTarget;
+            ChangeMusic;
+          end;
+
+          InfoHandler.changed := true;
+          InfoHandler.change_time := 0;
         end;
 
       SDLK_1:
@@ -1889,6 +1966,7 @@ begin
 
   StartTry := false;
   AspectHandler.changed := false;
+  InfoHandler.changed := false;
   MP3VolumeHandler.changed := false;
 
   SetLength(PlaylistMedley.Song, 0);
@@ -2148,6 +2226,7 @@ var
   Window: TRectCoords;
   Blend:  real;
   VisArr: array of integer;
+  txt:    string;
 
 begin
   dx := SongTarget-SongCurrent;
@@ -2361,10 +2440,24 @@ begin
   if (VidVis = full) and AspectHandler.changed and
     (AspectHandler.change_time+3>Czas.Teraz) then
   begin
-    DrawAspect;
+    case UVideo.fAspectCorrection of
+      acoStretch: txt := Language.Translate('VIDEO_ASPECT_STRETCH');
+      acoCrop: txt := Language.Translate('VIDEO_ASPECT_CROP');
+      acoLetterBox: txt := Language.Translate('VIDEO_ASPECT_LETTER_BOX');
+      else
+        txt := 'error';
+    end;
+    DrawInfo(txt);
   end else if AspectHandler.changed and
     (AspectHandler.change_time+3<Czas.Teraz) then
     AspectHandler.changed := false;
+
+  if InfoHandler.changed and (InfoHandler.change_time+TimeSkip<3) then
+  begin
+    InfoHandler.change_time := InfoHandler.change_time + TimeSkip;
+    DrawInfo(InfoHandler.txt);
+  end else
+    InfoHandler.changed := false;
 
   if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
   begin
@@ -2467,42 +2560,31 @@ begin
   DrawExtensions;
 end;
 
-procedure TScreenSong.DrawAspect();
+procedure TScreenSong.DrawInfo(text: string);
 var
   w, h: real;
-  str: string;
 
 begin
-  //draw quad
-  glColor4f(0.7, 0.7, 0.7, 0.6);
-  glEnable(GL_BLEND);
-  glbegin(gl_quads);
-    glVertex2f(270, 20);
-    glVertex2f(270, 60);
-    glVertex2f(530, 60);
-    glVertex2f(530, 20);
-  glEnd;
-  glDisable(GL_BLEND);
-
-  //print Text
-  case UVideo.fAspectCorrection of
-    acoStretch: str := Language.Translate('VIDEO_ASPECT_STRETCH');
-    acoCrop: str := Language.Translate('VIDEO_ASPECT_CROP');
-    acoLetterBox: str := Language.Translate('VIDEO_ASPECT_LETTER_BOX');
-    else
-      str := 'error';
-  end;
-
-  glColor4f(1, 1, 1, 1);
-
-  h := 12;
+  h := 11;
   SetFontStyle(1);
   SetFontItalic(false);
   SetFontSize(h);
-  w := glTextWidth(PChar(str));
+  w := glTextWidth(PChar(text));
+  //draw quad
+  glColor4f(0.6, 0.6, 0.6, 0.8);
+  glEnable(GL_BLEND);
+  glbegin(gl_quads);
+    glVertex2f(RenderW/2-w/2-10, 20);
+    glVertex2f(RenderW/2-w/2-10, 60);
+    glVertex2f(RenderW/2+w/2+10, 60);
+    glVertex2f(RenderW/2+w/2+10, 20);
+  glEnd;
+  glDisable(GL_BLEND);
 
-  SetFontPos (RenderW/2-w/2, 21);
-  glPrint(PChar(str));
+  glColor4f(1, 1, 1, 1);
+
+  SetFontPos (RenderW/2-w/2, 23);
+  glPrint(PChar(text));
 end;
 
 procedure TScreenSong.SelectNext;

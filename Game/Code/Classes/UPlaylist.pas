@@ -34,6 +34,7 @@ type
 
       constructor Create;
       Procedure   LoadPlayLists;
+      Function    FindSong(Artist, Title: String): Integer;
       Function    LoadPlayList(Index: Cardinal; Filename: String): Boolean;
       Procedure   SavePlayList(Index: Cardinal);
 
@@ -93,6 +94,23 @@ begin
   end;
 end;
 
+Function TPlayListManager.FindSong(Artist, Title: String): Integer;
+var
+  I: Integer;
+
+begin
+  Result := -1;
+
+  For I := low(CatSongs.Song) to high(CatSongs.Song) do
+  begin
+    if (CatSongs.Song[I].Title = Title) AND (CatSongs.Song[I].Artist = Artist) then
+    begin
+      Result := I;
+      Break;
+    end;
+  end;
+end;
+
 //----------
 //LoadPlayList - Load a Playlist in the Array
 //----------
@@ -104,20 +122,6 @@ Function    TPlayListManager.LoadPlayList(Index: Cardinal; Filename: String): Bo
     SongID: Integer;
     Len: Integer;
 
-  Function FindSong(Artist, Title: String): Integer;
-  var I: Integer;
-  begin
-    Result := -1;
-
-    For I := low(CatSongs.Song) to high(CatSongs.Song) do
-    begin
-      if (CatSongs.Song[I].Title = Title) AND (CatSongs.Song[I].Artist = Artist) then
-      begin
-        Result := I;
-        Break;
-      end;
-    end;
-  end;
 begin
   if not FileExists(PlayListPath + Filename) then
   begin
