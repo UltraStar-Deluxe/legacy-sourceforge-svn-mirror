@@ -57,7 +57,6 @@ src_compile() {
 
 	# configure flags
 	local mycmakeargs="$(cmake-utils_use_enable projectm PROJECTM) \
-		$(cmake-utils_use_build plugins PLUGINS) \
 		-DBINDIR=${GAMES_BINDIR} \
 		-DDATADIR=${GAMES_DATADIR}/${PN}"
 
@@ -72,7 +71,7 @@ src_install() {
 		doins -r ${WORKDIR}/Songs/* || die "doins songs failed"
 	fi
 
-	dodoc AUTHORS.txt ChangeLog.german.txt ChangeLog.txt README.txt
+	dodoc AUTHORS.txt ChangeLog.GERMAN.txt ChangeLog.txt README.txt
 
 	doicon icons/${PN}-icon.svg
 	make_desktop_entry ${PN} "UltraStar Deluxe"
