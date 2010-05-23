@@ -44,7 +44,7 @@ type
     Upper, Lower:       double;
     windowed:           boolean;
     Reflection:         boolean;
-    ReflactionSpacing:  real;
+    ReflectionSpacing:  real;
     TargetAspect:       TAspectCorrection;
     ZoomFaktor:         real;
   end;
@@ -820,11 +820,11 @@ begin
 
   glDisable(GL_BLEND);
 
-  //Draw Reflaction
+  //Draw Reflection
   if Window.Reflection then
   begin
     glScissor(round((Window.Left)*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(Screen-1)),
-      round((RenderH-Window.Lower-Window.ReflactionSpacing-(Window.Lower-Window.Upper)*0.5)*ScreenH/RenderH),
+      round((RenderH-Window.Lower-Window.ReflectionSpacing-(Window.Lower-Window.Upper)*0.5)*ScreenH/RenderH),
       round((Window.Right-Window.Left)*(ScreenW/Screens)/RenderW),
       round((Window.Lower-Window.Upper)*ScreenH/RenderH*0.5));
     glEnable(GL_SCISSOR_TEST);
@@ -836,24 +836,24 @@ begin
     glBegin(GL_QUADS);//Top Left
       glColor4f(1, 1, 1, Blend-0.3);
       glTexCoord2f(TexRect.Left, TexRect.Lower);
-      glVertex2f(ScreenRect.Left, ScreenRect.Lower+ Window.ReflactionSpacing);
+      glVertex2f(ScreenRect.Left, Window.Lower + Window.ReflectionSpacing);
 
       //Bottom Left
       glColor4f(1, 1, 1, 0);
       glTexCoord2f(TexRect.Left, (TexRect.Lower-TexRect.Upper)*0.5);
       glVertex2f(ScreenRect.Left,
-        ScreenRect.Lower + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + Window.ReflactionSpacing);
+        Window.Lower + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + Window.ReflectionSpacing);
 
       //Bottom Right
       glColor4f(1, 1, 1, 0);
       glTexCoord2f(TexRect.Right, (TexRect.Lower-TexRect.Upper)*0.5);
       glVertex2f(ScreenRect.Right,
-        ScreenRect.Lower + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + Window.ReflactionSpacing);
+        Window.Lower + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + Window.ReflectionSpacing);
 
       //Top Right
       glColor4f(1, 1, 1, Blend-0.3);
       glTexCoord2f(TexRect.Right, TexRect.Lower);
-      glVertex2f(ScreenRect.Right, ScreenRect.Lower + Window.ReflactionSpacing);
+      glVertex2f(ScreenRect.Right, Window.Lower + Window.ReflectionSpacing);
     glEnd;
 
     glDisable(GL_BLEND);

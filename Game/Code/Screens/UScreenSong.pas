@@ -2440,7 +2440,7 @@ begin
         Window.Right := Button[Interaction].X+Button[Interaction].W;
         Window.Upper := Button[Interaction].Y;
         Window.Lower := Button[Interaction].Y+Button[Interaction].H;
-        Window.ReflactionSpacing := Button[Interaction].Reflectionspacing;
+        Window.ReflectionSpacing := Button[Interaction].Reflectionspacing;
         Window.Reflection := Button[Interaction].Reflection;
         Window.windowed := true;
         Window.TargetAspect := acoCrop;
