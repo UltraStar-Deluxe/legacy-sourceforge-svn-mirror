@@ -34,7 +34,7 @@ set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "1")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 
-set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}_alpha1")
+set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}_beta1")
 
 set(PACKAGE_WEBSITE "http://www.ultrastardeluxe.org/")
 set(PACKAGE_IRC "#ultrastardx at quakenet.org")
@@ -43,7 +43,7 @@ set(PACKAGE_IRC "#ultrastardx at quakenet.org")
 # MAIN DEPENDENCIES
 ##
 
-find_package(PPC 2.2.0 REQUIRED)
+find_package(PPC 2.2.2 REQUIRED)
 include(UsePascal)
 include(ExpandVersion)
 include(FileUtils)
@@ -135,7 +135,6 @@ endif(NOT WIN32)
 include(FileUtils)
 
 set(USDX_GAME_DIR ${CMAKE_CURRENT_BINARY_DIR}/game)
-set(USDX_PLUGIN_DIR ${USDX_GAME_DIR}/plugins)
 
 # init runtime environment for out-of-source builds
 if(NOT WIN32)
@@ -147,10 +146,6 @@ if(NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   foreach(subdir covers fonts languages resources sounds themes visuals)
     file_symlink(${CMAKE_CURRENT_SOURCE_DIR}/game/${subdir} ${USDX_GAME_DIR}/${subdir})
   endforeach(subdir)
-
-  # copy directories which are either changed by the build process
-  # or while execution
-  file_copy_dir(${CMAKE_CURRENT_SOURCE_DIR}/game/plugins ${USDX_PLUGIN_DIR})
 endif()
 endif(NOT WIN32)
 
@@ -190,17 +185,11 @@ install(
     game/covers
     game/fonts
     game/languages
+    game/plugins
     game/resources
     game/sounds
     game/themes
   DESTINATION ${DATADIR}
-  PATTERN .svn EXCLUDE
-  PATTERN .PLACEHOLDER EXCLUDE
-)
-install(
-  DIRECTORY ${USDX_PLUGIN_DIR}
-  DESTINATION ${DATADIR}
-  USE_SOURCE_PERMISSIONS
   PATTERN .svn EXCLUDE
   PATTERN .PLACEHOLDER EXCLUDE
 )
@@ -301,19 +290,8 @@ message("
 !! For further information on ${CPACK_PACKAGE_NAME} visit:
 !!   ${PACKAGE_WEBSITE}
 !!
-!! IMPORTANT:
-!! This is an UNSUPPORTED ALPHA release for developers only.
-!!
-!! DO NOT EXPECT THE MAKEFILE OR THE PROGRAM ITSELF TO WORK
-!!
-!! If you want to contribute, visit the IRC-Channel instead:
+!! In case you find a bug send a bugreport to:
+!!   ${PACKAGE_BUGREPORT}
+!! You might as well ask for help at the IRC-Channel
 !!   ${PACKAGE_IRC}
-!!
-!! PLEASE DO NOT SEND BUGREPORTS FOR THIS VERSION.
 !!")
-
-# TODO: insert this in the public beta release
-#!!! In case you find a bug send a bugreport to:
-#!!!   ${PACKAGE_BUGREPORT}
-#!!! You might as well ask for help at the IRC-Channel
-#!!!   ${PACKAGE_IRC}
