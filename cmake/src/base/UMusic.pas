@@ -34,10 +34,11 @@ interface
 {$I switches.inc}
 
 uses
-  UTime,
   SysUtils,
   Classes,
-  UBeatTimer;
+  UTime,
+  UBeatTimer,
+  UPath;
 
 type
   TNoteType = (ntFreestyle, ntNormal, ntGolden);
@@ -62,7 +63,7 @@ type
     Start:      integer;    // beat the fragment starts at
     Length:     integer;    // length in beats
     Tone:       integer;    // full range tone
-    Text:       string;     // text assigned to this fragment (a syllable, word, etc.)
+    Text:       UTF8String; // text assigned to this fragment (a syllable, word, etc.)
     NoteType:   TNoteType;  // note-type: golden-note/freestyle etc.
   end;
 
@@ -73,7 +74,7 @@ type
   PLine = ^TLine;
   TLine = record
     Start:      integer; // the start beat of this line (<> start beat of the first note of this line)
-    Lyric:      string;
+    Lyric:      UTF8String;
     //LyricWidth: real;    // @deprecated: width of the line in pixels.
                          // Do not use this as the width is not correct.
                          // Use TLyricsEngine.GetUpperLine().Width instead. 
@@ -187,10 +188,6 @@ type
   end;
 
 type
-  TSyncSource = class
-    function GetClock(): real; virtual; abstract;
-  end;
-
   TAudioProcessingStream = class;
   TOnCloseHandler = procedure(Stream: TAudioProcessingStream);
 
@@ -249,8 +246,8 @@ type
 
   TAudioPlaybackStream = class(TAudioProcessingStream)
     protected
+      AvgSyncDiff: double;  //** average difference between stream and sync clock
       SyncSource: TSyncSource;
-      AvgSyncDiff: double;
       SourceStream: TAudioSourceStream;
 
       function GetLatency(): double; virtual; abstract;
@@ -259,7 +256,7 @@ type
       procedure SetVolume(Volume: single);  virtual; abstract;
       function Synchronize(BufferSize: integer; FormatInfo: TAudioFormatInfo): integer;
       procedure FillBufferWithFrame(Buffer: PByteArray; BufferSize: integer; Frame: PByteArray; FrameSize: integer);
-   public
+    public
       (**
        * Opens a SourceStream for playback.
        * Note that the caller (not the TAudioPlaybackStream) is responsible to
@@ -315,7 +312,7 @@ type
   // soundcard output-devices information
   TAudioOutputDevice = class
     public
-      Name: string; // soundcard name
+      Name: UTF8String; // soundcard name
   end;
   TAudioOutputDeviceList = array of TAudioOutputDevice;
 
@@ -323,28 +320,33 @@ type
   IGenericPlayback = Interface
   ['{63A5EBC3-3F4D-4F23-8DFB-B5165FCE33DD}']
       function GetName: String;
+  end;
 
-      function Open(const Filename: string): boolean; // true if succeed
-      procedure Close;
-
+  IVideo = interface
+  ['{58DFC674-9168-41EA-B59D-A61307242B80}']
       procedure Play;
       procedure Pause;
       procedure Stop;
 
+      procedure SetLoop(Enable: boolean);
+      function GetLoop(): boolean;
+
       procedure SetPosition(Time: real);
       function GetPosition: real;
 
+      procedure GetFrame(Time: Extended);
+      procedure DrawGL(Screen: integer);
+
+      property Loop: boolean read GetLoop write SetLoop;
       property Position: real read GetPosition write SetPosition;
   end;
 
   IVideoPlayback = Interface( IGenericPlayback )
   ['{3574C40C-28AE-4201-B3D1-3D1F0759B131}']
-    function Init(): boolean;
-    function Finalize: boolean;
+      function Init(): boolean;
+      function Finalize: boolean;
 
-    procedure GetFrame(Time: Extended); // WANT TO RENAME THESE TO BE MORE GENERIC
-    procedure DrawGL(Screen: integer);  // WANT TO RENAME THESE TO BE MORE GENERIC
-
+      function Open(const FileName : IPath): IVideo;
   end;
 
   IVideoVisualization = Interface( IVideoPlayback )
@@ -369,6 +371,18 @@ type
       function  Finished: boolean;
       function  Length: real;
 
+      function Open(const Filename: IPath): boolean; // true if succeed
+      procedure Close;
+
+      procedure Play;
+      procedure Pause;
+      procedure Stop;
+
+      procedure SetPosition(Time: real);
+      function GetPosition: real;
+
+      property Position: real read GetPosition write SetPosition;
+
       // Sounds
       // TODO:
       // add a TMediaDummyPlaybackStream implementation that will
@@ -376,7 +390,7 @@ type
       // nil-pointers is not neccessary anymore.
       // PlaySound/StopSound will be removed then, OpenSound will be renamed to
       // CreateSound.
-      function OpenSound(const Filename: String): TAudioPlaybackStream;
+      function OpenSound(const Filename: IPath): TAudioPlaybackStream;
       procedure PlaySound(Stream: TAudioPlaybackStream);
       procedure StopSound(Stream: TAudioPlaybackStream);
 
@@ -391,7 +405,7 @@ type
 
   IGenericDecoder = Interface
   ['{557B0E9A-604D-47E4-B826-13769F3E10B7}']
-      function GetName(): String;
+      function GetName(): string;
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
       //function IsSupported(const Filename: string): boolean;
@@ -400,13 +414,13 @@ type
   (*
   IVideoDecoder = Interface( IGenericDecoder )
   ['{2F184B2B-FE69-44D5-9031-0A2462391DCA}']
-      function Open(const Filename: string): TVideoDecodeStream;
+      function Open(const Filename: IPath): TVideoDecodeStream;
   end;
   *)
 
   IAudioDecoder = Interface( IGenericDecoder )
   ['{AB47B1B6-2AA9-4410-BF8C-EC79561B5478}']
-      function Open(const Filename: string): TAudioDecodeStream;
+      function Open(const Filename: IPath): TAudioDecodeStream;
   end;
 
   IAudioInput = Interface
@@ -456,7 +470,7 @@ const
   SOUNDID_CLICK    = 5;
   LAST_SOUNDID = SOUNDID_CLICK;
 
-  BaseSoundFilenames: array[0..LAST_SOUNDID] of string = (
+  BaseSoundFilenames: array[0..LAST_SOUNDID] of IPath = (
     '%SOUNDPATH%/Common start.mp3',                 // Start
     '%SOUNDPATH%/Common back.mp3',                  // Back
     '%SOUNDPATH%/menu swoosh.mp3',                  // Swoosh
@@ -497,7 +511,7 @@ type
       procedure StartBgMusic();
       procedure PauseBgMusic();
       // TODO
-      //function AddSound(Filename: string): integer;
+      //function AddSound(Filename: IPath): integer;
       //procedure RemoveSound(ID: integer);
       //function GetSound(ID: integer): TAudioPlaybackStream;
       //property Sound[ID: integer]: TAudioPlaybackStream read GetSound; default;
@@ -533,7 +547,7 @@ uses
   UCommandLine,
   URecord,
   ULog,
-  UPath;
+  UPathUtils;
 
 var
   DefaultVideoPlayback : IVideoPlayback;
@@ -654,7 +668,7 @@ begin
   FilterInterfaceList(IAudioDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    CurrentAudioDecoder := IAudioDecoder(InterfaceList[i]);
+    CurrentAudioDecoder := InterfaceList[i] as IAudioDecoder;
     if (not CurrentAudioDecoder.InitializeDecoder()) then
     begin
       Log.LogError('Initialize failed, Removing - '+ CurrentAudioDecoder.GetName);
@@ -671,7 +685,7 @@ begin
   FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    CurrentAudioPlayback := IAudioPlayback(InterfaceList[i]);
+    CurrentAudioPlayback := InterfaceList[i] as IAudioPlayback;
     if (CurrentAudioPlayback.InitializePlayback()) then
     begin
       DefaultAudioPlayback := CurrentAudioPlayback;
@@ -686,7 +700,7 @@ begin
   FilterInterfaceList(IAudioInput, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    CurrentAudioInput := IAudioInput(InterfaceList[i]);
+    CurrentAudioInput := InterfaceList[i] as IAudioInput;
     if (CurrentAudioInput.InitializeRecord()) then
     begin
       DefaultAudioInput := CurrentAudioInput;
@@ -719,7 +733,7 @@ begin
   FilterInterfaceList(IVideoPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    VideoInterface := IVideoPlayback(InterfaceList[i]);
+    VideoInterface := InterfaceList[i] as IVideoPlayback;
     if (VideoInterface.Init()) then
     begin
       DefaultVideoPlayback := VideoInterface;
@@ -734,7 +748,7 @@ begin
   FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
-    VisualInterface := IVideoVisualization(InterfaceList[i]);
+    VisualInterface := InterfaceList[i] as IVideoVisualization;
     if (VisualInterface.Init()) then
     begin
       DefaultVisualization := VisualInterface;
@@ -748,7 +762,7 @@ begin
 
   // now that we have all interfaces, we can dump them
   // TODO: move this to another place
-  if FindCmdLineSwitch( cMediaInterfaces ) then
+  if FindCmdLineSwitch(cMediaInterfaces) then
   begin
     DumpMediaInterfaces();
     halt;
@@ -772,27 +786,27 @@ begin
   // finalize audio playback interfaces (should be done before the decoders)
   FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IAudioPlayback(InterfaceList[i]).FinalizePlayback();
+    (InterfaceList[i] as IAudioPlayback).FinalizePlayback();
 
   // finalize audio input interfaces
   FilterInterfaceList(IAudioInput, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IAudioInput(InterfaceList[i]).FinalizeRecord();
+    (InterfaceList[i] as IAudioInput).FinalizeRecord();
 
   // finalize audio decoder interfaces
   FilterInterfaceList(IAudioDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IAudioDecoder(InterfaceList[i]).FinalizeDecoder();
+    (InterfaceList[i] as IAudioDecoder).FinalizeDecoder();
 
   // finalize video interfaces
   FilterInterfaceList(IVideoPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IVideoPlayback(InterfaceList[i]).Finalize();
+    (InterfaceList[i] as IVideoPlayback).Finalize();
 
   // finalize audio decoder interfaces
   FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
-    IVideoVisualization(InterfaceList[i]).Finalize();
+    (InterfaceList[i] as IVideoVisualization).Finalize();
 
   InterfaceList.Free;
 
@@ -812,12 +826,6 @@ begin
   // stop any active captures
   if (AudioInput <> nil) then
     AudioInput.CaptureStop;
-
-  if (VideoPlayback <> nil) then
-    VideoPlayback.Close;
-
-  if (Visualization <> nil) then
-    Visualization.Close;
 
   UnloadMediaModules();
 end;
@@ -855,14 +863,14 @@ procedure TSoundLibrary.LoadSounds();
 begin
   UnloadSounds();
 
-  Start   := AudioPlayback.OpenSound(SoundPath + 'Common start.mp3');
-  Back    := AudioPlayback.OpenSound(SoundPath + 'Common back.mp3');
-  Swoosh  := AudioPlayback.OpenSound(SoundPath + 'menu swoosh.mp3');
-  Change  := AudioPlayback.OpenSound(SoundPath + 'select music change music 50.mp3');
-  Option  := AudioPlayback.OpenSound(SoundPath + 'option change col.mp3');
-  Click   := AudioPlayback.OpenSound(SoundPath + 'rimshot022b.mp3');
+  Start   := AudioPlayback.OpenSound(SoundPath.Append('Common start.mp3'));
+  Back    := AudioPlayback.OpenSound(SoundPath.Append('Common back.mp3'));
+  Swoosh  := AudioPlayback.OpenSound(SoundPath.Append('menu swoosh.mp3'));
+  Change  := AudioPlayback.OpenSound(SoundPath.Append('select music change music 50.mp3'));
+  Option  := AudioPlayback.OpenSound(SoundPath.Append('option change col.mp3'));
+  Click   := AudioPlayback.OpenSound(SoundPath.Append('rimshot022b.mp3'));
 
-  BGMusic := AudioPlayback.OpenSound(SoundPath + 'Bebeto_-_Loop010.mp3');
+  BGMusic := AudioPlayback.OpenSound(SoundPath.Append('Bebeto_-_Loop010.mp3'));
 
   if (BGMusic <> nil) then
     BGMusic.Loop := True;
@@ -983,6 +991,8 @@ begin
   AvgSyncDiff := -1;
 end;
 
+{.$DEFINE LOG_SYNC}
+
 (*
  * Results an adjusted size of the input buffer size to keep the stream in sync
  * with the SyncSource. If no SyncSource was assigned to this stream, the
@@ -999,11 +1009,15 @@ end;
 function TAudioPlaybackStream.Synchronize(BufferSize: integer; FormatInfo: TAudioFormatInfo): integer;
 var
   TimeDiff: double;
-  TimeCorrectionFactor: double;
+  FrameDiff: double;
+  FrameSkip: integer;
+  ReqFrames: integer;
+  MasterClock: real;
+  CurPosition: real;
 const
-  AVG_HISTORY_FACTOR = 0.9;
-  SYNC_THRESHOLD = 0.045;
-  MAX_SYNC_DIFF_TIME = 0.002;
+  AVG_HISTORY_FACTOR = 0.7;
+  SYNC_REPOS_THRESHOLD = 5.000;
+  SYNC_SOFT_THRESHOLD  = 0.010;
 begin
   Result := BufferSize;
 
@@ -1013,9 +1027,12 @@ begin
   if (BufferSize <= 0) then
     Exit;
 
+  CurPosition := Position;
+  MasterClock := SyncSource.GetClock();
+
   // difference between sync-source and stream position
   // (negative if the music-stream's position is ahead of the master clock)
-  TimeDiff := SyncSource.GetClock() - (Position - GetLatency());
+  TimeDiff := MasterClock - CurPosition;
 
   // calculate average time difference (some sort of weighted mean).
   // The bigger AVG_HISTORY_FACTOR is, the smoother is the average diff.
@@ -1030,35 +1047,46 @@ begin
     AvgSyncDiff := TimeDiff * (1-AVG_HISTORY_FACTOR) +
                    AvgSyncDiff * AVG_HISTORY_FACTOR;
 
-  // check if sync needed
-  if (Abs(AvgSyncDiff) >= SYNC_THRESHOLD) then
-  begin
-    // TODO: use SetPosition if diff is too large (>5s)
-    if (TimeDiff < 1) then
-      TimeCorrectionFactor := Sign(TimeDiff)*TimeDiff*TimeDiff
-    else
-      TimeCorrectionFactor := TimeDiff;
+  {$IFDEF LOG_SYNC}
+  //Log.LogError(Format('c:%.3f | p:%.3f | d:%.3f | a:%.3f',
+  //    [MasterClock, CurPosition, TimeDiff, AvgSyncDiff]), 'Synch');
+  {$ENDIF}
 
-    // calculate adapted buffer size
-    // reduce size of data to fetch if music is ahead, increase otherwise
-    Result := BufferSize + Round(TimeCorrectionFactor * FormatInfo.SampleRate) * FormatInfo.FrameSize;
+  // check if we are out of sync
+  if (Abs(AvgSyncDiff) >= SYNC_REPOS_THRESHOLD) then
+  begin
+    {$IFDEF LOG_SYNC}
+    Log.LogError(Format('ReposSynch: %.3f > %.3f',
+        [Abs(AvgSyncDiff), SYNC_REPOS_THRESHOLD]), 'Synch');
+    {$ENDIF}
+
+    // diff far is too large -> reposition stream
+    // (resulting position might still be out of sync)
+    SetPosition(CurPosition + AvgSyncDiff);
+
+    // reset sync info
+    AvgSyncDiff := -1;
+  end
+  else if (Abs(AvgSyncDiff) >= SYNC_SOFT_THRESHOLD) then
+  begin
+    {$IFDEF LOG_SYNC}
+    Log.LogError(Format('SoftSynch: %.3f > %.3f',
+        [Abs(AvgSyncDiff), SYNC_SOFT_THRESHOLD]), 'Synch');
+    {$ENDIF}
+
+    // hard sync: directly jump to the current position
+    FrameSkip := Round(AvgSyncDiff * FormatInfo.SampleRate);
+    Result := BufferSize + FrameSkip * FormatInfo.FrameSize;
     if (Result < 0) then
       Result := 0;
 
-    // reset average
+    // reset sync info
     AvgSyncDiff := -1;
   end;
-
-  (*
-  DebugWriteln('Diff: ' + floattostrf(TimeDiff, ffFixed, 15, 3) +
-               '| SyS: ' + floattostrf(SyncSource.GetClock(), ffFixed, 15, 3) +
-               '| Pos: ' + floattostrf(Position, ffFixed, 15, 3) +
-               '| Avg: ' + floattostrf(AvgSyncDiff, ffFixed, 15, 3));
-  *)
 end;
 
 (*
- * Fills a buffer with copies of the given frame or with 0 if frame.
+ * Fills a buffer with copies of the given Frame or with 0 if Frame is nil.
  *)
 procedure TAudioPlaybackStream.FillBufferWithFrame(Buffer: PByteArray; BufferSize: integer; Frame: PByteArray; FrameSize: integer);
 var

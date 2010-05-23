@@ -37,22 +37,29 @@ uses
   gl,
   TextGL,
   UMenuText,
-  UTexture;
+  UTexture,
+  UMenuInteract;
 
 type
   PSelectSlide = ^TSelectSlide;
   TSelectSlide = class
     private
       SelectBool:       boolean;
+
+      function AdjustOptionTextToFit(OptText: UTF8String): UTF8String;
     public
       // objects
       Text:             TText; // Main text describing option
       TextOpt:          array of TText; // 3 texts in the position of possible options
-      TextOptT:         array of string; // array of names for possible options
+      TextOptT:         array of UTF8String; // array of names for possible options
 
       Texture:          TTexture; // Select Texture
       TextureSBG:       TTexture; // Background Selections Texture
-//      TextureS:         array of TTexture; // Selections Texture (not used)
+
+      Colorized:          boolean;
+      DeSelectTexture:    TTexture; // texture for colorized hack
+      ColorizedSBG:       boolean;
+      DeSelectTextureSBG: TTexture; // texture for colorized hack Select BG
 
       Tex_SelectS_ArrowL:    TTexture; // Texture for left arrow
       Tex_SelectS_ArrowR:    TTexture; // Texture for right arrow
@@ -135,7 +142,16 @@ type
 
       //Automatically Generate Lines (Texts)
       procedure genLines;
+
+      function GetMouseOverArea: TMouseOverRect;
+      function OnClick(X, Y: Real): TMouseClickAction;
   end;
+
+const
+  ArrowAlphaOptionsLeft = 1;
+  ArrowAlphaNoOptionsLeft = 0;
+  MinItemSpacing = 5;
+  MinSideSpacing = 24;
 
 implementation
 
@@ -153,6 +169,26 @@ begin
   SetLength(TextOpt, 1);
   TextOpt[0] := TText.Create;
   Visible := true;
+
+  Colorized := false;
+  ColorizedSBG := false;
+  ColR := 1;
+  ColG := 1;
+  ColB := 1;
+  Int := 1;
+  DColR := 1;
+  DColG := 1;
+  DColB := 1;
+  DInt := 1;
+
+  SBGColR := 1;
+  SBGColG := 1;
+  SBGColB := 1;
+  SBGInt := 1;
+  SBGDColR := 1;
+  SBGDColG := 1;
+  SBGDColB := 1;
+  SBGDInt := 1;
 end;
 
 procedure TSelectSlide.SetSelect(Value: boolean);
@@ -180,20 +216,30 @@ begin
   end
   else
   begin
-    Texture.ColR := DColR;
-    Texture.ColG := DColG;
-    Texture.ColB := DColB;
-    Texture.Int := DInt;
+    if Colorized then
+      DeSelectTexture.Int := DInt
+    else
+    begin
+      Texture.ColR := DColR;
+      Texture.ColG := DColG;
+      Texture.ColB := DColB;
+      Texture.Int := DInt;
+    end;
 
     Text.ColR := TDColR;
     Text.ColG := TDColG;
     Text.ColB := TDColB;
     Text.Int := TDInt;
 
-    TextureSBG.ColR := SBGDColR;
-    TextureSBG.ColG := SBGDColG;
-    TextureSBG.ColB := SBGDColB;
-    TextureSBG.Int := SBGDInt;
+    if (ColorizedSBG) then
+      DeselectTextureSBG.Int := SBGDInt
+    else
+    begin
+      TextureSBG.ColR := SBGDColR;
+      TextureSBG.ColG := SBGDColG;
+      TextureSBG.ColB := SBGDColB;
+      TextureSBG.Int := SBGDInt;
+    end;
   end;
 end;
 
@@ -236,12 +282,15 @@ begin
     begin
       Value := 0;
 
-      Tex_SelectS_ArrowL.alpha := 0;
-      Tex_SelectS_ArrowR.alpha := 1;
+      Tex_SelectS_ArrowL.alpha := ArrowAlphaNoOptionsLeft;
+      if (Length(TextOptT) > 1) then
+        Tex_SelectS_ArrowR.alpha := ArrowAlphaOptionsLeft
+      else
+        Tex_SelectS_ArrowR.alpha := ArrowAlphaNoOptionsLeft;
 
       for SO := Low(TextOpt) to High(TextOpt) do
       begin
-        TextOpt[SO].Text := TextOptT[SO];
+        TextOpt[SO].Text := AdjustOptionTextToFit(TextOptT[SO]);
       end;
 
       DoSelection(0);
@@ -252,12 +301,12 @@ begin
     begin
       Value := High(TextOptT);
 
-      Tex_SelectS_ArrowL.alpha := 1;
-      Tex_SelectS_ArrowR.alpha := 0;
+      Tex_SelectS_ArrowL.alpha := ArrowAlphaOptionsLeft;
+      Tex_SelectS_ArrowR.alpha := ArrowAlphaNoOptionsLeft;
 
       for SO := High(TextOpt) downto Low(TextOpt) do
       begin
-        TextOpt[SO].Text := TextOptT[High(TextOptT) - (Lines - SO - 1)];
+        TextOpt[SO].Text := AdjustOptionTextToFit(TextOptT[High(TextOptT) - (Lines - SO - 1)]);
       end;
       DoSelection(Lines - 1);
     end
@@ -265,8 +314,8 @@ begin
     //in between first and last
     else
     begin
-      Tex_SelectS_ArrowL.alpha := 1;
-      Tex_SelectS_ArrowR.alpha := 1;
+      Tex_SelectS_ArrowL.alpha := ArrowAlphaOptionsLeft;
+      Tex_SelectS_ArrowR.alpha := ArrowAlphaOptionsLeft;
 
       HalfL := Ceil((Lines - 1) / 2);
       HalfR := Lines - 1 - HalfL;
@@ -277,7 +326,7 @@ begin
         //Change texts
       	for SO := Low(TextOpt) to High(TextOpt) do
       	begin
-      	  TextOpt[SO].Text := TextOptT[SO];
+      	  TextOpt[SO].Text := AdjustOptionTextToFit(TextOptT[SO]);
       	end;
 
       	DoSelection(Value);
@@ -291,10 +340,10 @@ begin
       	//Change texts
        	for SO := High(TextOpt) downto Low(TextOpt) do
        	begin
-	  TextOpt[SO].Text := TextOptT[High(TextOptT) - (Lines - SO - 1)];
+	        TextOpt[SO].Text := AdjustOptionTextToFit(TextOptT[High(TextOptT) - (Lines - SO - 1)]);
       	end;
 
-    	DoSelection (HalfL);
+      	DoSelection (HalfL);
       end
 
       else
@@ -302,11 +351,45 @@ begin
       	//Change Texts
        	for SO := Low(TextOpt) to High(TextOpt) do
       	begin
-	  TextOpt[SO].Text := TextOptT[Value - HalfL + SO];
+	        TextOpt[SO].Text := AdjustOptionTextToFit(TextOptT[Value - HalfL + SO]);
       	end;
 
         DoSelection(HalfL);
       end;
+    end;
+  end;
+end;
+
+{ cuts the text if it is too long to fit on the selectbg }
+function TSelectSlide.AdjustOptionTextToFit(OptText: UTF8String): UTF8String;
+  var
+    MaxLen: real;
+    Len: integer;
+begin
+  Result := OptText;
+  
+  if (TextureSBG.W > 0) then
+  begin
+    MaxLen := TextureSBG.W - MinSideSpacing * 2;
+
+    SetFontStyle(ftNormal);
+    SetFontSize(Text.Size);
+
+    // we will remove min. 2 letters by default and replace them w/ points
+    // if the whole text don't fit
+    Len := Length(OptText) - 1;
+
+    while (glTextWidth(Result) > MaxLen) and (Len > 0) do
+    begin
+      { ensure that we only cut at full letters }
+      { this code may be a problem if there is a text that
+        consists of many multi byte characters and only few
+        one byte characters }
+      repeat
+        Dec(Len);
+      until (byte(OptText[Len]) and 128) = 0;
+      
+      Result := copy(OptText, 1, Len) + '..';
     end;
   end;
 end;
@@ -317,8 +400,31 @@ var
 begin
   if Visible then
   begin
-    DrawTexture(Texture);
-    DrawTexture(TextureSBG);
+    if SelectBool or not Colorized then
+    begin
+      DrawTexture(Texture);
+    end
+    else
+    begin
+      DeselectTexture.X := Texture.X;
+      DeselectTexture.Y := Texture.Y;
+      DeselectTexture.W := Texture.W;
+      DeselectTexture.H := Texture.H;
+      DrawTexture(DeselectTexture);
+    end;
+
+    if SelectBool or not ColorizedSBG then
+    begin
+      DrawTexture(TextureSBG);
+    end
+    else
+    begin
+      DeselectTextureSBG.X := TextureSBG.X;
+      DeselectTextureSBG.Y := TextureSBG.Y;
+      DeselectTextureSBG.W := TextureSBG.W;
+      DeselectTextureSBG.H := TextureSBG.H;
+      DrawTexture(DeselectTextureSBG);
+    end;
 
     if showArrows then
     begin
@@ -338,7 +444,7 @@ var
   maxlength: real;
   I:         integer;
 begin
-  SetFontStyle(0{Text.Style});
+  SetFontStyle(ftNormal{Text.Style});
   SetFontSize(Text.Size);
   maxlength := 0;
 
@@ -352,7 +458,7 @@ begin
   if (oneItemOnly = false) then
   begin
     //show all items
-    Lines := floor((TextureSBG.W-40) / (maxlength+7));
+    Lines := floor((TextureSBG.W - MinSideSpacing * 2) / (maxlength + MinItemSpacing));
     if (Lines > Length(TextOptT)) then
       Lines := Length(TextOptT);
 
@@ -369,39 +475,66 @@ begin
   for I := Low(TextOpt) to High(TextOpt) do
     TextOpt[I].Free;
     
-  setLength (TextOpt, Lines);
+  SetLength (TextOpt, Lines);
 
   for I := Low(TextOpt) to High(TextOpt) do
   begin
     TextOpt[I] := TText.Create;
     TextOpt[I].Size := Text.Size;
-    //TextOpt[I].Align := 1;
-    TextOpt[I].Align := 0;
     TextOpt[I].Visible := true;
+    TextOpt[I].Style := 0;
 
     TextOpt[I].ColR := STDColR;
     TextOpt[I].ColG := STDColG;
     TextOpt[I].ColB := STDColB;
     TextOpt[I].Int := STDInt;
 
-    //Generate Positions
-    //TextOpt[I].X := TextureSBG.X + 20 + (TextureSBG.W  / Lines) * (I + 0.5);
-    if (I <> High(TextOpt)) or (High(TextOpt) = 0) or (Length(TextOptT) = Lines) then
-      TextOpt[I].X := TextureSBG.X + 20 + (TextureSBG.W  / Lines) * I
-    else
-      TextOpt[I].X := TextureSBG.X + TextureSBG.W - maxlength;
-
+    // generate positions
     TextOpt[I].Y := TextureSBG.Y + (TextureSBG.H - Text.Size) / 2;
 
-    //Better Look with 2 Options
-    if (Lines = 2) and (Length(TextOptT) = 2) then
-      TextOpt[I].X := TextureSBG.X + 20 + (TextureSBG.W -40 - glTextWidth(TextOptT[1])) * I;
-
-    if (Lines = 1) then
+    // better look with 2 options and a single option
+    if (Lines = 2) then
     begin
-      TextOpt[I].Align := 1; //center text
+      TextOpt[I].X := TextureSBG.X + 20 + (TextureSBG.W -40 - glTextWidth(TextOptT[1])) * I;
+      TextOpt[I].Align := 0;
+    end
+    else if (Lines = 1) then
+    begin
       TextOpt[I].X := TextureSBG.X + (TextureSBG.W / 2);
+      TextOpt[I].Align := 1; //center text
+    end
+    else
+    begin
+      TextOpt[I].X := TextureSBG.X + TextureSBG.W / 2 + (TextureSBG.W - MinSideSpacing*2) * (I / Lines - 0.5);
+      TextOpt[I].Align := 0;
     end;
+  end;
+end;
+
+function TSelectSlide.GetMouseOverArea: TMouseOverRect;
+begin
+  Result.X := Texture.X;
+  Result.Y := Texture.Y;
+  Result.W := (TextureSBG.X + TextureSBG.W) - Result.X;
+  Result.H := Max(Texture.H, TextureSBG.H);
+end;
+
+function TSelectSlide.OnClick(X, Y: Real): TMouseClickAction;
+  var
+    AreaW: Real;
+begin
+  // default: press return on click 
+  Result := maReturn;
+
+  // use left sides to inc or dec selection by click
+  AreaW := TextureSbg.W / 20;
+
+  if (Y >= TextureSBG.Y) and (Y <= TextureSBG.Y + TextureSBG.H) then
+  begin
+    if (X >= TextureSBG.X) and (X <= TextureSBG.X + AreaW) then
+      Result := maLeft   // hit left area
+    else if (X >= TextureSBG.X + TextureSBG.W - AreaW) and (X <= TextureSBG.X + TextureSBG.W) then
+      Result := maRight; // hit right area
   end;
 end;
 

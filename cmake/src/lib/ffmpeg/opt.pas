@@ -23,14 +23,10 @@
  * - For Mac OS X, some modifications were made by The Creative CAT, denoted as CAT
  *   in the source codes.
  * - Changes and updates by the UltraStar Deluxe Team
- *)
-
-(*
- * Conversion of libavcodec/opt.h
- * revision 16912, Sun Feb 1 02:00:19 2009 UTC 
  *
- * update, MiSchi, no code change
- * Fri Jun 12 2009 21:50:00 UTC
+ * Conversion of libavcodec/opt.h
+ * Max. avcodec version: 52.67.0, revision 23057, Tue May 11 18:17 2010 CET 
+ *
  *)
 
 unit opt;
@@ -109,6 +105,53 @@ type
      *)
     unit_: {const} PAnsiChar;
   end;
+
+{$IF LIBAVCODEC_VERSION >= 52042000} // >= 52.42.0
+(**
+ * AVOption2.
+ * THIS IS NOT PART OF THE API/ABI YET!
+ * This is identical to AVOption except that default_val was replaced by
+ * an union, it should be compatible with AVOption on normal platforms.
+ *)
+type
+  PAVOption2 = ^TAVOption2;
+  TAVOption2 = record
+    name   : {const} PAnsiChar;
+
+    (**
+     * short English help text
+     * @todo What about other languages?
+     *)
+    help   : {const} PAnsiChar;
+
+    (**
+     * The offset relative to the context structure where the option
+     * value is stored. It should be 0 for named constants.
+     *)
+    offset : cint;
+    type_  : TAVOptionType;
+
+    (**
+     * the default value for scalar options
+     *)
+    default_val : record
+      case cint of
+        0 : (dbl: cdouble);
+        1 : (str: PAnsiChar);
+      end;
+    min   : cdouble;
+    max   : cdouble;
+    flags : cint;
+//FIXME think about enc-audio, ... style flags
+
+    (**
+     * The logical unit to which the option belongs. Non-constant
+     * options and corresponding named constants share the same
+     * unit. May be NULL.
+     *)
+    unit_: {const} PAnsiChar;
+  end;
+{$IFEND}
 
 {$IF LIBAVCODEC_VERSION >= 51039000} // 51.39.0
 (**
@@ -189,10 +232,10 @@ function av_set_q(obj: pointer; name: {const} PAnsiChar; n: TAVRational): PAVOpt
 function av_set_int(obj: pointer; name: {const} PAnsiChar; n: cint64): PAVOption;
   cdecl; external av__codec;
 
-function av_get_double(obj: pointer; name: {const} PAnsiChar; var o_out: PAVOption): cdouble;
+function av_get_double(obj: pointer; name: {const} PAnsiChar; var o_out: {const} PAVOption): cdouble;
   cdecl; external av__codec;
 
-function av_get_q(obj: pointer; name: {const} PAnsiChar; var o_out: PAVOption): TAVRational;
+function av_get_q(obj: pointer; name: {const} PAnsiChar; var o_out: {const} PAVOption): TAVRational;
   cdecl; external av__codec;
 
 function av_get_int(obj: pointer; name: {const} PAnsiChar; var o_out: {const} PAVOption): cint64;

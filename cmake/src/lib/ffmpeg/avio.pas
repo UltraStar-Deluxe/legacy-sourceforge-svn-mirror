@@ -28,11 +28,11 @@
 (*
  * Conversion of libavformat/avio.h
  * unbuffered I/O operations
- * revision 16100, Sat Dec 13 13:39:13 2008 UTC
- * update Tue, Jun 10 01:00:00 2009 UTC
- *
  * @warning This file has to be considered an internal but installed
  * header, so it should not be directly included in your projects.
+ *
+ * update to
+ * Max. avformat version: 52.62.0, revision 23004, Tue May 11 19:29:00 2010 CET 
  *)
 
 unit avio;
@@ -70,6 +70,16 @@ const
   *)
   AVSEEK_SIZE = $10000;
 
+{$IF LIBAVFORMAT_VERSION >= 52056000} // 52.56.0
+ (**
+  * Oring this flag as into the "whence" parameter to a seek function causes it to
+  * seek by any means (like reopening and linear reading) or other normally unreasonble
+  * means that can be extreemly slow.
+  * This may be ignored by the seek code.
+  *)
+  AVSEEK_FORCE = $20000;
+{$IFEND}
+
 type
   TURLInterruptCB = function (): cint; cdecl;
 
@@ -93,7 +103,7 @@ type
     is_streamed: cint;  (**< true if streamed (no seek possible), default = false *)
     max_packet_size: cint;  (**< if non zero, the stream is packetized with this max packet size *)
     priv_data: pointer;
-    filename: PAnsiChar; (**< specified filename *)
+    filename: PAnsiChar; (**< specified URL *)
   end;
   PPURLContext = ^PURLContext;
 
@@ -106,16 +116,54 @@ type
 
   TURLProtocol = record
     name: PAnsiChar;
+{$IF LIBAVFORMAT_VERSION < 52047000} // 52.47.0
     url_open: function (h: PURLContext; filename: {const} PAnsiChar; flags: cint): cint; cdecl;
+{$ELSE}
+    url_open: function (h: PURLContext; url: {const} PAnsiChar; flags: cint): cint; cdecl;
+{$IFEND}
+
+(**
+ * Reads up to size bytes from the resource accessed by h, and stores
+ * the read bytes in buf.
+ *
+ * @return The number of bytes actually read, or a negative value
+ * corresponding to an AVERROR code in case of error. A value of zero
+ * indicates that it is not possible to read more from the accessed
+ * resource (except if the value of the size argument is also zero).
+ *)
     url_read: function (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
-    url_read_complete: function (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
+
+(**
+ * Read as many bytes as possible (up to size), calling the
+ * read function multiple times if necessary.
+ * Will also retry if the read function returns AVERROR(EAGAIN).
+ * This makes special short-read handling in applications
+ * unnecessary, if the return value is < size then it is
+ * certain there was either an error or the end of file was reached.
+ *)
     url_write: function (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
+
+(**
+ * Changes the position that will be used by the next read/write
+ * operation on the resource accessed by h.
+ *
+ * @param pos specifies the new position to set
+ * @param whence specifies how pos should be interpreted, it must be
+ * one of SEEK_SET (seek from the beginning), SEEK_CUR (seek from the
+ * current position), SEEK_END (seek from the end), or AVSEEK_SIZE
+ * (return the filesize of the requested resource, pos is ignored).
+ * @return a negative value corresponding to an AVERROR code in case
+ * of failure, or the resulting file position, measured in bytes from
+ * the beginning of the file. You can use this feature together with
+ * SEEK_CUR to read the current file position.
+ *)
     url_seek: function (h: PURLContext; pos: cint64; whence: cint): cint64; cdecl;
+
     url_close: function (h: PURLContext): cint; cdecl;
     next: PURLProtocol;
     {$IF (LIBAVFORMAT_VERSION >= 52001000) and (LIBAVFORMAT_VERSION < 52004000)} // 52.1.0 .. 52.4.0
-    url_read_play: function (h: PURLContext): cint;
-    url_read_pause: function (h: PURLContext): cint;
+    url_read_play: function (h: PURLContext): cint; cdecl;
+    url_read_pause: function (h: PURLContext): cint; cdecl;
     {$IFEND}
     {$IF LIBAVFORMAT_VERSION >= 52004000} // 52.4.0
     url_read_pause: function (h: PURLContext; pause: cint): cint; cdecl;
@@ -123,6 +171,9 @@ type
     {$IF LIBAVFORMAT_VERSION >= 52001000} // 52.1.0
     url_read_seek: function (h: PURLContext; stream_index: cint;
                              timestamp: cint64; flags: cint): cint64; cdecl;
+    {$IFEND}
+    {$IF LIBAVFORMAT_VERSION >= 52031000} // 52.31.0
+    url_get_file_handle: function (h: PURLContext): cint; cdecl;
     {$IFEND}
   end;
 
@@ -168,31 +219,85 @@ type
 
 
 {$IF LIBAVFORMAT_VERSION >= 52021000} // 52.21.0
+(**
+ * Creates an URLContext for accessing to the resource indicated by
+ * URL, and opens it using the URLProtocol up.
+ *
+ * @param puc pointer to the location where, in case of success, the
+ * function puts the pointer to the created URLContext
+ * @param flags flags which control how the resource indicated by URL
+ * is to be opened
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ *)
 function url_open_protocol(puc: PPURLContext; up: PURLProtocol;
+{$IF LIBAVFORMAT_VERSION < 52047000} // 52.47.0
                            filename: {const} PAnsiChar; flags: cint): cint;
+{$ELSE}
+                           url: {const} PAnsiChar; flags: cint): cint;
+{$IFEND}
   cdecl; external av__format;
 {$IFEND}
+
+(**
+ * Creates an URLContext for accessing to the resource indicated by
+ * url, and opens it.
+ *
+ * @param puc pointer to the location where, in case of success, the
+ * function puts the pointer to the created URLContext
+ * @param flags flags which control how the resource indicated by url
+ * is to be opened
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ *)
+{$IF LIBAVFORMAT_VERSION < 52047000} // 52.47.0
 function url_open(h: PPointer; filename: {const} PAnsiChar; flags: cint): cint;
+{$ELSE}
+function url_open(h: PPointer; url: {const} PAnsiChar; flags: cint): cint;
+{$IFEND}
   cdecl; external av__format;
 function url_read (h: PURLContext; buf: PByteArray; size: cint): cint;
   cdecl; external av__format;
+{$IF LIBAVFORMAT_VERSION >= 52034000} // 52.34.0
+function url_read_complete (h: PURLContext; buf: PByteArray; size: cint): cint; cdecl;
+  cdecl; external av__format;
+{$IFEND}
 function url_write (h: PURLContext; buf: PByteArray; size: cint): cint;
   cdecl; external av__format;
 function url_seek (h: PURLContext; pos: cint64; whence: cint): cint64;
   cdecl; external av__format;
+
+(**
+ * Closes the resource accessed by the URLContext h, and frees the
+ * memory used by it.
+ *
+ * @return a negative value if an error condition occurred, 0
+ * otherwise
+ *)
 function url_close (h: PURLContext): cint;
   cdecl; external av__format;
+
+(**
+ * Returns a non-zero value if the resource indicated by url
+ * exists, 0 otherwise.
+ *)
+{$IF LIBAVFORMAT_VERSION < 52047000} // 52.47.0
 function url_exist(filename: {const} PAnsiChar): cint;
+{$ELSE}
+function url_exist(url: {const} PAnsiChar): cint;
+{$IFEND}
   cdecl; external av__format;
+
 function url_filesize (h: PURLContext): cint64;
   cdecl; external av__format;
-{
+
+(**
  * Return the file descriptor associated with this URL. For RTP, this
  * will return only the RTP file descriptor, not the RTCP file descriptor.
  * To get both, use rtp_get_file_handles().
  *
  * @return the file descriptor associated with this URL, or <0 on error.
-}
+ *)
 (* not implemented *)
 function url_get_file_handle(h: PURLContext): cint;
   cdecl; external av__format;
@@ -264,30 +369,36 @@ var
   url_interrupt_cb: PURLInterruptCB; external av__format;
 **)
 
-{
-* If protocol is NULL, returns the first registered protocol,
-* if protocol is non-NULL, returns the next registered protocol after protocol,
-* or NULL if protocol is the last one.
-}
 {$IF LIBAVFORMAT_VERSION >= 52002000} // 52.2.0
+(**
+ * If protocol is NULL, returns the first registered protocol,
+ * if protocol is non-NULL, returns the next registered protocol after protocol,
+ * or NULL if protocol is the last one.
+ *)
 function av_protocol_next(p: PURLProtocol): PURLProtocol;
   cdecl; external av__format;
 {$IFEND}
 
 {$IF LIBAVFORMAT_VERSION <= 52028000} // 52.28.0
 (**
+ * Registers the URLProtocol protocol.
+ *)
+(**
  * @deprecated Use av_register_protocol() instead.
  *)
-function register_protocol (protocol: PURLProtocol): cint;
+function register_protocol(protocol: PURLProtocol): cint;
   cdecl; external av__format;
+(** Alias for register_protocol() *)
+function av_register_protocol(protocol: PURLProtocol): cint;
+  cdecl; external av__format name 'register_protocol';
 {$ELSE}
-function av_register_protocol (protocol: PURLProtocol): cint;
+function av_register_protocol(protocol: PURLProtocol): cint;
   cdecl; external av__format;
 {$IFEND}
 
 type
-  TReadWriteFunc = function (opaque: Pointer; buf: PByteArray; buf_size: cint): cint; cdecl;
-  TSeekFunc = function (opaque: Pointer; offset: cint64; whence: cint): cint64; cdecl;
+  TReadWriteFunc = function(opaque: Pointer; buf: PByteArray; buf_size: cint): cint; cdecl;
+  TSeekFunc = function(opaque: Pointer; offset: cint64; whence: cint): cint64; cdecl;
 
 function init_put_byte(s: PByteIOContext;
                 buffer: PByteArray;
@@ -400,11 +511,10 @@ function url_fgets(s: PByteIOContext; buf: PAnsiChar; buf_size: cint): PAnsiChar
 
 procedure put_flush_packet (s: PByteIOContext);
   cdecl; external av__format;
-  
 
 (**
  * Reads size bytes from ByteIOContext into buf.
- * @returns number of bytes read or AVERROR
+ * @return number of bytes read or AVERROR
  *)
 function get_buffer(s: PByteIOContext; buf: PByteArray; size: cint): cint;
   cdecl; external av__format;
@@ -413,7 +523,7 @@ function get_buffer(s: PByteIOContext; buf: PByteArray; size: cint): cint;
  * Reads size bytes from ByteIOContext into buf.
  * This reads at most 1 packet. If that is not enough fewer bytes will be
  * returned.
- * @returns number of bytes read or AVERROR
+ * @return number of bytes read or AVERROR
  *)
 function get_partial_buffer(s: PByteIOContext; buf: PByteArray; size: cint): cint;
   cdecl; external av__format;
@@ -449,8 +559,17 @@ function ff_get_v(bc: PByteIOContext): cuint64;
 
 function url_is_streamed(s: PByteIOContext): cint; {$IFDEF HasInline}inline;{$ENDIF}
 
-(** @note when opened as read/write, the buffers are only used for
-   writing *)
+(**
+ * Creates and initializes a ByteIOContext for accessing the
+ * resource referenced by the URLContext h.
+ * @note When the URLContext h has been opened in read+write mode, the
+ * ByteIOContext can be used only for writing.
+ *
+ * @param s Used to return the pointer to the created ByteIOContext.
+ * In case of failure the pointed to value is set to NULL.
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ *)
 {$IF LIBAVFORMAT_VERSION >= 52000000} // 52.0.0
 function url_fdopen (var s: PByteIOContext; h: PURLContext): cint;
 {$ELSE}
@@ -462,6 +581,7 @@ function url_fdopen (s: PByteIOContext; h: PURLContext): cint;
 function url_setbufsize (s: PByteIOContext; buf_size: cint): cint;
   cdecl; external av__format;
 
+{$IF LIBAVFORMAT_VERSION_MAJOR < 53}
 {$IF LIBAVFORMAT_VERSION >= 51015000} // 51.15.0
 (** Reset the buffer for reading or writing.
  * @note Will drop any data currently in the buffer without transmitting it.
@@ -470,13 +590,47 @@ function url_setbufsize (s: PByteIOContext; buf_size: cint): cint;
 function url_resetbuf(s: PByteIOContext; flags: cint): cint;
   cdecl; external av__format;
 {$IFEND}
+{$IFEND}
 
-(** @note when opened as read/write, the buffers are only used for
-   writing *)
+{$IF LIBAVFORMAT_VERSION >= 52061000} // 52.61.0
+(**
+ * Rewinds the ByteIOContext using the specified buffer containing the first buf_size bytes of the file.
+ * Used after probing to avoid seeking.
+ * Joins buf and s->buffer, taking any overlap into consideration.
+ * @note s->buffer must overlap with buf or they can't be joined and the function fails
+ * @note This function is NOT part of the public API
+ *
+ * @param s The read-only ByteIOContext to rewind
+ * @param buf The probe buffer containing the first buf_size bytes of the file
+ * @param buf_size The size of buf
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ *)
+function ff_rewind_with_probe_data(s: PByteIOContext;  buf: PAnsiChar; buf_size: cint): cint;
+  cdecl; external av__format;
+{$IFEND}
+
+(**
+ * Creates and initializes a ByteIOContext for accessing the
+ * resource indicated by url.
+ * @note When the resource indicated by url has been opened in
+ * read+write mode, the ByteIOContext can be used only for writing.
+ *
+ * @param s Used to return the pointer to the created ByteIOContext.
+ * In case of failure the pointed to value is set to NULL.
+ * @param flags flags which control how the resource indicated by url
+ * is to be opened
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ *)
+{$IF LIBAVFORMAT_VERSION < 52047000} // 52.47.0
 {$IF LIBAVFORMAT_VERSION >= 52000000} // 52.0.0
 function url_fopen(var s: PByteIOContext; filename: {const} PAnsiChar; flags: cint): cint;
 {$ELSE}
 function url_fopen(s: PByteIOContext; filename: {const} PAnsiChar; flags: cint): cint;
+{$IFEND}
+{$ELSE}
+function url_fopen(var s: PByteIOContext; url: {const} PAnsiChar; flags: cint): cint;
 {$IFEND}
   cdecl; external av__format;
 function url_fclose(s: PByteIOContext): cint;

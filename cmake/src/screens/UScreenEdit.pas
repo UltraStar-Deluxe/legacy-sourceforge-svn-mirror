@@ -45,8 +45,7 @@ type
       TextDescriptionLong: integer;
 
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar;
-        PressedDown: boolean): boolean; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
       procedure InteractNext; override;
       procedure InteractPrev; override;
       procedure InteractInc; override;
@@ -60,10 +59,10 @@ uses
   UGraphic,
   UMusic,
   USkins,
+  UUnicodeUtils,
   SysUtils;
 
-function TScreenEdit.ParseInput(PressedKey: cardinal; CharCode: WideChar; 
-  PressedDown: boolean): boolean;
+function TScreenEdit.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
   SDL_ModState: word;
 begin
@@ -75,8 +74,8 @@ begin
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -158,8 +157,8 @@ end;
 
 procedure TScreenEdit.SetAnimationProgress(Progress: real);
 begin
-  Static[0].Texture.ScaleW := Progress;
-  Static[0].Texture.ScaleH := Progress;
+  Statics[0].Texture.ScaleW := Progress;
+  Statics[0].Texture.ScaleH := Progress;
 end;
 
 end.

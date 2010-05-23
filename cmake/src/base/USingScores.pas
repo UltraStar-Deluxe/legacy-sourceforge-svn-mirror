@@ -117,9 +117,9 @@ type
   TScorePopUp = record
     Player:     byte;        // index of the popups player
     TimeStamp:  cardinal;    // timestamp of popups spawn
-    Rating:     byte;        // 0 to 8, type of rating (cool, bad, etc.)
-    ScoreGiven: word;        // score that has already been given to the player
-    ScoreDiff:  word;        // difference between cur score at spawn and old score
+    Rating:     integer;     // 0 to 8, type of rating (cool, bad, etc.)
+    ScoreGiven: integer;     // score that has already been given to the player
+    ScoreDiff:  integer;     // difference between cur score at spawn and old score
     Next:       PScorePopUp; // next item in list
   end;
   aScorePopUp = array of TScorePopUp;
@@ -129,7 +129,7 @@ type
   //-----------
   TSingScores = class
     private
-      Positions: aScorePosition;
+      aPositions: aScorePosition;
       aPlayers:  aScorePlayer;
       oPositionCount: byte;
       oPlayerCount:   byte;
@@ -138,8 +138,17 @@ type
       FirstPopUp: PScorePopUp;
       LastPopUp:  PScorePopUp;
 
+      // only defined during draw, time passed between
+      // current and previous call of draw
+      TimePassed: Cardinal;
+
       // draws a popup by pointer
       procedure DrawPopUp(const PopUp: PScorePopUp);
+
+      // raises players score if RaiseScore was called
+      // has to be called after DrawPopUp and before
+      // DrawScore
+      procedure DoRaiseScore(const Index: integer);
 
       // draws a score by playerindex
       procedure DrawScore(const Index: integer);
@@ -149,6 +158,10 @@ type
 
       // removes a popup w/o destroying the list
       procedure KillPopUp(const last, cur: PScorePopUp);
+
+      // calculate the amount of points for a player that is
+      // still in popups and therfore not displayed
+      function GetPopUpPoints(const Index: integer): integer;
     public
       Settings: record // Record containing some Displaying Options
         Phase1Time: real;     // time for phase 1 to complete (in msecs)
@@ -174,6 +187,7 @@ type
       property PositionCount: byte         read oPositionCount;
       property PlayerCount:   byte         read oPlayerCount;
       property Players:       aScorePlayer read aPlayers;
+      property Positions: aScorePosition read aPositions;
 
       // constructor just sets some standard settings
       constructor Create;
@@ -201,8 +215,14 @@ type
       // it gives every player a score position
       procedure Init;
 
+      // raises the score of a specified player to the specified score
+      procedure RaiseScore(Player: byte; Score: integer);
+
+      // sets the score of a specified player to the specified score
+      procedure SetScore(Player: byte; Score: integer);
+
       // spawns a new line bonus popup for the player
-      procedure SpawnPopUp(const PlayerIndex: byte; const Rating: byte; const Score: word);
+      procedure SpawnPopUp(const PlayerIndex: byte; const Rating: integer; const Score: integer);
 
       // removes all popups from mem
       procedure KillAllPopUps;
@@ -215,6 +235,7 @@ implementation
 
 uses
   SysUtils,
+  Math,
   SDL,
   TextGL,
   ULog,
@@ -266,7 +287,7 @@ procedure TSingScores.AddPosition(const pPosition: PScorePosition);
 begin
   if (PositionCount < MaxPositions) then
   begin
-    Positions[PositionCount] := pPosition^;
+    aPositions[PositionCount] := pPosition^;
     Inc(oPositionCount);
   end;
 end;
@@ -318,6 +339,7 @@ procedure TSingScores.ClearPlayers;
 begin
   KillAllPopUps;
   oPlayerCount := 0;
+  TimePassed := 0;
 end;
 
 {**
@@ -328,6 +350,7 @@ begin
   KillAllPopUps;
   oPlayerCount    := 0;
   oPositionCount  := 0;
+  TimePassed := 0;
 end;
 
 {**
@@ -360,7 +383,7 @@ var
     nPosition.PUW := nPosition.BGW;
     nPosition.PUH := nPosition.BGH;
 
-    nPosition.PUFont     := 2;
+    nPosition.PUFont     := ftOutline1;
     nPosition.PUFontSize := 18;
 
     nPosition.PUStartX := nPosition.BGX;
@@ -400,9 +423,33 @@ begin
 end;
 
 {**
+ * raises the score of a specified player to the specified score
+ *}
+procedure TSingScores.RaiseScore(Player: byte; Score: integer);
+begin
+  if (Player <= PlayerCount - 1) then
+    aPlayers[Player].Score := Score;
+end;
+
+{**
+ * sets the score of a specified player to the specified score
+ *}
+procedure TSingScores.SetScore(Player: byte; Score: integer);
+  var
+    Diff: Integer;
+begin
+  if (Player <= PlayerCount - 1) then
+  begin
+    Diff := Score - Players[Player].Score;
+    aPlayers[Player].Score := Score;
+    Inc(aPlayers[Player].ScoreDisplayed, Diff);
+  end;
+end;
+
+{**
  * spawns a new line bonus popup for the player
  *}
-procedure TSingScores.SpawnPopUp(const PlayerIndex: byte; const Rating: byte; const Score: word);
+procedure TSingScores.SpawnPopUp(const PlayerIndex: byte; const Rating: integer; const Score: integer);
 var
   Cur: PScorePopUp;
 begin
@@ -414,10 +461,12 @@ begin
     Cur.Player    := PlayerIndex;
     Cur.TimeStamp := SDL_GetTicks;
 
-    // limit rating value to 8
+    // limit rating value to 0..8
     // a higher value would cause a crash when selecting the bg texture
     if (Rating > 8) then
       Cur.Rating := 8
+    else if (Rating < 0) then
+      Cur.Rating := 0
     else
       Cur.Rating := Rating;
 
@@ -513,6 +562,27 @@ begin
 end;
 
 {**
+ * calculate the amount of points for a player that is
+ * still in popups and therfore not displayed
+ *}
+function TSingScores.GetPopUpPoints(const Index: integer): integer;
+  var
+    CurPopUp: PScorePopUp;
+begin
+  Result := 0;
+  
+  CurPopUp := FirstPopUp;
+  while (CurPopUp <> nil) do
+  begin
+    if (CurPopUp.Player = Index) then
+    begin // add points left "in" popup to result
+      Inc(Result, CurPopUp.ScoreDiff - CurPopUp.ScoreGiven);
+    end;
+    CurPopUp := CurPopUp.Next;
+  end;
+end;
+
+{**
  * has to be called after positions and players have been added, before first call of draw
  * it gives each player a score position
  *}
@@ -532,7 +602,7 @@ var
 
     for I := 0 to PositionCount - 1 do
     begin
-      if ((Positions[I].PlayerCount and bPlayerCount) <> 0) then
+      if ((aPositions[I].PlayerCount and bPlayerCount) <> 0) then
         Inc(Result);
     end;
   end;
@@ -546,7 +616,7 @@ var
 
     for I := 0 to PositionCount - 1 do
     begin
-      if ((Positions[I].PlayerCount and bPlayerCount) <> 0) then
+      if ((aPositions[I].PlayerCount and bPlayerCount) <> 0) then
       begin
         if (bPlayer = 0) then
         begin
@@ -614,6 +684,8 @@ var
   CurPopUp, LastPopUp: PScorePopUp;
 begin
   CurTime := SDL_GetTicks;
+  if (TimePassed <> 0) then
+    TimePassed := CurTime - TimePassed;
 
   if Visible then
   begin
@@ -644,6 +716,7 @@ begin
       // draw players w/ rating bar
       for I := 0 to PlayerCount-1 do
       begin
+        DoRaiseScore(I);
         DrawScore(I);
         DrawRatingBar(I);
       end
@@ -651,10 +724,42 @@ begin
       // draw players w/o rating bar
       for I := 0 to PlayerCount-1 do
       begin
+        DoRaiseScore(I);
         DrawScore(I);
       end;
 
   end; // eo visible
+
+  TimePassed := CurTime;
+end;
+
+{**
+ * raises players score if RaiseScore was called
+ * has to be called after DrawPopUp and before
+ * DrawScore
+ *}
+procedure TSingScores.DoRaiseScore(const Index: integer);
+  var
+    S: integer;
+    Diff: integer;
+  const
+    RaisePerSecond = 500;
+begin
+  S := (Players[Index].Score - (Players[Index].ScoreDisplayed + GetPopUpPoints(Index)));
+
+  if (S <> 0) then
+  begin
+    Diff := Round(RoundTo((RaisePerSecond * TimePassed) / 1000, 1));
+
+    { minimal raise per frame = 1 }
+    if Abs(Diff) < 1 then
+      Diff := Sign(S);
+
+    if (Abs(Diff) < Abs(S)) then
+      Inc(aPlayers[Index].ScoreDisplayed, Diff)
+    else
+      Inc(aPlayers[Index].ScoreDisplayed, S);
+  end;
 end;
 
 {**
@@ -701,13 +806,13 @@ begin
           Progress := TimeDiff / Settings.Phase1Time;
 
 
-          W := Positions[PIndex].PUW * Sin(Progress/2*Pi);
-          H := Positions[PIndex].PUH * Sin(Progress/2*Pi);
+          W := aPositions[PIndex].PUW * Sin(Progress/2*Pi);
+          H := aPositions[PIndex].PUH * Sin(Progress/2*Pi);
 
-          X := Positions[PIndex].PUStartX + (Positions[PIndex].PUW - W)/2;
-          Y := Positions[PIndex].PUStartY + (Positions[PIndex].PUH - H)/2;
+          X := aPositions[PIndex].PUStartX + (aPositions[PIndex].PUW - W)/2;
+          Y := aPositions[PIndex].PUStartY + (aPositions[PIndex].PUH - H)/2;
 
-          FontSize   := Round(Progress * Positions[PIndex].PUFontSize);
+          FontSize   := Round(Progress * aPositions[PIndex].PUFontSize);
           FontOffset := (H - FontSize) / 2;
           Alpha := 1;
         end
@@ -717,20 +822,20 @@ begin
           // phase 2 - the moving
           Progress := (TimeDiff - Settings.Phase1Time) / Settings.Phase2Time;
 
-          W := Positions[PIndex].PUW;
-          H := Positions[PIndex].PUH;
+          W := aPositions[PIndex].PUW;
+          H := aPositions[PIndex].PUH;
 
-          PosDiff := Positions[PIndex].PUTargetX - Positions[PIndex].PUStartX;
+          PosDiff := aPositions[PIndex].PUTargetX - aPositions[PIndex].PUStartX;
           if PosDiff > 0 then
             PosDiff := PosDiff + W;
-          X := Positions[PIndex].PUStartX + PosDiff * sqr(Progress);
+          X := aPositions[PIndex].PUStartX + PosDiff * sqr(Progress);
 
-          PosDiff := Positions[PIndex].PUTargetY - Positions[PIndex].PUStartY;
+          PosDiff := aPositions[PIndex].PUTargetY - aPositions[PIndex].PUStartY;
           if PosDiff < 0 then
-            PosDiff := PosDiff + Positions[PIndex].BGH;
-          Y := Positions[PIndex].PUStartY + PosDiff * sqr(Progress);
+            PosDiff := PosDiff + aPositions[PIndex].BGH;
+          Y := aPositions[PIndex].PUStartY + PosDiff * sqr(Progress);
 
-          FontSize   := Positions[PIndex].PUFontSize;
+          FontSize   := aPositions[PIndex].PUFontSize;
           FontOffset := (H - FontSize) / 2;
           Alpha := 1 - 0.3 * Progress;
         end
@@ -763,24 +868,24 @@ begin
             // set positions etc.
             Alpha := 0.7 - 0.7 * Progress;
 
-            W := Positions[PIndex].PUW;
-            H := Positions[PIndex].PUH;
+            W := aPositions[PIndex].PUW;
+            H := aPositions[PIndex].PUH;
 
-            PosDiff := Positions[PIndex].PUTargetX - Positions[PIndex].PUStartX;
+            PosDiff := aPositions[PIndex].PUTargetX - aPositions[PIndex].PUStartX;
             if (PosDiff > 0) then
               PosDiff := W
             else
               PosDiff := 0;
-            X := Positions[PIndex].PUTargetX + PosDiff * Progress;
+            X := aPositions[PIndex].PUTargetX + PosDiff * Progress;
 
-            PosDiff := Positions[PIndex].PUTargetY - Positions[PIndex].PUStartY;
+            PosDiff := aPositions[PIndex].PUTargetY - aPositions[PIndex].PUStartY;
             if (PosDiff < 0) then
-              PosDiff := -Positions[PIndex].BGH
+              PosDiff := -aPositions[PIndex].BGH
             else
               PosDiff := 0;
-            Y := Positions[PIndex].PUTargetY - PosDiff * (1 - Progress);
+            Y := aPositions[PIndex].PUTargetY - PosDiff * (1 - Progress);
 
-            FontSize   := Positions[PIndex].PUFontSize;
+            FontSize   := aPositions[PIndex].PUFontSize;
             FontOffset := (H - FontSize) / 2;
           end
           else
@@ -817,7 +922,7 @@ begin
           glDisable(GL_BLEND);
 
           // set font style and size
-          SetFontStyle(Positions[PIndex].PUFont);
+          SetFontStyle(aPositions[PIndex].PUFont);
           SetFontItalic(false);
           SetFontSize(FontSize);
           SetFontReflection(false, 0);
@@ -853,7 +958,7 @@ begin
     // only draw if player is on cur screen
     if (((Players[Index].Position and 128) = 0) = (ScreenAct = 1)) and Players[Index].Visible then
     begin
-      Position := @Positions[Players[Index].Position and 127];
+      Position := @aPositions[Players[Index].Position and 127];
 
       // draw scorebg
       glEnable(GL_TEXTURE_2D);
@@ -905,7 +1010,7 @@ begin
         Players[index].RBVisible and
         Players[index].Visible) then
     begin
-      Position := @Positions[Players[Index].Position and 127];
+      Position := @aPositions[Players[Index].Position and 127];
 
       if (Enabled and Players[Index].Enabled) then
       begin

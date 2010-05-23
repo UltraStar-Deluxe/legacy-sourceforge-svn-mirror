@@ -35,24 +35,32 @@ interface
 
 uses
   UCommon,
+  Math,
   SDL,
-  UMenu,
   gl,
   glu,
-  SysUtils;
+  SysUtils,
+  UMenu,
+  UPath,
+  UMusic,
+  UHookableEvent;
 
 type
   TDisplay = class
     private
+      ePreDraw: THookableEvent;
+      eDraw: THookableEvent;
+
       //fade-to-black-hack
       BlackScreen:   boolean;
 
       FadeEnabled:   boolean;  // true if fading is enabled
       FadeFailed:    boolean;  // true if fading is possible (enough memory, etc.)
-      FadeState:     integer;  // fading state, 0 means that the fade texture must be initialized
-      LastFadeTime:  cardinal; // last fade update time
+      FadeTime:      cardinal; // time when fading starts, 0 means that the fade texture must be initialized
+      DoneOnShow:    boolean;  // true if passed onShow after fading
 
-      FadeTex:       array[1..2] of GLuint;
+      FadeTex:       array[0..1] of GLuint;
+      TexW, TexH:    Cardinal;
  
       FPSCounter:    cardinal;
       LastFPS:       cardinal;
@@ -72,6 +80,9 @@ type
       Cursor_Fade:         boolean;
 
       procedure DrawDebugInformation;
+
+      { called by MoveCursor and OnMouseButton to update last move and start fade in }
+      procedure UpdateCursorFade;
     public
       NextScreen:          PMenu;
       CurrentScreen:       PMenu;
@@ -86,17 +97,29 @@ type
       constructor Create;
       destructor  Destroy; override;
 
+      procedure InitFadeTextures();
+      
       procedure SaveScreenShot;
 
       function  Draw: boolean;
+
+      { calls ParseInput of cur or next Screen if assigned }
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown : boolean): boolean;
 
       { sets SDL_ShowCursor depending on options set in Ini }
       procedure SetCursor;
 
       { called when cursor moves, positioning of software cursor }
-      procedure MoveCursor(X, Y: double; Pressed: boolean);
+      procedure MoveCursor(X, Y: double);
 
-      
+      { called when left or right mousebutton is pressed or released }
+      procedure OnMouseButton(Pressed: boolean);
+      { fades to specific screen (playing specified sound) }
+      function FadeTo(Screen: PMenu; const aSound: TAudioPlaybackStream = nil): PMenu;
+
+      { abort fading to the current screen, may be used in OnShow, or during fade process }
+      procedure AbortScreenChange;
+
       { draws software cursor }
       procedure DrawCursor;
   end;
@@ -105,6 +128,9 @@ var
   Display: TDisplay;
 
 const
+  { constants for screen transition
+    time in milliseconds }
+  Transition_Fade_Time = 400; 
   { constants for software cursor effects
     time in milliseconds }
   Cursor_FadeIn_Time = 500;      // seconds the fade in effect lasts
@@ -123,13 +149,16 @@ uses
   UMain,
   UTexture,
   UTime,
-  UPath;
+  ULanguage,
+  UPathUtils;
 
 constructor TDisplay.Create;
-var
-  i: integer;
 begin
   inherited Create;
+
+  // create events for plugins
+  ePreDraw := THookableEvent.Create('Display.PreDraw');
+  eDraw := THookableEvent.Create('Display.Draw');
 
   //popup hack
   CheckOK             := false;
@@ -138,18 +167,13 @@ begin
   BlackScreen         := false;
 
   // fade mod
-  FadeState   := 0;
+  FadeTime   := 0;
   FadeEnabled := (Ini.ScreenFade = 1);
   FadeFailed  := false;
+  DoneOnShow  := false;
 
-  glGenTextures(2, @FadeTex);
-
-  for i := 1 to 2 do
-  begin
-    glBindTexture(GL_TEXTURE_2D, FadeTex[i]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  end;
+  glGenTextures(2, PGLuint(@FadeTex));
+  InitFadeTextures();
 
   //Set LastError for OSD to No Error
   OSD_LastError := 'No Errors';
@@ -166,16 +190,35 @@ end;
 
 destructor TDisplay.Destroy;
 begin
-  glDeleteTextures(2, @FadeTex);    
+  glDeleteTextures(2, @FadeTex);
   inherited Destroy;
+end;
+
+procedure TDisplay.InitFadeTextures();
+var
+  i: integer;
+begin
+  TexW := Round(Power(2, Ceil(Log2(ScreenW div Screens))));
+  TexH := Round(Power(2, Ceil(Log2(ScreenH))));
+
+  for i := 0 to 1 do
+  begin
+    glBindTexture(GL_TEXTURE_2D, FadeTex[i]);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, TexW, TexH, 0, GL_RGB, GL_UNSIGNED_BYTE, nil);
+  end;
 end;
 
 function TDisplay.Draw: boolean;
 var
   S:               integer;
   FadeStateSquare: real;
+  FadeW, FadeH:    real;
+  FadeCopyW, FadeCopyH: integer;
   currentTime:     cardinal;
   glError:         glEnum;
+
 begin
   Result := true;
 
@@ -214,20 +257,25 @@ begin
 
     if (not assigned(NextScreen)) and (not BlackScreen) then
     begin
+      ePreDraw.CallHookChain(false);
       CurrentScreen.Draw;
 
       //popup mod
       if (ScreenPopupError <> nil) and ScreenPopupError.Visible then
         ScreenPopupError.Draw
+      else if (ScreenPopupInfo <> nil) and ScreenPopupInfo.Visible then
+        ScreenPopupInfo.Draw
       else if (ScreenPopupCheck <> nil) and ScreenPopupCheck.Visible then
         ScreenPopupCheck.Draw;
 
       // fade mod
-      FadeState := 0;
+      FadeTime := 0;
       if ((Ini.ScreenFade = 1) and (not FadeFailed)) then
         FadeEnabled := true
       else if (Ini.ScreenFade = 0) then
         FadeEnabled := false;
+
+      eDraw.CallHookChain(false);
     end
     else
     begin
@@ -240,95 +288,129 @@ begin
       if (FadeEnabled and not FadeFailed) then
       begin
         //Create Fading texture if we're just starting
-        if FadeState = 0 then
+        if FadeTime = 0 then
         begin
-          // save old viewport and resize to fit texture
-          glPushAttrib(GL_VIEWPORT_BIT);
-          glViewPort(0, 0, 512, 512);
-
           // draw screen that will be faded
+          ePreDraw.CallHookChain(false);
           CurrentScreen.Draw;
+          eDraw.CallHookChain(false);
 
           // clear OpenGL errors, otherwise fading might be disabled due to some
           // older errors in previous OpenGL calls.
           glGetError();
 
+          FadeCopyW := ScreenW div Screens;
+          FadeCopyH := ScreenH;
+
+          // it is possible that our fade textures are too small after a window
+          // resize. In that case resize the fade texture to fit the requirements.
+          if (TexW < FadeCopyW) or (TexH < FadeCopyH) then
+            InitFadeTextures();
+
           // copy screen to texture
-          glBindTexture(GL_TEXTURE_2D, FadeTex[S]);
-          glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 512, 512, 0);
+          glBindTexture(GL_TEXTURE_2D, FadeTex[S-1]);
+          glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (S-1) * ScreenW div Screens, 0,
+            FadeCopyW, FadeCopyH);
+
           glError := glGetError();
           if (glError <> GL_NO_ERROR) then
           begin
             FadeFailed := true;
-            Log.LogWarn('Fading disabled: ' + gluErrorString(glError), 'TDisplay.Draw');
+            Log.LogError('Fading disabled: ' + gluErrorString(glError), 'TDisplay.Draw');
           end;
 
-          // restore viewport
-          glPopAttrib();
-
           // blackscreen-hack
-          if not BlackScreen then
-            NextScreen.onShow;
+          if not BlackScreen and (S = 1) and not DoneOnShow then
+          begin
+            NextScreen.OnShow;
+            DoneOnShow := true;
+          end;
 
-          // update fade state
-          LastFadeTime := SDL_GetTicks();
-          if (S = 2) or (Screens = 1) then
-            FadeState := FadeState + 1;
+
+          // set fade time once on second screen (or first if screens = 1)
+          if (Screens = 1) or (S = 2) then
+            FadeTime := SDL_GetTicks;
         end; // end texture creation in first fading step
 
-        //do some time-based fading
+        {//do some time-based fading
         currentTime := SDL_GetTicks();
         if (currentTime > LastFadeTime+30) and (S = 1) then
         begin
-          FadeState := FadeState + 4;
+          FadeState := FadeState + 5;
           LastFadeTime := currentTime;
-        end;
+        end;   }
 
         // blackscreen-hack
         if not BlackScreen then
-          NextScreen.Draw // draw next screen
+        begin
+          ePreDraw.CallHookChain(false);
+          NextScreen.Draw; // draw next screen
+          eDraw.CallHookChain(false);
+        end
         else if ScreenAct = 1 then
         begin
-          glClearColor(0, 0, 0 , 0);
+          glClearColor(0, 0, 0, 1);
           glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
         end;
 
         // and draw old screen over it... slowly fading out
+        if (FadeTime = 0) then
+          FadeStateSquare := 0 // for first screen if screens = 2
+        else
+          FadeStateSquare := sqr((SDL_GetTicks - FadeTime) / Transition_Fade_Time);
 
-        FadeStateSquare := (FadeState*FadeState)/10000;
+        if (FadeStateSquare < 1) then
+        begin
+          FadeW := (ScreenW div Screens)/TexW;
+          FadeH := ScreenH/TexH;
 
-        glBindTexture(GL_TEXTURE_2D, FadeTex[S]);
-        glColor4f(1, 1, 1, 1-FadeStateSquare);
+          glBindTexture(GL_TEXTURE_2D, FadeTex[S-1]);
+          // TODO: check if glTexEnvi() gives any speed improvement
+          //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+          glColor4f(1, 1, 1, 1-FadeStateSquare);
 
-        glEnable(GL_TEXTURE_2D);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
-        glBegin(GL_QUADS);
-          glTexCoord2f(0+FadeStateSquare, 0+FadeStateSquare); glVertex2f(0,   600);
-          glTexCoord2f(0+FadeStateSquare, 1-FadeStateSquare); glVertex2f(0,   0);
-          glTexCoord2f(1-FadeStateSquare, 1-FadeStateSquare); glVertex2f(800, 0);
-          glTexCoord2f(1-FadeStateSquare, 0+FadeStateSquare); glVertex2f(800, 600);
-        glEnd;
-        glDisable(GL_BLEND);
-        glDisable(GL_TEXTURE_2D);
+          glEnable(GL_TEXTURE_2D);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          glEnable(GL_BLEND);
+          glBegin(GL_QUADS);
+            glTexCoord2f((0+FadeStateSquare/2)*FadeW, (0+FadeStateSquare/2)*FadeH);
+            glVertex2f(0,   RenderH);
+
+            glTexCoord2f((0+FadeStateSquare/2)*FadeW, (1-FadeStateSquare/2)*FadeH);
+            glVertex2f(0,   0);
+
+            glTexCoord2f((1-FadeStateSquare/2)*FadeW, (1-FadeStateSquare/2)*FadeH);
+            glVertex2f(RenderW, 0);
+
+            glTexCoord2f((1-FadeStateSquare/2)*FadeW, (0+FadeStateSquare/2)*FadeH);
+            glVertex2f(RenderW, RenderH);
+          glEnd;
+          glDisable(GL_BLEND);
+          glDisable(GL_TEXTURE_2D);
+
+          // reset to default
+          //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        end;
       end
-// blackscreen hack
+      
+      // blackscreen hack
       else if not BlackScreen then
       begin
         NextScreen.OnShow;
       end;
 
-      if ((FadeState > 40) or (not FadeEnabled) or FadeFailed) and (S = 1) then
+      if ((FadeTime + Transition_Fade_Time < SDL_GetTicks) or (not FadeEnabled) or FadeFailed) and ((Screens = 1) or (S = 2)) then
       begin
         // fade out complete...
-        FadeState := 0;
+        FadeTime := 0;
+        DoneOnShow := false;
         CurrentScreen.onHide;
         CurrentScreen.ShowFinish := false;
         CurrentScreen := NextScreen;
         NextScreen := nil;
         if not BlackScreen then
         begin
-          CurrentScreen.onShowFinish;
+          CurrentScreen.OnShowFinish;
           CurrentScreen.ShowFinish := true;
         end
         else
@@ -341,11 +423,11 @@ begin
 
 // Draw OSD only on first Screen if Debug Mode is enabled
     if ((Ini.Debug = 1) or (Params.Debug)) and (S = 1) then
-      DrawDebugInformation;      
-  end; // for
+      DrawDebugInformation;
 
-  if not BlackScreen then
-    DrawCursor;
+    if not BlackScreen then
+      DrawCursor;
+  end; // for
 end;
 
 { sets SDL_ShowCursor depending on options set in Ini }
@@ -392,35 +474,51 @@ begin
   end;
 end;
 
-{ called when cursor moves, positioning of software cursor }
-procedure TDisplay.MoveCursor(X, Y: double; Pressed: boolean);
+{ called by MoveCursor and OnMouseButton to update last move and start fade in }
+procedure TDisplay.UpdateCursorFade;
 var
   Ticks: cardinal;
 begin
-  if (Ini.Mouse = 2) and 
-     ((X <> Cursor_X) or (Y <> Cursor_Y) or (Pressed <> Cursor_Pressed)) then
+  Ticks := SDL_GetTicks;
+
+  { fade in on movement (or button press) if not first movement }
+  if (not Cursor_Visible) and (Cursor_LastMove <> 0) then
+  begin
+    if Cursor_Fade then // we use a trick here to consider progress of fade out
+      Cursor_LastMove := Ticks - round(Cursor_FadeIn_Time * (1 - (Ticks - Cursor_LastMove)/Cursor_FadeOut_Time))
+    else
+      Cursor_LastMove := Ticks;
+
+    Cursor_Visible := true;
+    Cursor_Fade := true;
+  end
+  else if not Cursor_Fade then
+  begin
+    Cursor_LastMove := Ticks;
+  end;
+end;
+
+{ called when cursor moves, positioning of software cursor }
+procedure TDisplay.MoveCursor(X, Y: double);
+begin
+  if (Ini.Mouse = 2) and
+     ((X <> Cursor_X) or (Y <> Cursor_Y)) then
   begin
     Cursor_X := X;
     Cursor_Y := Y;
+
+    UpdateCursorFade;
+  end;
+end;
+
+{ called when left or right mousebutton is pressed or released }
+procedure TDisplay.OnMouseButton(Pressed: boolean);
+begin
+  if (Ini.Mouse = 2) then
+  begin
     Cursor_Pressed := Pressed;
 
-    Ticks := SDL_GetTicks;
-
-    { fade in on movement (or button press) if not first movement }
-    if (not Cursor_Visible) and (Cursor_LastMove <> 0) then
-    begin
-      if Cursor_Fade then // we use a trick here to consider progress of fade out
-        Cursor_LastMove := Ticks - round(Cursor_FadeIn_Time * (1 - (Ticks - Cursor_LastMove)/Cursor_FadeOut_Time))
-      else
-        Cursor_LastMove := Ticks;
-
-      Cursor_Visible := true;
-      Cursor_Fade := true;
-    end
-    else if not Cursor_Fade then
-    begin
-      Cursor_LastMove := Ticks;
-    end;
+    UpdateCursorFade;
   end;
 end;
 
@@ -429,8 +527,9 @@ procedure TDisplay.DrawCursor;
 var
   Alpha: single;
   Ticks: cardinal;
+  DrawX: double;
 begin
-  if (Ini.Mouse = 2) then
+  if (Ini.Mouse = 2) and ((Screens = 1) or ((ScreenAct - 1) = (Round(Cursor_X+16) div RenderW))) then
   begin // draw software cursor
     Ticks := SDL_GetTicks;
 
@@ -471,6 +570,9 @@ begin
 
     if (Alpha > 0) and (not Cursor_HiddenByScreen) then
     begin
+      DrawX := Cursor_X;
+      if (ScreenAct = 2) then
+        DrawX := DrawX - RenderW;
       glColor4f(1, 1, 1, Alpha);
       glEnable(GL_TEXTURE_2D);
       glEnable(GL_BLEND);
@@ -483,16 +585,16 @@ begin
 
       glBegin(GL_QUADS);
         glTexCoord2f(0, 0);
-        glVertex2f(Cursor_X, Cursor_Y);
+        glVertex2f(DrawX, Cursor_Y);
 
         glTexCoord2f(0, 1);
-        glVertex2f(Cursor_X, Cursor_Y + 32);
+        glVertex2f(DrawX, Cursor_Y + 32);
 
         glTexCoord2f(1, 1);
-        glVertex2f(Cursor_X + 32, Cursor_Y + 32);
+        glVertex2f(DrawX + 32, Cursor_Y + 32);
 
         glTexCoord2f(1, 0);
-        glVertex2f(Cursor_X + 32, Cursor_Y);
+        glVertex2f(DrawX + 32, Cursor_Y);
       glEnd;
 
       glDisable(GL_BLEND);
@@ -501,52 +603,101 @@ begin
   end;
 end;
 
+function TDisplay.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown : boolean): boolean;
+begin
+  if (assigned(NextScreen)) then
+    Result := NextScreen^.ParseInput(PressedKey, CharCode, PressedDown)
+  else if (assigned(CurrentScreen)) then
+    Result := CurrentScreen^.ParseInput(PressedKey, CharCode, PressedDown)
+  else
+    Result := True;
+end;
+
+{ abort fading to the next screen, may be used in OnShow, or during fade process }
+procedure TDisplay.AbortScreenChange;
+  var
+    Temp: PMenu;
+begin
+  // this is some kind of "hack" it is based on the
+  // code that is used to change the screens in TDisplay.Draw
+  // we should rewrite this whole behaviour, as it is not well
+  // structured and not well extendable. Also we should offer
+  // a possibility to change screens to plugins
+  // change this code when restructuring is done
+  if (assigned(NextScreen)) then
+  begin
+    // we have to swap the screens
+    Temp := CurrentScreen;
+    CurrentScreen := NextScreen;
+    NextScreen := Temp;
+
+    // and call the OnShow procedure of the previous screen
+    // because it was already called by default fade procedure
+    NextScreen.OnShow;
+    
+  end;
+end;
+
+{ fades to specific screen (playing specified sound)
+  returns old screen }
+function TDisplay.FadeTo(Screen: PMenu; const aSound: TAudioPlaybackStream = nil): PMenu;
+begin
+  Result := CurrentScreen;
+  if (Result <> nil) then
+  begin
+    if (aSound <> nil) then
+      Result.FadeTo(Screen, aSound)
+    else
+      Result.FadeTo(Screen);
+  end;
+end;
+
 procedure TDisplay.SaveScreenShot;
 var
   Num:        integer;
-  FileName:   string;
+  FileName:   IPath;
+  Prefix:     UTF8String;
   ScreenData: PChar;
   Surface:    PSDL_Surface;
   Success:    boolean;
   Align:      integer;
   RowSize:    integer;
 begin
-// Exit if Screenshot-path does not exist or read-only
-  if (ScreenshotsPath = '') then
+  // Exit if Screenshot-path does not exist or read-only
+  if (ScreenshotsPath.IsUnset) then
     Exit;
 
   for Num := 1 to 9999 do
   begin
-    FileName := IntToStr(Num);
-    while Length(FileName) < 4 do
-      FileName := '0' + FileName;
-    FileName := ScreenshotsPath + 'screenshot' + FileName + '.png';
-    if not FileExists(FileName) then
-      break
+    // fill prefix to 4 digits with leading '0', e.g. '0001'
+    Prefix := Format('screenshot%.4d', [Num]);
+    FileName := ScreenshotsPath.Append(Prefix + '.png');
+    if not FileName.Exists() then
+      break;
   end;
 
-// we must take the row-alignment (4byte by default) into account
+  // we must take the row-alignment (4byte by default) into account
   glGetIntegerv(GL_PACK_ALIGNMENT, @Align);
-// calc aligned row-size
+  // calc aligned row-size
   RowSize := ((ScreenW*3 + (Align-1)) div Align) * Align;
 
   GetMem(ScreenData, RowSize * ScreenH);
   glReadPixels(0, 0, ScreenW, ScreenH, GL_RGB, GL_UNSIGNED_BYTE, ScreenData);
-// on big endian machines (powerpc) this may need to be changed to
-// Needs to be tests. KaMiSchi Sept 2008
-// in this case one may have to add " glext, " to the list of used units
-//  glReadPixels(0, 0, ScreenW, ScreenH, GL_BGR, GL_UNSIGNED_BYTE, ScreenData);
+  // on big endian machines (powerpc) this may need to be changed to
+  // Needs to be tests. KaMiSchi Sept 2008
+  // in this case one may have to add " glext, " to the list of used units
+  //  glReadPixels(0, 0, ScreenW, ScreenH, GL_BGR, GL_UNSIGNED_BYTE, ScreenData);
   Surface := SDL_CreateRGBSurfaceFrom(
       ScreenData, ScreenW, ScreenH, 24, RowSize,
       $0000FF, $00FF00, $FF0000, 0);
 
-//  Success := WriteJPGImage(FileName, Surface, 95);
-//  Success := WriteBMPImage(FileName, Surface);
+  //  Success := WriteJPGImage(FileName, Surface, 95);
+  //  Success := WriteBMPImage(FileName, Surface);
   Success := WritePNGImage(FileName, Surface);
   if Success then
-    ScreenPopupError.ShowPopup('Screenshot saved: ' + ExtractFileName(FileName))
+    ScreenPopupInfo.ShowPopup(Format(Language.Translate('SCREENSHOT_SAVED'), [FileName.GetName.ToUTF8()]))
   else
-    ScreenPopupError.ShowPopup('Screenshot failed');
+    ScreenPopupError.ShowPopup(Language.Translate('SCREENSHOT_FAILED'));
 
   SDL_FreeSurface(Surface);
   FreeMem(ScreenData);
@@ -559,7 +710,7 @@ procedure TDisplay.DrawDebugInformation;
 var
   Ticks: cardinal;
 begin
-// Some White Background for information
+  // Some White Background for information
   glEnable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
   glColor4f(1, 1, 1, 0.5);
@@ -571,13 +722,13 @@ begin
   glEnd;
   glDisable(GL_BLEND);
 
-// set font specs
-  SetFontStyle(0);
+  // set font specs
+  SetFontStyle(ftNormal);
   SetFontSize(21);
   SetFontItalic(false);
   glColor4f(0, 0, 0, 1);
 
-// calculate fps
+  // calculate fps
   Ticks := SDL_GetTicks();
   if (Ticks >= NextFPSSwap) then
   begin
@@ -588,17 +739,17 @@ begin
 
   Inc(FPSCounter);
 
-// draw text
+  // draw text
 
-// fps
+  // fps
   SetFontPos(695, 0);
   glPrint ('FPS: ' + InttoStr(LastFPS));
 
-// rspeed
+  // rspeed
   SetFontPos(695, 13);
   glPrint ('RSpeed: ' + InttoStr(Round(1000 * TimeMid)));
 
-// lasterror
+  // lasterror
   SetFontPos(695, 26);
   glColor4f(1, 0, 0, 1);
   glPrint (OSD_LastError);

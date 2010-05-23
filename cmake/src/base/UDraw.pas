@@ -35,11 +35,9 @@ interface
 
 uses
   UThemes,
-  ModiSDK,
   UGraphicClasses;
 
 procedure SingDraw;
-procedure SingModiDraw (PlayerInfo: TPlayerInfo);
 procedure SingDrawBackground;
 procedure SingDrawOscilloscope(X, Y, W, H: real; NrSound: integer);
 procedure SingDrawNoteLines(Left, Top, Right: real; Space: integer);
@@ -86,7 +84,6 @@ uses
   Math,
   gl,
   TextGL,
-  UDLLManager,
   UDrawTexture,
   UGraphic,
   UIni,
@@ -96,7 +93,6 @@ uses
   UMusic,
   URecord,
   UScreenSing,
-  UScreenSingModi,
   UTexture;
 
 procedure SingDrawBackground;
@@ -258,19 +254,21 @@ begin
 // So we exploit this behavior a bit - we give NrLines the playernumber, keep it in playernumber - and then we set NrLines to zero
 // This could also come quite in handy when we do the duet mode, cause just the notes for the player that has to sing should be drawn then
 // BUT this is not implemented yet, all notes are drawn! :D
+  if (ScreenSing.settings.NotesVisible and (1 shl NrLines) <> 0) then
+  begin
 
-  PlayerNumber := NrLines + 1; // Player 1 is 0
-  NrLines     := 0;
+    PlayerNumber := NrLines + 1; // Player 1 is 0
+    NrLines     := 0;
 
-// exploit done
+  // exploit done
 
-  glColor3f(1, 1, 1);
-  glEnable(GL_TEXTURE_2D);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor3f(1, 1, 1);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  lTmpA := (Right-Left);
-  lTmpB := (Lines[NrLines].Line[Lines[NrLines].Current].End_ - Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start);
+    lTmpA := (Right-Left);
+    lTmpB := (Lines[NrLines].Line[Lines[NrLines].Current].End_ - Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start);
 
   if ( lTmpA > 0 ) and ( lTmpB > 0 ) then
     TempR := lTmpA / lTmpB
@@ -285,16 +283,17 @@ begin
       begin
         if NoteType <> ntFreestyle then
 	begin
-          if Ini.EffectSing = 0 then
-          // If Golden note Effect of then Change not Color
-          begin
-            case NoteType of
-              ntNormal: glColor4f(1, 1, 1, 1);   // We set alpha to 1, cause we can control the transparency through the png itself
-              ntGolden: glColor4f(1, 1, 0.3, 1); // no stars, paint yellow -> glColor4f(1, 1, 0.3, 0.85); - we could
+
+            if Ini.EffectSing = 0 then
+              // If Golden note Effect of then Change not Color
+            begin
+              case NoteType of
+                ntNormal: glColor4f(1, 1, 1, 1);   // We set alpha to 1, cause we can control the transparency through the png itself
+                ntGolden: glColor4f(1, 1, 0.3, 1); // no stars, paint yellow -> glColor4f(1, 1, 0.3, 0.85); - we could
             end; // case
-          end //Else all Notes same Color
-          else
-            glColor4f(1, 1, 1, 1);        // We set alpha to 1, cause we can control the transparency through the png itself
+            end //Else all Notes same Color
+            else
+              glColor4f(1, 1, 1, 1);        // We set alpha to 1, cause we can control the transparency through the png itself
 
           // left part
           Rec.Left  := (Start-Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start) * TempR + Left + 0.5 + 10*ScreenX;
@@ -309,35 +308,35 @@ begin
             glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
           glEnd;
 
-          //We keep the postion of the top left corner b4 it's overwritten
+            //We keep the postion of the top left corner b4 it's overwritten
             GoldenStarPos := Rec.Left;
-          //done
+            //done
 
-         // middle part
-        Rec.Left  := Rec.Right;
-        Rec.Right := (Start+Length-Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start) * TempR + Left - NotesW - 0.5 + 10*ScreenX;
+            // middle part
+            Rec.Left := Rec.Right;
+            Rec.Right := (Start+Length-Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start) * TempR + Left - NotesW - 0.5 + 10*ScreenX;
 
-        glBindTexture(GL_TEXTURE_2D, Tex_plain_Mid[PlayerNumber].TexNum);
-        glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-        glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-        glBegin(GL_QUADS);
-          glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-          glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-          glTexCoord2f(round((Rec.Right-Rec.Left)/32), 1); glVertex2f(Rec.Right, Rec.Bottom);
-          glTexCoord2f(round((Rec.Right-Rec.Left)/32), 0); glVertex2f(Rec.Right, Rec.Top);
-        glEnd;
+            glBindTexture(GL_TEXTURE_2D, Tex_plain_Mid[PlayerNumber].TexNum);
+            glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+            glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+            glBegin(GL_QUADS);
+              glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
+              glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
+              glTexCoord2f(round((Rec.Right-Rec.Left)/32), 1); glVertex2f(Rec.Right, Rec.Bottom);
+              glTexCoord2f(round((Rec.Right-Rec.Left)/32), 0); glVertex2f(Rec.Right, Rec.Top);
+            glEnd;
 
         // right part
         Rec.Left  := Rec.Right;
         Rec.Right := Rec.Right + NotesW;
 
-        glBindTexture(GL_TEXTURE_2D, Tex_plain_Right[PlayerNumber].TexNum);
-        glBegin(GL_QUADS);
-          glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-          glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-          glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-          glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
-        glEnd;
+            glBindTexture(GL_TEXTURE_2D, Tex_plain_Right[PlayerNumber].TexNum);
+            glBegin(GL_QUADS);
+              glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
+              glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
+              glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
+              glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+            glEnd;
 
           // Golden Star Patch
           if (NoteType = ntGolden) and (Ini.EffectSing=1) then
@@ -345,13 +344,14 @@ begin
             GoldenRec.SaveGoldenStarsRec(GoldenStarPos, Rec.Top, Rec.Right, Rec.Bottom);
           end;
 
-        end; // if not FreeStyle
-      end; // with
-    end; // for
-  end; // with
+          end; // if not FreeStyle
+        end; // with
+      end; // for
+    end; // with
 
-  glDisable(GL_BLEND);
-  glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
+  end;
 end;
 
 // draw sung notes
@@ -481,7 +481,7 @@ var
   W, H:           real;
   lTmpA, lTmpB:   real;
 begin
-  if (Player[PlayerIndex].ScoreTotalInt >= 0) then
+  if (ScreenSing.settings.NotesVisible and (1 shl PlayerIndex) <> 0) then
   begin
     glColor4f(1, 1, 1, sqrt((1+sin( AudioPlayback.Position * 3))/4)/ 2 + 0.5 );
     glEnable(GL_TEXTURE_2D);
@@ -683,20 +683,25 @@ begin
 
   // draw note-lines
 
-  if (PlayersPlay = 1) and (Ini.NoteLines = 1) then
+  // to-do : needs fix when party mode works w/ 2 screens 
+  if (PlayersPlay = 1) and (Ini.NoteLines = 1) and (ScreenSing.settings.NotesVisible and (1) <> 0) then
     SingDrawNoteLines(NR.Left + 10*ScreenX, Skin_P2_NotesB - 105, NR.Right + 10*ScreenX, 15);
 
   if ((PlayersPlay = 2) or (PlayersPlay = 4)) and (Ini.NoteLines = 1) then
   begin
-    SingDrawNoteLines(NR.Left + 10*ScreenX, Skin_P1_NotesB - 105, NR.Right + 10*ScreenX, 15);
-    SingDrawNoteLines(NR.Left + 10*ScreenX, Skin_P2_NotesB - 105, NR.Right + 10*ScreenX, 15);
+    if (ScreenSing.settings.NotesVisible and (1 shl 0) <> 0) then
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P1_NotesB - 105, Nr.Right + 10*ScreenX, 15);
+    if (ScreenSing.settings.NotesVisible and (1 shl 1) <> 0) then
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15);
   end;
 
-  if ((PlayersPlay = 3) or (PlayersPlay = 6)) and (Ini.NoteLines = 1) then
-  begin
-    SingDrawNoteLines(NR.Left + 10*ScreenX, 120, NR.Right + 10*ScreenX, 12);
-    SingDrawNoteLines(NR.Left + 10*ScreenX, 245, NR.Right + 10*ScreenX, 12);
-    SingDrawNoteLines(NR.Left + 10*ScreenX, 370, NR.Right + 10*ScreenX, 12);
+  if ((PlayersPlay = 3) or (PlayersPlay = 6)) and (Ini.NoteLines = 1) then begin
+    if (ScreenSing.settings.NotesVisible and (1 shl 0) <> 0) then
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, 120, Nr.Right + 10*ScreenX, 12);
+    if (ScreenSing.settings.NotesVisible and (1 shl 1) <> 0) then
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, 245, Nr.Right + 10*ScreenX, 12);
+    if (ScreenSing.settings.NotesVisible and (1 shl 2) <> 0) then
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, 370, Nr.Right + 10*ScreenX, 12);
   end;
 
   // draw Lyrics
@@ -891,259 +896,6 @@ begin
       SingDrawPlayerLine(NR.Left + 20, 370+95, NR.Width - 40, 5, 12);
     end;
   end;
-  glDisable(GL_BLEND);
-  glDisable(GL_TEXTURE_2D);
-end;
-
-// q'n'd for using the game mode dll's
-procedure SingModiDraw (PlayerInfo: TPlayerInfo);
-var
-  NR: TRecR;
-begin
-  // positions
-  if Ini.SingWindow = 0 then
-  begin
-    NR.Left := 120;
-  end
-  else
-  begin
-    NR.Left := 20;
-  end;
-
-  NR.Right := 780;
-  NR.Width := NR.Right - NR.Left;
-  NR.WMid  := NR.Width / 2;
-  NR.Mid   := NR.Left + NR.WMid;
-
-  // time bar
-  SingDrawTimeBar();
-
-  if DLLMan.Selected.ShowNotes then
-  begin
-    if PlayersPlay = 1 then
-      SingDrawNoteLines(NR.Left + 10*ScreenX, Skin_P2_NotesB - 105, NR.Right + 10*ScreenX, 15);
-    if (PlayersPlay = 2) or (PlayersPlay = 4) then
-    begin
-      SingDrawNoteLines(NR.Left + 10*ScreenX, Skin_P1_NotesB - 105, NR.Right + 10*ScreenX, 15);
-      SingDrawNoteLines(NR.Left + 10*ScreenX, Skin_P2_NotesB - 105, NR.Right + 10*ScreenX, 15);
-    end;
-
-    if (PlayersPlay = 3) or (PlayersPlay = 6) then
-    begin
-      SingDrawNoteLines(NR.Left + 10*ScreenX, 120, NR.Right + 10*ScreenX, 12);
-      SingDrawNoteLines(NR.Left + 10*ScreenX, 245, NR.Right + 10*ScreenX, 12);
-      SingDrawNoteLines(NR.Left + 10*ScreenX, 370, NR.Right + 10*ScreenX, 12);
-    end;
-  end;
-
-  // Draw Lyrics
-  ScreenSingModi.Lyrics.Draw(LyricsState.MidBeat);
-  // TODO: Lyrics helper
-
-  // oscilloscope | the thing that moves when you yell into your mic (imho)
-  if (((Ini.Oscilloscope = 1) and (DLLMan.Selected.ShowRateBar_O)) and (not DLLMan.Selected.ShowRateBar)) then
-  begin
-    if PlayersPlay = 1 then
-      if PlayerInfo.Playerinfo[0].Enabled then
-        SingDrawOscilloscope(190 + 10*ScreenX, 55, 180, 40, 0);
-
-    if PlayersPlay = 2 then
-    begin
-      if PlayerInfo.Playerinfo[0].Enabled then
-        SingDrawOscilloscope(190 + 10*ScreenX, 55, 180, 40, 0);
-      if PlayerInfo.Playerinfo[1].Enabled then
-        SingDrawOscilloscope(425 + 10*ScreenX, 55, 180, 40, 1);
-    end;
-
-    if PlayersPlay = 4 then
-    begin
-      if ScreenAct = 1 then
-      begin
-        if PlayerInfo.Playerinfo[0].Enabled then
-          SingDrawOscilloscope(190 + 10*ScreenX, 55, 180, 40, 0);
-        if PlayerInfo.Playerinfo[1].Enabled then
-          SingDrawOscilloscope(425 + 10*ScreenX, 55, 180, 40, 1);
-      end;
-      if ScreenAct = 2 then
-      begin
-        if PlayerInfo.Playerinfo[2].Enabled then
-          SingDrawOscilloscope(190 + 10*ScreenX, 55, 180, 40, 2);
-        if PlayerInfo.Playerinfo[3].Enabled then
-          SingDrawOscilloscope(425 + 10*ScreenX, 55, 180, 40, 3);
-      end;
-    end;
-
-    if PlayersPlay = 3 then
-    begin
-      if PlayerInfo.Playerinfo[0].Enabled then
-        SingDrawOscilloscope( 75 + 10*ScreenX, 95, 100, 20, 0);
-      if PlayerInfo.Playerinfo[1].Enabled then
-        SingDrawOscilloscope(370 + 10*ScreenX, 95, 100, 20, 1);
-      if PlayerInfo.Playerinfo[2].Enabled then
-        SingDrawOscilloscope(670 + 10*ScreenX, 95, 100, 20, 2);
-    end;
-
-    if PlayersPlay = 6 then
-    begin
-      if ScreenAct = 1 then
-      begin
-        if PlayerInfo.Playerinfo[0].Enabled then
-          SingDrawOscilloscope( 75 + 10*ScreenX, 95, 100, 20, 0);
-        if PlayerInfo.Playerinfo[1].Enabled then
-          SingDrawOscilloscope(370 + 10*ScreenX, 95, 100, 20, 1);
-        if PlayerInfo.Playerinfo[2].Enabled then
-          SingDrawOscilloscope(670 + 10*ScreenX, 95, 100, 20, 2);
-      end;
-      if ScreenAct = 2 then
-      begin
-        if PlayerInfo.Playerinfo[3].Enabled then
-          SingDrawOscilloscope( 75 + 10*ScreenX, 95, 100, 20, 3);
-        if PlayerInfo.Playerinfo[4].Enabled then
-          SingDrawOscilloscope(370 + 10*ScreenX, 95, 100, 20, 4);
-        if PlayerInfo.Playerinfo[5].Enabled then
-          SingDrawOscilloscope(670 + 10*ScreenX, 95, 100, 20, 5);
-      end;
-    end;
-
-  end;
-
-// resize the notes according to the difficulty level
-  case Ini.Difficulty of
-    0:
-      begin
-        NotesH := 11; // 9
-        NotesW := 6; // 5
-      end;
-    1:
-      begin
-        NotesH := 8; // 7
-        NotesW := 4; // 4
-      end;
-    2:
-      begin
-        NotesH := 5;
-        NotesW := 3;
-      end;
-  end;
-
-  if (DLLMAn.Selected.ShowNotes and DLLMan.Selected.LoadSong) then
-  begin
-    if (PlayersPlay = 1) and PlayerInfo.Playerinfo[0].Enabled then
-    begin
-      SingDrawPlayerBGLine(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 0, 15);
-      SingDrawLine(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
-      SingDrawPlayerLine(NR.Left + 20, Skin_P2_NotesB, NR.Width - 40, 0, 15);
-    end;
-
-    if PlayersPlay = 2 then
-    begin
-      if PlayerInfo.Playerinfo[0].Enabled then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 0, 15);
-        SingDrawLine(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-        SingDrawPlayerLine(NR.Left + 20, Skin_P1_NotesB, NR.Width - 40, 0, 15);
-      end;
-      if PlayerInfo.Playerinfo[1].Enabled then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 1, 15);
-        SingDrawLine(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
-        SingDrawPlayerLine(NR.Left + 20, Skin_P2_NotesB, NR.Width - 40, 1, 15);
-      end;
-
-    end;
-
-    if PlayersPlay = 3 then
-    begin
-      NotesW := NotesW * 0.8;
-      NotesH := NotesH * 0.8;
-
-      if PlayerInfo.Playerinfo[0].Enabled then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, 120+95, NR.Right - 20, 0, 0, 12);
-        SingDrawLine(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-        SingDrawPlayerLine(NR.Left + 20, 120+95, NR.Width - 40, 0, 12);
-      end;
-
-      if PlayerInfo.Playerinfo[1].Enabled then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, 245+95, NR.Right - 20, 0, 1, 12);
-        SingDrawLine(NR.Left + 20, 245+95, NR.Right - 20, 0, 12);
-        SingDrawPlayerLine(NR.Left + 20, 245+95, NR.Width - 40, 1, 12);
-      end;
-
-      if PlayerInfo.Playerinfo[2].Enabled then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, 370+95, NR.Right - 20, 0, 2, 12);
-        SingDrawLine(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
-        SingDrawPlayerLine(NR.Left + 20, 370+95, NR.Width - 40, 2, 12);
-      end;
-    end;
-
-    if PlayersPlay = 4 then
-    begin
-      if ScreenAct = 1 then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 0, 15);
-        SingDrawPlayerBGLine(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 1, 15);
-      end;
-      if ScreenAct = 2 then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 2, 15);
-        SingDrawPlayerBGLine(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 3, 15);
-      end;
-
-      SingDrawLine(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-      SingDrawLine(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
-
-      if ScreenAct = 1 then
-      begin
-        SingDrawPlayerLine(NR.Left + 20, Skin_P1_NotesB, NR.Width - 40, 0, 15);
-        SingDrawPlayerLine(NR.Left + 20, Skin_P2_NotesB, NR.Width - 40, 1, 15);
-      end;
-      if ScreenAct = 2 then
-      begin
-        SingDrawPlayerLine(NR.Left + 20, Skin_P1_NotesB, NR.Width - 40, 2, 15);
-        SingDrawPlayerLine(NR.Left + 20, Skin_P2_NotesB, NR.Width - 40, 3, 15);
-      end;
-    end;
-
-    if PlayersPlay = 6 then
-    begin
-      NotesW := NotesW * 0.8;
-      NotesH := NotesH * 0.8;
-
-      if ScreenAct = 1 then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, 120+95, NR.Right - 20, 0, 0, 12);
-        SingDrawPlayerBGLine(NR.Left + 20, 245+95, NR.Right - 20, 0, 1, 12);
-        SingDrawPlayerBGLine(NR.Left + 20, 370+95, NR.Right - 20, 0, 2, 12);
-      end;
-      if ScreenAct = 2 then
-      begin
-        SingDrawPlayerBGLine(NR.Left + 20, 120+95, NR.Right - 20, 0, 3, 12);
-        SingDrawPlayerBGLine(NR.Left + 20, 245+95, NR.Right - 20, 0, 4, 12);
-        SingDrawPlayerBGLine(NR.Left + 20, 370+95, NR.Right - 20, 0, 5, 12);
-      end;
-
-      SingDrawLine(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-      SingDrawLine(NR.Left + 20, 245+95, NR.Right - 20, 0, 12);
-      SingDrawLine(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
-
-      if ScreenAct = 1 then
-      begin
-        SingDrawPlayerLine(NR.Left + 20, 120+95, NR.Width - 40, 0, 12);
-        SingDrawPlayerLine(NR.Left + 20, 245+95, NR.Width - 40, 1, 12);
-        SingDrawPlayerLine(NR.Left + 20, 370+95, NR.Width - 40, 2, 12);
-      end;
-      if ScreenAct = 2 then
-      begin
-        SingDrawPlayerLine(NR.Left + 20, 120+95, NR.Width - 40, 3, 12);
-        SingDrawPlayerLine(NR.Left + 20, 245+95, NR.Width - 40, 4, 12);
-        SingDrawPlayerLine(NR.Left + 20, 370+95, NR.Width - 40, 5, 12);
-      end;
-    end;
-  end;
-
   glDisable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
 end;

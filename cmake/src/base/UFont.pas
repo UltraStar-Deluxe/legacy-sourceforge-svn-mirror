@@ -41,18 +41,23 @@ interface
   {$DEFINE BITMAP_FONT}
 {$ENDIF}
 
+// Enables the Freetype font cache
+{$DEFINE ENABLE_FT_FACE_CACHE}
+
 uses
   FreeType,
   gl,
   glext,
   glu,
   sdl,
+  Math,
+  Classes,
+  SysUtils,
+  UUnicodeUtils,
   {$IFDEF BITMAP_FONT}
   UTexture,
   {$ENDIF}
-  Math,
-  Classes,
-  SysUtils;
+  UPath;
 
 type
 
@@ -60,7 +65,7 @@ type
   TGLubyteArray = array[0 .. (MaxInt div SizeOf(GLubyte))-1] of GLubyte;
   TGLubyteDynArray = array of GLubyte;
 
-  TWideStringArray = array of WideString;
+  TUCS4StringArray = array of UCS4String;
 
   TGLColor = packed record
     case byte of
@@ -85,6 +90,8 @@ type
     Left, Top: double;
     Width, Height: integer;
   end;
+
+  EFontError = class(Exception);
 
   {**
    * Abstract base class representing a glyph.
@@ -117,6 +124,7 @@ type
       procedure ResetIntern();
 
     protected
+      fFilename: IPath;
       fStyle: TFontStyle;
       fUseKerning: boolean;       
       fLineSpacing: single;       // must be inited by subclass
@@ -126,34 +134,34 @@ type
 
       {**
        * Splits lines in Text seperated by newline (char-code #13).
-       * @param Text   UTF-8 encoded string
-       * @param Lines  splitted WideString lines
+       * @param Text   UCS-4 encoded string
+       * @param Lines  splitted UCS4String lines
        *}
-      procedure SplitLines(const Text: UTF8String; var Lines: TWideStringArray);
+      procedure SplitLines(const Text: UCS4String; var Lines: TUCS4StringArray);
 
       {**
-       * Print an array of WideStrings. Each array-item is a line of text.
+       * Print an array of UCS4Strings. Each array-item is a line of text.
        * Lines of text are seperated by the line-spacing.
        * This is the base function for all text drawing.
        *}
-      procedure Print(const Text: TWideStringArray); overload; virtual;
+      procedure Print(const Text: TUCS4StringArray); overload; virtual;
 
       {**
        * Draws an underline.
        *}
-      procedure DrawUnderline(const Text: WideString); virtual;
+      procedure DrawUnderline(const Text: UCS4String); virtual;
 
       {**
        * Renders (one) line of text.
        *}
-      procedure Render(const Text: WideString); virtual; abstract;
+      procedure Render(const Text: UCS4String); virtual; abstract;
 
       {**
        * Returns the bounds of text-lines contained in Text.
        * @param(Advance  if true the right bound is set to the advance instead
        *   of the minimal right bound.)
        *}
-      function BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl; overload; virtual; abstract;
+      function BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl; overload; virtual; abstract;
 
       {**
        * Resets all user settings to default values.
@@ -182,15 +190,17 @@ type
       property ReflectionPass: boolean read fReflectionPass write SetReflectionPass;
 
     public
-      constructor Create();
+      constructor Create(const Filename: IPath);
       destructor Destroy(); override;
 
       {**
        * Prints a text.
        *}
+      procedure Print(const Text: UCS4String); overload;
+      {** UTF-16 version of @link(Print) }
       procedure Print(const Text: WideString); overload;
       {** UTF-8 version of @link(Print) }
-      procedure Print(const Text: string); overload;
+      procedure Print(const Text: UTF8String); overload;
 
       {**
        * Calculates the bounding box (width and height) around Text.
@@ -203,9 +213,17 @@ type
        * bigger than the text's width as it additionally contains the advance
        * and glyph-spacing of the last character.
        *}
+      function BBox(const Text: UCS4String; Advance: boolean = true): TBoundsDbl; overload;
+      {** UTF-16 version of @link(BBox) }
       function BBox(const Text: WideString; Advance: boolean = true): TBoundsDbl; overload;
       {** UTF-8 version of @link(BBox) }
       function BBox(const Text: UTF8String; Advance: boolean = true): TBoundsDbl; overload;
+
+      {**
+       * Adds a new font that is used if the default font misses a glyph
+       * @raises EFontError  if the fallback could not be initialized
+       *}
+      procedure AddFallback(const Filename: IPath); virtual; abstract;
 
       {** Font height }
       property Height: single read GetHeight;
@@ -223,6 +241,8 @@ type
       property Style: TFontStyle read GetStyle write SetStyle;
       {** If set to true (default) kerning will be used if available }
       property UseKerning: boolean read GetUseKerning write SetUseKerning;
+      {** Filename }
+      property Filename: IPath read fFilename;
   end;
 
 const
@@ -242,16 +262,16 @@ type
       procedure ResetIntern();
 
     protected
-      fScale: single;        //**< current height to base-font height ratio 
-      fAspect: single;       //**< width to height aspect
+      fScale: single;        //**< current height to base-font height ratio
+      fStretch: single;      //**< stretch factor for width (Width * fStretch)
       fBaseFont: TFont;      //**< shortcut for fMipmapFonts[0]
       fUseMipmaps: boolean;  //**< true if mipmap fonts are generated
       /// Mipmap fonts (size[level+1] = size[level]/2)
       fMipmapFonts: array[0..cMaxMipmapLevel] of TFont;
 
-      procedure Render(const Text: WideString); override;
-      procedure Print(const Text: TWideStringArray); override;
-      function BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl; override;
+      procedure Render(const Text: UCS4String); override;
+      procedure Print(const Text: TUCS4StringArray); override;
+      function BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl; override;
 
       {**
        * Callback called for creation of each mipmap font.
@@ -280,8 +300,8 @@ type
 
       procedure SetHeight(Height: single); virtual;
       function GetHeight(): single; override;
-      procedure SetAspect(Aspect: single); virtual;
-      function GetAspect(): single; virtual;
+      procedure SetStretch(Stretch: single); virtual;
+      function GetStretch(): single; virtual;
       function GetAscender(): single; override;
       function GetDescender(): single; override;
       procedure SetLineSpacing(Spacing: single); override;
@@ -316,13 +336,13 @@ type
 
       {** Font height }
       property Height: single read GetHeight write SetHeight;
-      {** Factor for font stretching (NewWidth = Width*Aspect), 1.0 by default }
-      property Aspect: single read GetAspect write SetAspect;
+      {** Factor for font stretching (NewWidth = Width*Stretch), 1.0 by default }
+      property Stretch: single read GetStretch write SetStretch;
   end;
 
   {**
    * Table for storage of max. 256 glyphs.
-   * Used for the second cache level. Indexed by the LSB of the WideChar
+   * Used for the second cache level. Indexed by the LSB of the UCS4Char
    * char-code.
    *}
   PGlyphTable = ^TGlyphTable;
@@ -332,7 +352,7 @@ type
    * Cache for glyphs of a single font.
    * The cached glyphs are stored inside a hash-list.
    * Hashing is performed in two steps:
-   * 1. the least significant byte (LSB) of the WideChar character code
+   * 1. the least significant byte (LSB) of the UCS4Char character code
    * is removed (shr 8) and the result (we call it BaseCode here) looked up in
    * the hash-list.
    * 2. Each entry of the hash-list contains a table with max. 256 entries.
@@ -359,22 +379,22 @@ type
        * Add glyph Glyph with char-code ch to the cache.
        * @returns @true on success, @false otherwise
        *}
-      function AddGlyph(ch: WideChar; const Glyph: TGlyph): boolean;
+      function AddGlyph(ch: UCS4Char; const Glyph: TGlyph): boolean;
 
       {**
        * Removes the glyph with char-code ch from the cache.
        *}
-      procedure DeleteGlyph(ch: WideChar);
+      procedure DeleteGlyph(ch: UCS4Char);
 
       {**
        * Removes the glyph with char-code ch from the cache.
        *}
-      function GetGlyph(ch: WideChar): TGlyph;
+      function GetGlyph(ch: UCS4Char): TGlyph;
 
       {**
        * Checks if a glyph with char-code ch is cached.
        *}
-      function HasGlyph(ch: WideChar): boolean;
+      function HasGlyph(ch: UCS4Char): boolean;
 
       {**
        * Remove and free all cached glyphs. If KeepBaseSet is set to
@@ -408,16 +428,16 @@ type
        * Retrieves a cached glyph with char-code ch from cache.
        * If the glyph is not already cached, it is loaded with LoadGlyph().
        *}
-      function GetGlyph(ch: WideChar): TGlyph;
+      function GetGlyph(ch: UCS4Char): TGlyph;
 
       {**
        * Callback to create (load) a glyph with char-code ch.
        * Implemented by subclasses.
        *}
-      function LoadGlyph(ch: WideChar): TGlyph; virtual; abstract;
+      function LoadGlyph(ch: UCS4Char): TGlyph; virtual; abstract;
 
     public
-      constructor Create();
+      constructor Create(const Filename: IPath);
       destructor Destroy(); override;
 
       {**
@@ -431,11 +451,55 @@ type
   TFTFont = class;
 
   {**
+   * Freetype font face class.
+   *}
+  TFTFontFace = class
+    private
+      fFilename: IPath;             //**< filename of the font-file
+      fFace: FT_Face;               //**< Holds the height of the font
+      fFontUnitScale: TPositionDbl; //**< FT font-units to pixel ratio
+      fSize: integer;
+
+    public
+      {**
+       * @raises EFontError  if the glyph could not be initialized
+       *}
+      constructor Create(const Filename: IPath; Size: integer);
+      
+      destructor Destroy(); override;
+
+      property Filename: IPath read fFilename;
+      property Data: FT_Face read fFace;
+      property FontUnitScale: TPositionDbl read fFontUnitScale;
+      property Size: integer read fSize;
+  end;
+
+  {**
+   * Loading font faces with freetype is a slow process.
+   * Especially loading a font (e.g. fallback fonts) more than once is a waste
+   * of time. Just cache already loaded faces here.
+   *}
+  TFTFontFaceCache = class
+    private
+      fFaces:       array of TFTFontFace;
+      fFacesRefCnt: array of integer;      
+    public
+      {**
+       * @raises EFontError  if the font could not be initialized
+       *}
+      function LoadFace(const Filename: IPath; Size: integer): TFTFontFace;
+
+      procedure UnloadFace(Face: TFTFontFace);
+  end;
+
+  {**
    * Freetype glyph.
    * Each glyph stores a texture with the glyph's image.
    *}
   TFTGlyph = class(TGlyph)
     private
+      fCharCode:  UCS4Char;     //**< Char code
+      fFace: TFTFontFace;       //**< Freetype face used for this glyph
       fCharIndex: FT_UInt;      //**< Freetype specific char-index (<> char-code)
       fDisplayList: GLuint;     //**< Display-list ID
       fTexture: GLuint;         //**< Texture ID
@@ -458,13 +522,13 @@ type
        * The bitmap must be 2* pixels wider and higher than the
        * original glyph's bitmap with the latter centered in it.
        *}
-      procedure Extrude(var TexBuffer: TGLubyteDynArray; Outset: single);
+      procedure StrokeBorder(var Glyph: FT_Glyph);
 
       {**
        * Creates an OpenGL texture (and display list) for the glyph.
        * The glyph's and bitmap's metrics are set correspondingly.
        * @param  LoadFlags  flags passed to FT_Load_Glyph()
-       * @raises Exception  if the glyph could not be initialized
+       * @raises EFontError  if the glyph could not be initialized
        *}
       procedure CreateTexture(LoadFlags: FT_Int32);
 
@@ -477,7 +541,7 @@ type
        * Creates a glyph with char-code ch from font Font.
        * @param LoadFlags  flags passed to FT_Load_Glyph()
        *}
-      constructor Create(Font: TFTFont; ch: WideChar; Outset: single;
+      constructor Create(Font: TFTFont; ch: UCS4Char; Outset: single;
                          LoadFlags: FT_Int32);
       destructor Destroy(); override;
 
@@ -488,7 +552,13 @@ type
 
       {** Freetype specific char-index (<> char-code) }
       property CharIndex: FT_UInt read fCharIndex;
+      
+      {** Freetype face used for this glyph }
+      property Face: TFTFontFace read fFace;
   end;
+
+  TFontPart = ( fpNone, fpInner, fpOutline );
+  TFTFontFaceArray = array of TFTFontFace;
 
   {**
    * Freetype font class.
@@ -496,21 +566,22 @@ type
   TFTFont = class(TCachedFont)
     private
       procedure ResetIntern();
+      class function GetFaceCache(): TFTFontFaceCache;
 
     protected
-      fFilename: string;            //**< filename of the font-file
+      fFace: TFTFontFace;           //**< Default font face
       fSize: integer;               //**< Font base size (in pixels)
       fOutset: single;              //**< size of outset extrusion (in pixels)
-      fFace: FT_Face;               //**< Holds the height of the font
       fLoadFlags: FT_Int32;         //**< FT glpyh load-flags
-      fFontUnitScale: TPositionDbl; //**< FT font-units to pixel ratio
       fUseDisplayLists: boolean;    //**< true: use display-lists, false: direct drawing
+      fPart: TFontPart;             //**< indicates the part of an outline font
+      fFallbackFaces: TFTFontFaceArray; //**< available fallback faces, ordered by priority
 
       {** @seealso TCachedFont.LoadGlyph }
-      function LoadGlyph(ch: WideChar): TGlyph; override;
+      function LoadGlyph(ch: UCS4Char): TGlyph; override;
 
-      procedure Render(const Text: WideString); override;
-      function BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl; override;
+      procedure Render(const Text: UCS4String); override;
+      function BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl; override;
 
       function GetHeight(): single; override;
       function GetAscender(): single; override;
@@ -518,17 +589,15 @@ type
       function GetUnderlinePosition(): single; override;
       function GetUnderlineThickness(): single; override;
 
-      property Face: FT_Face read fFace;
-
     public
       {**
        * Creates a font of size Size (in pixels) from the file Filename.
        * If Outset (in pixels) is set to a value > 0 the glyphs will be extruded
        * at their borders. Use it for e.g. a bold effect.
        * @param  LoadFlags  flags passed to FT_Load_Glyph()
-       * @raises Exception  if the font-file could not be loaded
+       * @raises EFontError  if the font-file could not be loaded
        *}
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: IPath;
                          Size: integer; Outset: single = 0.0;
                          LoadFlags: FT_Int32 = FT_LOAD_DEFAULT);
 
@@ -539,11 +608,19 @@ type
 
       {** @seealso TFont.Reset }
       procedure Reset(); override;
-      
+
+      procedure AddFallback(const Filename: IPath); override;
+
       {** Size of the base font }
       property Size: integer read fSize;
       {** Outset size }
       property Outset: single read fOutset;
+      {** The part (inner/outline/none) this font represents in a composite font }
+      property Part: TFontPart read fPart write fPart;
+      {** Freetype face of this font }
+      property DefaultFace: TFTFontFace read fFace;
+      {** Available freetype fallback faces, ordered by priority }
+      property FallbackFaces: TFTFontFaceArray read fFallbackFaces;
   end;
 
   TFTScalableFont = class(TScalableFont)
@@ -557,11 +634,27 @@ type
        * OutsetAmount is the ratio of the glyph extrusion.
        * The extrusion in pixels is Size*OutsetAmount
        * (0.0 -> no extrusion, 0.1 -> 10%).
+       *
+       * The memory size (in bytes) consumed by a scalable font
+       * - with UseMipmaps=false:
+       *  mem = size^2 * #cached_glyphs
+       * - with UseMipmaps=true (all mipmap levels):
+       *  mem = size^2 * #cached_glyphs * Sum[i=1..cMaxMipmapLevel](1/i^2)
+       * - with UseMipmaps=true (5 <= cMaxMipmapLevel <= 10):
+       *  mem ~= size^2 * #cached_glyphs * 1.5
+       *
+       * Examples (for 128 cached glyphs):
+       * - Size: 64 pixels: 768 KB (mipmapped) or 512 KB (non-mipmapped).
+       * - Size 128 pixels: 3 MB (mipmapped) or 2 MB (non-mipmapped)
+       *
+       * Note: once a glyph is cached there will
        *}
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: IPath;
                          Size: integer; OutsetAmount: single = 0.0;
                          UseMipmaps: boolean = true);
 
+      procedure AddFallback(const Filename: IPath); override;
+                         
       {** @seealso TGlyphCache.FlushCache }
       procedure FlushCache(KeepBaseSet: boolean);
 
@@ -576,7 +669,6 @@ type
    *}
   TFTOutlineFont = class(TFont)
     private
-      fFilename: string;
       fSize: integer;
       fOutset: single;
       fInnerFont, fOutlineFont: TFTFont;
@@ -585,9 +677,9 @@ type
       procedure ResetIntern();
       
   protected
-      procedure DrawUnderline(const Text: WideString); override;
-      procedure Render(const Text: WideString); override;
-      function BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl; override;
+      procedure DrawUnderline(const Text: UCS4String); override;
+      procedure Render(const Text: UCS4String); override;
+      function BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl; override;
 
       function GetHeight(): single; override;
       function GetAscender(): single; override;
@@ -603,7 +695,7 @@ type
       procedure SetReflectionPass(Enable: boolean); override;
 
     public
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: IPath;
                          Size: integer; Outset: single;
                          LoadFlags: FT_Int32 = FT_LOAD_DEFAULT);
       destructor Destroy; override;
@@ -618,6 +710,8 @@ type
       {** @seealso TGlyphCache.FlushCache }
       procedure FlushCache(KeepBaseSet: boolean);
 
+      procedure AddFallback(const Filename: IPath); override;
+      
       {** @seealso TFont.Reset }
       procedure Reset(); override;
 
@@ -637,7 +731,7 @@ type
       function CreateMipmap(Level: integer; Scale: single): TFont; override;
 
     public
-      constructor Create(const Filename: string;
+      constructor Create(const Filename: IPath;
                          Size: integer; OutsetAmount: single;
                          UseMipmaps: boolean = true);
 
@@ -647,6 +741,8 @@ type
       {** @seealso TGlyphCache.FlushCache }
       procedure FlushCache(KeepBaseSet: boolean);
 
+      procedure AddFallback(const Filename: IPath); override;
+      
       {** Outset size }
       property Outset: single read GetOutset;
   end;
@@ -672,18 +768,18 @@ type
 
       procedure ResetIntern();
 
-      procedure RenderChar(ch: WideChar; var AdvanceX: real);
+      procedure RenderChar(ch: UCS4Char; var AdvanceX: real);
 
       {**
        * Load font widths from an info file.
        * @param  InfoFile  the name of the info (.dat) file
-       * @raises Exception if the file is corrupted
+       * @raises EFontError if the file is corrupted
        *}
-      procedure LoadFontInfo(const InfoFile: string);
+      procedure LoadFontInfo(const InfoFile: IPath);
 
     protected
-      procedure Render(const Text: WideString); override;
-      function BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl; override;
+      procedure Render(const Text: UCS4String); override;
+      function BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl; override;
 
       function GetHeight(): single; override;
       function GetAscender(): single; override;
@@ -699,7 +795,7 @@ type
        *        (y-axis up) and from the lower edge of the glyphs bounding box)
        * @param(Ascender  pixels from baseline to top of highest glyph)
        *}
-      constructor Create(const Filename: string; Outline: integer;
+      constructor Create(const Filename: IPath; Outline: integer;
                          Baseline, Ascender, Descender: integer);
       destructor Destroy(); override;
 
@@ -711,6 +807,8 @@ type
 
       {** @seealso TFont.Reset }
       procedure Reset(); override;
+
+      procedure AddFallback(const Filename: IPath); override;
   end;
 
 {$ENDIF BITMAP_FONT}
@@ -720,7 +818,7 @@ type
       {**
        * Returns a pointer to the freetype library singleton.
        * If non exists, freetype will be initialized.
-       * @raises Exception if initialization failed
+       * @raises EFontError if initialization failed
        *}
       class function GetLibrary(): FT_Library;
       class procedure FreeLibrary();
@@ -773,9 +871,10 @@ end;
  * TFont
  *}
 
-constructor TFont.Create();
+constructor TFont.Create(const Filename: IPath);
 begin
-  inherited;
+  inherited Create();
+  fFilename := Filename;
   ResetIntern();
 end;
 
@@ -801,37 +900,61 @@ begin
   ResetIntern();
 end;
 
-procedure TFont.SplitLines(const Text: UTF8String; var Lines: TWideStringArray);
+procedure TFont.SplitLines(const Text: UCS4String; var Lines: TUCS4StringArray);
 var
-  LineList: TStringList;
-  LineIndex: integer;
+  CharIndex: integer;
+  LineStart: integer;
+  LineLength: integer;
+  EOT: boolean; // End-Of-Text
 begin
-  // split lines on newline (there is no WideString version of ExtractStrings)
-  LineList := TStringList.Create();
-  ExtractStrings([#13], [], PChar(Text), LineList);
+  // split lines on newline
+  SetLength(Lines, 0);
+  EOT := false;
+  LineStart := 0;
 
-  // create an array of WideStrins from the UTF-8 string-list
-  SetLength(Lines, LineList.Count);
-  for LineIndex := 0 to LineList.Count-1 do
-    Lines[LineIndex] := UTF8Decode(LineList[LineIndex]);
-  LineList.Free();
+  for CharIndex := 0 to High(Text) do
+  begin
+    // check for end of text (UCS4Strings are zero-terminated)
+    if (CharIndex = High(Text)) then
+      EOT := true;
+
+    // check for newline (carriage return (#13)) or end of text
+    if (Text[CharIndex] = 13) or EOT then
+    begin
+      LineLength := CharIndex - LineStart;
+      // check if last character was a newline
+      if (EOT and (LineLength = 0)) then
+        Break;      
+
+      // copy line (even if LineLength is 0)
+      SetLength(Lines, Length(Lines)+1);
+      Lines[High(Lines)] := UCS4Copy(Text, LineStart, LineLength);
+
+      LineStart := CharIndex+1;
+    end;
+  end;
 end;
 
-function TFont.BBox(const Text: UTF8String; Advance: boolean): TBoundsDbl;
+function TFont.BBox(const Text: UCS4String; Advance: boolean): TBoundsDbl;
 var
-  LineArray: TWideStringArray;
+  LineArray: TUCS4StringArray;
 begin
   SplitLines(Text, LineArray);
   Result := BBox(LineArray, Advance);
   SetLength(LineArray, 0);
 end;
 
-function TFont.BBox(const Text: WideString; Advance: boolean): TBoundsDbl;
+function TFont.BBox(const Text: UTF8String; Advance: boolean): TBoundsDbl;
 begin
-  Result := BBox(UTF8Encode(Text), Advance);
+  Result := BBox(UTF8Decode(Text), Advance);
 end;
 
-procedure TFont.Print(const Text: TWideStringArray);
+function TFont.BBox(const Text: WideString; Advance: boolean): TBoundsDbl;
+begin
+  Result := BBox(WideStringToUCS4String(Text), Advance);
+end;
+
+procedure TFont.Print(const Text: TUCS4StringArray);
 var
   LineIndex: integer;
 begin
@@ -912,21 +1035,26 @@ begin
   glPopAttrib();
 end;
 
-procedure TFont.Print(const Text: string);
+procedure TFont.Print(const Text: UCS4String);
 var
-  LineArray: TWideStringArray;
+  LineArray: TUCS4StringArray;
 begin
   SplitLines(Text, LineArray);
   Print(LineArray);
   SetLength(LineArray, 0);
 end;
 
-procedure TFont.Print(const Text: WideString);
+procedure TFont.Print(const Text: UTF8String);
 begin
-  Print(UTF8Encode(Text));
+  Print(UTF8Decode(Text));
 end;
 
-procedure TFont.DrawUnderline(const Text: WideString);
+procedure TFont.Print(const Text: WideString);
+begin
+  Print(WideStringToUCS4String(Text));
+end;
+
+procedure TFont.DrawUnderline(const Text: UCS4String);
 var
   UnderlineY1, UnderlineY2: single;
   Bounds: TBoundsDbl;
@@ -1001,7 +1129,7 @@ constructor TScalableFont.Create(Font: TFont; UseMipmaps: boolean);
 var
   MipmapLevel: integer;
 begin
-  inherited Create();
+  inherited Create(Font.Filename);
   
   fBaseFont := Font;
   fMipmapFonts[0] := Font;
@@ -1033,7 +1161,7 @@ end;
 procedure TScalableFont.ResetIntern();
 begin
   fScale := 1.0;
-  fAspect := 1.0;
+  fStretch := 1.0;
 end;
 
 procedure TScalableFont.Reset();
@@ -1049,7 +1177,7 @@ end;
 
 {**
  * Returns the mipmap level to use with regard to the current projection
- * and modelview matrix, font scale and aspect.
+ * and modelview matrix, font scale and stretch.
  *
  * Note:
  * - for Freetype fonts, hinting and grid-fitting must be disabled, otherwise
@@ -1088,7 +1216,7 @@ var
   ModelMatrix, ProjMatrix: T16dArray;
   WinCoords: array[0..2, 0..2] of GLdouble;
   ViewPortArray: TViewPortArray;
-  Dist, Dist2: double;
+  Dist, Dist2, DistSum: double;
   WidthScale, HeightScale: double;
 const
   // width/height of square used for determining the scale
@@ -1128,12 +1256,24 @@ begin
   // projected width ||(x1, y1) - (x2, y1)||
   Dist  := (WinCoords[0][0] - WinCoords[1][0]);
   Dist2 := (WinCoords[0][1] - WinCoords[1][1]);
-  WidthScale := cTestSize / Sqrt(Dist*Dist + Dist2*Dist2);
+
+  WidthScale := 1;
+  DistSum := Dist*Dist + Dist2*Dist2;
+  if (DistSum > 0) then
+  begin
+    WidthScale := cTestSize / Sqrt(DistSum);
+  end;
 
   // projected height ||(x1, y1) - (x1, y2)||
   Dist  := (WinCoords[0][0] - WinCoords[2][0]);
   Dist2 := (WinCoords[0][1] - WinCoords[2][1]);
-  HeightScale := cTestSize / Sqrt(Dist*Dist + Dist2*Dist2);
+
+  HeightScale := 1;
+  DistSum := Dist*Dist + Dist2*Dist2;
+  if (DistSum > 0) then
+  begin
+    HeightScale := cTestSize / Sqrt(DistSum);
+  end;
 
   //writeln(Format('Scale %f, %f', [WidthScale, HeightScale]));
 
@@ -1194,12 +1334,12 @@ begin
   glScalef(MipmapScale, MipmapScale, 0);
 end;
 
-procedure TScalableFont.Print(const Text: TWideStringArray);
+procedure TScalableFont.Print(const Text: TUCS4StringArray);
 begin
   glPushMatrix();
 
   // set scale and stretching
-  glScalef(fScale * fAspect, fScale, 0);
+  glScalef(fScale * fStretch, fScale, 0);
 
   // print text
   if (fUseMipmaps) then
@@ -1210,16 +1350,16 @@ begin
   glPopMatrix();
 end;
 
-procedure TScalableFont.Render(const Text: WideString);
+procedure TScalableFont.Render(const Text: UCS4String);
 begin
   Assert(false, 'Unused TScalableFont.Render() was called');
 end;
 
-function TScalableFont.BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl;
+function TScalableFont.BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl;
 begin
   Result := fBaseFont.BBox(Text, Advance);
-  Result.Left   := Result.Left * fScale * fAspect;
-  Result.Right  := Result.Right * fScale * fAspect;
+  Result.Left   := Result.Left * fScale * fStretch;
+  Result.Right  := Result.Right * fScale * fStretch;
   Result.Top    := Result.Top * fScale;
   Result.Bottom := Result.Bottom * fScale;
 end;
@@ -1234,14 +1374,14 @@ begin
   Result := fBaseFont.GetHeight() * fScale;
 end;
 
-procedure TScalableFont.SetAspect(Aspect: single);
+procedure TScalableFont.SetStretch(Stretch: single);
 begin
-  fAspect := Aspect;
+  fStretch := Stretch;
 end;
 
-function TScalableFont.GetAspect(): single;
+function TScalableFont.GetStretch(): single;
 begin
-  Result := fAspect;
+  Result := fStretch;
 end;
 
 function TScalableFont.GetAscender(): single;
@@ -1287,7 +1427,7 @@ var
   Level: integer;
 begin
   for Level := 0 to High(fMipmapFonts) do
-    if (fMipmapFonts[Level] <> nil) then
+    if ((fMipmapFonts[Level] <> nil) AND (GetMipmapScale(Level) > 0)) then
       fMipmapFonts[Level].SetReflectionSpacing(Spacing / GetMipmapScale(Level));
 end;
 
@@ -1334,9 +1474,9 @@ end;
  * TCachedFont
  *}
 
-constructor TCachedFont.Create();
+constructor TCachedFont.Create(const Filename: IPath);
 begin
-  inherited;
+  inherited Create(Filename);
   fCache := TGlyphCache.Create();
 end;
 
@@ -1346,7 +1486,7 @@ begin
   inherited;
 end;
 
-function TCachedFont.GetGlyph(ch: WideChar): TGlyph;
+function TCachedFont.GetGlyph(ch: UCS4Char): TGlyph;
 begin
   Result := fCache.GetGlyph(ch);
   if (Result = nil) then
@@ -1362,60 +1502,155 @@ begin
   fCache.FlushCache(KeepBaseSet);
 end;
 
+{*
+ * TFTFontFaceCache
+ *}
+
+{*
+ * TFTFontFace
+ *}
+
+constructor TFTFontFace.Create(const Filename: IPath; Size: integer);
+begin
+  inherited Create();
+
+  fFilename := Filename;
+  fSize := Size;
+
+  // load font information
+  if (FT_New_Face(TFreeType.GetLibrary(), PChar(Filename.ToNative), 0, fFace) <> 0) then
+    raise EFontError.Create('FT_New_Face: Could not load font '''  + Filename.ToNative + '''');
+
+  // support scalable fonts only
+  if (not FT_IS_SCALABLE(fFace)) then
+    raise EFontError.Create('Font is not scalable');
+
+  if (FT_Set_Pixel_Sizes(fFace, 0, Size) <> 0) then
+    raise EFontError.Create('FT_Set_Pixel_Sizes failes');
+
+  // get scale factor for font-unit to pixel-size transformation
+  fFontUnitScale.X := fFace.size.metrics.x_ppem / fFace.units_per_EM;
+  fFontUnitScale.Y := fFace.size.metrics.y_ppem / fFace.units_per_EM;
+end;
+
+destructor TFTFontFace.Destroy();
+begin
+  // free face data
+  FT_Done_Face(fFace);
+  inherited;
+end;
+
+
+{*
+ * TFTFontFaceCache
+ *}
+
+function TFTFontFaceCache.LoadFace(const Filename: IPath; Size: integer): TFTFontFace;
+var
+  I: Integer;
+  Face: TFTFontFace;
+begin
+  {$IFDEF ENABLE_FT_FACE_CACHE}
+  for I := 0 to High(fFaces) do
+  begin
+    Face := fFaces[I];
+    // check if we have this file in our cache
+    if ((Face.Filename.Equals(Filename)) and (Face.Size = Size)) then
+    begin
+      // true -> return cached face and increment ref-count
+      Inc(fFacesRefCnt[I]);
+      Result := Face;
+      Exit;
+    end;
+  end;
+  {$ENDIF}
+
+  // face not in cache -> load it
+  Face := TFTFontFace.Create(Filename, Size);
+
+  // add face to cache
+  SetLength(fFaces, Length(fFaces)+1);
+  SetLength(fFacesRefCnt, Length(fFaces)+1);
+  fFaces[High(fFaces)] := Face;
+  fFacesRefCnt[High(fFaces)] := 1;
+
+  Result := Face;
+end;
+
+procedure TFTFontFaceCache.UnloadFace(Face: TFTFontFace);
+var
+  I: Integer;
+begin
+  for I := 0 to High(fFaces) do
+  begin
+    // search face in cache
+    if (fFaces[I] = Face) then
+    begin
+      // decrement ref-count and free face if ref-count is 0
+      Dec(fFacesRefCnt[I]);
+      if (fFacesRefCnt[I] <= 0) then
+        fFaces[I].Free;
+      Exit;
+    end;
+  end;
+end;
+
 
 {*
  * TFTFont
  *}
 
 constructor TFTFont.Create(
-    const Filename: string;
+    const Filename: IPath;
     Size: integer; Outset: single;
     LoadFlags: FT_Int32);
 var
-  i: WideChar;
+  ch: UCS4Char;
 begin
-  inherited Create();
+  inherited Create(Filename);
 
-  fFilename := Filename;
   fSize := Size;
   fOutset := Outset;
   fLoadFlags := LoadFlags;
   fUseDisplayLists := true;
+  fPart := fpNone;
 
-  // load font information
-  if (FT_New_Face(TFreeType.GetLibrary(), PChar(Filename), 0, fFace) <> 0) then
-    raise Exception.Create('FT_New_Face: Could not load font '''  + Filename + '''');
-
-  // support scalable fonts only
-  if (not FT_IS_SCALABLE(fFace)) then
-    raise Exception.Create('Font is not scalable');
-
-  if (FT_Set_Pixel_Sizes(fFace, 0, Size) <> 0) then
-    raise Exception.Create('FT_Set_Pixel_Sizes failes');
-
-  // get scale factor for font-unit to pixel-size transformation
-  fFontUnitScale.X := fFace.size.metrics.x_ppem / fFace.units_per_EM;
-  fFontUnitScale.Y := fFace.size.metrics.y_ppem / fFace.units_per_EM;
+  fFace := GetFaceCache.LoadFace(Filename, Size);
 
   ResetIntern();
 
   // pre-cache some commonly used glyphs (' ' - '~')
-  for i := #32 to #126 do
-    fCache.AddGlyph(i, TFTGlyph.Create(Self, i, Outset, LoadFlags));
+  for ch := 32 to 126 do
+    fCache.AddGlyph(ch, TFTGlyph.Create(Self, ch, Outset, LoadFlags));
 end;
 
 destructor TFTFont.Destroy();
+var
+  I: integer;
 begin
-  // free face
-  FT_Done_Face(fFace);
+  // free faces
+  GetFaceCache.UnloadFace(fFace);
+  for I := 0 to High(fFallbackFaces) do
+    GetFaceCache.UnloadFace(fFallbackFaces[I]);    
+
   inherited;
+end;
+
+var
+  FontFaceCache: TFTFontFaceCache = nil;
+
+class function TFTFont.GetFaceCache(): TFTFontFaceCache;
+begin
+  if (FontFaceCache = nil) then
+    FontFaceCache := TFTFontFaceCache.Create;
+  Result := FontFaceCache;
 end;
 
 procedure TFTFont.ResetIntern();
 begin
   // Note: outset and non outset fonts use same spacing
-  fLineSpacing := fFace.height * fFontUnitScale.Y;
-  fReflectionSpacing := -2*fFace.descender * fFontUnitScale.Y;
+  fLineSpacing := fFace.Data.height * fFace.FontUnitScale.Y;
+  fReflectionSpacing := -2*fFace.Data.descender * fFace.FontUnitScale.Y;
 end;
 
 procedure TFTFont.Reset();
@@ -1424,15 +1659,24 @@ begin
   ResetIntern();
 end;
 
-function TFTFont.LoadGlyph(ch: WideChar): TGlyph;
+procedure TFTFont.AddFallback(const Filename: IPath);
+var
+  FontFace: TFTFontFace;
+begin
+  FontFace := GetFaceCache.LoadFace(Filename, Size);
+  SetLength(fFallbackFaces, Length(fFallbackFaces) + 1);
+  fFallbackFaces[High(fFallbackFaces)] := FontFace;
+end;
+
+function TFTFont.LoadGlyph(ch: UCS4Char): TGlyph;
 begin
   Result := TFTGlyph.Create(Self, ch, Outset, fLoadFlags);
 end;
 
-function TFTFont.BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl;
+function TFTFont.BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl;
 var
   Glyph, PrevGlyph: TFTGlyph;
-  TextLine: WideString;
+  TextLine: UCS4String;
   LineYOffset: single;
   LineIndex, CharIndex: integer;
   LineBounds: TBoundsDbl;
@@ -1462,17 +1706,17 @@ begin
     LineBounds.Top    := 0;
 
     // for each glyph image, compute its bounding box
-    for CharIndex := 1 to Length(TextLine) do
+    for CharIndex := 0 to LengthUCS4(TextLine)-1 do
     begin
       Glyph := TFTGlyph(GetGlyph(TextLine[CharIndex]));
       if (Glyph <> nil) then
       begin
         // get kerning
-        if (fUseKerning and FT_HAS_KERNING(fFace) and (PrevGlyph <> nil)) then
+        if (fUseKerning and FT_HAS_KERNING(fFace.Data) and (PrevGlyph <> nil)) then
         begin
-          FT_Get_Kerning(fFace, PrevGlyph.CharIndex, Glyph.CharIndex,
+          FT_Get_Kerning(fFace.Data, PrevGlyph.CharIndex, Glyph.CharIndex,
                          FT_KERNING_UNSCALED, KernDelta);
-          LineBounds.Right := LineBounds.Right + KernDelta.x * fFontUnitScale.X;
+          LineBounds.Right := LineBounds.Right + KernDelta.x * fFace.FontUnitScale.X;
         end;
 
         // update left bound (must be done before right bound is updated)
@@ -1480,9 +1724,9 @@ begin
           LineBounds.Left := LineBounds.Right + Glyph.Bounds.Left;
 
         // update right bound
-        if (CharIndex < Length(TextLine)) or  // not the last character
-           (TextLine[CharIndex] = ' ') or     // on space char (Bounds.Right = 0)
-           Advance then                       // or in advance mode
+        if (CharIndex < LengthUCS4(TextLine)-1) or  // not the last character
+           (TextLine[CharIndex] = Ord(' ')) or      // on space char (Bounds.Right = 0)
+           Advance then                             // or in advance mode
         begin
           // add advance and glyph spacing
           LineBounds.Right := LineBounds.Right + Glyph.Advance.x + GlyphSpacing
@@ -1534,13 +1778,13 @@ begin
   end;
 
   // if left or bottom bound was not set, set them to 0
-  if (Result.Left = Infinity) then
+  if (IsInfinite(Result.Left)) then
     Result.Left := 0.0;
-  if (Result.Bottom = Infinity) then
+  if (IsInfinite(Result.Bottom)) then
     Result.Bottom := 0.0;
 end;
 
-procedure TFTFont.Render(const Text: WideString);
+procedure TFTFont.Render(const Text: UCS4String);
 var
   CharIndex: integer;
   Glyph, PrevGlyph: TFTGlyph;
@@ -1550,17 +1794,17 @@ begin
   PrevGlyph := nil;
 
   // draw current line
-  for CharIndex := 1 to Length(Text) do
+  for CharIndex := 0 to LengthUCS4(Text)-1 do
   begin
     Glyph := TFTGlyph(GetGlyph(Text[CharIndex]));
     if (Assigned(Glyph)) then
     begin
       // get kerning
-      if (fUseKerning and FT_HAS_KERNING(fFace) and (PrevGlyph <> nil)) then
+      if (fUseKerning and FT_HAS_KERNING(fFace.Data) and (PrevGlyph <> nil)) then
       begin
-        FT_Get_Kerning(fFace, PrevGlyph.CharIndex, Glyph.CharIndex,
+        FT_Get_Kerning(fFace.Data, PrevGlyph.CharIndex, Glyph.CharIndex,
                        FT_KERNING_UNSCALED, KernDelta);
-        glTranslatef(KernDelta.x * fFontUnitScale.X, 0, 0);
+        glTranslatef(KernDelta.x * fFace.FontUnitScale.X, 0, 0);
       end;
 
       if (ReflectionPass) then
@@ -1582,23 +1826,23 @@ end;
 
 function TFTFont.GetAscender(): single;
 begin
-  Result := fFace.ascender * fFontUnitScale.Y + Outset*2;
+  Result := fFace.Data.ascender * fFace.FontUnitScale.Y + Outset*2;
 end;
 
 function TFTFont.GetDescender(): single;
 begin
   // Note: outset is not part of the descender as the baseline is lifted
-  Result := fFace.descender * fFontUnitScale.Y;
+  Result := fFace.Data.descender * fFace.FontUnitScale.Y;
 end;
 
 function TFTFont.GetUnderlinePosition(): single;
 begin
-  Result := fFace.underline_position * fFontUnitScale.Y - Outset;
+  Result := fFace.Data.underline_position * fFace.FontUnitScale.Y - Outset;
 end;
 
 function TFTFont.GetUnderlineThickness(): single;
 begin
-  Result := fFace.underline_thickness * fFontUnitScale.Y + Outset*2;
+  Result := fFace.Data.underline_thickness * fFace.FontUnitScale.Y + Outset*2;
 end;
 
 
@@ -1606,7 +1850,7 @@ end;
  * TFTScalableFont
  *}
 
-constructor TFTScalableFont.Create(const Filename: string;
+constructor TFTScalableFont.Create(const Filename: IPath;
                    Size: integer; OutsetAmount: single;
                    UseMipmaps: boolean);
 var
@@ -1637,14 +1881,23 @@ begin
   // do not create mipmap fonts < 8 pixels
   if (ScaledSize < 8) then
     Exit;
-  Result := TFTFont.Create(BaseFont.fFilename,
-      ScaledSize, BaseFont.fOutset * Scale,
+  Result := TFTFont.Create(BaseFont.Filename,
+      ScaledSize, BaseFont.Outset * Scale,
       FT_LOAD_DEFAULT or FT_LOAD_NO_HINTING);
 end;
 
 function TFTScalableFont.GetOutset(): single;
 begin
   Result := TFTFont(fBaseFont).Outset * fScale;
+end;
+
+procedure TFTScalableFont.AddFallback(const Filename: IPath);
+var
+  Level: integer;
+begin
+  for Level := 0 to High(fMipmapFonts) do
+    if (fMipmapFonts[Level] <> nil) then
+      TFTFont(fMipmapFonts[Level]).AddFallback(Filename);
 end;
 
 procedure TFTScalableFont.FlushCache(KeepBaseSet: boolean);
@@ -1662,18 +1915,19 @@ end;
  *}
 
 constructor TFTOutlineFont.Create(
-    const Filename: string;
+    const Filename: IPath;
     Size: integer; Outset: single;
     LoadFlags: FT_Int32);
 begin
-  inherited Create();
+  inherited Create(Filename);
 
-  fFilename := Filename;
   fSize := Size;
   fOutset := Outset;
 
   fInnerFont := TFTFont.Create(Filename, Size, 0.0, LoadFlags);
+  fInnerFont.Part := fpInner;
   fOutlineFont := TFTFont.Create(Filename, Size, Outset, LoadFlags);
+  fOutlineFont.Part := fpOutline;
 
   ResetIntern();
 end;
@@ -1705,7 +1959,7 @@ begin
   ResetIntern();
 end;
 
-procedure TFTOutlineFont.DrawUnderline(const Text: WideString);
+procedure TFTOutlineFont.DrawUnderline(const Text: UCS4String);
 var
   CurrentColor: TGLColor;
   OutlineColor: TGLColor;
@@ -1730,7 +1984,7 @@ begin
   glPopMatrix();
 end;
 
-procedure TFTOutlineFont.Render(const Text: WideString);
+procedure TFTOutlineFont.Render(const Text: UCS4String);
 var
   CurrentColor: TGLColor;
   OutlineColor: TGLColor;
@@ -1770,7 +2024,13 @@ begin
   fInnerFont.FlushCache(KeepBaseSet);
 end;
 
-function TFTOutlineFont.BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl;
+procedure TFTOutlineFont.AddFallback(const Filename: IPath);
+begin
+  fOutlineFont.AddFallback(Filename);
+  fInnerFont.AddFallback(Filename);
+end;
+
+function TFTOutlineFont.BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl;
 begin
   Result := fOutlineFont.BBox(Text, Advance);
 end;
@@ -1852,7 +2112,7 @@ end;
  *}
 
 constructor TFTScalableOutlineFont.Create(
-    const Filename: string;
+    const Filename: IPath;
     Size: integer; OutsetAmount: single;
     UseMipmaps: boolean);
 var
@@ -1906,6 +2166,15 @@ begin
       TFTOutlineFont(fMipmapFonts[Level]).FlushCache(KeepBaseSet);
 end;
 
+procedure TFTScalableOutlineFont.AddFallback(const Filename: IPath);
+var
+  Level: integer;
+begin
+  for Level := 0 to High(fMipmapFonts) do
+    if (fMipmapFonts[Level] <> nil) then
+      TFTOutlineFont(fMipmapFonts[Level]).AddFallback(Filename);
+end;
+
 
 {*
  * TFTGlyph
@@ -1935,82 +2204,119 @@ const
    *}
   cTexSmoothBorder = 1;
 
-procedure TFTGlyph.Extrude(var TexBuffer: TGLubyteDynArray; Outset: single);
-
-  procedure SetToMax(var Val1: GLubyte; Val2: GLubyte); {$IFDEF HasInline}inline;{$ENDIF}
-  begin
-    if (Val1 < Val2) then
-      Val1 := Val2;
-  end;
-
+procedure TFTGlyph.StrokeBorder(var Glyph: FT_Glyph);
 var
-  I, X, Y: integer;
-  SrcBuffer,TmpBuffer: TGLubyteDynArray;
-  TexLine, TexLinePrev, TexLineNext: PGLubyteArray;
-  SrcLine: PGLubyteArray;
-  AlphaScale: single;
-  Value, ValueNeigh, ValueDiag: GLubyte;
-const
-  // square-root of 2 used for diagonal neighbor pixels
-  cSqrt2 = 1.4142;
-  // number of ignored pixels on each edge of the bitmap. Consists of:
-  // - border used for font smoothing and
-  // - outer (extruded) bitmap pixel (because it is just written but never read)
-  cBorder = cTexSmoothBorder + 1;
+  Outline: PFT_Outline;
+  OuterStroker, InnerStroker:  FT_Stroker;
+  OuterNumPoints, InnerNumPoints, GlyphNumPoints: FT_UInt;
+  OuterNumContours, InnerNumContours, GlyphNumContours: FT_UInt;
+  OuterBorder, InnerBorder: FT_StrokerBorder;
+  OutlineFlags: FT_Int;
+  UseStencil: boolean;
 begin
-  // allocate memory for temporary buffer
-  SetLength(SrcBuffer, Length(TexBuffer));
-  FillChar(SrcBuffer[0], Length(TexBuffer), 0);
+  // It is possible to extrude the borders of a glyph with FT_Glyph_Stroke
+  // but it will extrude the border to the outside and the inside of a glyph
+  // although we just want to extrude to the outside.
+  // FT_Glyph_StrokeBorder extrudes to the outside but also fills the interior
+  // (this is what we need for bold fonts).
+  // In both cases the inner font and outline font (border) will overlap.
+  // Normally this does not matter but it does if alpha blending is active.
+  // In this case if e.g. the inner color is set to white, the outline to red
+  // and alpha to 0.5 the inner part will not be white it will be pink.
 
-  // extrude pixel by pixel
-  for I := 1 to Ceil(Outset) do
+  InnerStroker := nil;
+  OuterStroker := nil;
+
+  // If we are to create the interior of an outlined font (fInner = true)
+  // we have to create two borders:
+  // - one extruded to the outside by fOutset pixels and
+  // - one extruded to the inside by almost 0 zero pixels.
+  // The second one is used as a stencil for the first one, clearing the
+  // interiour of the glyph.
+  // The stencil is not needed to create bold fonts.
+  UseStencil := (fFont.Part = fpInner);
+
+  // we cannot extrude bitmaps, only vector based glyphs.
+  // Check for FT_GLYPH_FORMAT_OUTLINE otherwise a cast to FT_OutlineGlyph is
+  // invalid and FT_Stroker_ParseOutline() will crash
+  if (Glyph.format <> FT_GLYPH_FORMAT_OUTLINE) then
+    Exit;
+
+  Outline := @FT_OutlineGlyph(Glyph).outline;
+  
+  OuterBorder := FT_Outline_GetOutsideBorder(Outline);
+  if (OuterBorder = FT_STROKER_BORDER_LEFT) then
+    InnerBorder := FT_STROKER_BORDER_RIGHT
+  else
+    InnerBorder := FT_STROKER_BORDER_LEFT;
+
+  { extrude outer border }
+
+  if (FT_Stroker_New(Glyph.library_, OuterStroker) <> 0) then
+    raise EFontError.Create('FT_Stroker_New failed!');
+  FT_Stroker_Set(
+      OuterStroker,
+      Round(fOutset * 64),
+      FT_STROKER_LINECAP_ROUND,
+      FT_STROKER_LINEJOIN_BEVEL,
+      0);
+
+  // similar to FT_Glyph_StrokeBorder(inner = FT_FALSE) but it is possible to
+  // use FT_Stroker_ExportBorder() afterwards to combine inner and outer borders
+  if (FT_Stroker_ParseOutline(OuterStroker, Outline, FT_FALSE) <> 0) then
+    raise EFontError.Create('FT_Stroker_ParseOutline failed!');
+
+  FT_Stroker_GetBorderCounts(OuterStroker, OuterBorder, OuterNumPoints, OuterNumContours);
+
+  { extrude inner border (= stencil) }
+
+  if (UseStencil) then
   begin
-    // swap arrays
-    TmpBuffer := TexBuffer;
-    TexBuffer := SrcBuffer;
-    SrcBuffer := TmpBuffer;
+    if (FT_Stroker_New(Glyph.library_, InnerStroker) <> 0) then
+      raise EFontError.Create('FT_Stroker_New failed!');
+    FT_Stroker_Set(
+        InnerStroker,
+        63, // extrude at most one pixel to avoid a black border
+        FT_STROKER_LINECAP_ROUND,
+        FT_STROKER_LINEJOIN_BEVEL,
+        0);
 
-    // as long as we add an entire pixel of outset, use a solid color.
-    // If the fractional part is reached blend, e.g. outline=3.2 -> 3 solid
-    // pixels and one blended with alpha=0.2.
-    // For the fractional part I = Ceil(Outset) is always true.
-    if (I <= Outset) then
-      AlphaScale := 1
-    else
-      AlphaScale := Outset - Trunc(Outset);
+    if (FT_Stroker_ParseOutline(InnerStroker, Outline, FT_FALSE) <> 0) then
+      raise EFontError.Create('FT_Stroker_ParseOutline failed!');
 
-    // copy data to the expanded bitmap.
-    for Y := cBorder to fTexSize.Height - 2*cBorder do
-    begin
-      TexLine     := @TexBuffer[Y*fTexSize.Width];
-      TexLinePrev := @TexBuffer[(Y-1)*fTexSize.Width];
-      TexLineNext := @TexBuffer[(Y+1)*fTexSize.Width];
-      SrcLine     := @SrcBuffer[Y*fTexSize.Width];
-
-      // expand current line's pixels
-      for X := cBorder to fTexSize.Width - 2*cBorder do
-      begin
-        Value := SrcLine[X];
-        ValueNeigh := Round(Value * AlphaScale);
-        ValueDiag := Round(ValueNeigh / cSqrt2);
-
-        SetToMax(TexLine[X],   Value);
-        SetToMax(TexLine[X-1], ValueNeigh);
-        SetToMax(TexLine[X+1], ValueNeigh);
-
-        SetToMax(TexLinePrev[X],   ValueNeigh);
-        SetToMax(TexLinePrev[X-1], ValueDiag);
-        SetToMax(TexLinePrev[X+1], ValueDiag);
-
-        SetToMax(TexLineNext[X],   ValueNeigh);
-        SetToMax(TexLineNext[X-1], ValueDiag);
-        SetToMax(TexLineNext[X+1], ValueDiag);
-      end;
-    end;
+    FT_Stroker_GetBorderCounts(InnerStroker, InnerBorder, InnerNumPoints, InnerNumContours);
+  end else begin
+    InnerNumPoints := 0;
+    InnerNumContours := 0;
   end;
 
-  TmpBuffer := nil;
-  SetLength(SrcBuffer, 0);
+  { combine borders (subtract: OuterBorder - InnerBorder) }
+
+  GlyphNumPoints := InnerNumPoints + OuterNumPoints;
+  GlyphNumContours := InnerNumContours + OuterNumContours;
+
+  // save flags before deletion (TODO: set them on the resulting outline)
+  OutlineFlags := Outline.flags;
+
+  // resize glyph outline to hold inner and outer border
+  FT_Outline_Done(Glyph.Library_, Outline);
+  if (FT_Outline_New(Glyph.Library_, GlyphNumPoints, GlyphNumContours, Outline) <> 0) then
+    raise EFontError.Create('FT_Outline_New failed!');
+
+  Outline.n_points := 0;
+  Outline.n_contours := 0;
+
+  // add points to outline. The inner-border is used as a stencil.
+  FT_Stroker_ExportBorder(OuterStroker, OuterBorder, Outline);
+  if (UseStencil) then
+    FT_Stroker_ExportBorder(InnerStroker, InnerBorder, Outline);
+  if (FT_Outline_Check(outline) <> 0) then
+    raise EFontError.Create('FT_Stroker_ExportBorder failed!');
+
+  if (InnerStroker <> nil) then
+    FT_Stroker_Done(InnerStroker);
+  if (OuterStroker <> nil) then
+    FT_Stroker_Done(OuterStroker);
 end;
 
 procedure TFTGlyph.CreateTexture(LoadFlags: FT_Int32);
@@ -2025,17 +2331,26 @@ var
   TexLine:       PGLubyteArray;
   CBox:          FT_BBox;
 begin
+  // we need vector data for outlined glyphs so do not load bitmaps.
+  // This is necessary for mixed fonts that contain bitmap versions of smaller
+  // glyphs, for example in CJK fonts.
+  if (fOutset > 0) then
+    LoadFlags := LoadFlags or FT_LOAD_NO_BITMAP;
+
   // load the Glyph for our character
-  if (FT_Load_Glyph(fFont.Face, fCharIndex, LoadFlags) <> 0) then
-    raise Exception.Create('FT_Load_Glyph failed');
+  if (FT_Load_Glyph(fFace.Data, fCharIndex, LoadFlags) <> 0) then
+    raise EFontError.Create('FT_Load_Glyph failed');
 
   // move the face's glyph into a Glyph object
-  if (FT_Get_Glyph(fFont.Face^.glyph, Glyph) <> 0) then
-    raise Exception.Create('FT_Get_Glyph failed');
+  if (FT_Get_Glyph(fFace.Data^.glyph, Glyph) <> 0) then
+    raise EFontError.Create('FT_Get_Glyph failed');
+
+  if (fOutset > 0) then
+    StrokeBorder(Glyph);
 
   // store scaled advance width/height in glyph-object
-  fAdvance.X := fFont.Face^.glyph^.advance.x / 64 + fOutset*2;
-  fAdvance.Y := fFont.Face^.glyph^.advance.y / 64 + fOutset*2;
+  fAdvance.X := fFace.Data^.glyph^.advance.x / 64 + fOutset*2;
+  fAdvance.Y := fFace.Data^.glyph^.advance.y / 64 + fOutset*2;
 
   // get the contour's bounding box (in 1/64th pixels, not font-units)
   FT_Glyph_Get_CBox(Glyph, FT_GLYPH_BBOX_UNSCALED, CBox);
@@ -2114,9 +2429,6 @@ begin
     end;
   end;
 
-  if (fOutset > 0) then
-    Extrude(TexBuffer, fOutset);
-
   // allocate resources for textures and display lists
   glGenTextures(1, @fTexture);
 
@@ -2151,16 +2463,36 @@ begin
   FT_Done_Glyph(Glyph);
 end;
 
-constructor TFTGlyph.Create(Font: TFTFont; ch: WideChar; Outset: single;
+constructor TFTGlyph.Create(Font: TFTFont; ch: UCS4Char; Outset: single;
     LoadFlags: FT_Int32);
+var
+  I: integer;
 begin
   inherited Create();
 
   fFont := Font;
   fOutset := Outset;
+  fCharCode := ch;
 
-  // get the Freetype char-index (use default UNICODE charmap)
-  fCharIndex := FT_Get_Char_Index(Font.fFace, FT_ULONG(ch));
+  // Note: the default face is also used if no face (neither default nor fallback)
+  // contains a glyph for the given char.
+  fFace := Font.DefaultFace;
+
+  // search the Freetype char-index (use default UNICODE charmap) in the default face
+  fCharIndex := FT_Get_Char_Index(fFace.Data, FT_ULONG(ch));
+  if (fCharIndex = 0) then
+  begin
+    // glyph not in default font, search in fallback font faces
+    for I := 0 to High(Font.FallbackFaces) do
+    begin
+      fCharIndex := FT_Get_Char_Index(Font.FallbackFaces[I].Data, FT_ULONG(ch));
+      if (fCharIndex <> 0) then
+      begin
+        fFace := Font.FallbackFaces[I];
+        Break;
+      end;
+    end;
+  end;
 
   CreateTexture(LoadFlags);
 end;
@@ -2336,7 +2668,7 @@ begin
   InsertPos := fHash.Count;
 end;
 
-function TGlyphCache.AddGlyph(ch: WideChar; const Glyph: TGlyph): boolean;
+function TGlyphCache.AddGlyph(ch: UCS4Char; const Glyph: TGlyph): boolean;
 var
   BaseCode:  cardinal;
   GlyphCode: integer;
@@ -2346,7 +2678,7 @@ var
 begin
   Result := false;
 
-  BaseCode := cardinal(ch) shr 8;
+  BaseCode := Ord(ch) shr 8;
   GlyphTable := FindGlyphTable(BaseCode, InsertPos);
   if (GlyphTable = nil) then
   begin
@@ -2356,7 +2688,7 @@ begin
   end;
 
   // get glyph table offset
-  GlyphCode := cardinal(ch) and $FF;
+  GlyphCode := Ord(ch) and $FF;
   // insert glyph into table if not present
   if (GlyphTable[GlyphCode] = nil) then
   begin
@@ -2365,19 +2697,19 @@ begin
   end;
 end;
 
-procedure TGlyphCache.DeleteGlyph(ch: WideChar);
+procedure TGlyphCache.DeleteGlyph(ch: UCS4Char);
 var
   Table: PGlyphTable;
   TableIndex, GlyphIndex: integer;
   TableEmpty: boolean;
 begin
   // find table
-  Table := FindGlyphTable(cardinal(ch) shr 8, TableIndex);
+  Table := FindGlyphTable(Ord(ch) shr 8, TableIndex);
   if (Table = nil) then
     Exit;
 
   // find glyph    
-  GlyphIndex := cardinal(ch) and $FF;
+  GlyphIndex := Ord(ch) and $FF;
   if (Table[GlyphIndex] <> nil) then
   begin
     // destroy glyph
@@ -2402,19 +2734,19 @@ begin
   end;
 end;
 
-function TGlyphCache.GetGlyph(ch: WideChar): TGlyph;
+function TGlyphCache.GetGlyph(ch: UCS4Char): TGlyph;
 var
   InsertPos: integer;
   Table: PGlyphTable;
 begin
-  Table := FindGlyphTable(cardinal(ch) shr 8, InsertPos);
+  Table := FindGlyphTable(Ord(ch) shr 8, InsertPos);
   if (Table = nil) then
     Result := nil
   else
-    Result := Table[cardinal(ch) and $FF];
+    Result := Table[Ord(ch) and $FF];
 end;
 
-function TGlyphCache.HasGlyph(ch: WideChar): boolean;
+function TGlyphCache.HasGlyph(ch: UCS4Char): boolean;
 begin
   Result := (GetGlyph(ch) <> nil);
 end;
@@ -2464,7 +2796,7 @@ begin
   begin
     // initialize freetype
     if (FT_Init_FreeType(LibraryInst) <> 0) then
-      raise Exception.Create('FT_Init_FreeType failed');
+      raise EFontError.Create('FT_Init_FreeType failed');
   end;
   Result := LibraryInst;
 end;
@@ -2482,10 +2814,10 @@ end;
  * TBitmapFont
  *}
 
-constructor TBitmapFont.Create(const Filename: string; Outline: integer;
+constructor TBitmapFont.Create(const Filename: IPath; Outline: integer;
     Baseline, Ascender, Descender: integer);
 begin
-  inherited Create();
+  inherited Create(Filename);
 
   fTex := Texture.LoadTexture(true, Filename, TEXTURE_TYPE_TRANSPARENT, 0);
   fTexSize := 1024;
@@ -2494,7 +2826,7 @@ begin
   fAscender  := Ascender;
   fDescender := Descender;
 
-  LoadFontInfo(ChangeFileExt(Filename, '.dat'));
+  LoadFontInfo(Filename.SetExtension('.dat'));
 
   ResetIntern();
 end;
@@ -2516,6 +2848,11 @@ begin
   ResetIntern();
 end;
 
+procedure TBitmapFont.AddFallback(const Filename: IPath);
+begin
+  // no support for fallbacks
+end;
+
 procedure TBitmapFont.CorrectWidths(WidthMult: real; WidthAdd: integer);
 var
   Count: integer;
@@ -2524,27 +2861,27 @@ begin
     fWidths[Count] := Round(fWidths[Count] * WidthMult) + WidthAdd;
 end;
 
-procedure TBitmapFont.LoadFontInfo(const InfoFile: string);
+procedure TBitmapFont.LoadFontInfo(const InfoFile: IPath);
 var
-  Stream:  TFileStream;
+  Stream: TStream;
 begin
   FillChar(fWidths[0], Length(fWidths), 0);
 
   Stream := nil;
   try
-    Stream := TFileStream.Create(InfoFile, fmOpenRead);
+    Stream := TBinaryFileStream.Create(InfoFile, fmOpenRead);
     Stream.Read(fWidths, 256);
   except
-    raise Exception.Create('Could not read font info file ''' +  InfoFile + '''');
+    raise EFontError.Create('Could not read font info file ''' +  InfoFile.ToNative + '''');
   end;
   Stream.Free;
 end;
 
-function TBitmapFont.BBox(const Text: TWideStringArray; Advance: boolean): TBoundsDbl;
+function TBitmapFont.BBox(const Text: TUCS4StringArray; Advance: boolean): TBoundsDbl;
 var
   LineIndex, CharIndex: integer;
   CharCode: cardinal;
-  Line: WideString;
+  Line: UCS4String;
   LineWidth: double;
 begin
   Result.Left := 0;
@@ -2556,7 +2893,7 @@ begin
   begin
     Line := Text[LineIndex];
     LineWidth := 0;
-    for CharIndex := 1 to Length(Line) do
+    for CharIndex := 0 to LengthUCS4(Line)-1 do
     begin
       CharCode := Ord(Line[CharIndex]);
       if (CharCode < Length(fWidths)) then
@@ -2567,7 +2904,7 @@ begin
   end;
 end;
 
-procedure TBitmapFont.RenderChar(ch: WideChar; var AdvanceX: real);
+procedure TBitmapFont.RenderChar(ch: UCS4Char; var AdvanceX: real);
 var
   TexX, TexY:        real;
   TexR, TexB:        real;
@@ -2659,20 +2996,20 @@ begin
   AdvanceX := AdvanceX + GlyphWidth;
 end;
 
-procedure TBitmapFont.Render(const Text: WideString);
+procedure TBitmapFont.Render(const Text: UCS4String);
 var
   CharIndex: integer;
   AdvanceX: real;
 begin
   // if there is no text do nothing
-  if (Text = '') then
+  if (Text = nil) or (Text[0] = 0) then
     Exit;
 
   //Save the current color and alpha (for reflection)
   glGetFloatv(GL_CURRENT_COLOR, @fTempColor);
 
   AdvanceX := 0;
-  for CharIndex := 1 to Length(Text) do
+  for CharIndex := 0 to LengthUCS4(Text)-1 do
   begin
     RenderChar(Text[CharIndex], AdvanceX);
   end;

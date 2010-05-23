@@ -34,11 +34,12 @@ interface
 {$I switches.inc}
 
 uses
-  ULog,
   IniFiles,
   SysUtils,
   Classes,
-  UTexture;
+  ULog,
+  UTexture,
+  UPath;
 
 type
   TRGB = record
@@ -112,7 +113,7 @@ type
     Font:   integer;
     Size:   integer;
     Align:  integer;
-    Text:   string;
+    Text:   UTF8String;
     //Reflection
     Reflection:           boolean;
     ReflectionSpacing:    real;
@@ -169,7 +170,9 @@ type
 
   TThemeSelectSlide = record
     Tex:    string;
+    Typ:    TTextureType;
     TexSBG: string;
+    TypSBG: TTextureType;
     X:      integer;
     Y:      integer;
     W:      integer;
@@ -182,7 +185,7 @@ type
     showArrows:boolean;
     oneItemOnly:boolean;
 
-    Text:   string;
+    Text:   UTF8String;
     ColR,  ColG,  ColB,  Int:     real;
     DColR, DColG, DColB, DInt:    real;
     TColR,  TColG,  TColB,  TInt:     real;
@@ -215,7 +218,7 @@ type
   TThemeBasic = class
     Background:       TThemeBackground;
     Text:             AThemeText;
-    Static:           AThemeStatic;
+    Statics:           AThemeStatic;
 
     //Button Collection Mod
     ButtonCollection: AThemeButtonCollection;
@@ -236,8 +239,8 @@ type
 
     TextDescription:      TThemeText;
     TextDescriptionLong:  TThemeText;
-    Description:          array[0..5] of string;
-    DescriptionLong:      array[0..5] of string;
+    Description:          array[0..5] of UTF8String;
+    DescriptionLong:      array[0..5] of UTF8String;
   end;
 
   TThemeName = class(TThemeBasic)
@@ -354,7 +357,7 @@ type
     TextP3RScore:     TThemeText;
 
     //Linebonus Translations
-    LineBonusText:    array [0..8] of string;
+    LineBonusText:    array [0..8] of UTF8String;
 
     //Pause Popup
      PausePopUp:      TThemeStatic;
@@ -396,6 +399,7 @@ type
     StaticBackLevelRound:   array[1..6] of TThemeStatic;
     StaticLevel:            array[1..6] of TThemeStatic;
     StaticLevelRound:       array[1..6] of TThemeStatic;
+    StaticPlayerIdBox:      array[1..6] of TThemeStatic;
 
 //    Description:          array[0..5] of string;}
   end;
@@ -408,6 +412,7 @@ type
     TextNumber:       AThemeText;
     TextName:         AThemeText;
     TextScore:        AThemeText;
+    TextDate:         AThemeText;
   end;
 
   TThemeOptions = class(TThemeBasic)
@@ -421,7 +426,7 @@ type
     ButtonExit:       TThemeButton;
 
     TextDescription:      TThemeText;
-    Description:          array[0..7] of string;
+    Description:          array[0..7] of UTF8String;
   end;
 
   TThemeOptionsGame = class(TThemeBasic)
@@ -496,8 +501,8 @@ type
 
     TextDescription:      TThemeText;
     TextDescriptionLong:  TThemeText;
-    Description:          array[0..5] of string;
-    DescriptionLong:      array[0..5] of string;
+    Description:          array[0..5] of UTF8string;
+    DescriptionLong:      array[0..5] of UTF8string;
   end;
 
   //Error- and Check-Popup
@@ -531,10 +536,10 @@ type
     TextFound:        TThemeText;
 
     //Translated Texts
-    Songsfound:       string;
-    NoSongsfound:     string;
-    CatText:          string;
-    IType:            array [0..2] of string;
+    Songsfound:       UTF8String;
+    NoSongsfound:     UTF8String;
+    CatText:          UTF8String;
+    IType:            array [0..2] of UTF8String;
   end;
 
   //Party Screens
@@ -646,17 +651,17 @@ type
     SelectLevel: TThemeSelectSlide;
     SelectPlayList: TThemeSelectSlide;
     SelectPlayList2: TThemeSelectSlide;
-    SelectRounds: TThemeSelectSlide;
-    SelectTeams: TThemeSelectSlide;
-    SelectPlayers1: TThemeSelectSlide;
-    SelectPlayers2: TThemeSelectSlide;
-    SelectPlayers3: TThemeSelectSlide;
 
     {ButtonNext: TThemeButton;
     ButtonPrev: TThemeButton;}
   end;
 
   TThemePartyPlayer = class(TThemeBasic)
+    SelectTeams: TThemeSelectSlide;
+    SelectPlayers1: TThemeSelectSlide;
+    SelectPlayers2: TThemeSelectSlide;
+    SelectPlayers3: TThemeSelectSlide;
+
     Team1Name: TThemeButton;
     Player1Name: TThemeButton;
     Player2Name: TThemeButton;
@@ -677,6 +682,11 @@ type
 
     {ButtonNext: TThemeButton;
     ButtonPrev: TThemeButton;}
+  end;
+
+  TThemePartyRounds = class(TThemeBasic)
+    SelectRoundCount: TThemeSelectSlide;
+    SelectRound: array [0..6] of TThemeSelectSlide;
   end;
 
   //Stats Screens
@@ -700,15 +710,22 @@ type
     TextPage:         TThemeText;
     TextList:         AThemeText;
 
-    Description:      array[0..3] of string;
-    DescriptionR:     array[0..3] of string;
-    FormatStr:        array[0..3] of string;
-    PageStr:          string;
+    Description:      array[0..3] of UTF8String;
+    DescriptionR:     array[0..3] of UTF8String;
+    FormatStr:        array[0..3] of UTF8String;
+    PageStr:          UTF8String;
   end;
 
   //Playlist Translations
   TThemePlaylist = record
-    CatText:    string;
+    CatText:    UTF8String;
+  end;
+
+  TThemeEntry = record
+    Name: string;
+    Filename: IPath;
+    DefaultSkin: integer;
+    Creator: string;
   end;
 
   TTheme = class
@@ -721,8 +738,9 @@ type
 
     LastThemeBasic:   TThemeBasic;
     procedure CreateThemeObjects();
-    
+    procedure LoadHeader(FileName: IPath);
   public
+    Themes:           array of TThemeEntry;
     Loading:          TThemeLoading;
     Main:             TThemeMain;
     Name:             TThemeName;
@@ -754,6 +772,7 @@ type
     PartyWin:         TThemePartyWin;
     PartyOptions:     TThemePartyOptions;
     PartyPlayer:      TThemePartyPlayer;
+    PartyRounds:      TThemePartyRounds;
 
     //Stats Screens:
     StatMain:         TThemeStatMain;
@@ -761,11 +780,13 @@ type
 
     Playlist:         TThemePlaylist;
 
-    ILevel: array[0..2] of string;
+    ILevel: array[0..2] of UTF8String;
 
-    constructor Create(const FileName: string); overload; // Initialize theme system
-    constructor Create(const FileName: string; Color: integer); overload; // Initialize theme system with color
-    function LoadTheme(FileName: string; sColor: integer): boolean; // Load some theme settings from file
+    constructor Create;
+
+    procedure LoadList;
+
+    function LoadTheme(ThemeNum: integer; sColor: integer): boolean; // Load some theme settings from file
 
     procedure LoadColors;
 
@@ -818,9 +839,13 @@ uses
   ULanguage,
   USkins,
   UIni,
+  UPathUtils,
+  UFileSystem,
+  TextGL,
   gl,
   glext,
-  math;
+  math,
+  StrUtils;
 
 //-----------
 //Helper procs to use TRGB in Opengl ...maybe this should be somewhere else
@@ -845,12 +870,7 @@ begin
   glColor4f(Color.R, Color.G, Color.B, Min(Color.A, Alpha));
 end;
 
-constructor TTheme.Create(const FileName: string);
-begin
-  Create(FileName, 0);
-end;
-
-constructor TTheme.Create(const FileName: string; Color: integer);
+constructor TTheme.Create;
 begin
   inherited Create();
 
@@ -884,16 +904,89 @@ begin
   PartyScore := TThemePartyScore.Create;
   PartyOptions := TThemePartyOptions.Create;
   PartyPlayer := TThemePartyPlayer.Create;
+  PartyRounds := TThemePartyRounds.Create;
 
   //Stats Screens:
   StatMain :=   TThemeStatMain.Create;
   StatDetail := TThemeStatDetail.Create;
 
-  LoadTheme(FileName, Color);
-
+  //LoadTheme(FileName, Color);
+  LoadList;
 end;
 
-function TTheme.LoadTheme(FileName: string; sColor: integer): boolean;
+procedure TTheme.LoadHeader(FileName: IPath);
+  var
+    Entry: TThemeEntry;
+    Ini: TMemIniFile;
+    SkinName: string;
+    SkinsFound: boolean;
+    ThemeVersion: string;
+    I: integer;
+    Len: integer;
+    Skins: TUTF8StringDynArray;
+begin
+  Entry.Filename := ThemePath.Append(FileName);
+  //read info from theme header
+  Ini := TMemIniFile.Create(Entry.Filename.ToNative);
+
+  Entry.Name := Ini.ReadString('Theme', 'Name', FileName.SetExtension('').ToNative);
+  ThemeVersion := Trim(UpperCase(Ini.ReadString('Theme', 'US_Version', 'no version tag')));
+  Entry.Creator := Ini.ReadString('Theme', 'Creator', 'Unknown');
+  SkinName := Ini.ReadString('Theme', 'DefaultSkin', FileName.SetExtension('').ToNative);
+
+  Ini.Free;
+
+  // don't load theme with wrong version tag
+  if ThemeVersion <> 'USD 110' then
+  begin
+    Log.LogWarn('Wrong Version (' + ThemeVersion + ') in Theme : ' + Entry.Name, 'Theme.LoadHeader');
+  end
+  else
+  begin
+    //Search for Skins for this Theme
+    SkinsFound := false;
+    for I := Low(Skin.Skin) to High(Skin.Skin) do
+    begin
+      if (CompareText(Skin.Skin[I].Theme, Entry.Name) = 0) then
+      begin
+        SkinsFound := true;
+        break;
+      end;
+    end;
+
+    if SkinsFound then
+    begin
+      { found a valid Theme }
+      // set correct default skin
+      Skin.GetSkinsByTheme(Entry.Name, Skins);
+      Entry.DefaultSkin := max(0, GetArrayIndex(Skins, SkinName, true));
+  
+      Len := Length(Themes);
+      SetLength(Themes, Len + 1);
+      SetLength(ITheme, Len + 1);
+      Themes[Len] := Entry;
+      ITheme[Len] := Entry.Name;
+    end;
+  end;
+end;
+
+procedure TTheme.LoadList;
+  var
+    Iter: IFileIterator;
+    FileInfo: TFileInfo;
+begin
+  Log.LogStatus('Searching for Theme : ' + ThemePath.ToNative + '*.ini', 'Theme.LoadList');
+
+  Iter := FileSystem.FileFind(ThemePath.Append('*.ini'), 0);
+  while (Iter.HasNext) do
+  begin
+    FileInfo := Iter.Next;
+    Log.LogStatus('Found Theme: ' + FileInfo.Name.ToNative, 'Theme.LoadList');
+    LoadHeader(Fileinfo.Name);
+  end;
+end;
+
+function TTheme.LoadTheme(ThemeNum: integer; sColor: integer): boolean;
 var
   I:    integer;
 begin
@@ -901,23 +994,21 @@ begin
 
   CreateThemeObjects();
 
-  Log.LogStatus('Loading: '+ FileName, 'TTheme.LoadTheme');
+  Log.LogStatus('Loading: '+ Themes[ThemeNum].FileName.ToNative, 'TTheme.LoadTheme');
 
-  FileName := AdaptFilePaths(FileName);
-
-  if not FileExists(FileName) then
+  if not Themes[ThemeNum].FileName.IsFile() then
   begin
-    Log.LogError('Theme does not exist ('+ FileName +')', 'TTheme.LoadTheme');
+    Log.LogError('Theme does not exist ('+ Themes[ThemeNum].FileName.ToNative +')', 'TTheme.LoadTheme');
   end;
 
-  if FileExists(FileName) then
+  if Themes[ThemeNum].FileName.IsFile() then
   begin
     Result := true;
 
     {$IFDEF THEMESAVE}
-    ThemeIni := TIniFile.Create(FileName);
+    ThemeIni := TIniFile.Create(Themes[ThemeNum].FileName.ToNative);
     {$ELSE}
-    ThemeIni := TMemIniFile.Create(FileName);
+    ThemeIni := TMemIniFile.Create(Themes[ThemeNum].FileName.ToNative);
     {$ENDIF}
 
     if ThemeIni.ReadString('Theme', 'Name', '') <> '' then
@@ -1164,6 +1255,7 @@ begin
         ThemeLoadStatic(Score.StaticBackLevelRound[I], 'ScoreStaticBackLevelRound' + IntToStr(I));
         ThemeLoadStatic(Score.StaticLevel[I],          'ScoreStaticLevel'          + IntToStr(I));
         ThemeLoadStatic(Score.StaticLevelRound[I],     'ScoreStaticLevelRound'     + IntToStr(I));
+        ThemeLoadStatic(Score.StaticPlayerIdBox[I],    'ScoreStaticPlayerIdBox'    + IntToStr(I));
 
         ThemeLoadStatic(Score.StaticRatings[I],        'ScoreStaticRatingPicture'  + IntToStr(I));
       end;
@@ -1177,6 +1269,7 @@ begin
       ThemeLoadTexts(Top5.TextNumber,     'Top5TextNumber');
       ThemeLoadTexts(Top5.TextName,       'Top5TextName');
       ThemeLoadTexts(Top5.TextScore,      'Top5TextScore');
+      ThemeLoadTexts(Top5.TextDate,       'Top5TextDate');
 
       // Options
       ThemeLoadBasic(Options, 'Options');
@@ -1434,17 +1527,17 @@ begin
       ThemeLoadSelectSlide(PartyOptions.SelectLevel, 'PartyOptionsSelectLevel');
       ThemeLoadSelectSlide(PartyOptions.SelectPlayList, 'PartyOptionsSelectPlayList');
       ThemeLoadSelectSlide(PartyOptions.SelectPlayList2, 'PartyOptionsSelectPlayList2');
-      ThemeLoadSelectSlide(PartyOptions.SelectRounds, 'PartyOptionsSelectRounds');
-      ThemeLoadSelectSlide(PartyOptions.SelectTeams, 'PartyOptionsSelectTeams');
-      ThemeLoadSelectSlide(PartyOptions.SelectPlayers1, 'PartyOptionsSelectPlayers1');
-      ThemeLoadSelectSlide(PartyOptions.SelectPlayers2, 'PartyOptionsSelectPlayers2');
-      ThemeLoadSelectSlide(PartyOptions.SelectPlayers3, 'PartyOptionsSelectPlayers3');
-
       {ThemeLoadButton (ButtonNext, 'ButtonNext');
       ThemeLoadButton (ButtonPrev, 'ButtonPrev');}
 
       //Party Player
       ThemeLoadBasic(PartyPlayer, 'PartyPlayer');
+
+      ThemeLoadSelectSlide(PartyPlayer.SelectTeams, 'PartyPlayerSelectTeams');
+      ThemeLoadSelectSlide(PartyPlayer.SelectPlayers1, 'PartyPlayerSelectPlayers1');
+      ThemeLoadSelectSlide(PartyPlayer.SelectPlayers2, 'PartyPlayerSelectPlayers2');
+      ThemeLoadSelectSlide(PartyPlayer.SelectPlayers3, 'PartyPlayerSelectPlayers3');
+
       ThemeLoadButton(PartyPlayer.Team1Name, 'PartyPlayerTeam1Name');
       ThemeLoadButton(PartyPlayer.Player1Name, 'PartyPlayerPlayer1Name');
       ThemeLoadButton(PartyPlayer.Player2Name, 'PartyPlayerPlayer2Name');
@@ -1462,6 +1555,13 @@ begin
       ThemeLoadButton(PartyPlayer.Player10Name, 'PartyPlayerPlayer10Name');
       ThemeLoadButton(PartyPlayer.Player11Name, 'PartyPlayerPlayer11Name');
       ThemeLoadButton(PartyPlayer.Player12Name, 'PartyPlayerPlayer12Name');
+
+      // Party Rounds
+      ThemeLoadBasic(PartyRounds, 'PartyRounds');
+
+      ThemeLoadSelectSlide(PartyRounds.SelectRoundCount, 'PartyRoundsSelectRoundCount');
+      for I := 0 to High(PartyRounds.SelectRound) do
+        ThemeLoadSelectSlide(PartyRounds.SelectRound[I], 'PartyRoundsSelectRound' + IntToStr(I + 1));
 
       {ThemeLoadButton(ButtonNext, 'PartyPlayerButtonNext');
       ThemeLoadButton(ButtonPrev, 'PartyPlayerButtonPrev');}
@@ -1524,7 +1624,7 @@ procedure TTheme.ThemeLoadBasic(Theme: TThemeBasic; const Name: string);
 begin
   ThemeLoadBackground(Theme.Background, Name);
   ThemeLoadTexts(Theme.Text, Name + 'Text');
-  ThemeLoadStatics(Theme.Static, Name + 'Static');
+  ThemeLoadStatics(Theme.Statics, Name + 'Static');
   ThemeLoadButtonCollections(Theme.ButtonCollection, Name + 'ButtonCollection');
 
   LastThemeBasic := Theme;
@@ -1568,7 +1668,7 @@ begin
   ThemeText.ColG  := ThemeIni.ReadFloat(Name, 'ColG', 0);
   ThemeText.ColB  := ThemeIni.ReadFloat(Name, 'ColB', 0);
 
-  ThemeText.Font  := ThemeIni.ReadInteger(Name, 'Font', 0);
+  ThemeText.Font  := ThemeIni.ReadInteger(Name, 'Font', ftNormal);
   ThemeText.Size  := ThemeIni.ReadInteger(Name, 'Size', 0);
   ThemeText.Align := ThemeIni.ReadInteger(Name, 'Align', 0);
 
@@ -1773,7 +1873,9 @@ begin
   ThemeSelectS.Text := Language.Translate(ThemeIni.ReadString(Name, 'Text', ''));
 
   ThemeSelectS.Tex := {Skin.SkinPath + }ThemeIni.ReadString(Name, 'Tex', '');
+  ThemeSelectS.Typ := ParseTextureType(ThemeIni.ReadString(Name, 'Type', ''), TEXTURE_TYPE_PLAIN);
   ThemeSelectS.TexSBG := {Skin.SkinPath + }ThemeIni.ReadString(Name, 'TexSBG', '');
+  ThemeSelectS.TypSBG := ParseTextureType(ThemeIni.ReadString(Name, 'TypeSBG', ''), TEXTURE_TYPE_PLAIN);
 
   ThemeSelectS.X := ThemeIni.ReadInteger(Name, 'X', 0);
   ThemeSelectS.Y := ThemeIni.ReadInteger(Name, 'Y', 0);
@@ -1807,6 +1909,9 @@ begin
   ThemeSelectS.STInt :=  ThemeIni.ReadFloat(Name, 'STInt', 1);
   LoadColor(ThemeSelectS.STDColR, ThemeSelectS.STDColG,  ThemeSelectS.STDColB, ThemeIni.ReadString(Name, 'STDColor', ''));
   ThemeSelectS.STDInt :=  ThemeIni.ReadFloat(Name, 'STDInt', 1);
+
+  ThemeSelectS.showArrows := (ThemeIni.ReadInteger(Name, 'ShowArrows', 0) = 1);
+  ThemeSelectS.oneItemOnly := (ThemeIni.ReadInteger(Name, 'OneItemOnly', 0) = 1);
 end;
 
 procedure TTheme.ThemeLoadEqualizer(var ThemeEqualizer: TThemeEqualizer; const Name: string);
@@ -2023,15 +2128,15 @@ begin
         //New Theme-Color Patch
     4:  begin
           // violet
-          Result.R := 230/255;
-          Result.G := 63/255;
-          Result.B := 230/255;
+          Result.R := 212/255;
+          Result.G := 71/255;
+          Result.B := 247/255;
         end;
     5:  begin
           // orange
-          Result.R := 255/255;
+          Result.R := 247/255;
           Result.G := 144/255;
-          Result.B := 0;
+          Result.B := 71/255;
         end;
     6:  begin
           // yellow
@@ -2193,7 +2298,7 @@ begin
   ThemeIni.WriteInteger(Name, 'Texts', Length(Theme.Text));
 
   ThemeSaveBackground(Theme.Background, Name + 'Background');
-  ThemeSaveStatics(Theme.Static, Name + 'Static');
+  ThemeSaveStatics(Theme.Statics, Name + 'Static');
   ThemeSaveTexts(Theme.Text, Name + 'Text');
 end;
 

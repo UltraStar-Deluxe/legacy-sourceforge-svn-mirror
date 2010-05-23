@@ -23,7 +23,7 @@
 
 (*
  * Conversion of libswscale/swscale.h
- * revision 27592, Fri Sep 12 21:46:53 2008 UTC 
+ * Max. version: 0.10.0, revision 31050, Tue May 11 19:40:00 2010 CET 
  *)
  
 unit swscale;
@@ -49,10 +49,35 @@ uses
   UConfig;
 
 const
+  (*
+   * IMPORTANT: The official FFmpeg C headers change very quickly. Often some
+   * of the data structures are changed so that they become incompatible with
+   * older header files. The Pascal headers have to be adjusted to those changes,
+   * otherwise the application might crash randomly or strange bugs (not
+   * necessarily related to video or audio due to buffer overflows etc.) might
+   * occur.
+   *
+   * In the past users reported problems with USDX that took hours to fix and
+   * the problem was an unsupported version of FFmpeg. So we decided to disable
+   * support for future versions of FFmpeg until the headers are revised by us
+   * for that version as they otherwise most probably will break USDX.
+   *
+   * If the headers do not yet support your FFmpeg version you may want to
+   * adjust the max. version numbers manually but please note: it may work but
+   * in many cases it does not. The USDX team does NOT PROVIDE ANY SUPPORT
+   * for the game if the MAX. VERSION WAS CHANGED.
+   *
+   * The only safe way to support new versions of FFmpeg is to add the changes
+   * of the FFmpeg git repository C headers to the Pascal headers.
+   * You can accelerate this process by posting a patch with the git changes
+   * translated to Pascal to our bug tracker (please join our IRC chat before
+   * you start working on it). Simply adjusting the max. versions is NOT a valid
+   * fix. 
+   *)
   (* Max. supported version by this header *)
-  LIBSWSCALE_MAX_VERSION_MAJOR   = 0;
-  LIBSWSCALE_MAX_VERSION_MINOR   = 7;
-  LIBSWSCALE_MAX_VERSION_RELEASE = 1;
+  LIBSWSCALE_MAX_VERSION_MAJOR   =  0;
+  LIBSWSCALE_MAX_VERSION_MINOR   = 10;
+  LIBSWSCALE_MAX_VERSION_RELEASE =  0;
   LIBSWSCALE_MAX_VERSION = (LIBSWSCALE_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                            (LIBSWSCALE_MAX_VERSION_MINOR * VERSION_MINOR) +
                            (LIBSWSCALE_MAX_VERSION_RELEASE * VERSION_RELEASE);
@@ -75,6 +100,20 @@ type
  * Returns the LIBSWSCALE_VERSION_INT constant.
  *)
 function swscale_version(): cuint;
+  cdecl; external sw__scale;
+{$IFEND}
+
+{$IF LIBSWSCALE_VERSION >= 000007002} // 0.7.2
+(**
+ * Returns the libswscale build-time configuration.
+ *)
+function swscale_configuration(): PAnsiChar;
+  cdecl; external sw__scale;
+
+(**
+ * Returns the libswscale license.
+ *)
+function swscale_license(): PAnsiChar;
   cdecl; external sw__scale;
 {$IFEND}
 
@@ -124,6 +163,18 @@ const
   SWS_CS_SMPTE240M      = 7;
   SWS_CS_DEFAULT        = 5;
 
+{$IF  LIBSWSCALE_VERSION >= 000010000} // 0.10.0
+(**
+ * Returns a pointer to yuv<->rgb coefficients for the given colorspace
+ * suitable for sws_setColorspaceDetails().
+ *
+ * @param colorspace One of the SWS_CS_* macros. If invalid,
+ * SWS_CS_DEFAULT is used.
+ *)
+  function sws_getCoefficients(colorspace: cint): Pcint;
+    cdecl; external sw__scale;
+{$IFEND}
+  
 type
 
   // when used for filters they must have an odd number of elements
@@ -148,6 +199,26 @@ type
     {internal structure}
   end;
 
+{$IF  LIBSWSCALE_VERSION >= 000008000} // 0.8.0
+(**
+ * Returns a positive value if pix_fmt is a supported input format, 0
+ * otherwise.
+ *)
+  function sws_isSupportedInput(pix_fmt: TAVPixelFormat): cint;
+    cdecl; external sw__scale;
+
+(**
+ * Returns a positive value if pix_fmt is a supported output format, 0
+ * otherwise.
+ *)
+  function sws_isSupportedOutput(pix_fmt: TAVPixelFormat): cint;
+    cdecl; external sw__scale;
+{$IFEND}
+
+(**
+ * Frees the swscaler context swsContext.
+ * If swsContext is NULL, then does nothing.
+ *)
 procedure sws_freeContext(swsContext: PSwsContext);
   cdecl; external sw__scale;
 
@@ -175,6 +246,10 @@ function sws_getContext(srcW: cint; srcH: cint; srcFormat: TAVPixelFormat;
  * slice in the image in dst. A slice is a sequence of consecutive
  * rows in an image.
  *
+ * Slices have to be provided in sequential order, either in
+ * top-bottom or bottom-top order. If slices are provided in
+ * non-sequential order the behavior of the function is undefined.
+ *
  * @param context   the scaling context previously created with
  *                  sws_getContext()
  * @param srcSlice  the array containing the pointers to the planes of
@@ -192,14 +267,15 @@ function sws_getContext(srcW: cint; srcH: cint; srcFormat: TAVPixelFormat;
  *                  the destination image
  * @return          the height of the output slice
  *)
-function sws_scale(context: PSwsContext; srcSlice: PPCuint8Array; srcStride: PCintArray;
-              srcSliceY: cint; srcSliceH: cint; dst: PPCuint8Array; dstStride: PCintArray): cint;
+function sws_scale(context: PSwsContext; {const} srcSlice: PPCuint8Array; {const} srcStride: PCintArray;
+              srcSliceY: cint; srcSliceH: cint; {const} dst: PPCuint8Array; {const} dstStride: PCintArray): cint;
   cdecl; external sw__scale;
 
 {$IF  LIBSWSCALE_VERSION_MAJOR < 1}
 // deprecated. Use sws_scale() instead.
-function sws_scale_ordered(context: PSwsContext; src: PPCuint8Array; srcStride: PCintArray;
-              srcSliceY: cint; srcSliceH: cint; dst: PPCuint8Array; dstStride: PCintArray): cint;
+function sws_scale_ordered(context: PSwsContext; {const} src: PPCuint8Array;
+                           srcStride: PCintArray; srcSliceY: cint; srcSliceH: cint;
+	                   dst: PPCuint8Array; dstStride: PCintArray): cint;
   cdecl; external sw__scale; deprecated;
 {$IFEND}
 

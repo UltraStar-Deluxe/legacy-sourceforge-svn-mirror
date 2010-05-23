@@ -103,7 +103,7 @@ interface
 
 {$IFDEF FPC}
   {$MODE Delphi}
-  {$H+} // use AnsiString
+  {$H+} // use long strings
 {$ENDIF}
 
 uses
@@ -237,20 +237,13 @@ uses Controls,
   There are special requirements and restrictions for this callback
   procedure (see midiInOpen in MMSYSTEM.HLP) so it's impractical to
   make it an object method }
-{$IFDEF WIN32}
+{$IFDEF MSWINDOWS}
 function midiHandler(
     hMidiIn: HMidiIn;
     wMsg: UINT;
     dwInstance: DWORD;
     dwParam1: DWORD;
     dwParam2: DWORD): Boolean; stdcall; external 'DELMID32.DLL';
-{$ELSE}
-procedure midiHandler(
-    hMidiIn: HMidiIn;
-    wMsg: Word;
-    dwInstance: DWORD;
-    dwParam1: DWORD;
-    dwParam2: DWORD); far; external 'DELPHMID';
 {$ENDIF}
 *)
 {-------------------------------------------------------------------}

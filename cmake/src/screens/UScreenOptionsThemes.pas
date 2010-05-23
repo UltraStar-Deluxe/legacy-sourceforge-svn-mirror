@@ -49,8 +49,8 @@ type
     public
       SkinSelect: integer;
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure InteractInc; override;
       procedure InteractDec; override;
   end;
@@ -61,17 +61,18 @@ uses
   SysUtils,
   UGraphic,
   UMain,
-  UPath,
+  UPathUtils,
+  UUnicodeUtils,
   USkins;
 
-function TScreenOptionsThemes.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenOptionsThemes.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
   if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -83,7 +84,12 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          // Escape -> save nothing - just leave this screen
+          Ini.Save;
+
+          // Reload all screens, after Theme changed
+          // Todo : JB - Check if theme was actually changed
+          UGraphic.UnLoadScreens();
+          UGraphic.LoadScreens();
 
           AudioPlayback.PlaySound(SoundLib.Back);
           FadeTo(@ScreenOptions);
@@ -135,7 +141,16 @@ begin
   if (SelInteraction = 0) then
   begin
     Skin.OnThemeChange;
-    UpdateSelectSlideOptions (Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
+    UpdateSelectSlideOptions(Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
+
+    // set skin to themes default skin
+    Ini.SkinNo := Theme.Themes[Ini.Theme].DefaultSkin;
+  end;
+
+  { set skins default color }
+  if (SelInteraction = 0) or (SelInteraction = 1) then
+  begin
+    Ini.Color := Skin.GetDefaultColor(Ini.SkinNo);
   end;
 
   ReloadTheme();
@@ -150,6 +165,15 @@ begin
   begin
     Skin.OnThemeChange;
     UpdateSelectSlideOptions (Theme.OptionsThemes.SelectSkin, SkinSelect, ISkin, Ini.SkinNo);
+
+    // set skin to themes default skin
+    Ini.SkinNo := Theme.Themes[Ini.Theme].DefaultSkin;
+  end;
+
+  { set skins default color }
+  if (SelInteraction = 0) or (SelInteraction = 1) then
+  begin
+    Ini.Color := Skin.GetDefaultColor(Ini.SkinNo);
   end;
 
   ReloadTheme();
@@ -175,10 +199,10 @@ begin
 
   AddButton(Theme.OptionsThemes.ButtonExit);
   if (Length(Button[0].Text)=0) then
-    AddButtonText(14, 20, Theme.Options.Description[7]);
+    AddButtonText(20, 5, Theme.Options.Description[7]);
 end;
 
-procedure TScreenOptionsThemes.onShow;
+procedure TScreenOptionsThemes.OnShow;
 begin
   inherited;
 
@@ -187,7 +211,7 @@ end;
 
 procedure TScreenOptionsThemes.ReloadTheme;
 begin
-  Theme.LoadTheme(ThemePath + ITheme[Ini.Theme] + '.ini', Ini.Color);
+  Theme.LoadTheme(Ini.Theme, Ini.Color);
 
   ScreenOptionsThemes := TScreenOptionsThemes.create();
   ScreenOptionsThemes.onshow;

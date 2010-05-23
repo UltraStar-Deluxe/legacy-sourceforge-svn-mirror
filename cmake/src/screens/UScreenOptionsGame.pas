@@ -35,40 +35,39 @@ interface
 
 uses
   SDL,
+  UMenu,
   UDisplay,
+  UMusic,
   UFiles,
   UIni,
-  UMenu,
-  UMusic,
-  USongs,
-  UThemes;
+  UThemes,
+  USongs;
 
 type
   TScreenOptionsGame = class(TMenu)
     public
       old_Tabs, old_Sorting: integer;
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       procedure RefreshSongs;
   end;
 
 implementation
 
 uses
-  SysUtils,
-  UGraphic;
+  UGraphic,
+  UUnicodeUtils,
+  SysUtils;
 
-function TScreenOptionsGame.ParseInput(PressedKey: cardinal;
-                                       CharCode: WideChar;
-				       PressedDown: boolean): boolean;
+function TScreenOptionsGame.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
   if PressedDown then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -137,7 +136,7 @@ begin
 
   Theme.OptionsGame.SelectLanguage.showArrows  := true;
   Theme.OptionsGame.SelectLanguage.oneItemOnly := true;
-  AddSelectSlide(Theme.OptionsGame.SelectLanguage,   Ini.Language,   ILanguage);
+  AddSelectSlide(Theme.OptionsGame.SelectLanguage,   Ini.Language,   ILanguageTranslated);
 
   Theme.OptionsGame.SelectTabs.showArrows  := true;
   Theme.OptionsGame.SelectTabs.oneItemOnly := true;
@@ -155,7 +154,7 @@ begin
 
   AddButton(Theme.OptionsGame.ButtonExit);
   if (Length(Button[0].Text) = 0) then
-    AddButtonText(14, 20, Theme.Options.Description[7]);
+    AddButtonText(20, 5, Theme.Options.Description[7]);
 
 end;
 
@@ -166,7 +165,7 @@ begin
     ScreenSong.Refresh;
 end;
 
-procedure TScreenOptionsGame.onShow;
+procedure TScreenOptionsGame.OnShow;
 begin
   inherited;
 

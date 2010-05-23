@@ -45,11 +45,14 @@ uses
   portmixer,
   {$ENDIF}
   portaudio,
+  ctypes,
   UAudioCore_Portaudio,
-  URecord,
+  UUnicodeUtils,
+  UTextEncoding,
   UIni,
   ULog,
-  UMain;
+  UMain,
+  URecord;
 
 type
   TAudioInput_Portaudio = class(TAudioInputBase)
@@ -57,7 +60,7 @@ type
       AudioCore: TAudioCore_Portaudio;
       function EnumDevices(): boolean;
     public
-      function GetName: String; override;
+      function GetName: string; override;
       function InitializeRecord: boolean; override;
       function FinalizeRecord: boolean; override;
   end;
@@ -70,31 +73,76 @@ type
       {$ENDIF}
       PaDeviceIndex:  TPaDeviceIndex;
     public
-      function Open(): boolean;
+      function Open():  boolean;
       function Close(): boolean;
       function Start(): boolean; override;
-      function Stop(): boolean;  override;
+      function Stop():  boolean; override;
+
+      function DetermineInputLatency(Info: PPaDeviceInfo): TPaTime;
 
       function GetVolume(): single;        override;
       procedure SetVolume(Volume: single); override;
   end;
 
-function MicrophoneCallback(input: Pointer; output: Pointer; frameCount: Longword;
+function MicrophoneCallback(input: pointer; output: pointer; frameCount: culong;
       timeInfo: PPaStreamCallbackTimeInfo; statusFlags: TPaStreamCallbackFlags;
-      inputDevice: Pointer): Integer; cdecl; forward;
+      inputDevice: pointer): cint; cdecl; forward;
 
-function MicrophoneTestCallback(input: Pointer; output: Pointer; frameCount: Longword;
+function MicrophoneTestCallback(input: pointer; output: pointer; frameCount: culong;
       timeInfo: PPaStreamCallbackTimeInfo; statusFlags: TPaStreamCallbackFlags;
-      inputDevice: Pointer): Integer; cdecl; forward;
+      inputDevice: pointer): cint; cdecl; forward;
+
+{**
+ * Converts a string returned by Portaudio into UTF8.
+ * If the string already is in UTF8 no conversion is performed, otherwise
+ * the local encoding is used. 
+ *}
+function ConvertPaStringToUTF8(const Str: RawByteString): UTF8String;
+begin
+  if (IsUTF8String(Str)) then
+    Result := Str
+  else
+    Result := DecodeStringUTF8(Str, encLocale);  
+end;
 
 
 { TPortaudioInputDevice }
+
+function TPortaudioInputDevice.DetermineInputLatency(Info: PPaDeviceInfo): TPaTime;
+begin
+  if (Ini.InputDeviceConfig[CfgIndex].Latency <> -1) then
+  begin
+    // autodetection off -> set user latency
+    Result := Ini.InputDeviceConfig[CfgIndex].Latency / 1000
+  end
+  else
+  begin
+    // on vista and xp the defaultLowInputLatency may be set to 0 but it works.
+    // TODO: correct too low latencies (what is a too low latency, maybe < 10ms?)
+    // TODO: retry with input-latency set to 20ms (defaultLowInputLatency might
+    //       not be set correctly in OSS)
+
+    // FIXME: according to the portaudio headers defaultHighInputLatency (approx. 40ms) is
+    // for robust non-interactive  applications and defaultLowInputLatency (approx. 15ms)
+    // for interactive performance.
+    // We need defaultLowInputLatency here but this setting is far too buggy. If the callback
+    // does not return quickly the stream will be stuck after returning from the callback
+    // and the callback will not be called anymore and mic-capturing stops.
+    // Audacity (in AudioIO.cpp) uses defaultHighInputLatency if software playthrough is on
+    // and even higher latencies (100ms) without playthrough so this should be ok for now.
+    //Result := Info^.defaultLowInputLatency;
+    Result := Info^.defaultHighInputLatency;
+  end;
+end;
 
 function TPortaudioInputDevice.Open(): boolean;
 var
   Error:       TPaError;
   inputParams: TPaStreamParameters;
   deviceInfo:  PPaDeviceInfo;
+  {$IFDEF UsePortmixer}
+  SourceIndex: integer;
+  {$ENDIF}
 begin
   Result := false;
 
@@ -107,19 +155,19 @@ begin
     device := PaDeviceIndex;
     channelCount := AudioFormat.Channels;
     sampleFormat := paInt16;
-    suggestedLatency := deviceInfo^.defaultLowInputLatency;
+    suggestedLatency := DetermineInputLatency(deviceInfo);
     hostApiSpecificStreamInfo := nil;
   end;
 
-  //Log.LogStatus(deviceInfo^.name, 'Portaudio');
-  //Log.LogStatus(floattostr(deviceInfo^.defaultLowInputLatency), 'Portaudio');
+  Log.LogStatus('Open ' + deviceInfo^.name, 'Portaudio');
+  Log.LogStatus('Latency of ' + deviceInfo^.name + ': ' + floatToStr(inputParams.suggestedLatency), 'Portaudio');
 
   // open input stream
   Error := Pa_OpenStream(RecordStream, @inputParams, nil,
       AudioFormat.SampleRate,
       paFramesPerBufferUnspecified, paNoFlag,
-      @MicrophoneCallback, Pointer(Self));
-  if(Error <> paNoError) then
+      @MicrophoneCallback, pointer(Self));
+  if (Error <> paNoError) then
   begin
     Log.LogError('Error opening stream: ' + Pa_GetErrorText(Error), 'TPortaudioInputDevice.Open');
     Exit;
@@ -155,7 +203,7 @@ end;
 
 function TPortaudioInputDevice.Start(): boolean;
 var
-  Error:       TPaError;
+  Error: TPaError;
 begin
   Result := false;
 
@@ -169,7 +217,7 @@ begin
 
   // start capture
   Error := Pa_StartStream(RecordStream);
-  if(Error <> paNoError) then
+  if (Error <> paNoError) then
   begin
     Log.LogError('Error starting stream: ' + Pa_GetErrorText(Error), 'TPortaudioInputDevice.Start');
     Close();
@@ -268,34 +316,36 @@ end;
 
 function TAudioInput_Portaudio.EnumDevices(): boolean;
 var
-  i:           integer;
-  paApiIndex:  TPaHostApiIndex;
-  paApiInfo:   PPaHostApiInfo;
-  deviceName:  string;
-  deviceIndex: TPaDeviceIndex;
-  deviceInfo:  PPaDeviceInfo;
-  channelCnt:  integer;
-  SC:          integer; // soundcard
-  err:         TPaError;
-  errMsg:      string;
-  paDevice:    TPortaudioInputDevice;
-  inputParams: TPaStreamParameters;
-  stream:      PPaStream;
-  streamInfo:  PPaStreamInfo;
-  sampleRate:  double;
-  latency:     TPaTime;
+  i:            integer;
+  deviceName:   UTF8String;
+  paApiIndex:   TPaHostApiIndex;
+  paApiInfo:    PPaHostApiInfo;
+  paDeviceIndex:TPaDeviceIndex;
+  paDeviceInfo: PPaDeviceInfo;
+  channelCnt:   integer;
+  deviceIndex:  integer;
+  err:          TPaError;
+  errMsg:       string;
+  paDevice:     TPortaudioInputDevice;
+  inputParams:  TPaStreamParameters;
+  stream:       PPaStream;
+  streamInfo:   PPaStreamInfo;
+  sampleRate:   double;
+  latency:      TPaTime;
   {$IFDEF UsePortmixer}
-  mixer:       PPxMixer;
-  sourceCnt:   integer;
-  sourceIndex: integer;
-  sourceName:  string;
+  mixer:        PPxMixer;
+  sourceCnt:    integer;
+  sourceIndex:  integer;
+  sourceName:   UTF8String;
   {$ENDIF}
+const
+  MIN_TEST_LATENCY = 100 / 1000; // min. test latency of 100 ms to avoid removal of working devices
 begin
   Result := false;
 
   // choose the best available Audio-API
   paApiIndex := AudioCore.GetPreferredApiIndex();
-  if(paApiIndex = -1) then
+  if (paApiIndex = -1) then
   begin
     Log.LogError('No working Audio-API found', 'TAudioInput_Portaudio.EnumDevices');
     Exit;
@@ -303,17 +353,17 @@ begin
 
   paApiInfo := Pa_GetHostApiInfo(paApiIndex);
 
-  SC := 0;
+  deviceIndex := 0;
 
   // init array-size to max. input-devices count
   SetLength(AudioInputProcessor.DeviceList, paApiInfo^.deviceCount);
   for i:= 0 to High(AudioInputProcessor.DeviceList) do
   begin
     // convert API-specific device-index to global index
-    deviceIndex := Pa_HostApiDeviceIndexToDeviceIndex(paApiIndex, i);
-    deviceInfo := Pa_GetDeviceInfo(deviceIndex);
+    paDeviceIndex := Pa_HostApiDeviceIndexToDeviceIndex(paApiIndex, i);
+    paDeviceInfo := Pa_GetDeviceInfo(paDeviceIndex);
 
-    channelCnt := deviceInfo^.maxInputChannels;
+    channelCnt := paDeviceInfo^.maxInputChannels;
 
     // current device is no input device -> skip
     if (channelCnt <= 0) then
@@ -326,25 +376,25 @@ begin
       channelCnt := 2;
 
     paDevice := TPortaudioInputDevice.Create();
-    AudioInputProcessor.DeviceList[SC] := paDevice;
+    AudioInputProcessor.DeviceList[deviceIndex] := paDevice;
 
     // retrieve device-name
-    deviceName := deviceInfo^.name;
-    paDevice.Name := deviceName;
-    paDevice.PaDeviceIndex := deviceIndex;
+    deviceName := ConvertPaStringToUTF8(paDeviceInfo^.name);
+    paDevice.Name := UnifyDeviceName(deviceName, deviceIndex);
+    paDevice.PaDeviceIndex := paDeviceIndex;
 
-    sampleRate := deviceInfo^.defaultSampleRate;
+    sampleRate := paDeviceInfo^.defaultSampleRate;
 
-    // on vista and xp the defaultLowInputLatency may be set to 0 but it works.
-    // TODO: correct too low latencies (what is a too low latency, maybe < 10ms?)
-    latency := deviceInfo^.defaultLowInputLatency;
+    // use a stable (high) latency so we do not remove working devices
+    if (paDeviceInfo^.defaultHighInputLatency > MIN_TEST_LATENCY) then
+      latency := paDeviceInfo^.defaultHighInputLatency
+    else
+      latency := MIN_TEST_LATENCY;
 
     // setup desired input parameters
-    // TODO: retry with input-latency set to 20ms (defaultLowInputLatency might
-    //       not be set correctly in OSS)
     with inputParams do
     begin
-      device := deviceIndex;
+      device := paDeviceIndex;
       channelCount := channelCnt;
       sampleFormat := paInt16;
       suggestedLatency := latency;
@@ -364,7 +414,7 @@ begin
     // open device for further info
     err := Pa_OpenStream(stream, @inputParams, nil, sampleRate,
         paFramesPerBufferUnspecified, paNoFlag, @MicrophoneTestCallback, nil);
-    if(err <> paNoError) then
+    if (err <> paNoError) then
     begin
       // unable to open device -> skip
       errMsg := Pa_GetErrorText(err);
@@ -421,7 +471,7 @@ begin
       for sourceIndex := 1 to sourceCnt do
       begin
         sourceName := Px_GetInputSourceName(mixer, sourceIndex-1);
-        paDevice.Source[sourceIndex].Name := sourceName;
+        paDevice.Source[sourceIndex].Name := ConvertPaStringToUTF8(sourceName);
       end;
 
       Px_CloseMixer(mixer);
@@ -430,48 +480,41 @@ begin
     // close test-stream
     Pa_CloseStream(stream);
 
-    Inc(SC);
+    Inc(deviceIndex);
   end;
 
   // adjust size to actual input-device count
-  SetLength(AudioInputProcessor.DeviceList, SC);
+  SetLength(AudioInputProcessor.DeviceList, deviceIndex);
 
-  Log.LogStatus('#Input-Devices: ' + inttostr(SC), 'Portaudio');
+  Log.LogStatus('#Input-Devices: ' + inttostr(deviceIndex), 'Portaudio');
 
   Result := true;
 end;
 
 function TAudioInput_Portaudio.InitializeRecord(): boolean;
-var
-  err: TPaError;
 begin
+  Result := false;
   AudioCore := TAudioCore_Portaudio.GetInstance();
 
   // initialize portaudio
-  err := Pa_Initialize();
-  if(err <> paNoError) then
-  begin
-    Log.LogError(Pa_GetErrorText(err), 'TAudioInput_Portaudio.InitializeRecord');
-    Result := false;
-    Exit;
-  end;
-
+  if (not AudioCore.Initialize()) then
+     Exit;
   Result := EnumDevices();
 end;
 
 function TAudioInput_Portaudio.FinalizeRecord: boolean;
 begin
   CaptureStop;
-  Pa_Terminate();
+  AudioCore.Terminate();
   Result := inherited FinalizeRecord();
 end;
 
 {*
  * Portaudio input capture callback.
  *}
-function MicrophoneCallback(input: Pointer; output: Pointer; frameCount: Longword;
+function MicrophoneCallback(input: pointer; output: pointer; frameCount: culong;
       timeInfo: PPaStreamCallbackTimeInfo; statusFlags: TPaStreamCallbackFlags;
-      inputDevice: Pointer): Integer; cdecl;
+      inputDevice: pointer): cint; cdecl;
 begin
   AudioInputProcessor.HandleMicrophoneData(input, frameCount*4, inputDevice);
   result := paContinue;
@@ -480,14 +523,13 @@ end;
 {*
  * Portaudio test capture callback.
  *}
-function MicrophoneTestCallback(input: Pointer; output: Pointer; frameCount: Longword;
+function MicrophoneTestCallback(input: pointer; output: pointer; frameCount: culong;
       timeInfo: PPaStreamCallbackTimeInfo; statusFlags: TPaStreamCallbackFlags;
-      inputDevice: Pointer): Integer; cdecl;
+      inputDevice: pointer): cint; cdecl;
 begin
   // this callback is called only once
   result := paAbort;
 end;
-
 
 initialization
   MediaManager.add(TAudioInput_Portaudio.Create);

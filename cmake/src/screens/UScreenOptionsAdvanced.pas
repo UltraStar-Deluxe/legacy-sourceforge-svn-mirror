@@ -34,8 +34,8 @@ interface
 {$I switches.inc}
 
 uses
-  UMenu,
   SDL,
+  UMenu,
   UDisplay,
   UMusic,
   UFiles,
@@ -46,24 +46,25 @@ type
   TScreenOptionsAdvanced = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
   end;
 
 implementation
 
 uses
   UGraphic,
+  UUnicodeUtils,
   SysUtils;
 
-function TScreenOptionsAdvanced.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenOptionsAdvanced.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
   if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -75,8 +76,7 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          // Escape -> save nothing - just leave this screen
-          
+          Ini.Save;
           AudioPlayback.PlaySound(SoundLib.Back);
           FadeTo(@ScreenOptions);
         end;
@@ -120,8 +120,6 @@ begin
 end;
 
 constructor TScreenOptionsAdvanced.Create;
-//var
-// I:      integer; // Auto Removed, Unused Variable
 begin
   inherited Create;
 
@@ -155,12 +153,12 @@ begin
 
   AddButton(Theme.OptionsAdvanced.ButtonExit);
   if (Length(Button[0].Text)=0) then
-    AddButtonText(14, 20, Theme.Options.Description[7]);
+    AddButtonText(20, 5, Theme.Options.Description[7]);
 
   Interaction := 0;
 end;
 
-procedure TScreenOptionsAdvanced.onShow;
+procedure TScreenOptionsAdvanced.OnShow;
 begin
   inherited;
 

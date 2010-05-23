@@ -56,6 +56,7 @@ uses
 type
   TScreenEditSub = class(TMenu)
     private
+      AktBeat:          integer;
       //Variable is True if no Song is loaded
       Error:            boolean;
       
@@ -90,6 +91,7 @@ type
       MidiLastNote:     integer;
 
       TextEditMode:     boolean;
+      editText:         UTF8String; //backup of current text in text-edit-mode
 
       Lyric:            TEditorLyrics;
 
@@ -110,17 +112,19 @@ type
       procedure PasteText;
       procedure CopySentence(Src, Dst: integer);
       procedure CopySentences(Src, Dst, Num: integer);
+      procedure DrawStatics;
+      procedure DrawInfoBar(x, y, w, h: integer);
       //Note Name Mod
       function GetNoteName(Note: integer): string;
     public
       Tex_Background:     TTexture;
       FadeOut:            boolean;
       constructor Create; override;
-      procedure onShow; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      function ParseInputEditText(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+      procedure OnShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      function ParseInputEditText(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
       function Draw: boolean; override;
-      procedure onHide; override;
+      procedure OnHide; override;
   end;
 
 implementation
@@ -130,14 +134,44 @@ uses
   UDraw,
   UNote,
   USkins,
-  ULanguage;
+  ULanguage,
+  UTextEncoding,
+  UUnicodeUtils,
+  UPath;
+
+
+procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
+var
+  SResult: TSaveSongResult;
+  FilePath: IPath;
+  Success: boolean;
+begin
+  Success := false;
+  if (Value) then
+  begin
+    CurrentSong.Encoding := encUTF8;
+    FilePath := CurrentSong.Path.Append(CurrentSong.FileName);
+    // create backup file
+    FilePath.CopyFile(Path(FilePath.ToUTF8 + '.ansi.bak'), false);
+    // store in UTF-8 encoding
+    SResult := SaveSong(CurrentSong, Lines[0], FilePath,
+             boolean(Data));
+    Success := (SResult = ssrOK);
+  end;
+
+  if (Success) then
+    ScreenPopupInfo.ShowPopup(Language.Translate('INFO_FILE_SAVED'))
+  else
+    ScreenPopupError.ShowPopup(Language.Translate('ERROR_SAVE_FILE_FAILED'));
+end;
 
 // Method for input parsing. If false is returned, GetNextWindow
 // should be checked to know the next window to load;
-function TScreenEditSub.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenEditSub.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
   SDL_ModState:  word;
   R:    real;
+  SResult: TSaveSongResult;
 begin
   Result := true;
 
@@ -152,40 +186,68 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   if (PressedDown) then  // Key Down
-  begin  // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+  begin
+    // check normal keys
+    case PressedKey of
+      SDLK_Q:
         begin
           Result := false;
           Exit;
         end;
-      'S':
+      SDLK_S:
         begin
           // Save Song
-          if SDL_ModState = KMOD_LSHIFT then
-            SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName, true)
+          SResult := SaveSong(CurrentSong, Lines[0], CurrentSong.Path.Append(CurrentSong.FileName),
+                   (SDL_ModState = KMOD_LSHIFT));
+          if (SResult = ssrOK) then
+          begin
+            //ScreenPopupInfo.ShowPopup(Language.Translate('INFO_FILE_SAVED'));
+            Text[TextDebug].Text := Language.Translate('INFO_FILE_SAVED');
+          end
+          else if (SResult = ssrEncodingError) then
+          begin
+            ScreenPopupCheck.ShowPopup(Language.Translate('ENCODING_ERROR_ASK_FOR_UTF8'), OnSaveEncodingError,
+                Pointer(SDL_ModState = KMOD_LSHIFT), true);
+          end
           else
-            SaveSong(CurrentSong, Lines[0], CurrentSong.Path + CurrentSong.FileName, false);
-
-          {if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL + KMOD_LALT then
-            // Save Song
-            SaveSongDebug(CurrentSong, Lines[0], 'C:\song.asm', false);}
-
+          begin
+            ScreenPopupError.ShowPopup(Language.Translate('ERROR_SAVE_FILE_FAILED'));
+          end;
           Exit;
         end;
-      'D':
+
+      SDLK_R:   //reload
+        begin
+          AudioPlayback.Stop;
+          {$IFDEF UseMIDIPort}
+          MidiOut.Close;
+          MidiOut.Free;
+          {$ENDIF}
+          Lyric.Free;
+
+          onShow;
+          Text[TextDebug].Text := 'song reloaded'; //TODO: Language.Translate('SONG_RELOADED'); 
+        end;
+
+      SDLK_D:
         begin
           // Divide lengths by 2
-          DivideBPM;
-          Exit;
+          if (SDL_ModState = KMOD_LSHIFT) then
+          begin
+            DivideBPM;
+            Exit;
+          end;
         end;
-      'M':
+      SDLK_M:
         begin
           // Multiply lengths by 2
-          MultiplyBPM;
-          Exit;
+          if (SDL_ModState = KMOD_LSHIFT) then
+          begin
+            MultiplyBPM;
+            Exit;
+          end;
         end;
-      'C':
+      SDLK_C:
         begin
           // Capitalize letter at the beginning of line
           if SDL_ModState = 0 then
@@ -201,7 +263,7 @@ begin
 
           Exit;
         end;
-      'V':
+      SDLK_V:
         begin
           // Paste text
           if SDL_ModState = KMOD_LCTRL then
@@ -217,13 +279,13 @@ begin
             CopySentence(CopySrc, Lines[0].Current);
           end;
         end;
-      'T':
+      SDLK_T:
         begin
           // Fixes timings between sentences
           FixTimings;
           Exit;
         end;
-      'P':
+      SDLK_P:
         begin
           if SDL_ModState = 0 then
           begin
@@ -269,8 +331,8 @@ begin
           Exit;
         end;
       
-      // Golden Note Patch
-      'G':
+      // Golden Note
+      SDLK_G:
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntGolden) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
@@ -280,8 +342,8 @@ begin
           Exit;
         end;
       
-      // Freestyle Note Patch
-      'F':
+      // Freestyle Note
+      SDLK_F:
         begin
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntFreestyle) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
@@ -424,22 +486,40 @@ begin
       SDLK_F4:
         begin
           // Enter Text Edit Mode
+          editText := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
           TextEditMode := true;
         end;
 
       SDLK_SPACE:
         begin
-          // Play Sentence
-          PlaySentenceMidi := false; // stop midi
-          PlaySentence := true;
-          Click := false;
-          AudioPlayback.Stop;
-          AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
-          PlayStopTime := (GetTimeFromBeat(
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length));
-          AudioPlayback.Play;
-          LastClick := -100;
+          if (SDL_ModState = 0) or (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) then
+          begin
+            // Play Sentence
+            PlaySentenceMidi := false; // stop midi
+            PlaySentence := true;
+            Click := false;
+            AudioPlayback.Stop;
+            AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+            PlayStopTime := (GetTimeFromBeat(
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length));
+            AudioPlayback.Play;
+            LastClick := -100;
+          end;
+
+          if (SDL_ModState = KMOD_LSHIFT) or (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) then
+          begin
+            // Play Midi
+            PlaySentenceMidi := true;
+
+            MidiTime := USTime.GetTime;
+            MidiStart := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+            MidiStop := GetTimeFromBeat(
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
+
+            LastClick := -100;
+          end;
         end;
 
       SDLK_RETURN:
@@ -466,11 +546,11 @@ begin
           // right
           if SDL_ModState = 0 then
           begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Inc(CurrentNote);
             if CurrentNote > Lines[0].Line[Lines[0].Current].HighNote then
               CurrentNote := 0;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
           end;
 
@@ -521,11 +601,11 @@ begin
           // left
           if SDL_ModState = 0 then
           begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Dec(CurrentNote);
             if CurrentNote = -1 then
               CurrentNote := Lines[0].Line[Lines[0].Current].HighNote;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
           end;
 
@@ -580,17 +660,18 @@ begin
 
           // skip to next sentence
           if SDL_ModState = 0 then
-          begin                       {$IFDEF UseMIDIPort}
+          begin
+            {$IFDEF UseMIDIPort}
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
-            {$endif}
+            {$ENDIF}
 
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Inc(Lines[0].Current);
             CurrentNote := 0;
             if Lines[0].Current > Lines[0].High then
               Lines[0].Current := 0;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
 
             Lyric.AddLine(Lines[0].Current);
             Lyric.Selected := 0;
@@ -617,12 +698,12 @@ begin
             PlaySentenceMidi := false;
             {$endif}
 
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Dec(Lines[0].Current);
             CurrentNote := 0;
             if Lines[0].Current = -1 then
               Lines[0].Current := Lines[0].High;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
 
             Lyric.AddLine(Lines[0].Current);
             Lyric.Selected := 0;
@@ -642,7 +723,7 @@ begin
   end; // if
 end;
 
-function TScreenEditSub.ParseInputEditText(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenEditSub.ParseInputEditText(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 var
   SDL_ModState:  word;
 begin
@@ -653,39 +734,51 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   if (PressedDown) then
-  begin // Key Down
-    case PressedKey of
+  begin
+    // check normal keys
+    if (IsPrintableChar(CharCode)) then
+    begin
+      Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text :=
+        Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + UCS4ToUTF8String(CharCode);
 
+      Lyric.AddLine(Lines[0].Current);
+      Lyric.Selected := CurrentNote;
+      Exit;
+    end;
+
+    // check special keys
+    case PressedKey of
       SDLK_ESCAPE:
         begin
-          FadeTo(@ScreenSong);
+          Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text := editText;
+          Lyric.AddLine(Lines[0].Current);
+          Lyric.Selected := CurrentNote;
+          TextEditMode := false;
         end;
       SDLK_F4, SDLK_RETURN:
         begin
           // Exit Text Edit Mode
           TextEditMode := false;
         end;
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
-        begin
-          Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text :=
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text + CharCode;
-        end;
       SDLK_BACKSPACE:
         begin
-          Delete(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text,
-            Length(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text), 1);
+          UTF8Delete(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text,
+            LengthUTF8(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text), 1);
+          Lyric.AddLine(Lines[0].Current);
+          Lyric.Selected := CurrentNote;
         end;
       SDLK_RIGHT:
         begin
           // right
           if SDL_ModState = 0 then
           begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Inc(CurrentNote);
             if CurrentNote > Lines[0].Line[Lines[0].Current].HighNote then
               CurrentNote := 0;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
+            editText := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
           end;
         end;
       SDLK_LEFT:
@@ -693,12 +786,13 @@ begin
           // left
           if SDL_ModState = 0 then
           begin
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             Dec(CurrentNote);
             if CurrentNote = -1 then
               CurrentNote := Lines[0].Line[Lines[0].Current].HighNote;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
             Lyric.Selected := CurrentNote;
+            editText := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
           end;
       end;
     end;
@@ -719,15 +813,17 @@ procedure TScreenEditSub.DivideBPM;
 var
   C:    integer;
   N:    integer;
-begin                    
+
+begin
   CurrentSong.BPM[0].BPM := CurrentSong.BPM[0].BPM / 2;
+
   for C := 0 to Lines[0].High do
   begin
     Lines[0].Line[C].Start := Lines[0].Line[C].Start div 2;
     Lines[0].Line[C].End_  := Lines[0].Line[C].End_ div 2;
     for N := 0 to Lines[0].Line[C].HighNote do
     begin
-      Lines[0].Line[C].Note[N].Start  :=       Lines[0].Line[C].Note[N].Start div 2;
+      Lines[0].Line[C].Note[N].Start  := Lines[0].Line[C].Note[N].Start div 2;
       Lines[0].Line[C].Note[N].Length := Round(Lines[0].Line[C].Note[N].Length / 2);
     end; // N
   end; // C
@@ -758,9 +854,11 @@ var
   S:    string;
 begin
   // temporary
-{  for C := 0 to Lines[0].High do
+  {
+  for C := 0 to Lines[0].High do
     for N := 0 to Lines[0].Line[C].HighNut do
-      Lines[0].Line[C].Note[N].Text := AnsiLowerCase(Lines[0].Line[C].Note[N].Text);}
+      Lines[0].Line[C].Note[N].Text := UTF8LowerCase(Lines[0].Line[C].Note[N].Text);
+  }
 
   for C := 0 to Lines[0].High do
   begin
@@ -890,7 +988,7 @@ begin
     begin
       Inc(HighNote);
       SetLength(Note, HighNote + 1);
-      Note[HighNote] := Note[N];
+      Note[HighNote] := Lines[0].Line[CStart].Note[N];
       End_ := Note[HighNote].Start + Note[HighNote].Length;
       
       if Note[HighNote].Tone < BaseNote then
@@ -916,7 +1014,7 @@ begin
 
   Lines[0].Current := Lines[0].Current + 1;
   CurrentNote := 0;
-  Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+  Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
   Lyric.AddLine(Lines[0].Current);
 end;
 
@@ -979,7 +1077,7 @@ begin
     Inc(Note[CurrentNote+1].Start);
     Dec(Note[CurrentNote+1].Length);
     Note[CurrentNote+1].Text := '- ';
-    Note[CurrentNote+1].Color := 0;
+    Note[CurrentNote+1].Color := 1;
   end;
 end;
 
@@ -1009,7 +1107,7 @@ begin
       if CurrentNote > Lines[0].Line[C].HighNote then
         Dec(CurrentNote);
       
-      Lines[0].Line[C].Note[CurrentNote].Color := 1;
+      Lines[0].Line[C].Note[CurrentNote].Color := 2;
     end
     //Last Note of current Sentence Deleted - > Delete Sentence
     else
@@ -1029,7 +1127,7 @@ begin
       else
         Lines[0].Current := 0;
 
-      Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+      Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
     end;
   end;
 end;
@@ -1085,14 +1183,16 @@ var
   N:      integer;
   NHigh:  integer;
 begin
-{  C := Lines[0].Current;
+  {
+  C := Lines[0].Current;
 
   for N := Lines[0].Line[C].HighNut downto 1 do
   begin
     Lines[0].Line[C].Note[N].Text := Lines[0].Line[C].Note[N-1].Text;
   end; // for
 
-  Lines[0].Line[C].Note[0].Text := '- ';}
+  Lines[0].Line[C].Note[0].Text := '- ';
+  }
 
   C := Lines[0].Current;
   NHigh := Lines[0].Line[C].HighNote;
@@ -1181,73 +1281,288 @@ begin
     CopySentence(Src + C, Dst + C);
 end;
 
+procedure TScreenEditSub.DrawStatics;
+var
+  x, y, w, h: Integer;
+begin
+  //Theme:
+  //bg
+  glDisable(GL_BLEND);
+
+  x := 0;
+  y := 0;
+  w := 800;
+  h := 600;
+  glColor4f(0.3, 0.5, 0.6, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  // Line
+  glColor4f(0.9, 0.9, 0.9, 1);
+  x := 20;
+  y := 5;
+  w := 200;
+  h := 40;
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  // Note
+  x := 260;
+  y := 5;
+  w := 200;
+  h := 40;
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  // some borders
+  x := 20;
+  y := 55;
+  w := 760;
+  h := 236;
+  glColor4f(0.9, 0.9, 0.9, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  glColor4f(0, 0, 0, 1);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  x := 20;
+  y := 305;
+  w := 760;
+  h := 135;
+  glColor4f(0.9, 0.9, 0.9, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  glColor4f(0, 0, 0, 1);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  x := 20;
+  y := 500;
+  w := 760;
+  h := 40;
+  glColor4f(0.9, 0.9, 0.9, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+  glColor4f(0, 0, 0, 1);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  glLineWidth(1);
+end;
+
+procedure TScreenEditSub.DrawInfoBar(x, y, w, h: integer);
+var
+  start, end_:        integer;
+  ww:                 integer;
+
+  pos:                real;
+  br:                 real;
+
+  line, note:         integer;
+  numLines, numNotes: integer;
+
+begin
+  numLines := Length(Lines[0].Line);
+
+  if(numLines=0) then
+    Exit;
+
+  start := Lines[0].Line[0].Start;
+  end_ := Lines[0].Line[numLines-1].End_;
+  ww := end_ - start;
+
+  glColor4f(0, 0, 0, 1);
+  glDisable(GL_BLEND);
+  glLineWidth(2);
+  glBegin(GL_LINE_LOOP);
+    glVertex2f(x-1, y-1);
+    glVertex2f(x+w+1, y-1);
+    glVertex2f(x+w+1, y+h+1);
+    glVertex2f(x-1, y+h+1);
+  glEnd;
+
+  glColor4f(0.9, 0.9, 0.9, 1);
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+
+
+  for line := 0 to numLines - 1 do
+  begin
+    if (line = Lines[0].Current) and not (PlaySentence or PlaySentenceMidi) then
+      glColor4f(0.4, 0.4, 0, 1)
+    else
+      glColor4f(1, 0.6, 0, 1);
+
+
+    start := Lines[0].Line[line].Note[0].Start;
+    end_ := Lines[0].Line[line].Note[Lines[0].Line[line].HighNote].Start+
+      Lines[0].Line[line].Note[Lines[0].Line[line].HighNote].Length;
+
+    pos := start/ww*w;
+    br := (end_-start)/ww*w;
+
+    glbegin(gl_quads);
+      glVertex2f(x+pos, y);
+      glVertex2f(x+pos, y+h);
+      glVertex2f(x+pos+br, y+h);
+      glVertex2f(x+pos+br, y);
+    glEnd;
+    {
+    numNotes := Length(Lines[0].Line[line].Nuta);
+
+    for note := 0 to numNotes - 1 do
+    begin
+
+    end;  }
+  end;
+
+  if(PlaySentence or PlaySentenceMidi) then
+  begin
+    glColor4f(0, 0, 0, 0.5);
+    pos := 0;
+    br := AktBeat/ww*w;
+    if (br>w) then
+      br := w;
+  end else
+  begin
+    glColor4f(1, 0, 0, 1);
+    pos := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start/ww*w;
+    br := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length/ww*w;
+    if (br<1) then
+      br := 1;
+  end;
+
+  glEnable(GL_BLEND);
+  glbegin(gl_quads);
+    glVertex2f(x+pos, y);
+    glVertex2f(x+pos, y+h);
+    glVertex2f(x+pos+br, y+h);
+    glVertex2f(x+pos+br, y);
+  glEnd;
+  glDisable(GL_BLEND);
+
+  glLineWidth(1);
+end;
+
 constructor TScreenEditSub.Create;
 begin
   inherited Create;
   SetLength(Player, 1);
 
   // line
-  AddStatic(20, 10, 80, 30, 0, 0, 0, Skin.GetTextureFileName('ButtonF'), TEXTURE_TYPE_COLORIZED);
-  AddText(40, 17, 1, 18, 1, 1, 1, 'Line');
-  TextSentence := AddText(120, 14, 1, 24, 0, 0, 0, '0 / 0');
+  AddText(40, 11, 1, 30, 0, 0, 0, 'Line:');
+  TextSentence := AddText(110, 11, 1, 30, 0, 0, 0, '0 / 0');
+
 
   // Note
-  AddStatic(220, 10, 80, 30, 0, 0, 0, Skin.GetTextureFileName('ButtonF'), TEXTURE_TYPE_COLORIZED);
-  AddText(242, 17, 1, 18, 1, 1, 1, 'Note');
-  TextNote := AddText(320, 14, 1, 24, 0, 0, 0, '0 / 0');
+  AddText(282, 11, 1, 30, 0, 0, 0, 'Note:');
+  TextNote := AddText(360, 11, 1, 30, 0, 0, 0, '0 / 0');
 
   // file info
-  AddStatic(150, 50, 500, 150, 0, 0, 0, Skin.GetTextureFileName('MainBar'), TEXTURE_TYPE_COLORIZED);
-  AddStatic(151, 52, 498, 146,  1, 1, 1, Skin.GetTextureFileName('MainBar'), TEXTURE_TYPE_COLORIZED);
-  AddText(180, 65,  0, 24, 0, 0, 0, 'Title:');
-  AddText(180, 90,  0, 24, 0, 0, 0, 'Artist:');
-  AddText(180, 115, 0, 24, 0, 0, 0, 'Mp3:');
-  AddText(180, 140, 0, 24, 0, 0, 0, 'BPM:');
-  AddText(180, 165, 0, 24, 0, 0, 0, 'GAP:');
+  AddText(30, 65,  0, 24, 0, 0, 0, 'Title:');
+  AddText(30, 90,  0, 24, 0, 0, 0, 'Artist:');
+  AddText(30, 115, 0, 24, 0, 0, 0, 'Mp3:');
+  AddText(30, 140, 0, 24, 0, 0, 0, 'BPM:');
+  AddText(30, 165, 0, 24, 0, 0, 0, 'GAP:');
 
-  TextTitle :=  AddText(250, 65,  0, 24, 0, 0, 0, 'a');
-  TextArtist := AddText(250, 90,  0, 24, 0, 0, 0, 'b');
-  TextMp3 :=    AddText(250, 115, 0, 24, 0, 0, 0, 'c');
-  TextBPM :=    AddText(250, 140, 0, 24, 0, 0, 0, 'd');
-  TextGAP :=    AddText(250, 165, 0, 24, 0, 0, 0, 'e');
-
-{  AddInteraction(2, TextTitle);
-  AddInteraction(2, TextArtist);
-  AddInteraction(2, TextMp3);
-  AddInteraction(2, TextBPM);
-  AddInteraction(2, TextGAP);}
+  TextTitle :=  AddText(180, 65,  0, 24, 0, 0, 0, 'a');
+  TextArtist := AddText(180, 90,  0, 24, 0, 0, 0, 'b');
+  TextMp3 :=    AddText(180, 115, 0, 24, 0, 0, 0, 'c');
+  TextBPM :=    AddText(180, 140, 0, 24, 0, 0, 0, 'd');
+  TextGAP :=    AddText(180, 165, 0, 24, 0, 0, 0, 'e');
 
   // note info
-  AddText(20, 190,  0, 24, 0, 0, 0, 'Start:');
-  AddText(20, 215,  0, 24, 0, 0, 0, 'Duration:');
-  AddText(20, 240,  0, 24, 0, 0, 0, 'Tone:');
-  AddText(20, 265,  0, 24, 0, 0, 0, 'Text:');
+  AddText(30, 190,  0, 24, 0, 0, 0, 'Start:');
+  AddText(30, 215,  0, 24, 0, 0, 0, 'Duration:');
+  AddText(30, 240,  0, 24, 0, 0, 0, 'Tone:');
+  AddText(30, 265,  0, 24, 0, 0, 0, 'Text:');      //AddText(500, 265,  0, 8, 0, 0, 0, 'VideoGap:');
 
-  TextNStart :=   AddText(120, 190,  0, 24, 0, 0, 0, 'a');
-  TextNLength :=  AddText(120, 215,  0, 24, 0, 0, 0, 'b');
-  TextNTon :=     AddText(120, 240,  0, 24, 0, 0, 0, 'c');
-  TextNText :=    AddText(120, 265,  0, 24, 0, 0, 0, 'd');
+  TextNStart :=   AddText(180, 190,  0, 24, 0, 0, 0, 'a');
+  TextNLength :=  AddText(180, 215,  0, 24, 0, 0, 0, 'b');
+  TextNTon :=     AddText(180, 240,  0, 24, 0, 0, 0, 'c');
+  TextNText :=    AddText(180, 265,  0, 24, 0, 0, 0, 'd');
+
+  //TextVideoGap :=  AddText(600, 265,  0, 24, 0, 0, 0, 'e');
 
   // debug
-  TextDebug :=  AddText(30, 550, 0, 8, 0, 0, 0, '');
+  TextDebug :=  AddText(30, 550, 0, 27, 0, 0, 0, '');
 
 end;
 
-procedure TScreenEditSub.onShow;
+procedure TScreenEditSub.OnShow;
+var
+  FileExt: IPath;
 begin
   inherited;
 
-  Log.LogStatus('Initializing', 'TEditScreen.onShow');
+  AudioPlayback.Stop;
+  PlaySentence := false;
+  PlaySentenceMidi := false;
+
+  Log.LogStatus('Initializing', 'TEditScreen.OnShow');
   Lyric := TEditorLyrics.Create;
 
   ResetSingTemp;
 
   try 
-  //Check if File is XML
-   if copy(CurrentSong.FileName,length(CurrentSong.FileName)-3,4) = '.xml' then
-     Error := not CurrentSong.LoadXMLSong()
-   else
-     Error := not CurrentSong.LoadSong();
+    //Check if File is XML
+    FileExt := CurrentSong.FileName.GetExtension;
+    if FileExt.ToUTF8 = '.xml' then
+      Error := not CurrentSong.LoadXMLSong()
+    else
+    begin
+      // reread header with custom tags
+      Error := not CurrentSong.Analyse(true);
+      if not Error then
+        Error := not CurrentSong.LoadSong;
+    end;
   except
     Error := true;
   end;
@@ -1263,18 +1578,16 @@ begin
   begin
   {$IFDEF UseMIDIPort}
     MidiOut := TMidiOutput.Create(nil);
-    if Ini.Debug = 1 then
-      MidiOut.ProductName := 'Microsoft GS Wavetable SW Synth'; // for my kxproject without midi table
     MidiOut.Open;
   {$ENDIF}
     Text[TextTitle].Text :=   CurrentSong.Title;
     Text[TextArtist].Text :=  CurrentSong.Artist;
-    Text[TextMp3].Text :=     CurrentSong.Mp3;
+    Text[TextMp3].Text :=     CurrentSong.Mp3.ToUTF8;
 
     Lines[0].Current := 0;
     CurrentNote := 0;
-    Lines[0].Line[0].Note[0].Color := 1;
-    AudioPlayback.Open(CurrentSong.Path + CurrentSong.Mp3);
+    Lines[0].Line[0].Note[0].Color := 2;
+    AudioPlayback.Open(CurrentSong.Path.Append(CurrentSong.Mp3));
     //Set Down Music Volume for Better hearability of Midi Sounds
     //Music.SetVolume(0.4);
 
@@ -1304,8 +1617,8 @@ end;
 function TScreenEditSub.Draw: boolean;
 var
   Pet:    integer;
-  AktBeat:  integer;
 begin
+
   glClearColor(1,1,1,1);
 
   // midi music
@@ -1395,15 +1708,17 @@ begin
     Text[TextNText].Text := Text[TextNText].Text + '|'; 
 
   // draw static menu
-  inherited Draw;
-
+  DrawStatics;
+  DrawInfoBar(20, 460, 760, 20);
+  //inherited Draw;
+  DrawFG;
   // draw notes
-  SingDrawNoteLines(20, 300, 780, 15);
+  SingDrawNoteLines(20, 305, 780, 15);
   //Error Drawing when no Song is loaded
   if not Error then
   begin
-    SingDrawBeatDelimeters(40, 300, 760, 0);
-    EditDrawLine(40, 405, 760, 0, 15);
+    SingDrawBeatDelimeters(40, 305, 760, 0);
+    EditDrawLine(40, 410, 760, 0, 15);
   end;
 
   // draw text
@@ -1412,7 +1727,7 @@ begin
   Result := true;
 end;
 
-procedure TScreenEditSub.onHide;
+procedure TScreenEditSub.OnHide;
 begin
   {$IFDEF UseMIDIPort}
   MidiOut.Close;

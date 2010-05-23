@@ -49,9 +49,9 @@ type
     TextDescriptionLong: integer;
 
     constructor Create; override;
-    function ParseInput(PressedKey: cardinal; CharCode: widechar;
+    function ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
       PressedDown: boolean): boolean; override;
-    procedure onShow; override;
+    procedure OnShow; override;
     procedure SetInteraction(Num: integer); override;
     procedure SetAnimationProgress(Progress: real); override;
   end;
@@ -67,11 +67,11 @@ uses
   Textgl,
   ULanguage,
   UParty,
-  UDLLManager,
   UScreenCredits,
-  USkins;
+  USkins,
+  UUnicodeUtils;
 
-function TScreenMain.ParseInput(PressedKey: cardinal; CharCode: widechar;
+function TScreenMain.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
   PressedDown: boolean): boolean;
 var
   SDL_ModState: word;
@@ -84,37 +84,32 @@ begin
   if (PressedDown) then
   begin // Key Down
         // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
-      begin
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'): begin
         Result := false;
         Exit;
       end;
-      'C':
-      begin
+      Ord('C'): begin
         if (SDL_ModState = KMOD_LALT) then
         begin
           FadeTo(@ScreenCredits, SoundLib.Start);
           Exit;
         end;
       end;
-      'M':
-      begin
-        if (Ini.Players >= 1) and (Length(DLLMan.Plugins) >= 1) then
+      Ord('M'): begin
+        if (Ini.Players >= 1) and (Party.ModesAvailable) then
         begin
           FadeTo(@ScreenPartyOptions, SoundLib.Start);
           Exit;
         end;
       end;
 
-      'S':
-      begin
+      Ord('S'): begin
         FadeTo(@ScreenStatMain, SoundLib.Start);
         Exit;
       end;
 
-      'E':
-      begin
+      Ord('E'): begin
         FadeTo(@ScreenEdit, SoundLib.Start);
         Exit;
       end;
@@ -140,8 +135,13 @@ begin
             if (Ini.Players = 4) then
               PlayersPlay := 6;
 
-            ScreenName.Goto_SingScreen := false;
-            FadeTo(@ScreenName, SoundLib.Start);
+            if Ini.OnSongClick = sSelectPlayer then
+              FadeTo(@ScreenLevel)
+            else
+            begin
+              ScreenName.Goto_SingScreen := false;
+              FadeTo(@ScreenName, SoundLib.Start);
+            end;
           end
           else //show error message
             ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));
@@ -152,12 +152,7 @@ begin
         begin
           if (Songs.SongList.Count >= 1) then
           begin
-            if (Length(DLLMan.Plugins) >= 1) then
-            begin
-              FadeTo(@ScreenPartyOptions, SoundLib.Start);
-            end
-            else //show error message, No Plugins Loaded
-              ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_PLUGINS'));
+            FadeTo(@ScreenPartyOptions, SoundLib.Start);
           end
           else //show error message, No Songs Loaded
             ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));
@@ -172,7 +167,11 @@ begin
         //Editor
         if Interaction = 3 then
         begin
+          {$IFDEF UseMIDIPort}
           FadeTo(@ScreenEdit, SoundLib.Start);
+          {$ELSE}
+          ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_EDITOR'));
+          {$ENDIF}
         end;
 
         //Options
@@ -232,17 +231,14 @@ begin
   Interaction := 0;
 end;
 
-procedure TScreenMain.onShow;
+procedure TScreenMain.OnShow;
 begin
   inherited;
-
-  { display cursor (on moved) }
-  Display.SetCursor;
-
-{**
- * Start background music
- *}
-  SoundLib.StartBgMusic;
+ {**
+  * Clean up TPartyGame here
+  * at the moment there is no better place for this
+  *}
+  Party.Clear;
 end;
 
 procedure TScreenMain.SetInteraction(Num: integer);
@@ -254,8 +250,8 @@ end;
 
 procedure TScreenMain.SetAnimationProgress(Progress: real);
 begin
-  Static[0].Texture.ScaleW := Progress;
-  Static[0].Texture.ScaleH := Progress;
+  Statics[0].Texture.ScaleW := Progress;
+  Statics[0].Texture.ScaleH := Progress;
 end;
 
 end.

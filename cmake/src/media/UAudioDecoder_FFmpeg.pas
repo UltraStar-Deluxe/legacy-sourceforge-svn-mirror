@@ -56,23 +56,24 @@ interface
 implementation
 
 uses
+  SDL, // SDL redefines some base types -> include before SysUtils to ignore them
   Classes,
   Math,
-  UMusic,
-  UIni,
-  UMain,
+  SysUtils,
   avcodec,
   avformat,
   avutil,
   avio,
   mathematics, // used for av_rescale_q
   rational,
-  SDL,
-  SysUtils,
+  UMusic,
+  UIni,
+  UMain,
   UMediaCore_FFmpeg,
   ULog,
   UCommon,
-  UConfig;
+  UConfig,
+  UPath;
 
 const
   MAX_AUDIOQ_SIZE = (5 * 16 * 1024);
@@ -138,7 +139,7 @@ type
       AudioBufferSize: integer;
       AudioBuffer:     PByteArray;
 
-      Filename: string;
+      Filename: IPath;
 
       procedure SetPositionIntern(Time: real; Flush: boolean; Blocking: boolean);
       procedure SetEOF(State: boolean);   {$IFDEF HasInline}inline;{$ENDIF}
@@ -161,7 +162,7 @@ type
       constructor Create();
       destructor Destroy(); override;
 
-      function Open(const Filename: string): boolean;
+      function Open(const Filename: IPath): boolean;
       procedure Close();                     override;
 
       function GetLength(): real;            override;
@@ -183,7 +184,7 @@ type
 
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
-      function Open(const Filename: string): TAudioDecodeStream;
+      function Open(const Filename: IPath): TAudioDecodeStream;
   end;
 
 var
@@ -270,7 +271,7 @@ begin
   inherited;
 end;
 
-function TFFmpegDecodeStream.Open(const Filename: string): boolean;
+function TFFmpegDecodeStream.Open(const Filename: IPath): boolean;
 var
   SampleFormat: TAudioSampleFormat;
   AVResult: integer;
@@ -280,18 +281,18 @@ begin
   Close();
   Reset();
 
-  if (not FileExists(Filename)) then
+  if (not Filename.IsFile) then
   begin
-    Log.LogError('Audio-file does not exist: "' + Filename + '"', 'UAudio_FFmpeg');
+    Log.LogError('Audio-file does not exist: "' + Filename.ToNative + '"', 'UAudio_FFmpeg');
     Exit;
   end;
 
   Self.Filename := Filename;
 
-  // open audio file
-  if (av_open_input_file(FormatCtx, PAnsiChar(Filename), nil, 0, nil) <> 0) then
+  // use custom 'ufile' protocol for UTF-8 support
+  if (av_open_input_file(FormatCtx, PAnsiChar('ufile:'+FileName.ToUTF8), nil, 0, nil) <> 0) then
   begin
-    Log.LogError('av_open_input_file failed: "' + Filename + '"', 'UAudio_FFmpeg');
+    Log.LogError('av_open_input_file failed: "' + Filename.ToNative + '"', 'UAudio_FFmpeg');
     Exit;
   end;
 
@@ -301,7 +302,7 @@ begin
   // retrieve stream information
   if (av_find_stream_info(FormatCtx) < 0) then
   begin
-    Log.LogError('av_find_stream_info failed: "' + Filename + '"', 'UAudio_FFmpeg');
+    Log.LogError('av_find_stream_info failed: "' + Filename.ToNative + '"', 'UAudio_FFmpeg');
     Close();
     Exit;
   end;
@@ -310,13 +311,13 @@ begin
   FormatCtx^.pb.eof_reached := 0;
 
   {$IFDEF DebugFFmpegDecode}
-  dump_format(FormatCtx, 0, PAnsiChar(Filename), 0);
+  dump_format(FormatCtx, 0, PAnsiChar(Filename.ToNative), 0);
   {$ENDIF}
 
   AudioStreamIndex := FFmpegCore.FindAudioStreamIndex(FormatCtx);
   if (AudioStreamIndex < 0) then
   begin
-    Log.LogError('FindAudioStreamIndex: No Audio-stream found "' + Filename + '"', 'UAudio_FFmpeg');
+    Log.LogError('FindAudioStreamIndex: No Audio-stream found "' + Filename.ToNative + '"', 'UAudio_FFmpeg');
     Close();
     Exit;
   end;
@@ -324,6 +325,7 @@ begin
   //Log.LogStatus('AudioStreamIndex is: '+ inttostr(ffmpegStreamID), 'UAudio_FFmpeg');
 
   AudioStream := FormatCtx.streams[AudioStreamIndex];
+  AudioStreamPos := 0;
   CodecCtx := AudioStream^.codec;
 
   // TODO: should we use this or not? Should we allow 5.1 channel audio?
@@ -574,30 +576,38 @@ begin
   PauseParser();
   PauseDecoder();
   SDL_mutexP(StateLock);
+  try
+    EOFState := false;
+    ErrorState := false;
 
-  // configure seek parameters
-  SeekPos := Time;
-  SeekFlush := Flush;
-  SeekFlags := AVSEEK_FLAG_ANY;
-  SeekRequest := true;
+    // do not seek if we are already at the correct position.
+    // This is important especially for seeking to position 0 if we already are
+    // at the beginning. Although seeking with AVSEEK_FLAG_BACKWARD for pos 0 works,
+    // it is still a bit choppy (although much better than w/o AVSEEK_FLAG_BACKWARD).
+    if (Time = AudioStreamPos) then
+      Exit;    
 
-  // Note: the BACKWARD-flag seeks to the first position <= the position
-  // searched for. Otherwise e.g. position 0 might not be seeked correct.
-  // For some reason ffmpeg sometimes doesn't use position 0 but the key-frame
-  // following. In streams with few key-frames (like many flv-files) the next
-  // key-frame after 0 might be 5secs ahead.
-  if (Time < AudioStreamPos) then
-    SeekFlags := SeekFlags or AVSEEK_FLAG_BACKWARD;
+    // configure seek parameters
+    SeekPos := Time;
+    SeekFlush := Flush;
+    SeekFlags := AVSEEK_FLAG_ANY;
+    SeekRequest := true;
 
-  EOFState := false;
-  ErrorState := false;
+    // Note: the BACKWARD-flag seeks to the first position <= the position
+    // searched for. Otherwise e.g. position 0 might not be seeked correct.
+    // For some reason ffmpeg sometimes doesn't use position 0 but the key-frame
+    // following. In streams with few key-frames (like many flv-files) the next
+    // key-frame after 0 might be 5secs ahead.
+    if (Time <= AudioStreamPos) then
+      SeekFlags := SeekFlags or AVSEEK_FLAG_BACKWARD;
 
-  // send a reuse signal in case the parser was stopped (e.g. because of an EOF)
-  SDL_CondSignal(ParserIdleCond);
-
-  SDL_mutexV(StateLock);
-  ResumeDecoder();
-  ResumeParser();
+    // send a reuse signal in case the parser was stopped (e.g. because of an EOF)
+    SDL_CondSignal(ParserIdleCond);
+  finally
+    SDL_mutexV(StateLock);
+    ResumeDecoder();
+    ResumeParser();
+  end;
 
   // in blocking mode, wait until seeking is done
   if (Blocking) then
@@ -1117,7 +1127,7 @@ begin
   Result := true;
 end;
 
-function TAudioDecoder_FFmpeg.Open(const Filename: string): TAudioDecodeStream;
+function TAudioDecoder_FFmpeg.Open(const Filename: IPath): TAudioDecodeStream;
 var
   Stream: TFFmpegDecodeStream;
 begin

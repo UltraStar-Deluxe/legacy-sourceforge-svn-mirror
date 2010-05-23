@@ -46,26 +46,25 @@ type
   TScreenOptionsGraphics = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
   end;
 
 implementation
 
 uses
   UGraphic,
-  UMain,
-  SysUtils,
-  TypInfo;
+  UUnicodeUtils,
+  SysUtils;
 
-function TScreenOptionsGraphics.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenOptionsGraphics.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
   if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -77,17 +76,12 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          // Escape -> save nothing - just leave this screen
-          
+          Ini.Save;
           AudioPlayback.PlaySound(SoundLib.Back);
           FadeTo(@ScreenOptions);
         end;
       SDLK_RETURN:
         begin
-{          if SelInteraction <= 1 then
-          begin
-            Restart := true;
-          end;}
           if SelInteraction = 6 then
           begin
             Ini.Save;
@@ -126,8 +120,6 @@ begin
 end;
 
 constructor TScreenOptionsGraphics.Create;
-//var
-// I:      integer; // Auto Removed, Unused Variable
 begin
   inherited Create;
   LoadFromTheme(Theme.OptionsGraphics);
@@ -158,11 +150,11 @@ begin
 
   AddButton(Theme.OptionsGraphics.ButtonExit);
   if (Length(Button[0].Text)=0) then
-    AddButtonText(14, 20, Theme.Options.Description[7]);
+    AddButtonText(20, 5, Theme.Options.Description[7]);
 
 end;
 
-procedure TScreenOptionsGraphics.onShow;
+procedure TScreenOptionsGraphics.OnShow;
 begin
   inherited;
 

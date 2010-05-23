@@ -47,6 +47,8 @@ type
   TGenericPlaybackStream = class(TAudioPlaybackStream)
     private
       Engine: TAudioPlayback_SoftMixer;
+      LastReadSize: integer;  // size of data returned by the last ReadData() call
+      LastReadTime: Cardinal; // time of the last ReadData() call
 
       SampleBuffer:      PByteArray;
       SampleBufferSize:  integer;
@@ -58,7 +60,7 @@ type
       SourceBufferCount: integer; // number of available bytes in SourceBuffer
 
       Converter: TAudioConverter;
-      Status:   TStreamStatus;
+      Status:    TStreamStatus;
       InternalLock: PSDL_Mutex;
       SoundEffects: TList;
       fVolume: single;
@@ -86,6 +88,8 @@ type
       procedure SetLoop(Enabled: boolean);  override;
       function GetPosition: real;           override;
       procedure SetPosition(Time: real);    override;
+
+      function GetRemainingBufferSize(): integer;
     public
       constructor Create(Engine: TAudioPlayback_SoftMixer);
       destructor Destroy(); override;
@@ -102,7 +106,7 @@ type
 
       function ReadData(Buffer: PByteArray; BufferSize: integer): integer;
 
-      function GetPCMData(var Data: TPCMData): Cardinal; override;
+      function GetPCMData(var Data: TPCMData): cardinal; override;
       procedure GetFFTData(var Data: TFFTData);          override;
 
       procedure AddSoundEffect(Effect: TSoundEffect);    override;
@@ -148,7 +152,7 @@ type
 
       function CreatePlaybackStream(): TAudioPlaybackStream; override;
     public
-      function GetName: String; override; abstract;
+      function GetName: string; override; abstract;
       function InitializePlayback(): boolean; override;
       function FinalizePlayback: boolean; override;
 
@@ -159,7 +163,7 @@ type
       function GetMixer(): TAudioMixerStream; {$IFDEF HasInline}inline;{$ENDIF}
       function GetAudioFormatInfo(): TAudioFormatInfo;
 
-      procedure MixBuffers(DstBuffer, SrcBuffer: PByteArray; Size: Cardinal; Volume: Single); virtual;
+      procedure MixBuffers(DstBuffer, SrcBuffer: PByteArray; Size: cardinal; Volume: single); virtual;
   end;
 
 type
@@ -369,6 +373,8 @@ begin
   fVolume := 0;
   SoundEffects.Clear;
   FadeInTime := 0;
+
+  LastReadSize := 0;
 end;
 
 function TGenericPlaybackStream.Open(SourceStream: TAudioSourceStream): boolean;
@@ -377,11 +383,11 @@ begin
 
   Close();
 
-  if (not assigned(SourceStream)) then
+  if not assigned(SourceStream) then
     Exit;
   Self.SourceStream := SourceStream;
 
-  if (not InitFormatConversion()) then
+  if not InitFormatConversion() then
   begin
     // reset decode-stream so it will not be freed on destruction
     Self.SourceStream := nil;
@@ -495,7 +501,11 @@ begin
     Exit;
 
   Status := ssStopped;
+  // stop fading
+  FadeInTime := 0;
 
+  LastReadSize := 0;
+  
   Mixer := Engine.GetMixer();
   if (Mixer <> nil) then
     Mixer.RemoveStream(Self);
@@ -543,6 +553,7 @@ begin
   SampleBufferCount := 0;
   SampleBufferPos := 0;
   SourceBufferCount := 0;
+  LastReadSize := 0;
 end;
 
 procedure TGenericPlaybackStream.ApplySoundEffects(Buffer: PByteArray; BufferSize: integer);
@@ -575,6 +586,8 @@ var
   PadFrame: PByteArray;
 begin
   Result := -1;
+
+  LastReadSize := 0;
 
   // sanity check for the source-stream
   if (not assigned(SourceStream)) then
@@ -747,10 +760,12 @@ begin
   end;
 
   // BytesNeeded now contains the number of remaining bytes we were not able to fetch
-  Result := BufferSize - BytesNeeded;
+  LastReadTime := SDL_GetTicks;
+  LastReadSize := BufferSize - BytesNeeded;
+  Result := LastReadSize;
 end;
 
-function TGenericPlaybackStream.GetPCMData(var Data: TPCMData): Cardinal;
+function TGenericPlaybackStream.GetPCMData(var Data: TPCMData): cardinal;
 var
   ByteCount: integer;
 begin
@@ -790,7 +805,7 @@ begin
   // only works with SInt16 and Float values at the moment
   AudioFormat := GetAudioFormatInfo();
 
-  DataIn := AllocMem(FFTSize * SizeOf(Single));
+  DataIn := AllocMem(FFTSize * SizeOf(single));
   if (DataIn = nil) then
     Exit;
 
@@ -842,6 +857,28 @@ begin
   UnlockSampleBuffer();
 end;
 
+{**
+ * Returns the approximate number of bytes left in the audio engines buffer queue.
+ *}
+function TGenericPlaybackStream.GetRemainingBufferSize(): integer;
+var
+  TimeDiff: double;
+begin
+  if (LastReadSize <= 0) then
+  begin
+    Result := 0;
+  end
+  else
+  begin
+    TimeDiff := (SDL_GetTicks() - LastReadTime) / 1000;
+    // we gave the data-sink LastReadSize bytes at the last call to ReadData().
+    // Calculate how much of this should be left in the data-sink
+    Result := LastReadSize - Trunc(TimeDiff * Engine.FormatInfo.BytesPerSec);
+    if (Result < 0) then
+      Result := 0;
+  end;
+end;
+
 function TGenericPlaybackStream.GetPosition: real;
 var
   BufferedTime: double;
@@ -850,11 +887,24 @@ begin
   begin
     LockSampleBuffer();
 
-    // calc the time of source data that is buffered (in the SampleBuffer and SourceBuffer)
-    // but not yet outputed
-    BufferedTime := (SampleBufferCount - SampleBufferPos) / Engine.FormatInfo.BytesPerSec +
-                    SourceBufferCount / SourceStream.GetAudioFormatInfo().BytesPerSec;
-    // and subtract it from the source position
+    // the duration of source stream data that is buffered in this stream.
+    // (this is the data retrieved from the source but has not been resampled)
+    BufferedTime := SourceBufferCount / SourceStream.GetAudioFormatInfo().BytesPerSec;
+
+    // the duration of data that is buffered in this stream.
+    // (this is the already resampled data that has not yet been passed to the audio engine)
+    BufferedTime := BufferedTime + (SampleBufferCount - SampleBufferPos) / Engine.FormatInfo.BytesPerSec;
+
+    // Now consider the samples left in the engine's (e.g. SDL) buffer.
+    // Otherwise the result calculated so far will not change until the callback
+    // is called the next time.
+    // For example, if the buffer has a size of 2048 frames we would not be
+    // able to return a new new position for approx. 40ms (at 44.1kHz) which
+    // would be very bad for synching.
+    BufferedTime := BufferedTime + GetRemainingBufferSize() / Engine.FormatInfo.BytesPerSec;
+
+    // use the timestamp of the source as reference and subtract the time of
+    // the data that is still buffered and not yet output.
     Result := SourceStream.Position - BufferedTime;
 
     UnlockSampleBuffer();
@@ -885,7 +935,7 @@ end;
 
 function TGenericPlaybackStream.GetVolume(): single;
 var
-  FadeAmount: Single;
+  FadeAmount: single;
 begin
   LockSampleBuffer();
   // adjust volume if fading is enabled
@@ -1033,12 +1083,12 @@ begin
 
   //Log.LogStatus('InitializePlayback', 'UAudioPlayback_SoftMixer');
 
-  if(not InitializeAudioPlaybackEngine()) then
+  if (not InitializeAudioPlaybackEngine()) then
     Exit;
 
   MixerStream := TAudioMixerStream.Create(Self);
 
-  if(not StartAudioPlaybackEngine()) then
+  if (not StartAudioPlaybackEngine()) then
     Exit;
 
   Result := true;
@@ -1100,11 +1150,11 @@ begin
   MixerStream.Volume := Volume;
 end;
 
-procedure TAudioPlayback_SoftMixer.MixBuffers(DstBuffer, SrcBuffer: PByteArray; Size: Cardinal; Volume: Single);
+procedure TAudioPlayback_SoftMixer.MixBuffers(DstBuffer, SrcBuffer: PByteArray; Size: cardinal; Volume: single);
 var
-  SampleIndex: Cardinal;
-  SampleInt: Integer;
-  SampleFlt: Single;
+  SampleIndex: cardinal;
+  SampleInt: integer;
+  SampleFlt: single;
 begin
   SampleIndex := 0;
   case FormatInfo.Format of
@@ -1141,7 +1191,7 @@ begin
         // assign result
         PSingle(@DstBuffer[SampleIndex])^ := SampleFlt;
         // increase index by one sample
-        Inc(SampleIndex, SizeOf(Single));
+        Inc(SampleIndex, SizeOf(single));
       end;
     end;
     else

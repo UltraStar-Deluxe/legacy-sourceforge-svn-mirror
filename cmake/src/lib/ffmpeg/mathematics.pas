@@ -26,10 +26,8 @@
 
 (*
  * Conversion of libavutil/mathematics.h
- * revision 16844, Wed Jan 28 08:50:10 2009 UTC 
+ * avutil max. version 50.15.2, revision 23059, Tue May 11 22:10:00 2010 CET 
  *
- * update, MiSchi, no code change
- * Fri Jun 12 2009 21:50:00 UTC
  *)
 
 unit mathematics;
@@ -53,8 +51,18 @@ const
   M_E          = 2.7182818284590452354;   // e
   M_LN2        = 0.69314718055994530942;  // log_e 2
   M_LN10       = 2.30258509299404568402;  // log_e 10
+{$IF LIBAVUTIL_VERSION >= 50009000} // >= 50.9.0
+  M_LOG2_10    = 3.32192809488736234787;  // log_2 10
+{$IFEND}
   M_PI         = 3.14159265358979323846;  // pi
   M_SQRT1_2    = 0.70710678118654752440;  // 1/sqrt(2)
+{$IF LIBAVUTIL_VERSION >= 50014000} // >= 50.14.0
+  M_SQRT2      = 1.41421356237309504880;  // sqrt(2)
+{$IFEND}
+{$IF LIBAVUTIL_VERSION >= 50005001} // >= 50.5.1
+  NAN          = 0.0/0.0;     
+  INFINITY     = 1.0/0.0;     
+{$IFEND}
 
 type
   TAVRounding = (
@@ -66,6 +74,11 @@ type
   );
 
 {$IF LIBAVUTIL_VERSION >= 49013000} // 49.13.0
+(**
+ * Returns the greatest common divisor of a and b.
+ * If both a or b are 0 or either or both are <0 then behavior is
+ * undefined.
+ *)
 function av_gcd(a: cint64; b: cint64): cint64;
   cdecl; external av__util; {av_const}
 {$IFEND}
@@ -89,6 +102,17 @@ function av_rescale_rnd (a, b, c: cint64; enum: TAVRounding): cint64;
  *)
 function av_rescale_q (a: cint64; bq, cq: TAVRational): cint64;
   cdecl; external av__util; {av_const}
+
+{$IF LIBAVUTIL_VERSION >= 50008000} // 50.8.0
+(**
+ * Compares 2 timestamps each in its own timebases.
+ * The result of the function is undefined if one of the timestamps
+ * is outside the int64_t range when represented in the others timebase.
+ * @return -1 if ts_a is before ts_b, 1 if ts_a is after ts_b or 0 if they represent the same position
+ *)
+function av_compare_ts(ts_a: cint64; tb_a: TAVRational; ts_b: cint64; tb_b: TAVRational): cint;
+  cdecl; external av__util;
+{$IFEND}
 
 implementation
 

@@ -34,7 +34,8 @@ interface
 {$I switches.inc}
 
 uses
-  SDL;
+  SDL,
+  UPath;
 
 {$DEFINE HavePNG}
 {$DEFINE HaveBMP}
@@ -131,20 +132,20 @@ type
  *******************************************************)
 
 {$IFDEF HavePNG}
-function WritePNGImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WritePNGImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 {$ENDIF}
 {$IFDEF HaveBMP}
-function WriteBMPImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WriteBMPImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 {$ENDIF}
 {$IFDEF HaveJPG}
-function WriteJPGImage(const FileName: string; Surface: PSDL_Surface; Quality: integer): boolean;
+function WriteJPGImage(const FileName: IPath; Surface: PSDL_Surface; Quality: integer): boolean;
 {$ENDIF}
 
 (*******************************************************
  * Image loading
  *******************************************************)
 
-function LoadImage(const Filename: string): PSDL_Surface;
+function LoadImage(const Filename: IPath): PSDL_Surface;
 
 (*******************************************************
  * Image manipulation
@@ -181,6 +182,7 @@ uses
   zlib,
   sdl_image,
   sdlutils,
+  sdlstreams,
   UCommon,
   ULog;
 
@@ -282,26 +284,26 @@ end;
 
 procedure user_read_data(png_ptr: png_structp; data: png_bytep; length: png_size_t); cdecl;
 var
-  inFile: TFileStream;
+  inFile: TStream;
 begin
-  inFile := TFileStream(png_get_io_ptr(png_ptr));
+  inFile := TStream(png_get_io_ptr(png_ptr));
   inFile.Read(data^, length);
 end;
 
 procedure user_write_data(png_ptr: png_structp; data: png_bytep; length: png_size_t); cdecl;
 var
-  outFile: TFileStream;
+  outFile: TStream;
 begin
-  outFile := TFileStream(png_get_io_ptr(png_ptr));
+  outFile := TStream(png_get_io_ptr(png_ptr));
   outFile.Write(data^, length);
 end;
 
 procedure user_flush_data(png_ptr: png_structp); cdecl;
 //var
-//  outFile: TFileStream;
+//  outFile: TStream;
 begin
   // binary files are flushed automatically, Flush() works with Text-files only
-  //outFile := TFileStream(png_get_io_ptr(png_ptr));
+  //outFile := TStream(png_get_io_ptr(png_ptr));
   //outFile.Flush();
 end;
 
@@ -323,11 +325,11 @@ end;
 (*
  * ImageData must be in RGB-format
  *)
-function WritePNGImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WritePNGImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 var
   png_ptr:   png_structp;
   info_ptr:  png_infop;
-  pngFile:   TFileStream;
+  pngFile:   TStream;
   row:       integer;
   rowData:   array of png_bytep;
 //  rowStride: integer;
@@ -339,9 +341,9 @@ begin
 
   // open file for writing
   try
-    pngFile := TFileStream.Create(FileName, fmCreate);
+    pngFile := TBinaryFileStream.Create(FileName, fmCreate);
   except
-    Log.LogError('Could not open file: "' + FileName + '"', 'WritePngImage');
+    Log.LogError('Could not open file: "' + FileName.ToNative + '"', 'WritePngImage');
     Exit;
   end;
 
@@ -500,9 +502,9 @@ type
 (*
  * ImageData must be in BGR-format
  *)
-function WriteBMPImage(const FileName: string; Surface: PSDL_Surface): boolean;
+function WriteBMPImage(const FileName: IPath; Surface: PSDL_Surface): boolean;
 var
-  bmpFile:    TFileStream;
+  bmpFile:    TStream;
   FileInfo:   BITMAPINFOHEADER;
   FileHeader: BITMAPFILEHEADER;
   Converted:  boolean;
@@ -513,9 +515,9 @@ begin
 
   // open file for writing
   try
-    bmpFile := TFileStream.Create(FileName, fmCreate);
+    bmpFile := TBinaryFileStream.Create(FileName, fmCreate);
   except
-    Log.LogError('Could not open file: "' + FileName + '"', 'WriteBMPImage');
+    Log.LogError('Could not open file: "' + FileName.ToNative + '"', 'WriteBMPImage');
     Exit;
   end;
 
@@ -579,7 +581,7 @@ begin
 
     Result := true;
   finally
-    Log.LogError('Could not write file: "' + FileName + '"', 'WriteBMPImage');
+    Log.LogError('Could not write file: "' + FileName.ToNative + '"', 'WriteBMPImage');
   end;
 
   if (Converted) then
@@ -597,20 +599,21 @@ end;
 
 {$IFDEF HaveJPG}
 
-function WriteJPGImage(const FileName: string; Surface: PSDL_Surface; Quality: integer): boolean;
+function WriteJPGImage(const FileName: IPath; Surface: PSDL_Surface; Quality: integer): boolean;
 var
   {$IFDEF Delphi}
-  Bitmap:    TBitmap;
+  Bitmap:     TBitmap;
   BitmapInfo: TBitmapInfo;
-  Jpeg:      TJpegImage;
-  row:       integer;
+  Jpeg:       TJpegImage;
+  row:        integer;
+  FileStream: TBinaryFileStream;
   {$ELSE}
   cinfo:     jpeg_compress_struct;
   jerr :     jpeg_error_mgr;
-  jpgFile:   TFileStream;
+  jpgFile:   TBinaryFileStream;
   rowPtr:    array[0..0] of JSAMPROW;
   {$ENDIF}
-  converted: boolean;
+  converted:  boolean;
 begin
   Result := false;
 
@@ -669,19 +672,32 @@ begin
       SDL_UnlockSurface(Surface);
 
     // assign Bitmap to JPEG and store the latter
-    Jpeg := TJPEGImage.Create;
-    Jpeg.Assign(Bitmap);
-    Bitmap.Free;
-    Jpeg.CompressionQuality := Quality;
     try
-      // compress image (don't forget this line, otherwise it won't be compressed)
-      Jpeg.Compress();
-      Jpeg.SaveToFile(FileName);
+      // init with nil so Free() will not fail if an exception occurs
+      Jpeg := nil;
+      Bitmap := nil;
+      FileStream := nil;
+
+      try
+        Jpeg := TJPEGImage.Create;
+        Jpeg.Assign(Bitmap);
+
+        // compress image (don't forget this line, otherwise it won't be compressed)
+        Jpeg.CompressionQuality := Quality;
+        Jpeg.Compress();
+
+        // Note: FileStream needed for unicode filename support
+        FileStream := TBinaryFileStream.Create(Filename, fmCreate);
+        Jpeg.SaveToStream(FileStream);
+      finally
+        FileStream.Free;
+        Bitmap.Free;
+        Jpeg.Free;
+      end;
     except
-      Log.LogError('Could not save file: "' + FileName + '"', 'WriteJPGImage');
+      Log.LogError('Could not save file: "' + FileName.ToNative + '"', 'WriteJPGImage');
       Exit;
     end;
-    Jpeg.Free;
   {$ELSE}
     // based on example.pas in FPC's packages/base/pasjpeg directory
 
@@ -703,9 +719,9 @@ begin
 
     // open file for writing
     try
-      jpgFile := TFileStream.Create(FileName, fmCreate);
+      jpgFile := TBinaryFileStream.Create(FileName, fmCreate);
     except
-      Log.LogError('Could not open file: "' + FileName + '"', 'WriteJPGImage');
+      Log.LogError('Could not open file: "' + FileName.ToNative + '"', 'WriteJPGImage');
       Exit;
     end;
 
@@ -763,27 +779,29 @@ end;
 (*
  * Loads an image from the given file
  *)
-function LoadImage(const Filename: string): PSDL_Surface;
+function LoadImage(const Filename: IPath): PSDL_Surface;
 var
-  FilenameFound: string;
+  FilenameCaseAdj: IPath;
+  FileStream: TBinaryFileStream;
+  SDLStream: PSDL_RWops;
 begin
-  Result   := nil;
+  Result := nil;
 
-  // FileExistsInsensitive() requires a var-arg
-  FilenameFound := Filename;
-
-  // try to find the file case insensitive
-  if (not FileExistsInsensitive(FilenameFound)) then
+  // try to adjust filename's case and check if it exists
+  FilenameCaseAdj := Filename.AdjustCase(false);
+  if (not FilenameCaseAdj.IsFile) then
   begin
-    Log.LogError('Image-File does not exist "'+FilenameFound+'"', 'LoadImage');
+    Log.LogError('Image-File does not exist "' + FilenameCaseAdj.ToNative + '"', 'LoadImage');
     Exit;
   end;
 
   // load from file
   try
-    Result := IMG_Load(PChar(FilenameFound));
+    SDLStream := SDLStreamSetup(TBinaryFileStream.Create(FilenameCaseAdj, fmOpenRead));
+    Result := IMG_Load_RW(SDLStream, 1);
+    // Note: TBinaryFileStream is freed by SDLStream. SDLStream by IMG_Load_RW().
   except
-    Log.LogError('Could not load from file "'+FilenameFound+'"', 'LoadImage');
+    Log.LogError('Could not load from file "' + FilenameCaseAdj.ToNative + '"', 'LoadImage');
     Exit;
   end;
 end;
@@ -794,17 +812,13 @@ end;
 
 function PixelFormatEquals(fmt1, fmt2: PSDL_PixelFormat): boolean;
 begin
-  if (fmt1^.BitsPerPixel = fmt2^.BitsPerPixel) and
-     (fmt1^.BytesPerPixel = fmt2^.BytesPerPixel) and
-     (fmt1^.Rloss = fmt2^.Rloss) and (fmt1^.Gloss = fmt2^.Gloss) and
-     (fmt1^.Bloss = fmt2^.Bloss) and (fmt1^.Rmask = fmt2^.Rmask) and
-     (fmt1^.Gmask = fmt2^.Gmask) and (fmt1^.Bmask = fmt2^.Bmask) and
-     (fmt1^.Rshift = fmt2^.Rshift) and (fmt1^.Gshift = fmt2^.Gshift) and
-     (fmt1^.Bshift = fmt2^.Bshift)
-  then
-    Result := true
-  else
-    Result := false;
+  Result := 
+    (fmt1^.BitsPerPixel  = fmt2^.BitsPerPixel)  and
+    (fmt1^.BytesPerPixel = fmt2^.BytesPerPixel) and
+    (fmt1^.Rloss = fmt2^.Rloss)   and (fmt1^.Gloss = fmt2^.Gloss)   and (fmt1^.Bloss = fmt2^.Bloss)   and
+    (fmt1^.Rmask = fmt2^.Rmask)   and (fmt1^.Gmask = fmt2^.Gmask)   and (fmt1^.Bmask = fmt2^.Bmask)   and
+    (fmt1^.Rshift = fmt2^.Rshift) and (fmt1^.Gshift = fmt2^.Gshift) and (fmt1^.Bshift = fmt2^.Bshift)
+  ;
 end;
 
 procedure ScaleImage(var ImgSurface: PSDL_Surface; Width, Height: cardinal);
@@ -885,7 +899,7 @@ begin
 end;
 *)
 
-procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
+procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: longword);
 
   // First, the rgb colors are converted to hsv, second hue is replaced by
   // the NewColor, saturation and value remain unchanged, finally this
@@ -893,7 +907,7 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
   // For the conversion algorithms of colors from rgb to hsv space
   // and back simply check the wikipedia.
   // In order to speed up starting time of USDX the division of reals is 
-  // replaced by division of longwords, shifted by 10 bits to keep 
+  // replaced by division of longints, shifted by 10 bits to keep 
   // digits.
 
   // The use of longwards leeds to some type size mismatch warnings
@@ -904,8 +918,8 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
   function ColorToHue(const Color: longword): longword;
   // returns hue within the range [0.0-6.0] but shl 10, ie. times 1024
   var
-    Red, Green, Blue: longword;
-    Min, Max, Delta: longword;
+    Red, Green, Blue: longint;
+    Min, Max, Delta:  longint;
     Hue: double;
   begin
     // extract the colors
@@ -933,6 +947,8 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
       // The division by Delta is done separately afterwards.
       // Necessary because Delphi did not do the type conversion from
       // longword to double as expected.
+      // After the change to longint, we may not need it, but left for now
+      // Something to check
       if      (Max = Red  ) then Hue :=             Green - Blue
       else if (Max = Green) then Hue := 2.0*Delta + Blue  - Red
       else if (Max = Blue ) then Hue := 4.0*Delta + Red   - Green;
@@ -940,6 +956,8 @@ procedure ColorizeImage(ImgSurface: PSDL_Surface; NewColor: cardinal);
       if (Hue < 0.0) then
         Hue := Hue + 6.0;
       Result := trunc(Hue*1024);           // '*1024' is shl 10
+ //     if NewColor = $000000 then
+ //       Log.LogError ('Hue: ' +  FloatToStr(Hue), 'ColorToHue');
     end;
   end;
 
@@ -952,6 +970,8 @@ var
   Min, Max, Delta: longword;
   HueInteger: longword;
   f, p, q, t: longword;
+  GreyReal: real;
+  Grey: byte;
 begin
 
   Pixel := ImgSurface^.Pixels;
@@ -965,8 +985,48 @@ begin
     Log.LogError ('ColorizeImage: The pixel size should be 4, but it is '
                    + IntToStr(ImgSurface^.format.BytesPerPixel));
 
+  // Check whether the new color is white, grey or black, 
+  // because a greyscale must be created in a different
+  // way.
+  
+  Red   := ((NewColor and $ff0000) shr 16); // R
+  Green := ((NewColor and   $ff00) shr  8); // G
+  Blue  :=  (NewColor and     $ff)        ; // B
+  
+  if (Red = Green) and (Green = Blue) then // greyscale image
+  begin
+    // According to these recommendations (ITU-R BT.709-5)
+    // the conversion parameters for rgb to greyscale are
+    // 0.299, 0.587, 0.114
+    for PixelIndex := 0 to (ImgSurface^.W * ImgSurface^.H)-1 do
+    begin
+      PixelColors := PByteArray(Pixel);
+      {$IFDEF FPC_BIG_ENDIAN}
+      GreyReal := 0.299*PixelColors[3] + 0.587*PixelColors[2] + 0.114*PixelColors[1];
+      //       PixelColors[0] is alpha and remains untouched
+      {$ELSE}
+      GreyReal := 0.299*PixelColors[0] + 0.587*PixelColors[1] + 0.114*PixelColors[2];
+      //       PixelColors[3] is alpha and remains untouched
+      {$ENDIF}
+      Grey := round(GreyReal);
+      {$IFDEF FPC_BIG_ENDIAN}
+      PixelColors[3] := Grey;
+      PixelColors[2] := Grey;
+      PixelColors[1] := Grey;
+      //       PixelColors[0] is alpha and remains untouched
+      {$ELSE}
+      PixelColors[0] := Grey;
+      PixelColors[1] := Grey;
+      PixelColors[2] := Grey;
+      //       PixelColors[3] is alpha and remains untouched
+      {$ENDIF}
+      Inc(Pixel, ImgSurface^.format.BytesPerPixel);
+    end;
+    exit; // we are done with a greyscale image.
+  end;
+
   Hue := ColorToHue(NewColor);   // Hue is shl 10
-  f := Hue and $3ff;             // f is the dezimal part of hue
+  f   := Hue and $3ff;           // f is the dezimal part of hue
   HueInteger := Hue shr 10;
 
   for PixelIndex := 0 to (ImgSurface^.W * ImgSurface^.H)-1 do
@@ -1036,9 +1096,9 @@ begin
         // shr 10 corrects that Sat and f are shl 10
         // the resulting p, q and t are unshifted
 
-        p := (Max*(1024-Sat)) shr 10;
-        q := (Max*(1024-(Sat*f) shr 10)) shr 10;
-        t := (Max*(1024-(Sat*(1024-f)) shr 10)) shr 10;
+        p := (Max * (1024 -  Sat                     )) shr 10;
+        q := (Max * (1024 - (Sat *  f        ) shr 10)) shr 10;
+        t := (Max * (1024 - (Sat * (1024 - f)) shr 10)) shr 10;
 
         // The above 3 lines give type size mismatch warning, but all variables are longword and the ranges should be ok.
 

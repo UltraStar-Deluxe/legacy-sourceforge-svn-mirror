@@ -95,14 +95,14 @@ const
 
 type
   TAudioInputSource = record
-    Name: string;
+    Name: UTF8String;
   end;
 
   // soundcard input-devices information
   TAudioInputDevice = class
     public
       CfgIndex:      integer;   // index of this device in Ini.InputDeviceConfig
-      Name:          string;    // soundcard name
+      Name:          UTF8String;    // soundcard name
       Source:        array of TAudioInputSource; // soundcard input-sources
       SourceRestore: integer;  // source-index that will be selected after capturing (-1: not detected)
       MicSource:     integer;  // source-index of mic (-1: none detected)
@@ -133,6 +133,7 @@ type
       destructor Destroy; override;
 
       procedure UpdateInputDeviceConfig;
+      function ValidateSettings: boolean;
 
       // handle microphone input
       procedure HandleMicrophoneData(Buffer: PByteArray; Size: integer;
@@ -143,7 +144,7 @@ type
     private
       Started: boolean;
     protected
-      function UnifyDeviceName(const name: string; deviceIndex: integer): string;
+      function UnifyDeviceName(const name: UTF8String; deviceIndex: integer): UTF8String;
     public
       function GetName: String;           virtual; abstract;
       function InitializeRecord: boolean; virtual; abstract;
@@ -162,6 +163,8 @@ implementation
 
 uses
   ULog,
+  UGraphic,
+  ULanguage,
   UNote;
 
 var
@@ -577,6 +580,7 @@ begin
 
       deviceCfg.Name := Trim(device.Name);
       deviceCfg.Input := 0;
+      deviceCfg.Latency := LATENCY_AUTODETECT;
 
       channelCount := device.AudioFormat.Channels;
       SetLength(deviceCfg.ChannelToPlayerMap, channelCount);
@@ -591,6 +595,50 @@ begin
       end;
     end;
   end;
+end;
+
+function TAudioInputProcessor.ValidateSettings: boolean;
+const
+  MAX_PLAYER_COUNT = 6; // FIXME: there should be a global variable for this
+var
+  I, J: integer;
+  PlayerID: integer;
+  PlayerMap: array [0 .. MAX_PLAYER_COUNT] of boolean;
+  InputDevice: TAudioInputDevice;
+  InputDeviceCfg: PInputDeviceConfig;
+begin
+  // mark all players as unassigned
+  for I := 0 to High(PlayerMap) do
+    PlayerMap[I] := false;
+
+  // iterate over all active devices
+  for I := 0 to High(DeviceList) do
+  begin
+    InputDevice := DeviceList[I];
+    InputDeviceCfg := @Ini.InputDeviceConfig[InputDevice.CfgIndex];
+    // iterate over all channels of the current devices
+    for J := 0 to High(InputDeviceCfg.ChannelToPlayerMap) do
+    begin
+      // get player that was mapped to the current device channel
+      PlayerID := InputDeviceCfg.ChannelToPlayerMap[J];
+      if (PlayerID <> 0) then
+      begin
+        // check if player is already assigned to another device/channel
+        if (PlayerMap[PlayerID]) then
+        begin
+          ScreenPopupError.ShowPopup(
+              Format(Language.Translate('ERROR_PLAYER_DEVICE_ASSIGNMENT'),
+              [PlayerID]));
+          Result := false;
+          Exit;
+        end;
+
+        // mark player as assigned to a device
+        PlayerMap[PlayerID] := true;
+      end;
+    end;
+  end;
+  Result := true;
 end;
 
 {*
@@ -741,11 +789,11 @@ begin
   Started := false;
 end;
 
-function TAudioInputBase.UnifyDeviceName(const name: string; deviceIndex: integer): string;
+function TAudioInputBase.UnifyDeviceName(const name: UTF8String; deviceIndex: integer): UTF8String;
 var
   count: integer; // count of devices with this name
 
-  function IsDuplicate(const name: string): boolean;
+  function IsDuplicate(const name: UTF8String): boolean;
   var
     i: integer;
   begin
@@ -753,10 +801,13 @@ var
     // search devices with same description
     for i := 0 to deviceIndex-1 do
     begin
-      if (AudioInputProcessor.DeviceList[i].Name = name) then
+      if (AudioInputProcessor.DeviceList[i] <> nil) then
       begin
-        Result := true;
-        Break;
+        if (AudioInputProcessor.DeviceList[i].Name = name) then
+        begin
+          Result := true;
+          Break;
+        end;
       end;
     end;
   end;

@@ -28,22 +28,20 @@
  * Conversions of
  *
  * libavutil/avutil.h:
- *  Min. version: 49.0.1, revision 6577,  Sat Oct 7 15:30:46 2006 UTC
- *  Max. version: 49.14.0, revision 16912, Sun Feb 1 02:00:19 2009 UTC
+ *  Min. version: 49.0.1,  revision  6577, Sat Oct  7 15:30:46 2006 UTC
+ *  Max. version: 50.15.2, revision 23059, Tue May 11 22:05:00 2010 CET
  *
  * libavutil/mem.h:
  *  revision 16590, Tue Jan 13 23:44:16 2009 UTC
  *
  * libavutil/log.h:
  *  revision 16571, Tue Jan 13 00:14:43 2009 UTC
+ *
+ * include/keep pixfmt.h (change in revision 50.01.0)
+ * Maybe, the pixelformats are not needed, but it has not been checked.
+ * log.h is only partial.
+ *
  *)
-{
- Update changes auf avutil.h, mem.h and log.h
- Max. version 50.03.0, Tue, Jun 09 24:00:00 2009 UTC 
- include/keep pixfmt.h (change in revision 50.01.0)
- Maybe, the pixelformats are not needed, but it has not been checked.
- log.h is only partial.
-}
 
 unit avutil;
 
@@ -65,13 +63,41 @@ uses
   ctypes,
   mathematics,
   rational,
+  {$IFDEF UNIX}
+  BaseUnix,
+  {$ENDIF}
   UConfig;
 
 const
+  (*
+   * IMPORTANT: The official FFmpeg C headers change very quickly. Often some
+   * of the data structures are changed so that they become incompatible with
+   * older header files. The Pascal headers have to be adjusted to those changes,
+   * otherwise the application might crash randomly or strange bugs (not
+   * necessarily related to video or audio due to buffer overflows etc.) might
+   * occur.
+   *
+   * In the past users reported problems with USDX that took hours to fix and
+   * the problem was an unsupported version of FFmpeg. So we decided to disable
+   * support for future versions of FFmpeg until the headers are revised by us
+   * for that version as they otherwise most probably will break USDX.
+   *
+   * If the headers do not yet support your FFmpeg version you may want to
+   * adjust the max. version numbers manually but please note: it may work but
+   * in many cases it does not. The USDX team does NOT PROVIDE ANY SUPPORT
+   * for the game if the MAX. VERSION WAS CHANGED.
+   *
+   * The only safe way to support new versions of FFmpeg is to add the changes
+   * of the FFmpeg git repository C headers to the Pascal headers.
+   * You can accelerate this process by posting a patch with the git changes
+   * translated to Pascal to our bug tracker (please join our IRC chat before
+   * you start working on it). Simply adjusting the max. versions is NOT a valid
+   * fix. 
+   *)
   (* Max. supported version by this header *)
   LIBAVUTIL_MAX_VERSION_MAJOR   = 50;
-  LIBAVUTIL_MAX_VERSION_MINOR   = 3;
-  LIBAVUTIL_MAX_VERSION_RELEASE = 0;
+  LIBAVUTIL_MAX_VERSION_MINOR   = 15;
+  LIBAVUTIL_MAX_VERSION_RELEASE = 2;
   LIBAVUTIL_MAX_VERSION = (LIBAVUTIL_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                           (LIBAVUTIL_MAX_VERSION_MINOR * VERSION_MINOR) +
                           (LIBAVUTIL_MAX_VERSION_RELEASE * VERSION_RELEASE);
@@ -100,6 +126,41 @@ const
 function avutil_version(): cuint;
   cdecl; external av__format;
 {$IFEND}
+
+{$IF LIBAVUTIL_VERSION >= 50004000} // >= 50.4.0
+(**
+ * Returns the libavutil build-time configuration.
+ *)
+function avutil_configuration(): PAnsiChar;
+  cdecl; external av__format;
+
+(**
+ * Returns the libavutil license.
+ *)
+function avutil_license(): PAnsiChar;
+  cdecl; external av__format;
+{$IFEND}
+
+{
+  TAVMediaType moved to avutil in LIBAVUTIL_VERSION 50.14.0
+  but moving it in the pascal headers was not really necessary
+  but caused problems. So, I (KMS) left it there.
+
+type
+  TAVMediaType = (
+    AVMEDIA_TYPE_UNKNOWN = -1,
+    AVMEDIA_TYPE_VIDEO,
+    AVMEDIA_TYPE_AUDIO,
+    AVMEDIA_TYPE_DATA,
+    AVMEDIA_TYPE_SUBTITLE,
+    AVMEDIA_TYPE_ATTACHMENT,
+    AVMEDIA_TYPE_NB
+  );
+}
+
+{$INCLUDE error.pas}
+
+(* libavutil/pixfmt.h up to revision 23144, May 16 2010 *)
 
 type
 (**
@@ -148,8 +209,8 @@ type
     PIX_FMT_RGB555,    ///< packed RGB 5:5:5, 16bpp, (msb)1A 5R 5G 5B(lsb), in CPU endianness, most significant bit to 0
 {$IFEND}
     PIX_FMT_GRAY8,     ///<        Y        ,  8bpp
-    PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 0 is white, 1 is black
-    PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black, 1 is white
+    PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 0 is white, 1 is black, in each byte pixels are ordered from the msb to the lsb
+    PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black, 1 is white, in each byte pixels are ordered from the msb to the lsb
     PIX_FMT_PAL8,      ///< 8 bit with PIX_FMT_RGB32 palette
     PIX_FMT_YUVJ420P,  ///< planar YUV 4:2:0, 12bpp, full scale (JPEG)
     PIX_FMT_YUVJ422P,  ///< planar YUV 4:2:2, 16bpp, full scale (JPEG)
@@ -166,12 +227,12 @@ type
     PIX_FMT_BGR555,    ///< packed RGB 5:5:5, 16bpp, (msb)1A 5B 5G 5R(lsb), in CPU endianness, most significant bit to 1
 {$IFEND}
     PIX_FMT_BGR8,      ///< packed RGB 3:3:2,  8bpp, (msb)2B 3G 3R(lsb)
-    PIX_FMT_BGR4,      ///< packed RGB 1:2:1,  4bpp, (msb)1B 2G 1R(lsb)
+    PIX_FMT_BGR4,      ///< packed RGB 1:2:1, bitstream,  4bpp, (msb)1B 2G 1R(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
     PIX_FMT_BGR4_BYTE, ///< packed RGB 1:2:1,  8bpp, (msb)1B 2G 1R(lsb)
     PIX_FMT_RGB8,      ///< packed RGB 3:3:2,  8bpp, (msb)2R 3G 3B(lsb)
-    PIX_FMT_RGB4,      ///< packed RGB 1:2:1,  4bpp, (msb)1R 2G 1B(lsb)
+    PIX_FMT_RGB4,      ///< packed RGB 1:2:1, bitstream,  4bpp, (msb)1R 2G 1B(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
     PIX_FMT_RGB4_BYTE, ///< packed RGB 1:2:1,  8bpp, (msb)1R 2G 1B(lsb)
-    PIX_FMT_NV12,      ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 for UV
+    PIX_FMT_NV12,      ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
     PIX_FMT_NV21,      ///< as above, but U and V bytes are swapped
 {$IF LIBAVUTIL_VERSION <= 50001000} // 50.01.0
     PIX_FMT_RGB32_1,   ///< packed RGB 8:8:8, 32bpp, (msb)8R 8G 8B 8A(lsb), in CPU endianness
@@ -193,8 +254,8 @@ type
     PIX_FMT_VDPAU_WMV3,///< WMV3 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     PIX_FMT_VDPAU_VC1, ///< VC-1 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
 {$IF LIBAVUTIL_VERSION >= 49015000} // 49.15.0
-    PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, big-endian
-    PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, little-endian
+    PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
+    PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
 {$IFEND}
 {$IF LIBAVUTIL_VERSION >= 50001000} // 50.01.0
     PIX_FMT_RGB565BE,  ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), big-endian
@@ -267,11 +328,13 @@ const
   PIX_FMT_YUV422  = PIX_FMT_YUYV422;
 {$IFEND}
 
-(* libavutil/common.h *) // until now MKTAG is all from common.h KMS 9/6/2009
+(* libavutil/common.h *) // until now MKTAG and MKBETAG is all from common.h KMS 19/5/2010
 
 function MKTAG(a, b, c, d: AnsiChar): integer;
+function MKBETAG(a, b, c, d: AnsiChar): integer;
 
 (* libavutil/mem.h *)
+
 (* memory handling functions *)
 
 (**
@@ -287,7 +350,7 @@ function av_malloc(size: cuint): pointer;
 
 (**
  * Allocates or reallocates a block of memory.
- * If ptr is NULL and size > 0, allocates a new block. If \p
+ * If ptr is NULL and size > 0, allocates a new block. If 
  * size is zero, frees the memory block pointed to by ptr.
  * @param size Size in bytes for the memory block to be allocated or
  * reallocated.
@@ -326,7 +389,7 @@ function av_mallocz(size: cuint): pointer;
  * Duplicates the string s.
  * @param s string to be duplicated.
  * @return Pointer to a newly allocated string containing a
- * copy of \p s or NULL if the string cannot be allocated.
+ * copy of s or NULL if the string cannot be allocated.
  *)
 function av_strdup({const} s: PAnsiChar): PAnsiChar;
   cdecl; external av__util; {av_malloc_attrib}
@@ -388,11 +451,40 @@ const
   AV_LOG_DEBUG   = 48;
 {$IFEND}
 
+(**
+ * Sends the specified message to the log if the level is less than or equal
+ * to the current av_log_level. By default, all logging messages are sent to
+ * stderr. This behavior can be altered by setting a different av_vlog callback
+ * function.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param fmt The format string (printf-compatible) that specifies how
+ * subsequent arguments are converted to output.
+ * @see av_vlog
+ *)
+
+{** to be translated if needed
+#ifdef __GNUC__
+void av_log(void*, int level, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
+#else
+void av_log(void*, int level, const char *fmt, ...);
+#endif
+ 
+void av_vlog(void*, int level, const char *fmt, va_list);
+**}
+
 function av_log_get_level(): cint;
   cdecl; external av__util;
 procedure av_log_set_level(level: cint);
   cdecl; external av__util;
 
+{** to be translated if needed
+void av_log_set_callback(void (*)(void*, int, const char*, va_list));
+void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
+**}
 
 implementation
 
@@ -402,5 +494,11 @@ function MKTAG(a, b, c, d: AnsiChar): integer;
 begin
   Result := (ord(a) or (ord(b) shl 8) or (ord(c) shl 16) or (ord(d) shl 24));
 end;
+
+function MKBETAG(a, b, c, d: AnsiChar): integer;
+begin
+  Result := (ord(d) or (ord(c) shl 8) or (ord(b) shl 16) or (ord(a) shl 24));
+end;
+
 
 end.

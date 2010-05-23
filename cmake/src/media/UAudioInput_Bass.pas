@@ -46,6 +46,7 @@ uses
   UIni,
   ULog,
   UAudioCore_Bass,
+  UTextEncoding,
   UCommon,    // (Note: for MakeLong on non-windows platforms)
   {$IFDEF MSWINDOWS}
   Windows,    // (Note: for MakeLong)
@@ -352,7 +353,7 @@ end;
 
 function TAudioInput_Bass.EnumDevices(): boolean;
 var
-  Descr:      PChar;
+  Descr:      UTF8String;
   SourceName: PChar;
   Flags:      integer;
   BassDeviceID: integer;
@@ -389,9 +390,12 @@ begin
       BassDevice := TBassInputDevice.Create();
       AudioInputProcessor.DeviceList[DeviceIndex] := BassDevice;
 
-      Descr := DeviceInfo.name;
-
       BassDevice.BassDeviceID := BassDeviceID;
+
+      // BASS device names seem to be encoded with local encoding
+      // TODO: works for windows, check Linux + Mac OS X
+      Descr := DecodeStringUTF8(DeviceInfo.name, encLocale);
+
       BassDevice.Name := UnifyDeviceName(Descr, DeviceIndex);
 
       // zero info-struct as some fields might not be set (e.g. freq is just set on Vista and MacOSX)
@@ -459,7 +463,9 @@ begin
           break;
 
         SetLength(BassDevice.Source, Length(BassDevice.Source)+1);
-        BassDevice.Source[SourceIndex].Name := SourceName;
+        // BASS source names seem to be encoded with local encoding
+        // TODO: works for windows, check Linux + Mac OS X
+        BassDevice.Source[SourceIndex].Name := DecodeStringUTF8(SourceName, encLocale);
 
         // get input-source info
         Flags := BASS_RecordGetInput(SourceIndex, PSingle(nil)^);
@@ -489,6 +495,11 @@ end;
 function TAudioInput_Bass.InitializeRecord(): boolean;
 begin
   BassCore := TAudioCore_Bass.GetInstance();
+  if not BassCore.CheckVersion then
+  begin
+    Result := false;
+    Exit;
+  end;
   Result := EnumDevices();
 end;
 

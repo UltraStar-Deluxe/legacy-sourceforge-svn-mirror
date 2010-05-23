@@ -50,8 +50,8 @@ type
       Visible: boolean; // whether the menu should be drawn
 
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
       function Draw: boolean; override;
       procedure MenuShow(sMenu: byte);
       procedure HandleReturn;
@@ -73,7 +73,7 @@ const
   SM_Party_Joker      = 128 or 2;
 
 var
-  ISelections: array of string;
+  ISelections: array of UTF8String;
   SelectValue: integer;
 
 implementation
@@ -86,9 +86,10 @@ uses
   ULanguage,
   UParty,
   UPlaylist,
-  USongs;
+  USongs,
+  UUnicodeUtils;
 
-function TScreenSongMenu.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenSongMenu.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
   if (PressedDown) then
@@ -96,27 +97,29 @@ begin
     if (CurMenu = SM_Playlist_New) and (Interaction=0) then
     begin
       // check normal keys
-      case WideCharUpperCase(CharCode)[1] of
-        '0'..'9', 'A'..'Z', ' ', '-', '_', '!', ',', '<', '/', '*', '?', '''', '"':
-          begin
-            Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + CharCode;
-            exit;
-          end;
+      if IsAlphaNumericChar(CharCode) or
+         (CharCode in [Ord(' '), Ord('-'), Ord('_'), Ord('!'),
+                       Ord(','), Ord('<'), Ord('/'), Ord('*'),
+                       Ord('?'), Ord(''''), Ord('"')]) then
+      begin
+        Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text +
+                                            UCS4ToUTF8String(CharCode);
+        exit;
       end;
 
       // check special keys
       case PressedKey of
         SDLK_BACKSPACE:
           begin
-            Button[Interaction].Text[0].DeleteLastL;
+            Button[Interaction].Text[0].DeleteLastLetter;
             exit;
           end;
       end;
     end;
 
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -223,7 +226,7 @@ begin
   Result := inherited Draw;
 end;
 
-procedure TScreenSongMenu.onShow;
+procedure TScreenSongMenu.OnShow;
 begin
   inherited;
 end;
@@ -398,16 +401,19 @@ begin
       begin
         CurMenu := sMenu;
         Text[0].Text := Language.Translate('SONG_MENU_NAME_PARTY_JOKER');
+        // to-do : Party
+        Button[0].Visible := (Length(Party.Teams) >= 1) AND (Party.Teams[0].JokersLeft > 0);
+        Button[1].Visible := (Length(Party.Teams) >= 2) AND (Party.Teams[1].JokersLeft > 0);
+        Button[2].Visible := (Length(Party.Teams) >= 3) AND (Party.Teams[2].JokersLeft > 0);
+        Button[3].Visible := True;
+        SelectsS[0].Visible := False;
 
-        Button[0].Visible := (PartySession.Teams.NumTeams >= 1) and (PartySession.Teams.Teaminfo[0].Joker > 0);
-        Button[1].Visible := (PartySession.Teams.NumTeams >= 2) and (PartySession.Teams.Teaminfo[1].Joker > 0);
-        Button[2].Visible := (PartySession.Teams.NumTeams >= 3) and (PartySession.Teams.Teaminfo[2].Joker > 0);
-        Button[3].Visible := true;
-        SelectsS[0].Visible := false;
-
-        Button[0].Text[0].Text := string(PartySession.Teams.Teaminfo[0].Name);
-        Button[1].Text[0].Text := string(PartySession.Teams.Teaminfo[1].Name);
-        Button[2].Text[0].Text := string(PartySession.Teams.Teaminfo[2].Name);
+        if (Button[0].Visible) then
+          Button[0].Text[0].Text := UTF8String(Party.Teams[0].Name);
+        if (Button[1].Visible) then
+          Button[1].Text[0].Text := UTF8String(Party.Teams[1].Name);
+        if (Button[2].Visible) then
+          Button[2].Text[0].Text := UTF8String(Party.Teams[2].Name);
         Button[3].Text[0].Text := Language.Translate('SONG_MENU_CANCEL');
 
         // set right interaction
@@ -611,7 +617,7 @@ begin
           0: // button 1
             begin
               // start singing
-              ScreenSong.StartSong;
+              Party.CallAfterSongSelect;
               Visible := false;
             end;
 

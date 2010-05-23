@@ -46,24 +46,25 @@ type
   TScreenOptionsLyrics = class(TMenu)
     public
       constructor Create; override;
-      function ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean; override;
-      procedure onShow; override;
+      function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
+      procedure OnShow; override;
   end;
 
 implementation
 
 uses
   UGraphic,
+  UUnicodeUtils,
   SysUtils;
 
-function TScreenOptionsLyrics.ParseInput(PressedKey: cardinal; CharCode: WideChar; PressedDown: boolean): boolean;
+function TScreenOptionsLyrics.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
   Result := true;
   if (PressedDown) then
   begin // Key Down
     // check normal keys
-    case WideCharUpperCase(CharCode)[1] of
-      'Q':
+    case UCS4UpperCase(CharCode) of
+      Ord('Q'):
         begin
           Result := false;
           Exit;
@@ -75,8 +76,7 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          // Escape -> save nothing - just leave this screen
-          
+          Ini.Save;
           AudioPlayback.PlaySound(SoundLib.Back);
           FadeTo(@ScreenOptions);
         end;
@@ -133,11 +133,11 @@ begin
 
   AddButton(Theme.OptionsLyrics.ButtonExit);
   if (Length(Button[0].Text)=0) then
-    AddButtonText(14, 20, Theme.Options.Description[7]);
+    AddButtonText(20, 5, Theme.Options.Description[7]);
 
 end;
 
-procedure TScreenOptionsLyrics.onShow;
+procedure TScreenOptionsLyrics.OnShow;
 begin
   inherited;
 
