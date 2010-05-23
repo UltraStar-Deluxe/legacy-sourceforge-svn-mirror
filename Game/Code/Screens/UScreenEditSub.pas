@@ -2225,6 +2225,7 @@ begin
         Window.Upper := 65;
         Window.Lower := 250;
         Window.Reflection := false;
+        Window.TargetAspect := acoCrop;
         Window.windowed := true;
 
         {if CoverTime>=Ini.PreviewFading then

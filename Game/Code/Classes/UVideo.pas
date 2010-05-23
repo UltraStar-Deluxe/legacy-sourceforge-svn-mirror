@@ -37,17 +37,17 @@ uses SDL,
      UIni;
 
 type
+  TAspectCorrection = (acoStretch, acoCrop, acoLetterBox); //from 1.1
+
   TRectCoords = record         //from 1.1
     Left, Right:        double;
     Upper, Lower:       double;
     windowed:           boolean;
     Reflection:         boolean;
     ReflactionSpacing:  real;
+    TargetAspect:       TAspectCorrection;
+    ZoomFaktor:         real;
   end;
-  
-  TAspectCorrection = (acoStretch, acoCrop, acoLetterBox); //from 1.1
-
-
 
 procedure Init;
 procedure acOpenFile(FileName: pAnsiChar);
@@ -647,63 +647,87 @@ end;
 
 procedure GetVideoRect(var ScreenRect, TexRect: TRectCoords; Window: TRectCoords);
 var
-  ScreenAspect: double;  // aspect of screen resolution
-  ScaledVideoWidth, ScaledVideoHeight: double;
-  rW, rH: double;
+  RectS, RectT: TRectCoords;
+
+
+  procedure GetCoords(var SRect: TRectCoords; Win: TRectCoords; Aspect: TAspectCorrection);
+  var
+    ScreenAspect:       double;  // aspect of screen resolution
+    ScaledVideoWidth:   double;
+    ScaledVideoHeight:  double;
+    rW, rH:             double;
+
+  begin
+    // Three aspects to take into account:
+    //  1. Screen/display resolution (e.g. 1920x1080 -> 16:9)
+    //  2. Render aspect (fixed to 800x600 -> 4:3)
+    //  3. Movie aspect (video frame aspect stored in fAspect)
+    if (Win.windowed) then
+    begin
+      rW := (Win.Right-Win.Left);
+      rH := (Win.Lower-Win.Upper);
+      ScreenAspect := rW*((ScreenW/Screens)/RenderW)/(rH*(ScreenH/RenderH));
+    end else
+    begin
+      rW := RenderW;
+      rH := RenderH;
+      ScreenAspect := (ScreenW/Screens) / ScreenH;
+    end;
+
+    case Aspect of
+      acoStretch: begin
+        ScaledVideoWidth  := rW;
+        ScaledVideoHeight := rH;
+      end;
+
+      acoCrop: begin
+        if (ScreenAspect >= fAspect) then
+        begin
+          ScaledVideoWidth  := rW;
+          ScaledVideoHeight := rH * ScreenAspect/fAspect;
+        end
+        else
+        begin
+          ScaledVideoHeight := rH;
+          ScaledVideoWidth  := rW * fAspect/ScreenAspect;
+        end;
+      end;
+
+      acoLetterBox: begin
+        if (ScreenAspect <= fAspect) then
+        begin
+          ScaledVideoWidth  := rW;
+          ScaledVideoHeight := rH * ScreenAspect/fAspect;
+        end
+        else
+        begin
+          ScaledVideoHeight := rH;
+          ScaledVideoWidth  := rW * fAspect/ScreenAspect;
+        end;
+      end
+      else
+        raise Exception.Create('Unhandled aspect correction!');
+    end;
+
+    SRect.Left := (rW - ScaledVideoWidth) / 2 + Win.Left;
+    SRect.Right := SRect.Left + ScaledVideoWidth;
+    SRect.Upper := (rH - ScaledVideoHeight) / 2 + Win.Upper;
+    SRect.Lower := SRect.Upper + ScaledVideoHeight;
+  end;
 begin
-  // Three aspects to take into account:
-  //  1. Screen/display resolution (e.g. 1920x1080 -> 16:9)
-  //  2. Render aspect (fixed to 800x600 -> 4:3)
-  //  3. Movie aspect (video frame aspect stored in fAspect)
-  if (Window.windowed) then
+  if (Window.TargetAspect = fAspectCorrection) then
+    GetCoords(ScreenRect, Window, fAspectCorrection)
+  else
   begin
-    rW := Window.Right-Window.Left;
-    rH := Window.Lower-Window.Upper;
-    ScreenAspect := rW/rH;
-  end else
-  begin
-    rW := RenderW;
-    rH := RenderH;
-    ScreenAspect := (ScreenW/Screens) / ScreenH;
+    GetCoords(RectS, Window, fAspectCorrection);
+    GetCoords(RectT, Window, Window.TargetAspect);
+
+    ScreenRect.Left := RectS.Left + (RectT.Left-RectS.Left)*Window.ZoomFaktor;
+    ScreenRect.Right := RectS.Right + (RectT.Right-RectS.Right)*Window.ZoomFaktor;
+    ScreenRect.Upper := RectS.Upper + (RectT.Upper-RectS.Upper)*Window.ZoomFaktor;
+    ScreenRect.Lower := RectS.Lower + (RectT.Lower-RectS.Lower)*Window.ZoomFaktor;
   end;
 
-  case fAspectCorrection of
-    acoStretch: begin
-      ScaledVideoWidth  := rW;
-      ScaledVideoHeight := rH;
-    end;
-    acoCrop: begin
-      if (ScreenAspect >= fAspect) then
-      begin
-        ScaledVideoWidth  := rW;
-        ScaledVideoHeight := rH * ScreenAspect/fAspect;
-      end
-      else
-      begin
-        ScaledVideoHeight := rH;
-        ScaledVideoWidth  := rW * fAspect/ScreenAspect;
-      end;
-    end;
-    acoLetterBox: begin
-      if (ScreenAspect <= fAspect) then
-      begin
-        ScaledVideoWidth  := rW;
-        ScaledVideoHeight := rH * ScreenAspect/fAspect;
-      end
-      else
-      begin
-        ScaledVideoHeight := rH;
-        ScaledVideoWidth  := rW * fAspect/ScreenAspect;
-      end;
-    end
-    else
-      raise Exception.Create('Unhandled aspect correction!');
-  end;
-
-  ScreenRect.Left := (rW - ScaledVideoWidth) / 2 + Window.Left;
-  ScreenRect.Right := ScreenRect.Left + ScaledVideoWidth;
-  ScreenRect.Upper := (rH - ScaledVideoHeight) / 2 + Window.Upper;
-  ScreenRect.Lower := ScreenRect.Upper + ScaledVideoHeight;
 
   // texture contains right/lower (power-of-2) padding.
   // Determine the texture coords of the video frame.
@@ -726,6 +750,7 @@ begin
   Window.Lower := RenderH;
   Window.windowed := false;
   Window.Reflection := false;
+  Window.TargetAspect := fAspectCorrection;
   acDrawGLi(Screen, Window, 1);
 end;
 

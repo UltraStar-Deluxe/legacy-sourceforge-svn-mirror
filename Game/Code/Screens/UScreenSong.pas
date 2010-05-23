@@ -62,6 +62,10 @@ type
       VideoIcon:    Cardinal;
 
       VidVis:       TVidVis; //video visiability
+      TargetVidVis: TVidVis; //target video visiability
+      TargetAspect: TAspectCorrection;
+      VidVisHandler:THandler;
+
       StartTry:     boolean;
 
       MinSource:    TMedleySource;
@@ -507,26 +511,45 @@ begin
       SDLK_A:
         begin
           if VidVis = full then
-
+          begin
             ToggleAspectCorrection;
 
             DataBase.SetAspect(CatSongs.Song[Interaction].Artist,
               CatSongs.Song[Interaction].Title, integer(UVideo.fAspectCorrection));
+            TargetAspect := UVideo.fAspectCorrection;
 
             AspectHandler.changed := true;
             AspectHandler.change_time := Czas.Teraz;
+          end;
         end;
       SDLK_V:
         begin
           if UVideo.VideoOpened then
           begin
-            if VidVis=full then
-              VidVis:=windowed
-            else begin
-              VidVis:=full;
-              UVideo.SetAspectCorrection(TAspectCorrection(
+            if TargetVidVis=full then
+            begin
+              TargetVidVis:=windowed;
+              TargetAspect := acoCrop;
+              if not VidVisHandler.changed then
+              begin
+                VidVisHandler.changed := true;
+                VidVisHandler.change_time := 0;
+              end;
+            end else
+            begin
+              TargetVidVis:=full;
+              if not VidVisHandler.changed then
+              begin
+                VidVisHandler.changed := true;
+                VidVisHandler.change_time := 0;
+              end;
+              //UVideo.SetAspectCorrection(TAspectCorrection(
+              //  DataBase.GetAspect(CatSongs.Song[Interaction].Artist,
+              //  CatSongs.Song[Interaction].Title, Ini.AspectCorrect)));
+              TargetAspect := TAspectCorrection(
                 DataBase.GetAspect(CatSongs.Song[Interaction].Artist,
-                CatSongs.Song[Interaction].Title, Ini.AspectCorrect)));
+                CatSongs.Song[Interaction].Title, Ini.AspectCorrect));
+
               AspectHandler.changed := true;
               AspectHandler.change_time := Czas.Teraz;
             end;
@@ -613,7 +636,7 @@ begin
 
             //Stop Video
             acClose;
-            VidVis := none;
+
             CatSongs.ShowCategoryList;
 
             //Show Cat in Top Left Mod
@@ -650,7 +673,7 @@ begin
               Music.Stop;
               Music.PlayBack;
               acClose;
-              VidVis := none;
+
               FadeTo(@ScreenMain);
             end;
 
@@ -713,7 +736,15 @@ begin
                     0: StartSong;
                     1: SelectPlayers;
                     2:begin
-                      VidVis := windowed;
+                      if (TargetVidVis = full) then
+                      begin
+                        TargetVidVis := windowed;
+                        if not VidVisHandler.changed then
+                        begin
+                          VidVisHandler.changed := true;
+                          VidVisHandler.change_time := 0;
+                        end;
+                      end;
                       If (CatSongs.CatNumShow = -3) then
                         ScreenSongMenu.MenuShow(SM_Playlist)
                       else
@@ -724,7 +755,15 @@ begin
               end
               else if (Mode = smParty) and not PartyMedley then //PartyMode classic -> Show Menu
               begin
-                VidVis := windowed;
+                if (TargetVidVis = full) then
+                begin
+                  TargetVidVis := windowed;
+                  if not VidVisHandler.changed then
+                  begin
+                    VidVisHandler.changed := true;
+                    VidVisHandler.change_time := 0;
+                  end;
+                end;
                 if (Ini.PartyPopup = 1) then
                   ScreenSongMenu.MenuShow(SM_Party_Main)
                 else begin
@@ -746,8 +785,10 @@ begin
 
       SDLK_M: //Show SongMenu
         begin
-          if (Length(Songs.Song) > 0) and (Mode <> smChallenge) then begin //not in M2-Mode
-            if (Mode = smNormal) then begin
+          if (Length(Songs.Song) > 0) and (Mode <> smChallenge) then
+          begin //not in M2-Mode
+            if (Mode = smNormal) then
+            begin
               WaitHandler.changed := false;
               CatSongs.Selected := Interaction;
               if not CatSongs.Song[Interaction].Main then begin // clicked on Song
@@ -762,6 +803,16 @@ begin
               end;
             end //Party Mode -> Show Party Menu
             else ScreenSongMenu.MenuShow(SM_Party_Main);
+
+            if (TargetVidVis = full) then
+            begin
+              TargetVidVis := windowed;
+              if not VidVisHandler.changed then
+              begin
+                VidVisHandler.changed := true;
+                VidVisHandler.change_time := 0;
+              end;
+            end;
           end;
         end;
 
@@ -779,7 +830,15 @@ begin
         begin
           if (Length(Songs.Song) > 0) AND (Mode = smNormal) then //not in party-modes
           begin
-            VidVis := windowed;
+            if (TargetVidVis = full) then
+            begin
+              TargetVidVis := windowed;
+              if not VidVisHandler.changed then
+              begin
+                VidVisHandler.changed := true;
+                VidVisHandler.change_time := 0;
+              end;
+            end;
             WaitHandler.changed := false;
             CatSongs.Selected := Interaction;
             ScreenSongJumpto.Visible := True;
@@ -1968,6 +2027,10 @@ begin
   AspectHandler.changed := false;
   InfoHandler.changed := false;
   MP3VolumeHandler.changed := false;
+  VidVisHandler.changed := false;
+  TargetVidVis := windowed;
+  VidVis := windowed;
+  TargetAspect := UVideo.fAspectCorrection;
 
   SetLength(PlaylistMedley.Song, 0);
   SetLength(SkippedSongs, 0);
@@ -2008,7 +2071,7 @@ begin
 
     //Stop Video
     acClose;
-    VidVis := none;
+
     CatSongs.ShowCategoryList;
 
     //Show Cat in Top Left Mod
@@ -2227,6 +2290,7 @@ var
   Blend:  real;
   VisArr: array of integer;
   txt:    string;
+  faktor: real; //0..1
 
 begin
   dx := SongTarget-SongCurrent;
@@ -2244,8 +2308,8 @@ begin
 //  Log.BenchmarkEnd(5);
 //  Log.LogBenchmark('SetScroll4', 5);
 
-  //Fading Functions, Only if Covertime is under 5 Seconds
-  If (CoverTime < 5) then
+  //Fading Functions, Only if Covertime is under 10 Seconds
+  If (CoverTime < 10) then
   begin
     // 0.5.0: cover fade
     if (CoverTime < 1) and (CoverTime + TimeSkip >= 1) then begin
@@ -2328,7 +2392,49 @@ begin
     try
       acGetFrame(Czas.Teraz);
 
-      if VidVis=windowed then
+      Blend := (CoverTime{-1.75})/Ini.PreviewFading;
+      if Blend<0 then
+        Blend := 0
+      else if Blend>1 then
+        Blend := 1;
+
+      if VidVisHandler.changed then
+      begin
+        if (VidVisHandler.change_time+TimeSkip<0.4) then
+        begin
+          VidVisHandler.change_time := VidVisHandler.change_time + TimeSkip;
+          faktor := VidVisHandler.change_time/0.4;
+
+          if (TargetVidVis = full) then
+          begin
+            Window.Left := Button[Interaction].X*(1-faktor);
+            Window.Right := Button[Interaction].X+Button[Interaction].W +
+              (RenderW/Screens-(Button[Interaction].X+Button[Interaction].W))*faktor;
+            Window.Upper := Button[Interaction].Y*(1-faktor);
+            Window.Lower := Button[Interaction].Y+Button[Interaction].H +
+              (RenderH-(Button[Interaction].Y+Button[Interaction].H))*faktor;
+          end else
+          begin
+            Window.Left := Button[Interaction].X*(faktor);
+            Window.Right := Button[Interaction].X+Button[Interaction].W +
+              (RenderW/Screens-(Button[Interaction].X+Button[Interaction].W))*(1-faktor);
+            Window.Upper := Button[Interaction].Y*(faktor);
+            Window.Lower := Button[Interaction].Y+Button[Interaction].H +
+              (RenderH-(Button[Interaction].Y+Button[Interaction].H))*(1-faktor);
+          end;
+          Window.Reflection := false;
+          Window.windowed := true;
+          Window.TargetAspect := TargetAspect;
+          Window.ZoomFaktor := faktor;
+        end else
+        begin
+          VidVisHandler.changed := false;
+          VidVis := TargetVidVis;
+          SetAspectCorrection(TargetAspect);
+        end;
+      end;
+
+      if not VidVisHandler.changed and (VidVis = windowed) then
       begin
         Window.Left := Button[Interaction].X;
         Window.Right := Button[Interaction].X+Button[Interaction].W;
@@ -2337,13 +2443,9 @@ begin
         Window.ReflactionSpacing := Button[Interaction].Reflectionspacing;
         Window.Reflection := Button[Interaction].Reflection;
         Window.windowed := true;
+        Window.TargetAspect := acoCrop;
 
         SetAspectCorrection(acoCrop);
-        Blend := (CoverTime-1.75)/Ini.PreviewFading;
-        if Blend<0 then
-          Blend := 0
-        else if Blend>1 then
-          Blend := 1;
       end;
     except
       //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
@@ -2351,7 +2453,7 @@ begin
       Log.LogError('Corrupted File: ' + CatSongs.Song[Interaction].Video);
       try
         acClose;
-        VidVis := none;
+        
       except
 
       end;
@@ -2369,25 +2471,23 @@ begin
   //Draw Video preview and interaction-button
   if UVideo.VideoOpened then
   begin
-    if (Blend<1) or not EnableVideoDraw then
+    if (Blend<1) or not EnableVideoDraw or VidVisHandler.changed then
       Button[Interaction].Draw;
 
     try
-      if VidVis=windowed then
+      if (VidVis=windowed) then
         acDrawGLi(ScreenAct, Window, Blend);
 
       if (Czas.Teraz>=Czas.Razem) then
-      begin
         acClose;
-        VidVis := none;
-      end;
+
     except
       //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
       log.LogError('Error drawing Video, Video has been disabled for this Song/Session.');
       Log.LogError('Corrupted File: ' + CatSongs.Song[Interaction].Video);
       try
         acClose;
-        VidVis := none;
+        
       except
       end;
     end;
@@ -2407,29 +2507,27 @@ begin
     DrawEqualizer;
 
   if (CatSongs.Song[Interaction].Main) or (CatSongs.VisibleSongs = 0) then
-  begin
     acClose;
-    VidVis := none;
-  end;
 
   if UVideo.VideoOpened then
   begin
     try
-      if VidVis=full then
-        acDrawGL(ScreenAct);
+      if (VidVis=full) and not VidVisHandler.changed then
+        acDrawGL(ScreenAct)
+      else if VidVisHandler.changed then
+        acDrawGLi(ScreenAct, Window, Blend);
+
 
       if (Czas.Teraz>=Czas.Razem) then
-      begin
         acClose;
-        VidVis := none;
-      end;
+
     except
       //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
       log.LogError('Error drawing Video, Video has been disabled for this Song/Session.');
       Log.LogError('Corrupted File: ' + CatSongs.Song[Interaction].Video);
       try
         acClose;
-        VidVis := none;
+
       except
 
       end;
@@ -2777,9 +2875,14 @@ begin
       if CoverTime<0.75 then
       begin
         acClose;
-        VidVis := none;
         StartTry := true;
         AspectHandler.changed := false;
+        VidVisHandler.changed := false;
+        TargetVidVis := windowed;
+        SetAspectCorrection(acoCrop);
+        if(VidVis=none) then
+          VidVis := windowed;
+
       end else if (Ini.MoviePreview=1) and StartTry then
       begin
         if (CatSongs.Song[Interaction].Video <> '') and
@@ -2793,7 +2896,20 @@ begin
           StartTry := false;
           try
             acGetFrame(Czas.Teraz);
-            VidVis := windowed;
+            if (VidVis = full) then
+            begin
+              TargetVidVis := full;
+              VidVis := windowed;
+              TargetAspect := TAspectCorrection(
+                DataBase.GetAspect(CatSongs.Song[Interaction].Artist,
+                CatSongs.Song[Interaction].Title, Ini.AspectCorrect));
+
+              AspectHandler.changed := true;
+              AspectHandler.change_time := Czas.Teraz;
+
+              VidVisHandler.changed := true;
+              VidVisHandler.change_time := 0;
+            end;
           except
             //If an Error occurs Reading Video: prevent Video from being Drawn again and Close Video
             Log.LogError('Error drawing Video, Video has been disabled for this Song/Session.');
@@ -2801,13 +2917,12 @@ begin
             CatSongs.Song[Interaction].Video := ''; //dirt fix
             try
               acClose;
-              VidVis := none;
+
             except
 
             end;
           end;
-        end else
-          VidVis := none;
+        end;
       end;
     end;
   end;
