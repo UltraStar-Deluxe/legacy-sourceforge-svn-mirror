@@ -52,13 +52,22 @@ include(FileUtils)
 # LIBRARIES
 ##
 
+# for some reason pkg_check_modules does not quit the configuration 
+# phase if REQUIRED is specified and the module is not found.
+function(pkg_check_required_modules prefix modules)
+  pkg_check_modules(${prefix} REQUIRED ${modules})
+  if(NOT ${prefix}_FOUND)
+    message(FATAL_ERROR "A required module is not available. Install it and try again.")
+  endif(NOT ${prefix}_FOUND)
+endfunction(pkg_check_required_modules)
+
 if(NOT WIN32)
   find_package(PkgConfig REQUIRED)
 
   #find_package(OpenGL)
-  #pkg_check_modules(opengl REQUIRED gl)
+  #pkg_check_required_modules(opengl gl)
 
-  pkg_check_modules(sdl REQUIRED sdl)
+  pkg_check_required_modules(sdl sdl)
   #find_package(SDL REQUIRED)
 
   # find SDL_image
@@ -72,11 +81,11 @@ if(NOT WIN32)
   # hide SDL_image from GUI
   mark_as_advanced(SDLIMAGE_LIBRARY SDLIMAGE_INCLUDE_DIR)
 
-  pkg_check_modules(libpng REQUIRED libpng12)
+  pkg_check_required_modules(libpng libpng12)
   #find_package(PNG REQUIRED)
-  pkg_check_modules(freetype REQUIRED freetype2)
+  pkg_check_required_modules(freetype freetype2)
   #find_package(Freetype REQUIRED)
-  pkg_check_modules(sqlite3 REQUIRED sqlite3)
+  pkg_check_required_modules(sqlite3 sqlite3)
 
   # find FFMpeg
   # Note: do not use the min/max version parameters with ffmpeg
@@ -86,11 +95,11 @@ if(NOT WIN32)
   #   A check for version >=52.0.0 will return version 0d.51.1.2 
   #   although it is lower because pkg-config is confused by the 0d.
   # Use ${libav...}_VERSION_INT for version-checking instead
-  pkg_check_modules(libavcodec REQUIRED libavcodec)
+  pkg_check_required_modules(libavcodec libavcodec)
   expand_version(libavcodec_VERSION)
-  pkg_check_modules(libavformat REQUIRED libavformat)
+  pkg_check_required_modules(libavformat libavformat)
   expand_version(libavformat_VERSION)
-  pkg_check_modules(libavutil REQUIRED libavutil)
+  pkg_check_required_modules(libavutil libavutil)
   expand_version(libavutil_VERSION)
   set(ffmpeg_FOUND TRUE)
 
@@ -121,11 +130,21 @@ if(NOT WIN32)
   expand_version(libprojectM_VERSION)
 
   # find portaudio
-  pkg_check_modules(portaudio REQUIRED portaudio-2.0)
+  pkg_check_required_modules(portaudio portaudio-2.0)
   expand_version(portaudio_VERSION)
 
   # find portmixer
   pkg_check_modules(portmixer portmixer)
+
+  # find lua 5.1
+  # (K)Ubuntu uses lua5.1.pc, Mac OS X and other 
+  # linux distributions use lua.pc
+  pkg_check_modules(lua lua5.1)
+  set(lua_LIB_NAME "lua5.1")
+  if(NOT lua_FOUND)
+    pkg_check_required_modules(lua "lua >= 5.1")
+    set(lua_LIB_NAME "lua")
+  endif(NOT lua_FOUND)
 endif(NOT WIN32)
 
 ##
@@ -154,7 +173,6 @@ endif(NOT WIN32)
 ##
 
 add_subdirectory(src)
-add_subdirectory(plugins)
 
 macro(add_configuration_target target build_type)
 ADD_CUSTOM_TARGET(${target}
@@ -200,7 +218,7 @@ install(
 )
 
 #if(APPLE)
-  include(MacOSXBundle)
+#  include(MacOSXBundle)
 #endif(APPLE)
 
 # add "uninstall" target
@@ -265,7 +283,6 @@ set(CPACK_SOURCE_IGNORE_FILES
   "CMakeCache\\\\.txt$"
   "^${PROJECT_SOURCE_DIR}/[^/]*\\\\.cmake$"
   "^${PROJECT_SOURCE_DIR}/src/.*\\\\.cmake$"
-  "^${PROJECT_SOURCE_DIR}/plugins/.*\\\\.cmake$"
   "^${PROJECT_SOURCE_DIR}/game/ultrastardx$"
   "^${PROJECT_SOURCE_DIR}/src/paths\\\\.inc$"
   "^${PROJECT_SOURCE_DIR}/src/config-[^w].*\\\\.inc$"
@@ -280,6 +297,7 @@ include(CPack)
 ##
 # SUMMARY
 ##
+
 
 message("
 !! Configuration of ${CPACK_PACKAGE_NAME} ${CPACK_PACKAGE_VERSION} done!

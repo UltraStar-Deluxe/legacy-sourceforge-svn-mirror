@@ -73,8 +73,8 @@ pascal_add_module(ultrastardx ultrastardx.dpr
     media/*.pas
     menu/*.pas
     screens/*.pas
+    lua/*.pas
     lib/other/*.pas
-    ../plugins/SDK/*.pas
   INCLUDES ${usdx_includes}
   PACKAGES ${usdx_packages}
   DEPENDS ${usdx_depends}
