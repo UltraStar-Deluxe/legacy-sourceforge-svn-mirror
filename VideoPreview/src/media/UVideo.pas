@@ -177,7 +177,7 @@ type
     procedure SetScreen(Screen: integer);
     function GetScreen(): integer;
 
-    procedure SetScreenPosition(X, Y: double; Z: double = 0.0);
+    procedure SetScreenPosition(X, Y, Z: double);
     procedure GetScreenPosition(var X, Y, Z: double);
 
     procedure SetWidth(Width: double);
@@ -520,6 +520,22 @@ begin
   fPboId := 0;
 
   fAspectCorrection := acoCrop;
+
+  fScreen := 1;
+
+  fScreenPositionX := 0;
+  fScreenPositionY := 0;
+  fScreenPositionZ := 0;
+  fScreenWidth := RenderW;
+  fScreenHeight := RenderH;
+
+  fFrameRange.Left := 0;
+  fFrameRange.Right := 1;
+  fFrameRange.Upper := 0;
+  fFrameRange.Lower := 1;
+
+  fAlpha := 1;
+  fReflectionSpacing := 0;
 end;
 
 procedure TVideo_FFmpeg.Close;
@@ -1145,7 +1161,7 @@ begin
 end;
 
 
-procedure TVideo_FFmpeg.SetScreenPosition(X, Y: double; Z: double = 0.0);
+procedure TVideo_FFmpeg.SetScreenPosition(X, Y, Z: double);
 begin
   fScreenPositionX := X;
   fScreenPositionY := Y;

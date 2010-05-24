@@ -149,7 +149,7 @@ type
       procedure SetScreen(Screen: integer);
       function GetScreen(): integer;
 
-      procedure SetScreenPosition(X, Y: double; Z: double = 0.0);
+      procedure SetScreenPosition(X, Y, Z: double);
       procedure GetScreenPosition(var X, Y, Z: double);
 
       procedure  SetWidth(Width: double);
@@ -300,7 +300,7 @@ begin
   Result := 0;
 end;
 
-procedure TVideo_ProjectM.SetScreenPosition(X, Y: double; Z: double = 0.0);
+procedure TVideo_ProjectM.SetScreenPosition(X, Y, Z: double);
 begin
 end;
 
