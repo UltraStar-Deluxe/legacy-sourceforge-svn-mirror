@@ -48,24 +48,6 @@ interface
   {$DEFINE PIXEL_FMT_BGR}
 {$ENDIF}
 
-type
-  {**
-   * vacStretch: Stretch to screen width and height
-   *   - ignores aspect
-   *   + no borders
-   *   + no image data loss
-   * vacCrop: Stretch to screen width or height, crop the other dimension
-   *   + keeps aspect
-   *   + no borders
-   *   - frame borders are cropped (image data loss)
-   * vacLetterBox: Stretch to screen width, add bars at or crop top and bottom
-   *   + keeps aspect
-   *   - borders at top and bottom
-   *   o top/bottom is cropped if width < height (unusual)
-   *}
-  TAspectCorrection = (acoStretch, acoCrop, acoLetterBox);
-
-
 implementation
 
 uses
@@ -113,11 +95,6 @@ const
 {$ENDIF}
 
 type
-  TRectCoords = record
-    Left, Right:  double;
-    Upper, Lower: double;
-  end;
-
   IVideo_FFmpeg = interface (IVideo)
   ['{E640E130-C8C0-4399-AF02-67A3569313AB}']
     function Open(const FileName: IPath): boolean;
@@ -148,6 +125,8 @@ type
     {$IFDEF UseSWScale}
     fSwScaleContext: PSwsContext;
     {$ENDIF}
+
+    fScreen:  integer; //actual screen to draw on
 
     fAspect: real;        //**< width/height ratio
     fAspectCorrection: TAspectCorrection;
@@ -183,8 +162,40 @@ type
     procedure SetPosition(Time: real);
     function GetPosition: real;
 
-    procedure GetFrame(Time: Extended);
-    procedure DrawGL(Screen: integer);
+    procedure SetScreen(Screen: integer);
+    function GetScreen(): integer;
+
+    procedure SetScreenPosition(X, Y: double; Z: double = 0.0);
+    procedure GetScreenPosition(var X, Y, Z: double);
+
+    procedure  SetWidth(Width: double);
+    function GetWidth(): double;
+
+    procedure  SetHeight(Height: double);
+    function GetHeight(): double;
+
+    {**
+     * Sub-image of the video frame to draw.
+     * This can be used for zooming or similar purposes.
+     *}
+     procedure SetFrameRange(Range: TRectCoords);
+     function GetFrameRange(): TRectCoords;
+
+     function GetFrameAspect(): real;
+
+     procedure SetAspectCorrection(AspectCorrection: TAspectCorrection);
+     function GetAspectCorrection(): TAspectCorrection;
+
+
+     procedure SetAlpha(Alpha: double);
+     function GetAlpha(): double;
+
+     procedure SetReflectionSpacing(Spacing: double);
+     function GetReflectionSpacing(): double;
+
+     procedure GetFrame(Time: Extended);
+     procedure Draw();
+     procedure DrawReflection();
   end;
 
   TVideoPlayback_FFmpeg = class( TInterfacedObject, IVideoPlayback )
@@ -935,7 +946,7 @@ begin
   TexRect.Lower := fCodecContext^.height / fTexHeight;
 end;
 
-procedure TVideo_FFmpeg.DrawGL(Screen: integer);
+procedure TVideo_FFmpeg.Draw();
 var
   ScreenRect: TRectCoords;
   TexRect: TRectCoords;
@@ -945,7 +956,7 @@ begin
   // TODO: Philipp: IMO TVideoPlayback should not clear the screen at
   //       all, because clearing is already done by the background class
   //       at this moment.
-  if (Screen = 1) then
+  if (fScreen = 1) then
   begin
     // It is important that we just clear once before we start
     // drawing the first screen otherwise the first screen
@@ -996,6 +1007,11 @@ begin
   {$IF Defined(Info) or Defined(DebugFrames)}
   ShowDebugInfo();
   {$IFEND}
+end;
+
+procedure TVideo_FFmpeg.DrawReflection();
+begin
+
 end;
 
 procedure TVideo_FFmpeg.ShowDebugInfo();
@@ -1106,6 +1122,101 @@ function  TVideo_FFmpeg.GetPosition: real;
 begin
   Result := fFrameTime;
 end;
+
+procedure TVideo_FFmpeg.SetScreen(Screen: integer);
+begin
+
+end;
+
+function TVideo_FFmpeg.GetScreen(): integer;
+begin
+
+end;
+
+
+procedure TVideo_FFmpeg.SetScreenPosition(X, Y: double; Z: double = 0.0);
+begin
+
+end;
+
+procedure TVideo_FFmpeg.GetScreenPosition(var X, Y, Z: double);
+begin
+
+end;
+
+
+procedure TVideo_FFmpeg.SetWidth(Width: double);
+begin
+
+end;
+
+function TVideo_FFmpeg.GetWidth(): double;
+begin
+
+end;
+
+
+procedure TVideo_FFmpeg.SetHeight(Height: double);
+begin
+
+end;
+
+function TVideo_FFmpeg.GetHeight(): double;
+begin
+
+end;
+
+
+procedure TVideo_FFmpeg.SetFrameRange(Range: TRectCoords);
+begin
+
+end;
+
+function TVideo_FFmpeg.GetFrameRange(): TRectCoords;
+begin
+
+end;
+
+
+function TVideo_FFmpeg.GetFrameAspect(): real;
+begin
+
+end;
+
+
+procedure TVideo_FFmpeg.SetAspectCorrection(AspectCorrection: TAspectCorrection);
+begin
+
+end;
+
+function TVideo_FFmpeg.GetAspectCorrection(): TAspectCorrection;
+begin
+
+end;
+
+
+
+procedure TVideo_FFmpeg.SetAlpha(Alpha: double);
+begin
+
+end;
+
+function TVideo_FFmpeg.GetAlpha(): double;
+begin
+
+end;
+
+
+procedure TVideo_FFmpeg.SetReflectionSpacing(Spacing: double);
+begin
+
+end;
+
+function TVideo_FFmpeg.GetReflectionSpacing(): double;
+begin
+
+end;
+
 
 initialization
   MediaManager.Add(TVideoPlayback_FFmpeg.Create);

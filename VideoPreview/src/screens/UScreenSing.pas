@@ -847,7 +847,8 @@ begin
       fCurrentVideo.GetFrame(VideoFrameTime);
     end;
 
-    fCurrentVideo.DrawGL(ScreenAct);
+    fCurrentVideo.SetScreen(ScreenAct);
+    fCurrentVideo.Draw;
   end;
 
   // draw static menu (FG)

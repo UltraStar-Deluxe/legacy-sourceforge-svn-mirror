@@ -158,7 +158,8 @@ begin
   begin
     fBgVideo.GetFrame(VideoBGTimer.GetTime());
     // FIXME: why do we draw on screen 2? Seems to be wrong.
-    fBgVideo.DrawGL(2);
+    fBgVideo.SetScreen(2);
+    fBgVideo.Draw();
   end;
 end;
 
