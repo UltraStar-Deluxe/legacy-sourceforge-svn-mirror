@@ -126,7 +126,19 @@ type
     fSwScaleContext: PSwsContext;
     {$ENDIF}
 
-    fScreen:  integer; //actual screen to draw on
+    fScreen:          integer; //actual screen to draw on
+
+    fScreenPositionX: double;
+    fScreenPositionY: double;
+    fScreenPositionZ: double;
+    fScreenWidth:     double;
+    fScreenHeight:    double;
+
+    fFrameRange:      TRectCoords;
+
+    fAlpha:           double;
+    fReflectionSpacing: double;
+
 
     fAspect: real;        //**< width/height ratio
     fAspectCorrection: TAspectCorrection;
@@ -168,10 +180,10 @@ type
     procedure SetScreenPosition(X, Y: double; Z: double = 0.0);
     procedure GetScreenPosition(var X, Y, Z: double);
 
-    procedure  SetWidth(Width: double);
+    procedure SetWidth(Width: double);
     function GetWidth(): double;
 
-    procedure  SetHeight(Height: double);
+    procedure SetHeight(Height: double);
     function GetHeight(): double;
 
     {**
@@ -185,7 +197,6 @@ type
 
      procedure SetAspectCorrection(AspectCorrection: TAspectCorrection);
      function GetAspectCorrection(): TAspectCorrection;
-
 
      procedure SetAlpha(Alpha: double);
      function GetAlpha(): double;
@@ -1125,96 +1136,100 @@ end;
 
 procedure TVideo_FFmpeg.SetScreen(Screen: integer);
 begin
-
+  fScreen := Screen;
 end;
 
 function TVideo_FFmpeg.GetScreen(): integer;
 begin
-
+  Result := fScreen;
 end;
 
 
 procedure TVideo_FFmpeg.SetScreenPosition(X, Y: double; Z: double = 0.0);
 begin
-
+  fScreenPositionX := X;
+  fScreenPositionY := Y;
+  fScreenPositionZ := Z;
 end;
 
 procedure TVideo_FFmpeg.GetScreenPosition(var X, Y, Z: double);
 begin
-
+  X := fScreenPositionX;
+  Y := fScreenPositionY;
+  Z := fScreenPositionZ;
 end;
 
 
 procedure TVideo_FFmpeg.SetWidth(Width: double);
 begin
-
+  fScreenWidth := Width;
 end;
 
 function TVideo_FFmpeg.GetWidth(): double;
 begin
-
+  Result := fScreenWidth;
 end;
 
 
 procedure TVideo_FFmpeg.SetHeight(Height: double);
 begin
-
+  fScreenHeight := Height;
 end;
 
 function TVideo_FFmpeg.GetHeight(): double;
 begin
-
+  Result := fScreenHeight;
 end;
 
 
 procedure TVideo_FFmpeg.SetFrameRange(Range: TRectCoords);
 begin
-
+  fFrameRange := Range;
 end;
 
 function TVideo_FFmpeg.GetFrameRange(): TRectCoords;
 begin
-
+  Result := fFrameRange;
 end;
 
 
 function TVideo_FFmpeg.GetFrameAspect(): real;
 begin
-
+  Result := fAspect;
 end;
 
 
 procedure TVideo_FFmpeg.SetAspectCorrection(AspectCorrection: TAspectCorrection);
 begin
-
+  fAspectCorrection := AspectCorrection;
 end;
 
 function TVideo_FFmpeg.GetAspectCorrection(): TAspectCorrection;
 begin
-
+  Result := fAspectCorrection;
 end;
 
 
 
 procedure TVideo_FFmpeg.SetAlpha(Alpha: double);
 begin
-
+  fAlpha := Alpha;
 end;
 
 function TVideo_FFmpeg.GetAlpha(): double;
 begin
-
+  Result := fAlpha;
 end;
 
 
 procedure TVideo_FFmpeg.SetReflectionSpacing(Spacing: double);
 begin
-
+  fReflectionSpacing := Spacing;
 end;
 
 function TVideo_FFmpeg.GetReflectionSpacing(): double;
 begin
-
+  Result := fReflectionSpacing;
 end;
 
 
