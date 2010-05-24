@@ -128,11 +128,11 @@ type
 
     fScreen:          integer; //actual screen to draw on
 
-    fScreenPositionX: double;
-    fScreenPositionY: double;
-    fScreenPositionZ: double;
-    fScreenWidth:     double;
-    fScreenHeight:    double;
+    fPosX:    double;
+    fPosY:    double;
+    fPosZ:    double;
+    fWidth:   double;
+    fHeight:  double;
 
     fFrameRange:      TRectCoords;
 
@@ -523,11 +523,11 @@ begin
 
   fScreen := 1;
 
-  fScreenPositionX := 0;
-  fScreenPositionY := 0;
-  fScreenPositionZ := 0;
-  fScreenWidth := RenderW;
-  fScreenHeight := RenderH;
+  fPosX := 0;
+  fPosY := 0;
+  fPosZ := 0;
+  fWidth := RenderW;
+  fHeight := RenderH;
 
   fFrameRange.Left := 0;
   fFrameRange.Right := 1;
@@ -1163,38 +1163,38 @@ end;
 
 procedure TVideo_FFmpeg.SetScreenPosition(X, Y, Z: double);
 begin
-  fScreenPositionX := X;
-  fScreenPositionY := Y;
-  fScreenPositionZ := Z;
+  fPosX := X;
+  fPosY := Y;
+  fPosZ := Z;
 end;
 
 procedure TVideo_FFmpeg.GetScreenPosition(var X, Y, Z: double);
 begin
-  X := fScreenPositionX;
-  Y := fScreenPositionY;
-  Z := fScreenPositionZ;
+  X := fPosX;
+  Y := fPosY;
+  Z := fPosZ;
 end;
 
 
 procedure TVideo_FFmpeg.SetWidth(Width: double);
 begin
-  fScreenWidth := Width;
+  fWidth := Width;
 end;
 
 function TVideo_FFmpeg.GetWidth(): double;
 begin
-  Result := fScreenWidth;
+  Result := fWidth;
 end;
 
 
 procedure TVideo_FFmpeg.SetHeight(Height: double);
 begin
-  fScreenHeight := Height;
+  fHeight := Height;
 end;
 
 function TVideo_FFmpeg.GetHeight(): double;
 begin
-  Result := fScreenHeight;
+  Result := fHeight;
 end;
 
 
