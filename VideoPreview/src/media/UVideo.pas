@@ -207,16 +207,6 @@ type
      procedure GetFrame(Time: Extended);
      procedure Draw();
      procedure DrawReflection();
-
-     property Screen: integer read GetScreen;
-     property Width: double read GetWidth write SetWidth;
-     property Height: double read GetHeight write SetHeight;
-     property Alpha: double read GetAlpha write SetAlpha;
-     property ReflectionSpacing: double read GetReflectionSpacing write SetReflectionSpacing;
-     property FrameAspect: real read GetFrameAspect;
-     property AspectCorrection: TAspectCorrection read GetAspectCorrection;
-     property Loop: boolean read GetLoop write SetLoop;
-     property Position: real read GetPosition write SetPosition;
   end;
 
   TVideoPlayback_FFmpeg = class( TInterfacedObject, IVideoPlayback )
