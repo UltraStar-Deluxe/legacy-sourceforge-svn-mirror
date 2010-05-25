@@ -847,8 +847,24 @@ begin
       fCurrentVideo.GetFrame(VideoFrameTime);
     end;
 
+    // clear just once when in dual screen mode
+    if (ScreenAct = 1) then
+    begin
+      glClearColor(0, 0, 0, 0);
+      //glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+    end;
+
+    //***** for testing:
+    fCurrentVideo.SetScreenPosition(300, 10);
+    fCurrentVideo.Width := 200;
+    fCurrentVideo.Height := 150;
+    fCurrentVideo.ReflectionSpacing := 10;
+    //***** end testing
+
     fCurrentVideo.SetScreen(ScreenAct);
     fCurrentVideo.Draw;
+    
+    fCurrentVideo.DrawReflection; //just for testing, should be deleted!
   end;
 
   // draw static menu (FG)

@@ -393,7 +393,7 @@ type
        
       property Screen: integer read GetScreen;
       property Width: double read GetWidth write SetWidth;
-      property Height: double read GetHeight write SetWidth;
+      property Height: double read GetHeight write SetHeight;
       property Alpha: double read GetAlpha write SetAlpha;
       property ReflectionSpacing: double read GetReflectionSpacing write SetReflectionSpacing;
       property FrameAspect: real read GetFrameAspect;
