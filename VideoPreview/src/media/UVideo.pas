@@ -94,6 +94,8 @@ const
   PIXEL_FMT_SIZE   = 3;
 {$ENDIF}
 
+  ReflectionH = 0.5; //reflection height (50%)
+
 type
   IVideo_FFmpeg = interface (IVideo)
   ['{E640E130-C8C0-4399-AF02-67A3569313AB}']
@@ -154,6 +156,8 @@ type
     procedure SynchronizeTime(Frame: PAVFrame; var pts: double);
 
     procedure GetVideoRect(var ScreenRect, TexRect: TRectCoords);
+    procedure DrawBorders(ScreenRect: TRectCoords);
+    procedure DrawBordersReflected(ScreenRect: TRectCoords; AlphaUpper, AlphaLower: double);
 
     procedure ShowDebugInfo();
 
@@ -933,7 +937,7 @@ begin
   //  1. Screen/display resolution (e.g. 1920x1080 -> 16:9)
   //  2. Render aspect (fWidth x fHeight -> variable)
   //  3. Movie aspect (video frame aspect stored in fAspect)
-  ScreenAspect := fWidth*((ScreenW/Screens)/RenderW)/(fHeight*(ScreenH/RenderH));;
+  ScreenAspect := fWidth*((ScreenW/Screens)/RenderW)/(fHeight*(ScreenH/RenderH));
 
   case fAspectCorrection of
     acoStretch: begin
@@ -981,27 +985,88 @@ begin
   TexRect.Lower := (fCodecContext^.height / fTexHeight) * fFrameRange.Lower;
 end;
 
+procedure TVideo_FFmpeg.DrawBorders(ScreenRect: TRectCoords);
+  procedure DrawRect(left, right, upper, lower: double);
+  begin
+    glColor4f(0, 0, 0, fAlpha);
+    glBegin(GL_QUADS);
+      glVertex3f(left, upper, fPosZ);
+      glVertex3f(right, upper, fPosZ);
+      glVertex3f(right, lower, fPosZ);
+      glVertex3f(left, lower, fPosZ);
+    glEnd;
+  end;
+begin
+  //upper border
+  if(ScreenRect.Upper > fPosY) then
+    DrawRect(fPosX, fPosX+fWidth, fPosY, ScreenRect.Upper);
+
+  //lower border
+  if(ScreenRect.Lower < fPosY+fHeight) then
+    DrawRect(fPosX, fPosX+fWidth, ScreenRect.Lower, fPosY+fHeight);
+
+  //left border
+  if(ScreenRect.Left > fPosX) then
+    DrawRect(fPosX, ScreenRect.Left, fPosY, fPosY+fHeight);
+
+  //right border
+  if(ScreenRect.Right < fPosX+fWidth) then
+    DrawRect(ScreenRect.Right, fPosX+fWidth, fPosY, fPosY+fHeight);
+end;
+
+procedure TVideo_FFmpeg.DrawBordersReflected(ScreenRect: TRectCoords; AlphaUpper, AlphaLower: double);
+var
+  rPosUpper, rPosLower: double;
+
+  procedure DrawRect(left, right, upper, lower: double);
+  var
+    AlphaTop: double;
+    AlphaBottom: double;
+
+  begin
+    AlphaTop := AlphaUpper+(AlphaLower-AlphaUpper)*(upper-rPosUpper)/(fHeight*ReflectionH);
+    AlphaBottom := AlphaLower+(AlphaUpper-AlphaLower)*(rPosLower-lower)/(fHeight*ReflectionH);
+
+    glBegin(GL_QUADS);
+      glColor4f(0, 0, 0, AlphaTop);
+      glVertex3f(left, upper, fPosZ);
+      glVertex3f(right, upper, fPosZ);
+
+      glColor4f(0, 0, 0, AlphaBottom);
+      glVertex3f(right, lower, fPosZ);
+      glVertex3f(left, lower, fPosZ);
+    glEnd;
+  end;
+begin
+  rPosUpper := fPosY+fHeight+fReflectionSpacing;
+  rPosLower := rPosUpper+fHeight*ReflectionH;
+
+  //upper border
+  if(ScreenRect.Upper > rPosUpper) then
+    DrawRect(fPosX, fPosX+fWidth, rPosUpper, ScreenRect.Upper);
+
+  //lower border
+  if(ScreenRect.Lower < rPosLower) then
+    DrawRect(fPosX, fPosX+fWidth, ScreenRect.Lower, rPosLower);
+
+  //left border
+  if(ScreenRect.Left > fPosX) then
+    DrawRect(fPosX, ScreenRect.Left, rPosUpper, rPosLower);
+
+  //right border
+  if(ScreenRect.Right < fPosX+fWidth) then
+    DrawRect(ScreenRect.Right, fPosX+fWidth, rPosUpper, rPosLower);
+end;
+
+
 procedure TVideo_FFmpeg.Draw();
 var
-  ScreenRect: TRectCoords;
-  TexRect: TRectCoords;
+  ScreenRect:   TRectCoords;
+  TexRect:      TRectCoords;
+  HeightFactor: double;
+  WidthFactor:  double;
 
 begin
-  // have a nice black background to draw on
-  // (even if there were errors opening the vid)
-  // TODO: Philipp: IMO TVideoPlayback should not clear the screen at
-  //       all, because clearing is already done by the background class
-  //       at this moment.
-  {if (fScreen = 1) then
-  begin
-    // It is important that we just clear once before we start
-    // drawing the first screen otherwise the first screen
-    // would be cleared by the drawgl called when the second
-    // screen is drawn
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
-  end;}
-
   // exit if there's nothing to draw
   if (not fOpened) then
     Exit;
@@ -1013,10 +1078,15 @@ begin
   // get texture and screen positions
   GetVideoRect(ScreenRect, TexRect);
 
-  glScissor(round(fPosX*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(fScreen-1)),
-    round((RenderH-fPosY-fHeight)*ScreenH/RenderH),
-    round(fWidth*(ScreenW/Screens)/RenderW),
-    round(fHeight*ScreenH/RenderH));
+  WidthFactor := (ScreenW/Screens) / RenderW;
+  HeightFactor := ScreenH / RenderH;
+
+  glScissor(
+    round(fPosX*WidthFactor + HeightFactor*(fScreen-1)),
+    round((RenderH-fPosY-fHeight)*HeightFactor),
+    round(fWidth*WidthFactor),
+    round(fHeight*HeightFactor)
+    );
 
   glEnable(GL_SCISSOR_TEST);
   glEnable(GL_BLEND);
@@ -1044,6 +1114,10 @@ begin
 
   glDisable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
+
+  //draw black borders
+  DrawBorders(ScreenRect);
+
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_BLEND);
   glDisable(GL_SCISSOR_TEST);
@@ -1060,8 +1134,16 @@ end;
 
 procedure TVideo_FFmpeg.DrawReflection();
 var
-  ScreenRect: TRectCoords;
-  TexRect: TRectCoords;
+  ScreenRect:   TRectCoords;
+  TexRect:      TRectCoords;
+  HeightFactor: double;
+  WidthFactor:  double;
+
+  AlphaTop:     double;
+  AlphaBottom:  double;
+
+  AlphaUpper:   double;
+  AlphaLower:   double;
 
 begin
   // exit if there's nothing to draw
@@ -1071,10 +1153,15 @@ begin
   // get texture and screen positions
   GetVideoRect(ScreenRect, TexRect);
 
-  glScissor(round(fPosX*(ScreenW/Screens)/RenderW+(ScreenW/Screens)*(fScreen-1)),
-    round((RenderH-fPosY-fHeight-fReflectionSpacing-fHeight*0.5)*ScreenH/RenderH),
-    round(fWidth*(ScreenW/Screens)/RenderW),
-    round(fHeight*ScreenH/RenderH*0.5));
+  WidthFactor := (ScreenW/Screens) / RenderW;
+  HeightFactor := ScreenH / RenderH;
+
+  glScissor(
+    round(fPosX*WidthFactor + HeightFactor*(fScreen-1)),
+    round((RenderH-fPosY-fHeight-fReflectionSpacing-fHeight*ReflectionH)*HeightFactor),
+    round(fWidth*WidthFactor),
+    round(fHeight*HeightFactor*ReflectionH)
+    );
 
   glEnable(GL_SCISSOR_TEST);
   glEnable(GL_BLEND);
@@ -1084,39 +1171,49 @@ begin
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, fFrameTex);
-  glColor4f(1, 1, 1, fAlpha);
+
+  //calculate new ScreenRect coordinates for Reflection
+  ScreenRect.Lower := fPosY + fHeight + fReflectionSpacing
+    + (ScreenRect.Upper-fPosY) + (ScreenRect.Lower-ScreenRect.Upper)*ReflectionH;
+  ScreenRect.Upper := fPosY + fHeight + fReflectionSpacing
+    + (ScreenRect.Upper-fPosY);
+
+  AlphaUpper := fAlpha-0.3;
+  AlphaLower := 0;
+
+  AlphaTop := AlphaUpper-(AlphaLower-AlphaUpper)*
+    (ScreenRect.Upper-fPosY-fHeight-fReflectionSpacing)/fHeight;
+  AlphaBottom := AlphaLower+(AlphaUpper-AlphaLower)*
+    (fPosY+fHeight+fReflectionSpacing+fHeight*ReflectionH-ScreenRect.Lower)/fHeight;
 
   glBegin(GL_QUADS);
     //Top Left
-    glColor4f(1, 1, 1, fAlpha-0.3);
+    glColor4f(1, 1, 1, AlphaTop);
     glTexCoord2f(TexRect.Left, TexRect.Lower);
-    glVertex3f(ScreenRect.Left,
-      fPosY + fHeight + fReflectionSpacing,
-      fPosZ);
+    glVertex3f(ScreenRect.Left, ScreenRect.Upper, fPosZ);
 
     //Bottom Left
-    glColor4f(1, 1, 1, 0);
-    glTexCoord2f(TexRect.Left, (TexRect.Lower-TexRect.Upper)*0.5);
-    glVertex3f(ScreenRect.Left,
-      fPosY + fHeight + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + fReflectionSpacing,
-     fPosZ);
+    glColor4f(1, 1, 1, AlphaBottom);
+    glTexCoord2f(TexRect.Left, (TexRect.Lower-TexRect.Upper)*(1-ReflectionH));
+    glVertex3f(ScreenRect.Left, ScreenRect.Lower, fPosZ);
 
     //Bottom Right
-    glColor4f(1, 1, 1, 0);
-    glTexCoord2f(TexRect.Right, (TexRect.Lower-TexRect.Upper)*0.5);
-    glVertex3f(ScreenRect.Right,
-      fPosY + fHeight + (ScreenRect.Lower-ScreenRect.Upper)*0.5 + fReflectionSpacing,
-      fPosZ);
+    glColor4f(1, 1, 1, AlphaBottom);
+    glTexCoord2f(TexRect.Right, (TexRect.Lower-TexRect.Upper)*(1-ReflectionH));
+    glVertex3f(ScreenRect.Right, ScreenRect.Lower, fPosZ);
 
     //Top Right
-    glColor4f(1, 1, 1, fAlpha-0.3);
+    glColor4f(1, 1, 1, AlphaTop);
     glTexCoord2f(TexRect.Right, TexRect.Lower);
-    glVertex3f(ScreenRect.Right, fPosY + fHeight + fReflectionSpacing,
-      fPosZ);
+    glVertex3f(ScreenRect.Right, ScreenRect.Upper, fPosZ);
   glEnd;
 
   glDisable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
+
+  //draw black borders
+  DrawBordersReflected(ScreenRect, AlphaUpper, AlphaLower);
+
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_BLEND);
   glDisable(GL_SCISSOR_TEST);

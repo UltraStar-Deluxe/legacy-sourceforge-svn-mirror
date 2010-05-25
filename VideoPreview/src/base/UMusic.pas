@@ -397,7 +397,7 @@ type
       property Alpha: double read GetAlpha write SetAlpha;
       property ReflectionSpacing: double read GetReflectionSpacing write SetReflectionSpacing;
       property FrameAspect: real read GetFrameAspect;
-      property AspectCorrection: TAspectCorrection read GetAspectCorrection;
+      property AspectCorrection: TAspectCorrection read GetAspectCorrection write SetAspectCorrection;
       property Loop: boolean read GetLoop write SetLoop;
       property Position: real read GetPosition write SetPosition;
   end;
