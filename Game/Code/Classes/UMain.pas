@@ -135,9 +135,9 @@ begin
     // delay
     CountMidTime;
 
-    Delay := Floor(1000 / 100 - 1000 * TimeMid);
+    Delay := Floor(1000 / 200 - 1000 * TimeMid);
     if Delay >= 1 then
-      SDL_Delay(Delay); // dynamic, maximum is 100 fps
+      SDL_Delay(Delay);
     CountSkipTime;
 
     // reinitialization of graphics
@@ -163,14 +163,14 @@ Begin
             SDL_SetModState(KMOD_NONE);
             if (Ini.FullScreen = 1) or (Params.FullScreen) then
               SDL_ShowCursor(0);
-            EnableVideoDraw := true;
+            //EnableVideoDraw := true;
           end;
 
           if (Event.active.gain=0) then
           begin
             if (Ini.FullScreen = 1) or (Params.FullScreen) then
               SDL_ShowCursor(1);
-            EnableVideoDraw := false;
+            //EnableVideoDraw := false;
           end;
         end;
 

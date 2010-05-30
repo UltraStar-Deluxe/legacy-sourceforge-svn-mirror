@@ -257,13 +257,12 @@ begin
   Log.LogStatus('LoadOpenGL', 'Initialize3D');
   Log.BenchmarkStart(2);
 
-  LoadOpenGL( GLLibName );
-
+  {
   Log.LogStatus('SDL_Init', 'Initialize3D');
-  if ( SDL_Init(SDL_INIT_VIDEO or SDL_INIT_AUDIO)= -1 ) then begin
+  if ( SDL_Init(SDL_INIT_VIDEO)= -1 ) then begin
     Log.LogError('SDL_Init Failed', 'Initialize3D');
     exit;
-  end;
+  end;}
 
  { //Load Icon
   Res := TResourceStream.CreateFromID(HInstance, 3, RT_ICON);
@@ -331,10 +330,10 @@ end;
 procedure SwapBuffers;
 begin
   SDL_GL_SwapBuffers;
-  {glMatrixMode(GL_PROJECTION);
+  glMatrixMode(GL_PROJECTION);
     glLoadIdentity;
-    glOrtho(0, 800, 600, 0, -1, 100);
-  glMatrixMode(GL_MODELVIEW);}
+    glOrtho(0, RenderW, RenderH, 0, -1, 100);
+  glMatrixMode(GL_MODELVIEW);
 end;
 
 procedure Reinitialize3D;
@@ -395,7 +394,8 @@ begin
     videoFlags := videoFlags or SDL_SWSURFACE;
 
   if ( videoInfo.blit_hw <> 0 ) then videoFlags := videoFlags or SDL_HWACCEL;
-
+  //LoadOpenGL( GLLibName );
+  
   SDL_GL_SetAttribute(SDL_GL_RED_SIZE,      5);
   SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,    5);
   SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,     5);
@@ -403,18 +403,6 @@ begin
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,  1);
 
   SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE,  8 );
-
-  pbo_supported := false;
-  {if (Ini.EnablePBO=1) then
-  begin
-    try
-      pbo_supported := glext_LoadExtension('GL_ARB_pixel_buffer_object') and
-        glext_LoadExtension('GL_version_1_5');
-    except
-      pbo_supported := false;
-      Log.LogError('The device does not support Pixel Buffer Object (UVideo)!');
-    end;
-  end;}
 
   if (Ini.FullScreen = 0) and (Not Params.FullScreen) then
     screen := SDL_SetVideoMode(W, H, (Depth+1) * 16, videoFlags)
@@ -427,17 +415,35 @@ begin
     Log.LogError('SDL_SetVideoMode Failed', 'Initialize3D');
     exit;
   end;
-           
-  // clear screen once window is being shown
-  glClearColor(1, 1, 1, 1);
-  glClear(GL_COLOR_BUFFER_BIT);
-  SwapBuffers;
+  
+  // Load OpenGL 1.2 extensions for OpenGL 1.2 compatibility
+  if (not Load_GL_version_1_2()) then
+  begin
+    Log.LogError('Failed loading OpenGL 1.2');
+  end;
+  
+  pbo_supported := false;
+  if (Ini.EnablePBO=1) then
+  begin
+    try
+      pbo_supported := glext_LoadExtension('GL_ARB_pixel_buffer_object') and
+        glext_LoadExtension('GL_version_1_5');
+    except
+      pbo_supported := false;
+      Log.LogError('The device does not support Pixel Buffer Object (UVideo)!');
+    end;
+  end;
 
   // zmienne
   RenderW := 800;
   RenderH := 600;
   ScreenW := W;
   ScreenH := H;
+
+  // clear screen once window is being shown
+  glClearColor(1, 1, 1, 1);
+  glClear(GL_COLOR_BUFFER_BIT);
+  SwapBuffers;
 end;
 
 procedure LoadScreens( aShowLoading : boolean = true );

@@ -223,7 +223,8 @@ begin
           AktSong.VideoGap := (round(AktSong.VideoGAP*100) + temp)/100;
 
           if PlayVideo then
-            StartVideo;
+            acSkip2(AktSong.VideoGap, Czas.Teraz);
+            //StartVideo;
         end;
 
       SDLK_7:
@@ -239,7 +240,8 @@ begin
           AktSong.VideoGap := (round(AktSong.VideoGAP*100) + temp)/100;
 
           if PlayVideo then
-            StartVideo;
+            acSkip2(AktSong.VideoGap, Czas.Teraz);
+            //StartVideo;
         end;
 
       SDLK_KP_PLUS:
@@ -2228,17 +2230,6 @@ begin
         Window.TargetAspect := acoCrop;
         Window.windowed := true;
 
-        {if CoverTime>=Ini.PreviewFading then
-        begin
-          glColor4f(0, 0, 0, 1);
-
-          glbegin(gl_quads);
-            glVertex2f(Window.Left, Window.Upper);
-            glVertex2f(Window.Left, Window.Lower);
-            glVertex2f(Window.Right, Window.Lower);
-            glVertex2f(Window.Right, Window.Upper);
-          glEnd;
-        end; }
         SetAspectCorrection(acoCrop);
         Blend := (PlayTime-0.2);
         if Blend<0 then
@@ -2251,8 +2242,6 @@ begin
       begin
         acDrawGL(ScreenAct);
       end;
-
-      //ResetAspectCorrection;
 
       if (Czas.Teraz>=Czas.Razem) then
       begin

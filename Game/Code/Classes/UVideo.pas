@@ -130,10 +130,7 @@ end;
 
 function seek_proc(sender: Pointer; pos: int64; whence: integer): int64; cdecl;
 begin
-  if whence in [0, 1, 2] then
-    result := fs.Seek(pos, TSeekOrigin(whence))
-  else
-    result := -1;
+  result := fs.Seek(pos, TSeekOrigin(whence))
 end;
 
 procedure Init;
@@ -180,7 +177,7 @@ begin
 
   inst := ac_init();
   videodecoder := nil;
-  ac_open(inst, nil, nil, @read_proc, @seek_proc, nil);
+  ac_open(inst, nil, nil, @read_proc, @seek_proc, nil, nil);
 
   if not inst^.opened then
   begin
@@ -812,7 +809,6 @@ begin
     // upper-right coord
     glTexCoord2f(TexRect.Right, TexRect.Upper);
     glVertex2f(ScreenRect.Right, ScreenRect.Upper);
-
   glEnd;
 
   if Window.windowed then

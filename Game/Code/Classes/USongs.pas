@@ -146,26 +146,22 @@ var
   SR:     TSearchRec;   // for parsing Songs Directory
   SLen:   integer;
   res:    boolean;
+
 begin
   if FindFirst(Dir + '*', faDirectory, SR) = 0 then begin
     repeat
       if (SR.Name <> '.') and (SR.Name <> '..') then
-        BrowseDir(Dir + Sr.Name + '\');
+        BrowseDir(Dir + SR.Name + '\');
     until FindNext(SR) <> 0;
   end; // if
   FindClose(SR);
 
-//        Log.LogStatus('Parsing directory: ' + Dir + SR.Name, 'LoadSongList');
-
- if FindFirst(Dir + '*.txt', 0, SR) = 0 then begin
-//          Log.LogStatus('Parsing file:      ' + Dir + SR.Name + '\' + SRD.Name, 'LoadSongList');
+ if FindFirst(Dir + '*.txt', 0, SR) = 0 then
+ begin
     repeat
       //New Mod for better Memory Management
 
       SLen := BrowsePos;
-      {//Old
-      SLen := Length(Song);
-      SetLength(Song, SLen + 1);//}
 
       Song[SLen].Path := Dir;
       Song[SLen].Folder := Copy(Dir, Length(SongPath)+1, 10000);
@@ -184,34 +180,24 @@ begin
         begin
           Song[SLen]:=AktSong;
           FindRefrainStart(Song[SLen]);
+
+          // scanning complete, file is good
+          // if there is no cover then try to find it
+          if Song[SLen].Cover = '' then Song[SLen].Cover := FindSongFile(Dir, '*[CO].jpg');
+
+          Inc(BrowsePos);
         end;
       end;
 
-      if (not res) then Dec(BrowsePos)
-      else begin
-        // scanning complete, file is good
-        // if there is no cover then try to find it
-        if Song[SLen].Cover = '' then Song[SLen].Cover := FindSongFile(Dir, '*[CO].jpg');
-//        if Song[SLen].Background = '' then begin
-//          Song[SLen].Background := FindSongFile(Dir, '*[BG].jpg');
-//        end; // no needed here}
-
-        // fix by adding path. no, don't fix it.
-//        if Song[SLen].Cover <> '' then
-//          Song[SLen].Cover := Song[SLen].Path + Song[SLen].Cover;
-      end;
-
       //Change Length Only every 50 Entrys
-      Inc(BrowsePos);
-
-      if (BrowsePos mod 50 = 0) AND (BrowsePos <> 0) then
-      begin
-        UpdateScreenLoading('Songs: '+IntToStr(Length(Song)));
+      if (BrowsePos mod 50 = 0) AND (BrowsePos <> 0) and res then
         SetLength(Song, Length(Song) + 50);
-      end;
+
+      if (BrowsePos mod 5 = 0) and res then
+        UpdateScreenLoading('Songs: '+IntToStr(BrowsePos));
 
     until FindNext(SR) <> 0;
-    end; // if FindFirst
+  end; // if FindFirst
   FindClose(SR);
 end;
 

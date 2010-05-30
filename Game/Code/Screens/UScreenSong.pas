@@ -2392,7 +2392,7 @@ begin
     try
       acGetFrame(Czas.Teraz);
 
-      Blend := (CoverTime{-1.75})/Ini.PreviewFading;
+      Blend := (CoverTime-1.75)/Ini.PreviewFading;
       if Blend<0 then
         Blend := 0
       else if Blend>1 then
@@ -2402,7 +2402,8 @@ begin
       begin
         if (VidVisHandler.change_time+TimeSkip<0.4) then
         begin
-          VidVisHandler.change_time := VidVisHandler.change_time + TimeSkip;
+          if (Blend>0) then
+            VidVisHandler.change_time := VidVisHandler.change_time + TimeSkip;
           faktor := VidVisHandler.change_time/0.4;
 
           if (TargetVidVis = full) then
@@ -2473,9 +2474,17 @@ begin
   begin
     if (Blend<1) or not EnableVideoDraw or VidVisHandler.changed then
       Button[Interaction].Draw;
+  end else
+    Button[Interaction].Draw;
 
+  // Statics
+  for I := 0 to Length(Static) - 1 do
+    Static[I].Draw;
+
+  if UVideo.VideoOpened then
+  begin
     try
-      if (VidVis=windowed) then
+      if (VidVis<>full) or VidVisHandler.changed then
         acDrawGLi(ScreenAct, Window, Blend);
 
       if (Czas.Teraz>=Czas.Razem) then
@@ -2487,16 +2496,11 @@ begin
       Log.LogError('Corrupted File: ' + CatSongs.Song[Interaction].Video);
       try
         acClose;
-        
       except
+
       end;
     end;
-  end else
-    Button[Interaction].Draw;
-
-  // Statics
-  for I := 0 to Length(Static) - 1 do
-    Static[I].Draw;
+  end;
 
   // and texts
   for I := 0 to Length(Text) - 1 do
@@ -2513,10 +2517,7 @@ begin
   begin
     try
       if (VidVis=full) and not VidVisHandler.changed then
-        acDrawGL(ScreenAct)
-      else if VidVisHandler.changed then
-        acDrawGLi(ScreenAct, Window, Blend);
-
+        acDrawGL(ScreenAct);
 
       if (Czas.Teraz>=Czas.Razem) then
         acClose;
@@ -3686,7 +3687,7 @@ begin
         I := -1;
         if GiveStats then
         begin
-          if (Pet mod 10 = 0) then
+          if (Pet mod 5 = 0) then
             UpdateScreenLoading('Songs: '+IntToStr(Pet));
         end;
         

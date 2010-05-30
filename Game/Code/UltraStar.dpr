@@ -124,7 +124,7 @@ uses
   acinerella in 'lib\acinerella\acinerella.pas';
 
 const
-  Version = 'UltraStar Deluxe v1.0.1a Challenge-Mod r7c 2010-05-01';
+  Version = 'UltraStar Deluxe v1.0.1a Challenge-Mod r7c5-10 2010-05-29';
 
 var
   WndTitle: string;
@@ -182,7 +182,7 @@ begin
   // SDL
   Log.BenchmarkStart(1);
   Log.LogStatus('Initialize SDL', 'Initialization');
-  SDL_Init(SDL_INIT_VIDEO or SDL_INIT_AUDIO);
+  SDL_Init(SDL_INIT_VIDEO or SDL_INIT_TIMER);
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Initializing SDL', 1);
 
