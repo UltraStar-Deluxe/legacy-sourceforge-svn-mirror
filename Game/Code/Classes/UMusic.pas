@@ -8,6 +8,7 @@ procedure InitializeSound;
 
 type
   TPos = record
+    CP:   integer;
     line: integer;
     note: integer;
   end;
@@ -200,7 +201,7 @@ type
     FracBeatC:    real;       // fractional part of MidBeatC
 
 
-    OldCzesc:     integer;    // poprzednio wyswietlana czesc
+    OldCzesc:     array [0..1] of integer;    // poprzednio wyswietlana czesc
                               // akt jest w czesci.akt
 
     Teraz:        real;       // aktualny czas w utworze
@@ -261,8 +262,10 @@ var
   found:  boolean;
   min:    integer;
   diff:   integer;
+
 begin
   found := false;
+
   for I := 0 to length(Czesci[0].Czesc) - 1 do
   begin
     for J := 0 to length(Czesci[0].Czesc[I].Nuta) - 1 do
@@ -270,10 +273,33 @@ begin
       if (beat>=Czesci[0].Czesc[I].Nuta[J].Start) and
         (beat<=Czesci[0].Czesc[I].Nuta[J].Start + Czesci[0].Czesc[I].Nuta[J].Dlugosc) then
       begin
+        Result.CP := 0;
         Result.line := I;
         Result.note := J;
         found:=true;
         break;
+      end;
+    end;
+  end;
+
+  if found then //found exactly
+    exit;
+
+  if AktSong.isDuet then
+  begin
+    for I := 0 to length(Czesci[1].Czesc) - 1 do
+    begin
+      for J := 0 to length(Czesci[1].Czesc[I].Nuta) - 1 do
+      begin
+        if (beat>=Czesci[1].Czesc[I].Nuta[J].Start) and
+          (beat<=Czesci[1].Czesc[I].Nuta[J].Start + Czesci[1].Czesc[I].Nuta[J].Dlugosc) then
+        begin
+          Result.CP := 1;
+          Result.line := I;
+          Result.note := J;
+          found:=true;
+          break;
+        end;
       end;
     end;
   end;
@@ -290,9 +316,28 @@ begin
       diff := abs(Czesci[0].Czesc[I].Nuta[J].Start - beat);
       if diff<min then
       begin
+        Result.CP := 0;
         Result.line := I;
         Result.note := J;
         min := diff;
+      end;
+    end;
+  end;
+
+  if AktSong.isDuet then
+  begin
+    for I := 0 to length(Czesci[1].Czesc) - 1 do
+    begin
+      for J := 0 to length(Czesci[1].Czesc[I].Nuta) - 1 do
+      begin
+        diff := abs(Czesci[1].Czesc[I].Nuta[J].Start - beat);
+        if diff<min then
+        begin
+          Result.CP := 1;
+          Result.line := I;
+          Result.note := J;
+          min := diff;
+        end;
       end;
     end;
   end;

@@ -58,6 +58,9 @@ type
 
       SongIndex:    integer; //Index of Song that is playing since UScreenScore...
 
+      //Duet Icon
+      DuetIcon:     cardinal;
+
       //Video Icon Mod
       VideoIcon:    Cardinal;
 
@@ -384,10 +387,12 @@ begin
   If (PressedDown) Then
   begin // Key Down
 
-    if (WaitHandler.active) and not (PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
-      SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) then
+    if (WaitHandler.active) and not ((PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
+      SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) or
+      (PressedKey = SDLK_RIGHT) or (PressedKey = SDLK_LEFT) or
+      (PressedKey = SDLK_PAGEUP) or (PressedKey = SDLK_PAGEDOWN)) then
     begin
-      if (Ini.Tabs=1) and not (CatSongs.CatNumShow = -3) then
+      if (Ini.Tabs=1) and not (CatSongs.CatNumShow < -1) then
       begin
         //Search Cat
         for I := WaitHandler.lastIndex downto low(CatSongs.Song) do
@@ -418,8 +423,10 @@ begin
       if (WaitHandler.active) then
       begin
         WaitHandler.active := false;
-        if (not PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
-          SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) then
+        if not ((PressedKey IN [SDLK_RETURN, SDLK_TAB, SDLK_F,
+          SDLK_A, SDLK_E, SDLK_K, SDLK_M, SDLK_P, SDLK_S, SDLK_V]) or
+          (PressedKey = SDLK_RIGHT) or (PressedKey = SDLK_LEFT) or
+          (PressedKey = SDLK_PAGEUP) or (PressedKey = SDLK_PAGEDOWN)) then
           Exit;
       end;
     end;
@@ -675,9 +682,17 @@ begin
               acClose;
 
               FadeTo(@ScreenMain);
+            end else if (Mode = smChallenge) then
+            begin
+              Music.PlayBack;
+              CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
             end;
-
           end;
+        end
+        else if (Mode = smChallenge) then
+        begin
+          Music.PlayBack;
+          CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
         end
         //When in party Mode then Ask before Close
         else if (Mode = smParty) then
@@ -715,6 +730,12 @@ begin
 
             end else
             begin // clicked on song
+              if (CatSongs.Song[Interaction].isDuet and (PlayersPlay=1)) then
+              begin
+                ScreenPopupError.ShowPopup('It is a Duet Song! You need at least 2 Players.');
+                Exit;
+              end;
+
               if (Mode = smNormal) then //Normal Mode -> Start Song
               begin
                 if MakeMedley then
@@ -1089,6 +1110,9 @@ begin
 
       SDLK_T:
         begin
+          if Mode<>smNormal then
+            Exit;
+
           if (SDL_ModState = KMOD_LSHIFT) then
           begin
             //Change Sorting
@@ -1173,6 +1197,8 @@ begin
             SongCurrent := SongTarget;
             ChangeMusic;
           end;
+
+          Ini.Save;
 
           InfoHandler.changed := true;
           InfoHandler.change_time := 0;
@@ -1330,6 +1356,9 @@ begin
   //Show Video Icon Mod
   VideoIcon := AddStatic(Theme.Song.VideoIcon);
 
+  //Duet Icon
+  DuetIcon := AddStatic(Theme.Song.DuetIcon);
+
   //Meldey Icons
   MedleyIcon := AddStatic(Theme.Song.MedleyIcon);
   CalcMedleyIcon := AddStatic(Theme.Song.CalculatedMedleyIcon);
@@ -1423,6 +1452,9 @@ begin
     //Set Visibility of Video Icon
     Static[VideoIcon].Visible := (CatSongs.Song[Interaction].Video <> '');
 
+    //Set Visibility of Duet Icon
+    Static[DuetIcon].Visible := CatSongs.Song[Interaction].isDuet;
+
     // Set visibility of medley icons
     if Mode=smNormal then
     begin
@@ -1456,11 +1488,12 @@ begin
     begin
       if (Ini.Tabs = 1) and (CatSongs.CatNumShow = -1) then
       begin
-        Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].OrderNum) + '/' + IntToStr(CatSongs.CatCount);
+        Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(CatSongs.NumVisibleCats);
         Text[TextTitle].Text  := '(' +
-          IntToStr(CatSongs.Song[Interaction].CatNumber - PartySessionM2.GetSongsPlayed(CatSongs.Song[Interaction].OrderNum)) +
+          IntToStr(CatSongs.NumCatSongs(CatSongs.Song[Interaction].OrderNum)
+           - PartySessionM2.GetSongsPlayed(CatSongs.Song[Interaction].OrderNum)) +
           '/' +
-          IntToStr(CatSongs.Song[Interaction].CatNumber) + ' ' + Language.Translate('SING_SONGS_IN_CAT') + ')'; //AND HERE!
+          IntToStr(CatSongs.NumCatSongs(CatSongs.Song[Interaction].OrderNum)) + ' ' + Language.Translate('SING_SONGS_IN_CAT') + ')'; //AND HERE!
       end else if (CatSongs.CatNumShow = -2) then
         Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS)
       else if (CatSongs.CatNumShow = -3) then
@@ -1470,16 +1503,15 @@ begin
           ' (' + IntToStr(ChooseableSongs) + ')';
       end else if (Ini.Tabs = 1) then
       begin
-        ChooseableSongs:=CatSongs.Song[Interaction - CatSongs.Song[Interaction].CatNumber].CatNumber -
-          PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow) - GetSongsSkipped();
+        ChooseableSongs:=VS - PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow) - GetSongsSkipped();
 
-        Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].CatNumber) + '/' +
-          IntToStr(CatSongs.Song[Interaction - CatSongs.Song[Interaction].CatNumber].CatNumber) + ' (' +
+        Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' +
+          IntToStr(VS) + ' (' +
           IntToStr(ChooseableSongs) + ')'; //HERE!
       end else
       begin
-        ChooseableSongs:=Length(CatSongs.Song)-PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow)-GetSongsSkipped();
-        Text[TextNumber].Text := IntToStr(Interaction+1) + '/' + IntToStr(Length(CatSongs.Song)) + ' (' +
+        ChooseableSongs:=VS-PartySessionM2.GetSongsPlayed(CatSongs.CatNumShow)-GetSongsSkipped();
+        Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS) + ' (' +
           IntToStr(ChooseableSongs) + ')'; //HERE!
       end
     end else if PartyMedley then//PartyMedley
@@ -1520,8 +1552,8 @@ begin
         end;
         ChooseableSongs := Length(VisArr);
 
-        Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].CatNumber) + '/' +
-          IntToStr(CatSongs.Song[Interaction - CatSongs.Song[Interaction].CatNumber].CatNumber) + ' (' +
+        Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' +
+          IntToStr(CatSongs.NumCatSongs(CatSongs.Song[Interaction].OrderNum)) + ' (' +
           IntToStr(ChooseableSongs) + ')'; //HERE!
       end else
       begin
@@ -1535,7 +1567,7 @@ begin
           end;
         end;
         ChooseableSongs := Length(VisArr);
-        Text[TextNumber].Text := IntToStr(Interaction+1) + '/' + IntToStr(Length(CatSongs.Song)) + ' (' +
+        Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS) + ' (' +
           IntToStr(ChooseableSongs) + ')'; //HERE!
       end;
     end else if (Mode=smParty) then//Party
@@ -1550,7 +1582,8 @@ begin
       begin
         for I := 0 to Length(CatSongs.Song) - 1 do
         begin
-          if CatSongs.Song[I].Visible and not PartyPlayedSong(I) and not SongSkipped(I) then
+          if CatSongs.Song[I].Visible and not PartyPlayedSong(I) and not SongSkipped(I) and
+            not CatSongs.Song[I].isDuet then
           begin
             SetLength(VisArr, Length(VisArr)+1);
             VisArr[Length(VisArr)-1] := I;
@@ -1563,7 +1596,8 @@ begin
       begin
         for I := 0 to Length(CatSongs.Song) - 1 do
         begin
-          if not CatSongs.Song[I].Main and not PartyPlayedSong(I) and not SongSkipped(I) then
+          if not CatSongs.Song[I].Main and not PartyPlayedSong(I) and not SongSkipped(I) and
+            not CatSongs.Song[I].isDuet then
           begin
             if (PlaylistMan.Mode=0) or ((PlaylistMan.Mode<>0) and CatSongs.Song[I].Visible) then
             begin
@@ -1574,9 +1608,8 @@ begin
         end;
         ChooseableSongs := Length(VisArr);
 
-        Text[TextNumber].Text := IntToStr(CatSongs.Song[Interaction].CatNumber) + '/' +
-          IntToStr(CatSongs.Song[Interaction - CatSongs.Song[Interaction].CatNumber].CatNumber) + ' (' +
-          IntToStr(ChooseableSongs) + ')'; //HERE!
+        Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' +
+          IntToStr(VS) + ' (' + IntToStr(ChooseableSongs) + ')'; //HERE!
       end else
       begin
         for I := 0 to Length(CatSongs.Song) - 1 do
@@ -1588,7 +1621,7 @@ begin
           end;
         end;
         ChooseableSongs := Length(VisArr);
-        Text[TextNumber].Text := IntToStr(Interaction+1) + '/' + IntToStr(Length(CatSongs.Song)) + ' (' +
+        Text[TextNumber].Text := IntToStr(CatSongs.VisibleIndex(Interaction)+1) + '/' + IntToStr(VS) + ' (' +
           IntToStr(ChooseableSongs) + ')'; //HERE!
       end;
     end;
@@ -2094,6 +2127,13 @@ begin
     FixSelected;
 
     ChangeMusic;
+  end else if (Mode<>smNormal) and (Ini.Tabs = 0) then
+  begin
+    CatSongs.SetFilter('', 0);
+  end else if (Ini.Tabs = 0) then
+  begin
+    CatSongs.SetFilter('', 0);
+    FixSelected;
   end;
 
 
@@ -2225,7 +2265,8 @@ begin
     if not PartyMedley then
     begin
       if CatSongs.Song[I].Visible and not SongSkipped(I) and
-        not PartySessionM2.SongPlayed(CatSongs.CatNumShow, I) then
+        not PartySessionM2.SongPlayed(CatSongs.CatNumShow, I) and
+        not CatSongs.Song[I].isDuet then
       begin
         SetLength(VisArr, Length(VisArr)+1);
         VisArr[Length(VisArr)-1] := I;
@@ -2590,7 +2631,7 @@ begin
         WaitHandler.lastCat := CatSongs.CatNumShow;
       end;
 
-      if(Ini.Tabs<>1) or (CatSongs.CatNumShow = -3) then
+      if(Ini.Tabs<>1) or (CatSongs.CatNumShow < -1) then
       begin
         //Random in one Category
         SetLength(VisArr, 0);
@@ -3108,7 +3149,8 @@ begin
             begin
               if not PartyMedley then
               begin
-                if not CatSongs.Song[I].Main and not SongSkipped(I) and not PartyPlayedSong(I) then
+                if not CatSongs.Song[I].Main and not SongSkipped(I) and
+                  not PartyPlayedSong(I) and not CatSongs.Song[I].isDuet then
                 begin
                   SetLength(VisArr, Length(VisArr)+1);
                   VisArr[Length(VisArr)-1] := I;
@@ -3159,7 +3201,8 @@ begin
             begin
               if not PartyMedley then
               begin
-                if not CatSongs.Song[I].Main and not SongSkipped(I) and not PartyPlayedSong(I) then
+                if not CatSongs.Song[I].Main and not SongSkipped(I) and not PartyPlayedSong(I) and
+                  not CatSongs.Song[I].isDuet then
                 begin
                   SetLength(VisArr, Length(VisArr)+1);
                   VisArr[Length(VisArr)-1] := I;
@@ -3201,7 +3244,8 @@ begin
           begin
             if not PartyMedley then
             begin
-              if CatSongs.Song[I].Visible and not SongSkipped(I) and not PartyPlayedSong(I) then
+              if CatSongs.Song[I].Visible and not SongSkipped(I) and not PartyPlayedSong(I) and
+                not CatSongs.Song[I].isDuet then
               begin
                 SetLength(VisArr, Length(VisArr)+1);
                 VisArr[Length(VisArr)-1] := I;
@@ -3240,7 +3284,8 @@ begin
           begin
             if not PartyMedley then
             begin
-              if CatSongs.Song[I].Visible and not SongSkipped(I) and not PartyPlayedSong(I) then
+              if CatSongs.Song[I].Visible and not SongSkipped(I) and not PartyPlayedSong(I) and
+                not CatSongs.Song[I].isDuet then
               begin
                 SetLength(VisArr, Length(VisArr)+1);
                 VisArr[Length(VisArr)-1] := I;
@@ -3881,7 +3926,7 @@ begin
         AddSong(VS);
 
         SetLength(MedleyPlayed, Length(MedleyPlayed)+1);
-      MedleyPlayed[Length(MedleyPlayed)-1] := VS;
+        MedleyPlayed[Length(MedleyPlayed)-1] := VS;
       end;
     end;
   end else if MakeMedley then
@@ -3911,7 +3956,9 @@ begin
     end;
   end else if PartyMedley then
   begin
-    if (PlaylistMedley.NumMedleySongs = num) then
+    if (PlaylistMedley.NumMedleySongs = num) or
+      ((Mode=smParty) and (PartySession.Rounds[PartySession.CurRound].MedleySurprise)) or
+      ((Mode=smChallenge) and (PartySessionM2.Rounds[PartySessionM2.CurRound].MedleySurprise)) then
     begin
       Music.Stop;
       FadeTo(@ScreenSingModi);

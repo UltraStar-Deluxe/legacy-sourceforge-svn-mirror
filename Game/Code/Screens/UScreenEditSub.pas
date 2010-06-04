@@ -18,6 +18,11 @@ type
 
   TScreenEditSub = class(TMenu)
     private
+      cRB, cGB, cBB:  GLfloat;
+      cRR, cGR, cBR:  GLfloat;
+
+      offset:       array[0..1] of integer;
+
       AktBeat:      integer;
       //Variable is True if no SOng is loaded
       Error:        Boolean;
@@ -36,7 +41,10 @@ type
       TextNTon:     integer;
       TextNText:    integer;
       TextVideoGap:integer;
-      AktNuta:      integer;
+      AktNuta:      array[0..1] of integer;
+
+      CP:           integer; //actual singer: 0 or 1 (for duet)
+      EditorLyric:  array[0..1] of TLyric;
 
       PlaySentence:     boolean;
       PlaySentenceMidi: boolean;
@@ -64,7 +72,8 @@ type
       editText:     string; //backup of current text in text-edit-mode
       noteStart:    integer; //Start note when playing sentence
       lineStart:    integer; //Start line when playing sentence
-      LineChanged:  boolean;
+      cpStart:      integer; //Start singer when playing sentence
+      LineChanged:  array[0..1] of boolean;
 
       VidVis:       TVidVis; //video visiability
       PlayVideo:    boolean;
@@ -84,6 +93,7 @@ type
       procedure JoinSentence;
       procedure DivideNote;
       procedure DeleteNote;
+      procedure DeleteSentence;
       procedure TransposeNote(Transpose: integer);
       procedure ChangeWholeTone(Tone: integer);
       procedure MoveAllToEnd(Move: integer);
@@ -95,8 +105,15 @@ type
       //Note Name Mod
       function GetNoteName(Note: Integer): String;
       function GetMedleyLength: real; //returns if availible the length of the medley in seconds, else 0
-      procedure DrawInfoBar(x, y, w, h: integer);
+      procedure DrawInfoBar(P, x, y, w, h: integer);
       procedure DrawStatics;
+      procedure SelectNextNote;
+      procedure SelectPrevNote;
+      procedure MakeSingle;
+      procedure MakeDuet;
+      procedure DuetCopyLine;
+      procedure DuetMoveLine;
+      procedure Refresh;
     public
       Tex_Background:     TTexture;
       FadeOut:            boolean;
@@ -165,9 +182,9 @@ begin
       SDLK_BACKQUOTE:
         begin
           // Increase Note Length (same as Alt + Right)
-          Inc(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
-          if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].HighNut then
-            Inc(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+          Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
+          if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].HighNut then
+            Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
         end;
 
       SDLK_EQUALS:
@@ -212,6 +229,7 @@ begin
 
       SDLK_8:
         begin
+          temp := 0;
           // Increase VideoGAP
           if SDL_ModState = 0 then
             temp := 1;         //10ms
@@ -229,6 +247,7 @@ begin
 
       SDLK_7:
         begin
+          temp := 0;
           // Decrease VideoGAP
           if SDL_ModState = 0 then
             temp := -1;        //10ms
@@ -264,23 +283,30 @@ begin
 
       SDLK_SLASH:
         begin
-          if SDL_ModState = 0 then begin
+          if SDL_ModState = 0 then
+          begin
+            if AktSong.isDuet then
+              Exit;
             // Insert start of sentece
-            if AktNuta > 0 then
+            if AktNuta[CP] > 0 then
             begin
               DivideSentence;
               FixTimings;
-              Lyric.Selected := AktNuta;
+              EditorLyric[CP].Selected := AktNuta[CP];
             end;
           end;
 
-          if SDL_ModState = KMOD_LSHIFT then begin
+          if SDL_ModState = KMOD_LSHIFT then
+          begin
+            if AktSong.isDuet then
+              Exit;
             // Join next sentence with current
-            if Czesci[0].Akt < Czesci[0].High  then
+            if Czesci[CP].Akt < Czesci[CP].High  then
               JoinSentence;
           end;
 
-          if SDL_ModState = KMOD_LCTRL then begin
+          if SDL_ModState = KMOD_LCTRL then
+          begin
             // divide note
             DivideNote;
           end;
@@ -291,7 +317,11 @@ begin
       SDLK_S:
         begin
           //Medley MOD:
-          if (MedleyNotes.isStart and MedleyNotes.isEnd) and
+          if AktSong.isDuet then
+          begin
+            AktSong.Medley.Source := msNone;
+          end
+          else if (MedleyNotes.isStart and MedleyNotes.isEnd) and
             (MedleyNotes.start.line < MedleyNotes.end_.line) then
           begin
             AktSong.Medley.Source := msTag;
@@ -300,7 +330,8 @@ begin
               Czesci[0].Czesc[MedleyNotes.end_.line].Nuta[MedleyNotes.end_.note].Dlugosc;
             AktSong.Medley.FadeIn_time := DEFAULT_FADE_IN_TIME;
             AktSong.Medley.FadeOut_time := DEFAULT_FADE_OUT_TIME;
-          end else begin
+          end else
+          begin
             AktSong.Medley.Source := msNone;
             AktSong.Medley.StartBeat:=0;
             AktSong.Medley.EndBeat:=0;
@@ -311,13 +342,19 @@ begin
           begin
             if (AktSong.Medley.Source = msTag) then
             begin
-              ScreenPopupError.ShowPopup(Language.Translate('Medley and Relative is not supported!'));
+              ScreenPopupError.ShowPopup('Medley with Relative is not supported!');
               Exit;
             end;
 
-            SResult := SaveSong(AktSong, Czesci[0], Path + FileName, true); //save with relative
+            if (AktSong.isDuet) then
+            begin
+              ScreenPopupError.ShowPopup('Duet with Relative is not supported!');
+              Exit;
+            end;
+
+            SResult := SaveSong(AktSong, Czesci, Path + FileName, true); //save with relative
           end else
-            SResult := SaveSong(AktSong, Czesci[0], Path + FileName, false);
+            SResult := SaveSong(AktSong, Czesci, Path + FileName, false);
 
           if SResult then
           begin
@@ -336,7 +373,13 @@ begin
         begin
           if AktSong.Relative then
           begin
-            ScreenPopupError.ShowPopup(Language.Translate('Medley and Relative is not supported!'));
+            ScreenPopupError.ShowPopup('Medley with Relative is not supported!');
+            Exit;
+          end;
+
+          if AktSong.isDuet then
+          begin
+            ScreenPopupError.ShowPopup('Medley with Duet is not supported!');
             Exit;
           end;
 
@@ -344,45 +387,45 @@ begin
           begin
             if MedleyNotes.isEnd then
             begin
-              if (Czesci[0].Akt=MedleyNotes.end_.line) and (AktNuta=MedleyNotes.end_.note) then
+              if (Czesci[0].Akt=MedleyNotes.end_.line) and (AktNuta[0]=MedleyNotes.end_.note) then
               begin
                 MedleyNotes.isEnd := false;
-                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsMedley := false;
+                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].IsMedley := false;
               end else
               begin
-                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsMedley := true;
+                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].IsMedley := true;
                 Czesci[0].Czesc[MedleyNotes.end_.line].Nuta[MedleyNotes.end_.note].IsMedley := false;
                 MedleyNotes.end_.line := Czesci[0].Akt;
-                MedleyNotes.end_.note := AktNuta;
+                MedleyNotes.end_.note := AktNuta[0];
               end;
             end else
             begin
               MedleyNotes.isEnd := true;
-              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsMedley := true;
+              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].IsMedley := true;
               MedleyNotes.end_.line := Czesci[0].Akt;
-              MedleyNotes.end_.note := AktNuta;
+              MedleyNotes.end_.note := AktNuta[0];
             end;
           end else
           begin        //Medley Start Note
             if MedleyNotes.isStart then
             begin
-              if (Czesci[0].Akt=MedleyNotes.start.line) and (AktNuta=MedleyNotes.start.note) then
+              if (Czesci[0].Akt=MedleyNotes.start.line) and (AktNuta[0]=MedleyNotes.start.note) then
               begin
                 MedleyNotes.isStart := false;
-                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsMedley := false;
+                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].IsMedley := false;
               end else
               begin
-                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsMedley := true;
+                Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].IsMedley := true;
                 Czesci[0].Czesc[MedleyNotes.start.line].Nuta[MedleyNotes.start.note].IsMedley := false;
                 MedleyNotes.start.line := Czesci[0].Akt;
-                MedleyNotes.start.note := AktNuta;
+                MedleyNotes.start.note := AktNuta[0];
               end;
             end else
             begin
-              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsMedley := true;
+              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].IsMedley := true;
               MedleyNotes.isStart := true;
               MedleyNotes.start.line := Czesci[0].Akt;
-              MedleyNotes.start.note := AktNuta;
+              MedleyNotes.start.note := AktNuta[0];
             end;
           end;
 
@@ -396,7 +439,13 @@ begin
         begin
           if AktSong.Relative then
           begin
-            ScreenPopupError.ShowPopup(Language.Translate('Medley and Relative is not supported!'));
+            ScreenPopupError.ShowPopup('Medley with Relative is not supported!');
+            Exit;
+          end;
+
+          if AktSong.isDuet then
+          begin
+            ScreenPopupError.ShowPopup('Medley with Duet is not supported!');
             Exit;
           end;
 
@@ -406,13 +455,13 @@ begin
             PlaySentenceMidi := false;
             PlayOneNoteMidi := false;
 
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
+            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].Color := 0;
             Czesci[0].Akt := MedleyNotes.end_.line;
-            AktNuta := MedleyNotes.end_.note;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
+            AktNuta[0] := MedleyNotes.end_.note;
+            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].Color := 2;
 
-            Lyric.AddCzesc(Czesci[0].Akt);
-            Lyric.Selected := AktNuta;
+            EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+            EditorLyric[0].Selected := AktNuta[0];
             Music.Stop;
             PlaySentence := false;
             PlayOneNote := false;
@@ -422,13 +471,13 @@ begin
             PlaySentenceMidi := false;
             PlayOneNoteMidi := false;
 
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
+            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].Color := 0;
             Czesci[0].Akt := MedleyNotes.start.line;
-            AktNuta := MedleyNotes.start.note;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
+            AktNuta[0] := MedleyNotes.start.note;
+            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].Color := 2;
 
-            Lyric.AddCzesc(Czesci[0].Akt);
-            Lyric.Selected := AktNuta;
+            EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+            EditorLyric[0].Selected := AktNuta[0];
             Music.Stop;
             PlaySentence := false;
             PlayOneNote := false;
@@ -439,13 +488,16 @@ begin
             PlaySentenceMidi := false;
             PlayOneNoteMidi := false;
             Music.Stop;
-            LineChanged:=false;
+            LineChanged[0]:=false;
+            LineChanged[1]:=false;
             R := GetTimeFromBeat(Czesci[0].Czesc[MedleyNotes.start.line].Nuta[MedleyNotes.start.note].Start);
-            if R <= Music.Length then begin
+            if R <= Music.Length then
+            begin
               Music.MoveTo(R);
 
-              noteStart := AktNuta;
+              noteStart := AktNuta[0];
               lineStart := Czesci[0].Akt;
+              cpStart := 0;
 
               PlayStopTime := GetTimeFromBeat(
                 Czesci[0].Czesc[MedleyNotes.end_.line].Nuta[MedleyNotes.end_.note].Start +
@@ -466,32 +518,44 @@ begin
         begin
           if (SDL_ModState = KMOD_LSHIFT) then    //jump to...
           begin
-            MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
             PlaySentenceMidi := false;
             PlayOneNoteMidi := false;
 
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            Czesci[0].Akt := MedleyNotes.Preview.line;
-            AktNuta := MedleyNotes.Preview.note;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
+            Refresh;
 
-            Lyric.AddCzesc(Czesci[0].Akt);
-            Lyric.Selected := AktNuta;
+            CP := MedleyNotes.Preview.CP;
+            Czesci[CP].Akt := MedleyNotes.Preview.line;
+            Czesci[(CP+1) mod 2].Akt := Czesci[CP].Akt;
+
+            AktNuta[CP] := MedleyNotes.Preview.note;
+            AktNuta[(CP+1) mod 2] := 0;
+
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
+            EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+            EditorLyric[CP].Selected := AktNuta[CP];
+            EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[(CP+1) mod 2].Akt);
+            EditorLyric[(CP+1) mod 2].Selected := -1;
             Music.Stop;
             PlaySentence := false;
             PlayOneNote := false;
           end else
           begin
-            if (Czesci[0].Akt = MedleyNotes.Preview.line) and (AktNuta = MedleyNotes.Preview.note) then //reset ?
+            if (CP = MedleyNotes.Preview.CP) and
+              (Czesci[CP].Akt = MedleyNotes.Preview.line) and
+              (AktNuta[CP] = MedleyNotes.Preview.note) then //reset ?
             begin
 
             end else //set
             begin
-              Czesci[0].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].IsStartPreview := false;
-              MedleyNotes.Preview.line := Czesci[0].Akt;
-              MedleyNotes.Preview.note := AktNuta;
-              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsStartPreview := true;
-              AktSong.PreviewStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].start);
+              if (Length(Czesci[MedleyNotes.Preview.CP].Czesc[MedleyNotes.Preview.line].Nuta)>MedleyNotes.Preview.note) then
+                Czesci[MedleyNotes.Preview.CP].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].IsStartPreview := false;
+              MedleyNotes.Preview.CP := CP;
+              MedleyNotes.Preview.line := Czesci[CP].Akt;
+              MedleyNotes.Preview.note := AktNuta[CP];
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].IsStartPreview := true;
+              AktSong.PreviewStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].start);
             end;
           end;
         end;
@@ -502,6 +566,14 @@ begin
           // Divide lengths by 2
           if (SDL_ModState = KMOD_LSHIFT) then
             CzesciDivide;
+
+          if (SDL_ModState = KMOD_LCTRL or KMOD_LSHIFT) then
+          begin
+            if AktSong.isDuet then
+              MakeSingle
+            else
+              MakeDuet;
+          end;
         end;
 
       SDLK_M:
@@ -518,12 +590,15 @@ begin
           begin
             LyricsCapitalize;
             Text[TextDebug].Text := Language.Translate('EDITOR_CAPITALIZE_LETTER');
-            Lyric.Selected := AktNuta;
+            EditorLyric[CP].Selected := AktNuta[CP];
           end;
 
           // Correct spaces
           if SDL_ModState = KMOD_LSHIFT then
             LyricsCorrectSpaces;
+
+          if AktSong.isDuet then
+            Exit;
 
           // Copy sentence
           if SDL_ModState = KMOD_LCTRL then
@@ -543,15 +618,15 @@ begin
       SDLK_V:
         begin
           // Paste text
-          if SDL_ModState = KMOD_LCTRL then begin
-            if Czesci[0].Czesc[Czesci[0].Akt].IlNut >= Czesci[0].Czesc[CopySrc].IlNut then
+          if SDL_ModState = KMOD_LCTRL then begin      //TODO !!!
+            if Czesci[CP].Czesc[Czesci[CP].Akt].IlNut >= Czesci[CP].Czesc[CopySrc].IlNut then
               PasteText
             else
               beep;
           end;
 
-          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then begin
-            CopySentence(CopySrc, Czesci[0].Akt);
+          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then begin //TODO !!!
+            CopySentence(CopySrc, Czesci[CP].Akt);
           end;
 
           if SDL_ModState = 0 then
@@ -566,7 +641,11 @@ begin
 
       SDLK_4:
         begin
-          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then begin
+          if AktSong.isDuet then //TODO !!!
+            Exit;
+
+          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
+          begin
             CopySentence(CopySrc, Czesci[0].Akt);
             CopySentence(CopySrc+1, Czesci[0].Akt+1);
             CopySentence(CopySrc+2, Czesci[0].Akt+2);
@@ -579,7 +658,11 @@ begin
         end;
       SDLK_5:
         begin
-          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then begin
+          if AktSong.isDuet then //TODO !!!
+            Exit;
+
+          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
+          begin
             CopySentence(CopySrc, Czesci[0].Akt);
             CopySentence(CopySrc+1, Czesci[0].Akt+1);
             CopySentence(CopySrc+2, Czesci[0].Akt+2);
@@ -587,7 +670,8 @@ begin
             CopySentence(CopySrc+4, Czesci[0].Akt+4);
           end;
 
-          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then begin
+          if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then
+          begin
             CopySentences(CopySrc, Czesci[0].Akt, 5);
           end;
         end;
@@ -597,13 +681,13 @@ begin
           // Fixes timings between sentences
           FixTimings;
           Text[TextDebug].Text := Language.Translate('EDITOR_FIX_TIMINGS');
-          Lyric.Selected := AktNuta;
+          EditorLyric[CP].Selected := AktNuta[CP];
         end;
 
       SDLK_F4:
         begin
           // Enter Text Edit Mode
-          editText := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst;
+          editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
           TextEditMode := true;
         end;
 
@@ -616,17 +700,19 @@ begin
 
       SDLK_P:
         begin
-          if SDL_ModState = 0 then begin
+          if SDL_ModState = 0 then
+          begin
             // Play Sentence
-            MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
             PlaySentenceMidi := false;
             PlayOneNoteMidi := false;
             Click := true;
             Music.Stop;
-            R := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
-            if R <= Music.Length then begin
+            R := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
+            if R <= Music.Length then
+            begin
               Music.MoveTo(R);
-              PlayStopTime := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+              PlayStopTime := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
               PlaySentence := true;
               PlayOneNote := false;
               Music.Play;
@@ -634,47 +720,51 @@ begin
             end;
           end;
 
-          if SDL_ModState = KMOD_LSHIFT then begin
+          if SDL_ModState = KMOD_LSHIFT then
+          begin
             PlaySentenceMidi := true;
             PlayOneNoteMidi := false;
             MidiTime := USTime.GetTime;
             Music.Stop;
             PlaySentence := false;
             PlayOneNote := false;
-            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
-            MidiStop := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+            MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
+            MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
 
             LastClick := -100;
           end;
 
-          if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL then begin
+          if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL then
+          begin
             PlaySentenceMidi := true;
             PlayOneNoteMidi := false;
             MidiTime := USTime.GetTime;
-            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
-            MidiStop := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+            MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
+            MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
             LastClick := -100;
 
             PlaySentence := true;
             PlayOneNote := false;
             Click := true;
             Music.Stop;
-            Music.MoveTo(GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote)+0{-0.10});
-            PlayStopTime := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Koniec)+0;
+            Music.MoveTo(GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote)+0{-0.10});
+            PlayStopTime := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec)+0;
             Music.Play;
             LastClick := -100;
           end;
 
           //new: play hole file + LALT
-          if SDL_ModState = KMOD_LALT then begin
+          if SDL_ModState = KMOD_LALT then
+          begin
             // Play Sentence
-            MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
             PlaySentenceMidi := false;
             PlayOneNoteMidi := false;
             Click := true;
             Music.Stop;
-            R := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
-            if R <= Music.Length then begin
+            R := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
+            if R <= Music.Length then
+            begin
               Music.MoveTo(R);
               PlayStopTime := Music.Length;
               PlaySentence := true;
@@ -684,24 +774,26 @@ begin
             end;
           end;
 
-          if SDL_ModState = KMOD_LSHIFT or KMOD_LALT then begin
+          if SDL_ModState = KMOD_LSHIFT or KMOD_LALT then
+          begin
             PlaySentenceMidi := true;
             PlayOneNoteMidi := false;
             Music.Stop;
             PlaySentence := false;
             PlayOneNote := false;
             MidiTime := USTime.GetTime;
-            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+            MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             MidiStop := Music.Length;
 
             LastClick := -100;
           end;
 
-          if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL or KMOD_LALT then begin
+          if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL or KMOD_LALT then
+          begin
             PlaySentenceMidi := true;
             PlayOneNoteMidi := false;
             MidiTime := USTime.GetTime;
-            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+            MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             MidiStop := Music.Length;
             LastClick := -100;
 
@@ -709,7 +801,7 @@ begin
             PlayOneNote := false;
             Click := true;
             Music.Stop;
-            Music.MoveTo(GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote)+0{-0.10});
+            Music.MoveTo(GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote)+0{-0.10});
             PlayStopTime := Music.Length;
             Music.Play;
             LastClick := -100;
@@ -717,13 +809,15 @@ begin
 
           if PlaySentenceMidi or PlaySentence then
           begin
-            noteStart := AktNuta;
-            lineStart := Czesci[0].Akt;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            AktNuta := 0;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-            Lyric.Selected := AktNuta;
-            LineChanged:=false;
+            noteStart := AktNuta[CP];
+            lineStart := Czesci[CP].Akt;
+            cpStart := CP;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            AktNuta[CP] := 0;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
+            LineChanged[0]:=false;
+            LineChanged[1]:=false;
             PlayVideo := false;
           end;
 
@@ -732,35 +826,37 @@ begin
       SDLK_SPACE:
         begin
           //Thx to f1fth_freed0m for his One Note Midi Playback
-          if SDL_ModState = KMOD_LSHIFT then begin //Play One Notes Midi [Shift + Space]
+          if SDL_ModState = KMOD_LSHIFT then
+          begin //Play One Notes Midi [Shift + Space]
             PlaySentenceMidi := false;
             PlayOneNoteMidi := true;
             Music.Stop;
             PlaySentence := false;
             PlayOneNote := false;
             MidiTime := USTime.GetTime;
-            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
-            MidiStop := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
+            MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
+            MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
             LastClick := -100;
           end
 
-          else if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL then begin
+          else if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL then
+          begin
             //Play One Notes Midi + MP3 [CTRL + Shift + Space]
             PlaySentenceMidi := false;
             PlayOneNoteMidi := true;
             MidiTime := USTime.GetTime;
-            MidiStart := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
-            MidiStop := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
+            MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
+            MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
             LastClick := -100;
 
             PlaySentence := false;
             PlayOneNote := true;
             Click := true;
             Music.Stop;
-            Music.MoveTo(GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start));
+            Music.MoveTo(GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start));
             PlayStopTime := (GetTimeFromBeat(
-                             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start +
-                             Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc));
+                             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start +
+                             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc));
             Music.Play;
             LastClick := -100;
           end
@@ -768,7 +864,7 @@ begin
           Else
           begin
             // Play One Notes MP3 [Space]
-            MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
             PlaySentenceMidi := false; // stop midi
             PlayOneNoteMidi := false;
             PlaySentence := false;
@@ -776,10 +872,10 @@ begin
             Click := false;
             Music.Stop;
 
-            Music.MoveTo(GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start));
+            Music.MoveTo(GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start));
             PlayStopTime := (GetTimeFromBeat(
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start +
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc));
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start +
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc));
             Music.Play;
             LastClick := -100;
           end;
@@ -794,7 +890,9 @@ begin
 
       SDLK_DELETE:
         begin
-          if SDL_ModState = KMOD_LCTRL then begin
+
+          if SDL_ModState = KMOD_LCTRL then
+          begin
             // moves text to right in current sentence
             DeleteNote;
           end;
@@ -803,6 +901,8 @@ begin
       SDLK_PERIOD:
         begin
           // moves text to right in current sentence
+          if AktSong.isDuet then
+            Exit;
           MoveTextToRight;
         end;
 
@@ -810,67 +910,81 @@ begin
         begin
           if PlaySentenceMidi or PlaySentence then
           begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            if (lineStart = Czesci[0].Akt) then
-              AktNuta := noteStart;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
 
-            Dec(AktNuta);
-            if AktNuta = -1 then AktNuta := Czesci[0].Czesc[Czesci[0].Akt].HighNut;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-            Lyric.Selected := AktNuta;
+            if (cpStart = CP) and (lineStart = Czesci[CP].Akt) then
+              AktNuta[CP] := noteStart;
+
+            Dec(AktNuta[CP]);
+            if AktNuta[CP] = -1 then AktNuta[CP] := Czesci[CP].Czesc[Czesci[CP].Akt].HighNut;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
           end;
-          MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+          MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
           PlaySentenceMidi := false;
           PlayOneNoteMidi := false;
           Music.Stop;
-          LineChanged:=false;
+          LineChanged[0]:=false;
+          LineChanged[1]:=false;
           PlaySentence := false;
           PlayOneNote := false;
 
           // right
-          if SDL_ModState = 0 then begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            Inc(AktNuta);
-            if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].IlNut then AktNuta := 0;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-            Lyric.Selected := AktNuta;
+          if SDL_ModState = 0 then
+          begin
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            Inc(AktNuta[CP]);
+
+            if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].IlNut then AktNuta[CP] := 0;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
           end;
 
           // ctrl + right
-          if SDL_ModState = KMOD_LCTRL then begin
-            if Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc > 1 then begin
-              Dec(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
-              Inc(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
-              if AktNuta = 0 then begin
-                Inc(Czesci[0].Czesc[Czesci[0].Akt].Start);
-                Inc(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+          if SDL_ModState = KMOD_LCTRL then
+          begin
+            if Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc > 1 then
+            begin
+              Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
+              Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
+              if AktNuta[CP] = 0 then
+              begin
+                Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Start);
+                Inc(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
               end;
               FixTimings;
             end;
           end;
 
           // shift + right
-          if SDL_ModState = KMOD_LSHIFT then begin
-            Inc(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
-            if AktNuta = 0 then begin
-              Inc(Czesci[0].Czesc[Czesci[0].Akt].Start);
-              Inc(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+          if SDL_ModState = KMOD_LSHIFT then
+          begin
+            Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
+            if AktNuta[CP] = 0 then
+            begin
+              Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Start);
+              Inc(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             end;
-            if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].HighNut then
-              Inc(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+            if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].HighNut then
+              Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
             FixTimings;
           end;
 
           // alt + right
-          if SDL_ModState = KMOD_LALT then begin
-            Inc(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
-            if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].HighNut then
-              Inc(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+          if SDL_ModState = KMOD_LALT then
+          begin
+            Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
+            if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].HighNut then
+              Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
             FixTimings;
           end;
 
           // alt + ctrl + shift + right = move all from cursor to right
-          if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then begin
+          if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
+          begin
+            if AktSong.isDuet then
+              Exit;
+
             MoveAllToEnd(1);
             FixTimings;
           end;
@@ -880,70 +994,81 @@ begin
         begin
           if PlaySentenceMidi or PlaySentence then
           begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            if (lineStart = Czesci[0].Akt) then
-              AktNuta := noteStart;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            if (cpStart = CP) and (lineStart = Czesci[CP].Akt) then
+              AktNuta[CP] := noteStart;
 
-            Inc(AktNuta);
-            if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].IlNut then AktNuta := 0;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-            Lyric.Selected := AktNuta;
+            Inc(AktNuta[CP]);
+            if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].IlNut then AktNuta[CP] := 0;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
           end;
-          MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+          MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
           PlaySentenceMidi := false;
           PlayOneNoteMidi := false;
           Music.Stop;
-          LineChanged:=false;
+          LineChanged[0]:=false;
+          LineChanged[1]:=false;
           PlaySentence := false;
           PlayOneNote := false;
 
           // left
-          if SDL_ModState = 0 then begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            Dec(AktNuta);
-            if AktNuta = -1 then AktNuta := Czesci[0].Czesc[Czesci[0].Akt].HighNut;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-            Lyric.Selected := AktNuta;
+          if SDL_ModState = 0 then
+          begin
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            Dec(AktNuta[CP]);
+            if AktNuta[CP] = -1 then
+              AktNuta[CP] := Czesci[CP].Czesc[Czesci[CP].Akt].HighNut;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
           end;
 
           // ctrl + left
-          if SDL_ModState = KMOD_LCTRL then begin
-            Dec(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
-            Inc(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
-            if AktNuta = 0 then begin
-              Dec(Czesci[0].Czesc[Czesci[0].Akt].Start);
-              Dec(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+          if SDL_ModState = KMOD_LCTRL then
+          begin
+            Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
+            Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
+            if AktNuta[CP] = 0 then begin
+              Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Start);
+              Dec(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             end;
             FixTimings;
           end;
 
           // shift + left
-          if SDL_ModState = KMOD_LSHIFT then begin
-            Dec(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
+          if SDL_ModState = KMOD_LSHIFT then
+          begin
+            Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
 
             // resizing sentences
-            if AktNuta = 0 then begin
-              Dec(Czesci[0].Czesc[Czesci[0].Akt].Start);
-              Dec(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+            if AktNuta[CP] = 0 then
+            begin
+              Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Start);
+              Dec(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             end;
 
-            if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].HighNut then
-              Dec(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+            if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].HighNut then
+              Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
             FixTimings;
           end;
 
           // alt + left
-          if SDL_ModState = KMOD_LALT then begin
-            if Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc > 1 then begin
-              Dec(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
-              if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].HighNut then
-                Dec(Czesci[0].Czesc[Czesci[0].Akt].Koniec);
+          if SDL_ModState = KMOD_LALT then
+          begin
+            if Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc > 1 then
+            begin
+              Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
+              if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].HighNut then
+                Dec(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
             end;
             FixTimings;
           end;
 
           // alt + ctrl + shift + right = move all from cursor to left
-          if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then begin
+          if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
+          begin
+            if AktSong.isDuet then
+              Exit;
             MoveAllToEnd(-1);
             FixTimings;
           end;
@@ -951,88 +1076,122 @@ begin
 
       SDLK_DOWN:
         begin
-          MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+          MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
           PlaySentenceMidi := false;
           PlayOneNoteMidi := false;
           Music.Stop;
-          LineChanged:=false;
+          LineChanged[0]:=false;
+          LineChanged[1]:=false;
           PlaySentence := false;
           PlayOneNote := false;
 
           // skip to next sentence
-          if SDL_ModState = 0 then begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            Inc(Czesci[0].Akt);
-            AktNuta := 0;
-            if Czesci[0].Akt > Czesci[0].High then
-              Czesci[0].Akt := 0;
+          if SDL_ModState = 0 then
+          begin
+            Refresh;
+            Inc(Czesci[CP].Akt);
+            AktNuta[0] := 0;
+            AktNuta[1] := 0;
+            if Czesci[CP].Akt > Czesci[CP].High then
+              Czesci[CP].Akt := 0;
 
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-
-            Lyric.AddCzesc(Czesci[0].Akt);
-            Lyric.Selected := 0;
+            SelectNextNote;
           end;
 
           // decrease tone
-          if SDL_ModState = KMOD_LCTRL then begin
+          if SDL_ModState = KMOD_LCTRL then
+          begin
             TransposeNote(-1);
           end;
 
+          // select singer 2 notes if possible
+          if (SDL_ModState = KMOD_LSHIFT) and AktSong.isDuet then
+          begin
+            if (Length(Czesci[1].Czesc[Czesci[1].Akt].Nuta)>0) then
+            begin
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+              CP := 1;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            end;
+          end;
+
+          if AktSong.isDuet and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and (CP=0) then
+            DuetCopyLine;
+
+          if AktSong.isDuet and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL or KMOD_LALT) and (CP=0) then
+            DuetMoveLine;
         end;
 
       SDLK_UP:
         begin
-          MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+          MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
           PlaySentenceMidi := false;
           PlayOneNoteMidi := false;
           Music.Stop;
-          LineChanged:=false;
+          LineChanged[0]:=false;
+          LineChanged[1]:=false;
           PlaySentence := false;
           PlayOneNote := false;
 
           // skip to previous sentence
-          if SDL_ModState = 0 then begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            Dec(Czesci[0].Akt);
-            AktNuta := 0;
-            if Czesci[0].Akt = -1 then
-              Czesci[0].Akt := Czesci[0].High;
+          if SDL_ModState = 0 then
+          begin
+            Refresh;
+            Dec(Czesci[CP].Akt);
+            AktNuta[CP] := 0;
+            if Czesci[CP].Akt = -1 then
+              Czesci[CP].Akt := Czesci[CP].High;
 
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-
-            Lyric.AddCzesc(Czesci[0].Akt);
-            Lyric.Selected := 0;
+            SelectPrevNote;
           end;
 
           // increase tone
-          if SDL_ModState = KMOD_LCTRL then begin
+          if SDL_ModState = KMOD_LCTRL then
+          begin
             TransposeNote(1);
           end;
+
+          // select singer 1 notes if possible
+          if (SDL_ModState = KMOD_LSHIFT) and AktSong.isDuet then
+          begin
+            if (Length(Czesci[0].Czesc[Czesci[0].Akt].Nuta)>0) then
+            begin
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+              CP := 0;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            end;
+          end;
+
+          if AktSong.isDuet and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL) and (CP=1) then
+            DuetCopyLine;
+
+          if AktSong.isDuet and (SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL or KMOD_LALT) and (CP=1) then
+            DuetMoveLine;
         end;
 
       // Golden Note Patch
       SDLK_G:
         begin
-          case Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc of
-            0, 1: Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 2;
-            2:    Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 1;
+          case Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Wartosc of
+            0, 1: Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Wartosc := 2;
+            2:    Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Wartosc := 1;
           end; // case
-          Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Freestyle := False;
+          Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Freestyle := False;
         end;
 
       // Freestyle Note Patch
       SDLK_F:
         begin
-           case Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc of
+           case Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Wartosc of
             0:
             begin;
-              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 1;
-              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Freestyle := False;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Wartosc := 1;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Freestyle := False;
             end;
             1,2:
             begin;
-              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc := 0;
-              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Freestyle := True;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Wartosc := 0;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Freestyle := True;
             end;
           end; // case
 
@@ -1055,7 +1214,6 @@ begin
             Music.SetMusicVolume(MP3Volume);
             Text[TextDebug].Text := 'MP3 Volume: ' + IntToStr(MP3Volume) + '%';
         end;
-
       end;
     end;
   end; // if
@@ -1077,11 +1235,11 @@ begin
   // check normal keys
     if not (ScanCode in [0..31, 127..159]) then //=isPrintable
     begin
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst :=
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst + chr(ScanCode);
+      Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst :=
+      Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst + chr(ScanCode);
 
-      Lyric.ChangeCurText(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst);
-      Lyric.AddCzesc(Czesci[0].Akt);
+      EditorLyric[CP].ChangeCurText(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst);
+      EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
       Exit;
     end;
 
@@ -1090,8 +1248,8 @@ begin
     case PressedKey of
       SDLK_ESCAPE:
         begin
-          Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst := editText;
-          Lyric.AddCzesc(Czesci[0].Akt);
+          Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst := editText;
+          EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
           TextEditMode := false;
         end;
       SDLK_F4, SDLK_RETURN:
@@ -1099,37 +1257,41 @@ begin
           // Exit Text Edit Mode
           TextEditMode := false;
         end;
-      
+
       SDLK_BACKSPACE:
         begin
-          Delete(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst,
-            Length(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst), 1);
+          Delete(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst,
+            Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst), 1);
 
-          Lyric.ChangeCurText(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst);
-          Lyric.AddCzesc(Czesci[0].Akt);
+          EditorLyric[CP].ChangeCurText(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst);
+          EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
         end;
       SDLK_RIGHT:
         begin
           // right
-          if SDL_ModState = 0 then begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            Inc(AktNuta);
-            if AktNuta = Czesci[0].Czesc[Czesci[0].Akt].IlNut then AktNuta := 0;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-            Lyric.Selected := AktNuta;
-            editText := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst;
+          if SDL_ModState = 0 then
+          begin
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            Inc(AktNuta[CP]);
+            if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].IlNut then
+              AktNuta[CP] := 0;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
+            editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
           end;
         end;
       SDLK_LEFT:
         begin
           // left
-          if SDL_ModState = 0 then begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            Dec(AktNuta);
-            if AktNuta = -1 then AktNuta := Czesci[0].Czesc[Czesci[0].Akt].HighNut;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-            Lyric.Selected := AktNuta;
-            editText := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst;
+          if SDL_ModState = 0 then
+          begin
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            Dec(AktNuta[CP]);
+            if AktNuta[CP] = -1 then
+              AktNuta[CP] := Czesci[CP].Czesc[Czesci[CP].Akt].HighNut;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
+            editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
           end;
       end;
     end;
@@ -1196,7 +1358,7 @@ var
 
 begin
   // Play Sentences with Video
-  MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+  MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
   PlaySentenceMidi := false;
   PlayOneNoteMidi := false;
   Click := false;
@@ -1204,10 +1366,12 @@ begin
 
   if PlayVideo then
   begin
-    Czesci[0].Akt := lineStart;
-    AktNuta := noteStart;
+    CP := cpStart;
+    Czesci[CP].Akt := lineStart;
+    AktNuta[CP] := noteStart;
   end;
-  R := GetTimeFromBeat(Czesci[0].Czesc[Czesci[0].Akt].StartNote);
+
+  R := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
   if R <= Music.Length then
   begin
     Music.MoveTo(R);
@@ -1218,13 +1382,15 @@ begin
     LastClick := -100;
   end;
 
-  noteStart := AktNuta;
-  lineStart := Czesci[0].Akt;
-  Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-  AktNuta := 0;
-  Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-  Lyric.Selected := AktNuta;
-  LineChanged:=false;
+  noteStart := AktNuta[CP];
+  lineStart := Czesci[CP].Akt;
+  cpStart := CP;
+  Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+  AktNuta[CP] := 0;
+  Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+  EditorLyric[CP].Selected := AktNuta[CP];
+  LineChanged[0]:=false;
+  LineChanged[1]:=false;
   PlayTime := 0;
   PlayVideo := true;
   StartVideoPreview;
@@ -1279,6 +1445,7 @@ end;
 
 procedure TScreenEditSub.ChangeBPM(newBPM: real);
 var
+  P:    integer;
   C:    integer;
   N:    integer;
   f:    real;
@@ -1287,145 +1454,150 @@ begin
   f := newBPM/AktSong.BPM[0].BPM;    //z.B. neu/alt => 1/2 = 0.5 => *0.5
   AktSong.BPM[0].BPM := newBPM;
 
-  for C := 0 to Czesci[0].High do
+  for P := 0 to Length(Czesci) - 1 do
   begin
-    Czesci[0].Czesc[C].Start :=    ceil(Czesci[0].Czesc[C].Start *f);
-    Czesci[0].Czesc[C].StartNote := ceil(Czesci[0].Czesc[C].StartNote *f);
-    for N := 0 to Czesci[0].Czesc[C].HighNut do
+    for C := 0 to Czesci[P].High do
     begin
-      Czesci[0].Czesc[C].Nuta[N].Start :=   ceil(Czesci[0].Czesc[C].Nuta[N].Start *f);
-      Czesci[0].Czesc[C].Nuta[N].Dlugosc := floor(Czesci[0].Czesc[C].Nuta[N].Dlugosc *f);
-      if (Czesci[0].Czesc[C].Nuta[N].Dlugosc=0) then
-        Czesci[0].Czesc[C].Nuta[N].Dlugosc := 1;
-    end; // N (notes)
-    Czesci[0].Czesc[C].Koniec :=    Czesci[0].Czesc[C].Nuta[Czesci[0].Czesc[C].HighNut].Start +
-      Czesci[0].Czesc[C].Nuta[Czesci[0].Czesc[C].HighNut].Dlugosc;
-  end; // C (lines)
+      Czesci[P].Czesc[C].Start :=    ceil(Czesci[P].Czesc[C].Start *f);
+      Czesci[P].Czesc[C].StartNote := ceil(Czesci[P].Czesc[C].StartNote *f);
+      if (Length(Czesci[P].Czesc[C].Nuta)>0) then
+      begin
+        for N := 0 to Czesci[P].Czesc[C].HighNut do
+        begin
+          Czesci[P].Czesc[C].Nuta[N].Start :=   ceil(Czesci[P].Czesc[C].Nuta[N].Start *f); //round up
+          Czesci[P].Czesc[C].Nuta[N].Dlugosc := floor(Czesci[P].Czesc[C].Nuta[N].Dlugosc *f); //round down
+          if (Czesci[P].Czesc[C].Nuta[N].Dlugosc=0) then
+            Czesci[P].Czesc[C].Nuta[N].Dlugosc := 1;
+        end; // N (notes)
+        Czesci[P].Czesc[C].Koniec :=    Czesci[P].Czesc[C].Nuta[Czesci[P].Czesc[C].HighNut].Start +
+          Czesci[P].Czesc[C].Nuta[Czesci[P].Czesc[C].HighNut].Dlugosc;
+      end else
+        Czesci[P].Czesc[C].Koniec := round(Czesci[P].Czesc[C].Koniec * f);
+    end; // C (lines)
+  end;
 end;
 
 
 procedure TScreenEditSub.CzesciDivide;
-var
-  C:    integer;
-  N:    integer;
-begin                    
-  AktSong.BPM[0].BPM := AktSong.BPM[0].BPM / 2;
-  for C := 0 to Czesci[0].High do begin
-    Czesci[0].Czesc[C].Start :=     Czesci[0].Czesc[C].Start div 2;
-    Czesci[0].Czesc[C].StartNote := Czesci[0].Czesc[C].StartNote div 2;
-    Czesci[0].Czesc[C].Koniec :=    Czesci[0].Czesc[C].Koniec div 2;
-    for N := 0 to Czesci[0].Czesc[C].HighNut do begin
-      Czesci[0].Czesc[C].Nuta[N].Start :=   Czesci[0].Czesc[C].Nuta[N].Start div 2;
-      Czesci[0].Czesc[C].Nuta[N].Dlugosc := Round(Czesci[0].Czesc[C].Nuta[N].Dlugosc / 2);
-    end; // N
-  end; // C
+begin
+  ChangeBPM(AktSong.BPM[0].BPM / 2);
 end;
 
 procedure TScreenEditSub.CzesciMultiply;
-var
-  C:    integer;
-  N:    integer;
 begin
-  AktSong.BPM[0].BPM := AktSong.BPM[0].BPM * 2;
-  for C := 0 to Czesci[0].High do begin
-    Czesci[0].Czesc[C].Start :=     Czesci[0].Czesc[C].Start * 2;
-    Czesci[0].Czesc[C].StartNote := Czesci[0].Czesc[C].StartNote * 2;
-    Czesci[0].Czesc[C].Koniec :=    Czesci[0].Czesc[C].Koniec * 2;
-    for N := 0 to Czesci[0].Czesc[C].HighNut do begin
-      Czesci[0].Czesc[C].Nuta[N].Start :=   Czesci[0].Czesc[C].Nuta[N].Start * 2;
-      Czesci[0].Czesc[C].Nuta[N].Dlugosc := Czesci[0].Czesc[C].Nuta[N].Dlugosc * 2;
-    end; // N
-  end; // C
+  ChangeBPM(AktSong.BPM[0].BPM * 2);
 end;
 
 procedure TScreenEditSub.LyricsCapitalize;
 var
+  P:    integer;
   C:    integer;
-  //N:    integer; // temporary
   S:    string;
 begin
-  // temporary
-{  for C := 0 to Czesci[0].High do
-    for N := 0 to Czesci[0].Czesc[C].HighNut do
-      Czesci[0].Czesc[C].Nuta[N].Tekst := AnsiLowerCase(Czesci[0].Czesc[C].Nuta[N].Tekst);}
-
-  for C := 0 to Czesci[0].High do begin
-    S := AnsiUpperCase(Copy(Czesci[0].Czesc[C].Nuta[0].Tekst, 1, 1));
-    S := S + Copy(Czesci[0].Czesc[C].Nuta[0].Tekst, 2, Length(Czesci[0].Czesc[C].Nuta[0].Tekst)-1);
-    Czesci[0].Czesc[C].Nuta[0].Tekst := S;
-  end; // C
-  Lyric.AddCzesc(Czesci[0].Akt);
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    for C := 0 to Czesci[P].High do
+    begin
+      if (Length(Czesci[P].Czesc[C].Nuta)>0) then
+      begin
+        S := AnsiUpperCase(Copy(Czesci[P].Czesc[C].Nuta[0].Tekst, 1, 1));
+        S := S + Copy(Czesci[P].Czesc[C].Nuta[0].Tekst, 2, Length(Czesci[P].Czesc[C].Nuta[0].Tekst)-1);
+        Czesci[P].Czesc[C].Nuta[0].Tekst := S;
+      end;
+    end; // C
+    EditorLyric[P].AddCzesc(P, Czesci[P].Akt);
+  end;
 end;
 
 procedure TScreenEditSub.LyricsCorrectSpaces;
 var
+  P:    integer;
   C:    integer;
   N:    integer;
 begin
-  for C := 0 to Czesci[0].High do begin
-    // correct starting spaces in the first word
-    while Copy(Czesci[0].Czesc[C].Nuta[0].Tekst, 1, 1) = ' ' do
-      Czesci[0].Czesc[C].Nuta[0].Tekst := Copy(Czesci[0].Czesc[C].Nuta[0].Tekst, 2, 100);
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    for C := 0 to Czesci[P].High do
+    begin
+      if(Length(Czesci[P].Czesc[C].Nuta)>0) then
+      begin
+        // correct starting spaces in the first word
+        while Copy(Czesci[P].Czesc[C].Nuta[0].Tekst, 1, 1) = ' ' do
+          Czesci[P].Czesc[C].Nuta[0].Tekst := Copy(Czesci[P].Czesc[C].Nuta[0].Tekst, 2, 100);
 
-    // move spaces on the start to the end of the previous note
-    for N := 1 to Czesci[0].Czesc[C].HighNut do begin
-      while (Copy(Czesci[0].Czesc[C].Nuta[N].Tekst, 1, 1) = ' ') do begin
-        Czesci[0].Czesc[C].Nuta[N].Tekst := Copy(Czesci[0].Czesc[C].Nuta[N].Tekst, 2, 100);
-        Czesci[0].Czesc[C].Nuta[N-1].Tekst := Czesci[0].Czesc[C].Nuta[N-1].Tekst + ' ';
+        // move spaces on the start to the end of the previous note
+        for N := 1 to Czesci[P].Czesc[C].HighNut do
+        begin
+          while (Copy(Czesci[P].Czesc[C].Nuta[N].Tekst, 1, 1) = ' ') do
+          begin
+            Czesci[P].Czesc[C].Nuta[N].Tekst := Copy(Czesci[P].Czesc[C].Nuta[N].Tekst, 2, 100);
+            Czesci[P].Czesc[C].Nuta[N-1].Tekst := Czesci[P].Czesc[C].Nuta[N-1].Tekst + ' ';
+          end;
+        end; // N
+
+        // correct '-'  to '- '
+        for N := 0 to Czesci[P].Czesc[C].HighNut do
+        begin
+          if Czesci[P].Czesc[C].Nuta[N].Tekst = '-' then
+            Czesci[P].Czesc[C].Nuta[N].Tekst := '- ';
+        end; // N
+
+        // add space to the previous note when the current word is '- '
+        for N := 1 to Czesci[P].Czesc[C].HighNut do
+        begin
+          if Czesci[P].Czesc[C].Nuta[N].Tekst  = '- ' then
+            Czesci[P].Czesc[C].Nuta[N-1].Tekst := Czesci[P].Czesc[C].Nuta[N-1].Tekst + ' ';
+        end; // N
+
+        // correct too many spaces at the end of note
+        for N := 0 to Czesci[P].Czesc[C].HighNut do
+        begin
+          while Copy(Czesci[P].Czesc[C].Nuta[N].Tekst, Length(Czesci[P].Czesc[C].Nuta[N].Tekst)-1, 2) = '  ' do
+            Czesci[P].Czesc[C].Nuta[N].Tekst := Copy(Czesci[P].Czesc[C].Nuta[N].Tekst, 1, Length(Czesci[P].Czesc[C].Nuta[N].Tekst)-1);
+        end; // N
+
+        // and correct if there is no space at the end of sentence
+        N := Czesci[P].Czesc[C].HighNut;
+        if Copy(Czesci[P].Czesc[C].Nuta[N].Tekst, Length(Czesci[P].Czesc[C].Nuta[N].Tekst), 1) <> ' ' then
+          Czesci[P].Czesc[C].Nuta[N].Tekst := Czesci[P].Czesc[C].Nuta[N].Tekst + ' ';
       end;
-    end; // N
-
-    // correct '-'  to '- '
-    for N := 0 to Czesci[0].Czesc[C].HighNut do begin
-      if Czesci[0].Czesc[C].Nuta[N].Tekst = '-' then
-        Czesci[0].Czesc[C].Nuta[N].Tekst := '- ';
-    end; // N
-
-    // add space to the previous note when the current word is '- '
-    for N := 1 to Czesci[0].Czesc[C].HighNut do begin
-      if Czesci[0].Czesc[C].Nuta[N].Tekst  = '- ' then
-        Czesci[0].Czesc[C].Nuta[N-1].Tekst := Czesci[0].Czesc[C].Nuta[N-1].Tekst + ' ';
-    end; // N
-
-    // correct too many spaces at the end of note
-    for N := 0 to Czesci[0].Czesc[C].HighNut do begin
-      while Copy(Czesci[0].Czesc[C].Nuta[N].Tekst, Length(Czesci[0].Czesc[C].Nuta[N].Tekst)-1, 2) = '  ' do
-        Czesci[0].Czesc[C].Nuta[N].Tekst := Copy(Czesci[0].Czesc[C].Nuta[N].Tekst, 1, Length(Czesci[0].Czesc[C].Nuta[N].Tekst)-1);
-    end; // N
-
-    // and correct if there is no space at the end of sentence
-    N := Czesci[0].Czesc[C].HighNut;
-    if Copy(Czesci[0].Czesc[C].Nuta[N].Tekst, Length(Czesci[0].Czesc[C].Nuta[N].Tekst), 1) <> ' ' then
-      Czesci[0].Czesc[C].Nuta[N].Tekst := Czesci[0].Czesc[C].Nuta[N].Tekst + ' ';
-
-  end; // C
-  Lyric.AddCzesc(Czesci[0].Akt);
+    end; // C
+    EditorLyric[P].AddCzesc(P, Czesci[P].Akt);
+  end;
 end;
 
 procedure TScreenEditSub.FixTimings;
 var
+  P:    integer;
   C:    integer;
   S:    integer;
   Min:  integer;
   Max:  integer;
 begin
-  for C := 1 to Czesci[0].High do begin
-    with Czesci[0].Czesc[C-1] do begin
-      Min := Nuta[HighNut].Start + Nuta[HighNut].Dlugosc;
-      Max := Czesci[0].Czesc[C].StartNote;
-      case (Max - Min) of
-        0:    S := Max;
-        1:    S := Max;
-        2:    S := Max - 1;
-        3:    S := Max - 2;
-        else
-          S := Min + 2;
-
-      end; // case
-
-      Czesci[0].Czesc[C].Start := S;
-    end; // with
-  end; // for
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    for C := 1 to Czesci[P].High do
+    begin
+      with Czesci[P].Czesc[C-1] do
+      begin
+        if (Length(Nuta)>0) then
+        begin
+          Min := Nuta[HighNut].Start + Nuta[HighNut].Dlugosc;
+          Max := Czesci[P].Czesc[C].StartNote;
+          case (Max - Min) of
+            0:    S := Max;
+            1:    S := Max;
+            2:    S := Max - 1;
+            3:    S := Max - 2;
+            else
+              S := Min + 2;
+          end; // case
+          
+          Czesci[P].Czesc[C].Start := S;
+        end;
+      end; // with
+    end; // for
+  end;
 end;
 
 procedure TScreenEditSub.DivideSentence;
@@ -1452,7 +1624,7 @@ begin
 
   // clear and set new sentence
   CNew := CStart + 1;
-  NStart := AktNuta;
+  NStart := AktNuta[CP];
   Czesci[0].Czesc[CNew].Start := Czesci[0].Czesc[CStart].Nuta[NStart].Start;
   Czesci[0].Czesc[CNew].StartNote := Czesci[0].Czesc[CStart].Nuta[NStart].Start;
   Czesci[0].Czesc[CNew].Lyric := '';
@@ -1491,9 +1663,9 @@ begin
       Czesci[0].Czesc[CNew].BaseNote := Czesci[0].Czesc[CNew].Nuta[N].Ton;
 
   Czesci[0].Akt := Czesci[0].Akt + 1;
-  AktNuta := 0;
-  Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-  Lyric.AddCzesc(Czesci[0].Akt);
+  AktNuta[0] := 0;
+  Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].Color := 2;
+  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
 end;
 
 procedure TScreenEditSub.JoinSentence;
@@ -1503,7 +1675,7 @@ var
   NStart: integer;
   NDst:   integer;
 begin
-  C := Czesci[0].Akt;
+  C := Czesci[CP].Akt;
 
   // set new sentence
   NStart := Czesci[0].Czesc[C].IlNut;
@@ -1512,7 +1684,8 @@ begin
   SetLength(Czesci[0].Czesc[C].Nuta, Czesci[0].Czesc[C].IlNut);
 
   // move right notes to new sentences
-  for N := 0 to Czesci[0].Czesc[C+1].HighNut do begin
+  for N := 0 to Czesci[0].Czesc[C+1].HighNut do
+  begin
     NDst := NStart + N;
     Czesci[0].Czesc[C].Nuta[NDst] := Czesci[0].Czesc[C+1].Nuta[N];
   end;
@@ -1530,7 +1703,7 @@ begin
   SetLength(Czesci[0].Czesc, Length(Czesci[0].Czesc) - 1);
   Dec(Czesci[0].Ilosc);
   Dec(Czesci[0].High);
-  Lyric.AddCzesc(Czesci[0].Akt);
+  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
 end;
 
 procedure TScreenEditSub.DivideNote;
@@ -1539,37 +1712,38 @@ var
   N:    integer;
   NLen: integer;
 begin
-  C := Czesci[0].Akt;
+  C := Czesci[CP].Akt;
 
-  NLen := Czesci[0].Czesc[C].IlNut + 1;
-  SetLength(Czesci[0].Czesc[C].Nuta, NLen);
-  Inc(Czesci[0].Czesc[C].HighNut);
-  Inc(Czesci[0].Czesc[C].IlNut);
+  NLen := Czesci[CP].Czesc[C].IlNut + 1;
+  SetLength(Czesci[CP].Czesc[C].Nuta, NLen);
+  Inc(Czesci[CP].Czesc[C].HighNut);
+  Inc(Czesci[CP].Czesc[C].IlNut);
 
   // we copy all notes including selected one
-  for N := Czesci[0].Czesc[C].HighNut downto AktNuta+1 do begin
-    Czesci[0].Czesc[C].Nuta[N] := Czesci[0].Czesc[C].Nuta[N-1];
+  for N := Czesci[CP].Czesc[C].HighNut downto AktNuta[CP]+1 do
+  begin
+    Czesci[CP].Czesc[C].Nuta[N] := Czesci[CP].Czesc[C].Nuta[N-1];
   end;
 
   // me slightly modify new note
-  Czesci[0].Czesc[C].Nuta[AktNuta].Dlugosc := ceil(Czesci[0].Czesc[C].Nuta[AktNuta+1].Dlugosc/2);
+  Czesci[CP].Czesc[C].Nuta[AktNuta[CP]].Dlugosc := ceil(Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Dlugosc/2);
 
-  Czesci[0].Czesc[C].Nuta[AktNuta+1].Start := Czesci[0].Czesc[C].Nuta[AktNuta+1].Start +
-    Czesci[0].Czesc[C].Nuta[AktNuta].Dlugosc;
+  Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Start := Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Start +
+    Czesci[CP].Czesc[C].Nuta[AktNuta[CP]].Dlugosc;
 
-  Czesci[0].Czesc[C].Nuta[AktNuta+1].Dlugosc := Czesci[0].Czesc[C].Nuta[AktNuta+1].Dlugosc -
-    Czesci[0].Czesc[C].Nuta[AktNuta].Dlugosc;
+  Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Dlugosc := Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Dlugosc -
+    Czesci[CP].Czesc[C].Nuta[AktNuta[CP]].Dlugosc;
 
-  if (Czesci[0].Czesc[C].Nuta[AktNuta+1].Dlugosc>0) then
-    Czesci[0].Czesc[C].Nuta[AktNuta+1].Tekst := '~'
+  if (Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Dlugosc>0) then
+    Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Tekst := '~'
   else
-    Czesci[0].Czesc[C].Nuta[AktNuta+1].Tekst := ' ';
+    Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Tekst := ' ';
 
-  Czesci[0].Czesc[C].Nuta[AktNuta].Color := 0;
-  Czesci[0].Czesc[C].Nuta[AktNuta+1].Color := 2;
+  Czesci[CP].Czesc[C].Nuta[AktNuta[CP]].Color := 0;
+  Czesci[CP].Czesc[C].Nuta[AktNuta[CP]+1].Color := 2;
 
-  Inc(AktNuta);
-  Lyric.AddCzesc(Czesci[0].Akt);
+  Inc(AktNuta[CP]);
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
 end;
 
 procedure TScreenEditSub.DeleteNote;
@@ -1578,68 +1752,97 @@ var
   N:    integer;
   NLen: integer;
 begin
-  C := Czesci[0].Akt;
+  C := Czesci[CP].Akt;
 
   //Do Not delete Last Note
-  if (Czesci[0].High > 0) OR (Czesci[0].Czesc[C].HighNut > 0) then
+  if (Czesci[CP].High > 0) OR (Czesci[CP].Czesc[C].HighNut > 0) then
   begin
 
     // we copy all notes from the next to the selected one
-    for N := AktNuta+1 to Czesci[0].Czesc[C].HighNut do begin
-      Czesci[0].Czesc[C].Nuta[N-1] := Czesci[0].Czesc[C].Nuta[N];
+    for N := AktNuta[CP]+1 to Czesci[CP].Czesc[C].HighNut do
+    begin
+      Czesci[CP].Czesc[C].Nuta[N-1] := Czesci[CP].Czesc[C].Nuta[N];
     end;
 
-    NLen := Czesci[0].Czesc[C].IlNut - 1;
+    NLen := Czesci[CP].Czesc[C].IlNut - 1;
 
     if (NLen > 0) then
     begin
-      SetLength(Czesci[0].Czesc[C].Nuta, NLen);
-      Dec(Czesci[0].Czesc[C].HighNut);
-      Dec(Czesci[0].Czesc[C].IlNut);
+      SetLength(Czesci[CP].Czesc[C].Nuta, NLen);
+      Dec(Czesci[CP].Czesc[C].HighNut);
+      Dec(Czesci[CP].Czesc[C].IlNut);
 
 
       // me slightly modify new note
-      if AktNuta > Czesci[0].Czesc[C].HighNut then Dec(AktNuta);
-        Czesci[0].Czesc[C].Nuta[AktNuta].Color := 2;
+      if AktNuta[CP] > Czesci[CP].Czesc[C].HighNut then
+        Dec(AktNuta[CP]);
+
+      Czesci[CP].Czesc[C].Nuta[AktNuta[CP]].Color := 2;
     end
     //Last Note of current Sentence Deleted - > Delete Sentence
     else
     begin
-      //Move all Sentences after the current to the Left
-      for N := C+1 to Czesci[0].High do
-        Czesci[0].Czesc[N-1] := Czesci[0].Czesc[N];
-
-      //Delete Last Sentence
-      SetLength(Czesci[0].Czesc, Czesci[0].High);
-      Czesci[0].High := High(Czesci[0].Czesc);
-      Czesci[0].Ilosc := Length(Czesci[0].Czesc);
-
-      AktNuta := 0;
-      if (C > 0) then
-        Czesci[0].Akt := C - 1
-      else
-        Czesci[0].Akt := 0;
-
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
+      DeleteSentence;
     end;
   end;
-  Lyric.AddCzesc(Czesci[0].Akt);
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+  if AktSong.isDuet then
+    EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[(CP+1) mod 2].Akt);
+end;
+
+procedure TScreenEditSub.DeleteSentence;
+var
+  P:  integer;
+  C:  integer;
+  N:  integer;
+
+begin
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    C := Czesci[CP].Akt;
+    //Move all Sentences after the current to the Left
+    for N := C+1 to Czesci[P].High do
+      Czesci[P].Czesc[N-1] := Czesci[P].Czesc[N];
+
+    //Delete Last Sentence
+    SetLength(Czesci[P].Czesc, Czesci[P].High);
+    Czesci[P].High := High(Czesci[P].Czesc);
+    Czesci[P].Ilosc := Length(Czesci[P].Czesc);
+
+    AktNuta[P] := 0;
+    if (C > 0) then
+      Czesci[P].Akt := C - 1
+    else
+      Czesci[P].Akt := 0;
+  end;
+  Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
 end;
 
 procedure TScreenEditSub.TransposeNote(Transpose: integer);
 begin
-  Inc(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Ton, Transpose);
+  if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)>0) then
+  begin
+    Inc(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Ton, Transpose);
+  end;
 end;
 
 procedure TScreenEditSub.ChangeWholeTone(Tone: integer);
 var
+  P:  integer;
   C:  integer;
   N:  integer;
 begin
-  for C := 0 to Czesci[0].High do begin
-    Czesci[0].Czesc[C].BaseNote := Czesci[0].Czesc[C].BaseNote + Tone;
-    for N := 0 to Czesci[0].Czesc[C].HighNut do
-      Czesci[0].Czesc[C].Nuta[N].Ton := Czesci[0].Czesc[C].Nuta[N].Ton + Tone;
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    for C := 0 to Czesci[P].High do
+    begin
+      if (Length(Czesci[P].Czesc[C].Nuta)>0) then
+      begin
+        Czesci[P].Czesc[C].BaseNote := Czesci[P].Czesc[C].BaseNote + Tone;
+        for N := 0 to Czesci[P].Czesc[C].HighNut do
+          Czesci[P].Czesc[C].Nuta[N].Ton := Czesci[P].Czesc[C].Nuta[N].Ton + Tone;
+      end;
+    end;
   end;
 end;
 
@@ -1649,13 +1852,16 @@ var
   N:    integer;
   NStart: integer;
 begin
-  for C := Czesci[0].Akt to Czesci[0].High do begin
+  for C := Czesci[0].Akt to Czesci[0].High do
+  begin
     NStart := 0;
-    if C = Czesci[0].Akt then NStart := AktNuta;
-    for N := NStart to Czesci[0].Czesc[C].HighNut do begin
+    if C = Czesci[0].Akt then NStart := AktNuta[0];
+    for N := NStart to Czesci[0].Czesc[C].HighNut do
+    begin
       Inc(Czesci[0].Czesc[C].Nuta[N].Start, Move); // move note start
 
-      if N = 0 then begin // fix beginning
+      if N = 0 then
+      begin // fix beginning
         Inc(Czesci[0].Czesc[C].Start, Move);
         Inc(Czesci[0].Czesc[C].StartNote, Move);
       end;
@@ -1665,7 +1871,7 @@ begin
 
     end; // for
   end; // for
-  Lyric.AddCzesc(Czesci[0].Akt);
+  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
 end;
 
 procedure TScreenEditSub.MoveTextToRight;
@@ -1674,14 +1880,6 @@ var
   N:      integer;
   NHigh:  integer;
 begin
-{  C := Czesci[0].Akt;
-
-  for N := Czesci[0].Czesc[C].HighNut downto 1 do begin
-    Czesci[0].Czesc[C].Nuta[N].Tekst := Czesci[0].Czesc[C].Nuta[N-1].Tekst;
-  end; // for
-
-  Czesci[0].Czesc[C].Nuta[0].Tekst := '- ';}
-
   C := Czesci[0].Akt;
   NHigh := Czesci[0].Czesc[C].HighNut;
 
@@ -1689,11 +1887,12 @@ begin
   Czesci[0].Czesc[C].Nuta[NHigh].Tekst := Czesci[0].Czesc[C].Nuta[NHigh-1].Tekst + Czesci[0].Czesc[C].Nuta[NHigh].Tekst;
 
   // other words
-  for N := NHigh - 1 downto AktNuta + 1 do begin
+  for N := NHigh - 1 downto AktNuta[0] + 1 do
+  begin
     Czesci[0].Czesc[C].Nuta[N].Tekst := Czesci[0].Czesc[C].Nuta[N-1].Tekst;
   end; // for
-  Czesci[0].Czesc[C].Nuta[AktNuta].Tekst := '- ';
-  Lyric.AddCzesc(Czesci[0].Akt);
+  Czesci[0].Czesc[C].Nuta[AktNuta[0]].Tekst := '- ';
+  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
 end;
 
 procedure TScreenEditSub.MarkSrc;
@@ -1710,7 +1909,7 @@ begin
 
   for N := 0 to Czesci[0].Czesc[CopySrc].HighNut do
     Czesci[0].Czesc[C].Nuta[N].Tekst := Czesci[0].Czesc[CopySrc].Nuta[N].Tekst;
-  Lyric.AddCzesc(Czesci[0].Akt);
+  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
 end;
 
 procedure TScreenEditSub.CopySentence(Src, Dst: integer);
@@ -1776,69 +1975,281 @@ begin
   inherited Create;
   SetLength(Player, 1);
 
-  //Theme:
-  //bg
+  //light blue:
+  cRB := 0.9; cGB := 0.95; cBB := 1;
 
-  //AddStatic(0, 0, 800, 600, 0.3, 0.5, 0.6, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
+  //light red:
+  cRR := 1; cGR := 0.8; cBR := 0.8;
 
   // Line
-  //AddStatic(20, 5, 200, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-  AddText(40, 14, 1, 8, 0, 0, 0, 'Line:');
-  TextSentence := AddText(110, 14, 1, 8, 0, 0, 0, '0 / 0');
+  AddText(500, 573, 1, 7, 0, 0, 0, 'Line:');
+  TextSentence := AddText(545, 573, 1, 7, 0, 0, 0, '0 / 0');
 
   // Note
-  //AddStatic(260, 5, 200, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-  AddText(282, 14, 1, 8, 0, 0, 0, 'Note:');
-  TextNote := AddText(360, 14, 1, 8, 0, 0, 0, '0 / 0');
+  AddText(655, 573, 1, 7, 0, 0, 0, 'Note:');
+  TextNote := AddText(710, 573, 1, 7, 0, 0, 0, '0 / 0');
 
-  // some borders
-  {
-  AddStatic(18, 53, 764, 240, 0, 0, 0, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-  AddStatic(20, 55, 760, 236, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
+  AddText(10, 10, 0, 8, 0, 0, 0, 'Title:');
+  AddText(10, 30, 0, 8, 0, 0, 0, 'Artist:');
+  //AddText(10, 50, 0, 8, 0, 0, 0, 'Mp3:');
+  AddText(10, 50, 0, 8, 0, 0, 0, 'BPM:');
+  AddText(10, 70, 0, 8, 0, 0, 0, 'GAP:');
 
-  AddStatic(18, 303, 764, 139, 0, 0, 0, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-  AddStatic(20, 305, 760, 135, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-
-  AddStatic(18, 498, 764, 44, 0, 0, 0, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-  AddStatic(20, 500, 760, 40, 0.95, 0.95, 0.95, Skin.GetTextureFileName('ButtonFade'), 'JPG', 'Font Black');
-   }
-
-  AddText(30, 65,  0, 8, 0, 0, 0, 'Title:');
-  AddText(30, 90,  0, 8, 0, 0, 0, 'Artist:');
-  AddText(30, 115, 0, 8, 0, 0, 0, 'Mp3:');
-  AddText(30, 140, 0, 8, 0, 0, 0, 'BPM:');
-  AddText(30, 165, 0, 8, 0, 0, 0, 'GAP:');
-
-  TextTitle :=  AddText(180, 65,  0, 8, 0, 0, 0, 'a');
-  TextArtist := AddText(180, 90,  0, 8, 0, 0, 0, 'b');
-  TextMp3 :=    AddText(180, 115, 0, 8, 0, 0, 0, 'c');
-  TextBPM :=    AddText(180, 140, 0, 8, 0, 0, 0, 'd');
-  TextGAP :=    AddText(180, 165, 0, 8, 0, 0, 0, 'e');
-
-{  AddInteraction(2, TextTitle);
-  AddInteraction(2, TextArtist);
-  AddInteraction(2, TextMp3);
-  AddInteraction(2, TextBPM);
-  AddInteraction(2, TextGAP);}
+  TextTitle :=  AddText(80, 10, 0, 8, 0, 0, 0, 'a');
+  TextArtist := AddText(80, 30, 0, 8, 0, 0, 0, 'b');
+  //TextMp3 :=    AddText(80, 50, 0, 8, 0, 0, 0, 'c');
+  TextBPM :=    AddText(80, 50, 0, 8, 0, 0, 0, 'd');
+  TextGAP :=    AddText(80, 70, 0, 8, 0, 0, 0, 'e');
 
   // note info
-  AddText(30, 190,  0, 8, 0, 0, 0, 'Start:');
-  AddText(30, 215,  0, 8, 0, 0, 0, 'Duration:');
-  AddText(30, 240,  0, 8, 0, 0, 0, 'Tone:');
-  AddText(30, 265,  0, 8, 0, 0, 0, 'Text:');      AddText(500, 265,  0, 8, 0, 0, 0, 'VideoGap:');
+  AddText(10, 90,  0, 8, 0, 0, 0, 'Start:');
+    AddText(300, 90, 0, 8, 0, 0, 0, 'Duration:');
 
-  TextNStart :=   AddText(180, 190,  0, 8, 0, 0, 0, 'a');
-  TextNDlugosc := AddText(180, 215,  0, 8, 0, 0, 0, 'b');
-  TextNTon :=     AddText(180, 240,  0, 8, 0, 0, 0, 'c');
-  TextNText :=    AddText(180, 265,  0, 8, 0, 0, 0, 'd');
+  AddText(10, 110, 0, 8, 0, 0, 0, 'Tone:');
+  AddText(10, 130, 0, 8, 0, 0, 0, 'Text:');
+    AddText(300, 130,  0, 8, 0, 0, 0, 'VideoGap:');
 
-  TextVideoGap :=  AddText(600, 265,  0, 8, 0, 0, 0, 'e');
+  TextNStart :=   AddText(80, 90,  0, 8, 0, 0, 0, 'a');
+  TextNDlugosc := AddText(400, 90,  0, 8, 0, 0, 0, 'b');
+  TextNTon :=     AddText(80, 110,  0, 8, 0, 0, 0, 'c');
+  TextNText :=    AddText(80, 130,  0, 8, 0, 0, 0, 'd');
+  TextVideoGap :=  AddText(400, 130,  0, 8, 0, 0, 0, 'e');
 
   // debug
-  TextDebug :=  AddText(30, 550, 0, 9, 0, 0, 0, '');
+  TextDebug :=  AddText(30, 575, 0, 9, 0, 0, 0, '');
+
+  EditorLyric[0] := TLyric.Create;
+  EditorLyric[1] := TLyric.Create;
+
+  offset[0] := 155;
+  offset[1] := 525;
+end;
+
+procedure TScreenEditSub.SelectNextNote();
+begin
+  if AktSong.isDuet then
+  begin
+    Czesci[(CP+1) mod 2].Akt := Czesci[CP].Akt;
+    while (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) do
+    begin
+      Czesci[(CP+1) mod 2].Akt := Czesci[CP].Akt;
+      if (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta)=0) then
+        inc(Czesci[CP].Akt)
+      else
+        CP := (CP+1) mod 2;
+
+      if Czesci[CP].Akt > Czesci[CP].High then
+        Czesci[CP].Akt := 0;
+    end;
+
+    Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
+    EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+    EditorLyric[1].AddCzesc(1, Czesci[1].Akt);
+    EditorLyric[0].Selected := 0;
+    EditorLyric[1].Selected := 0;
+  end else
+  begin
+    Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].Color := 2;
+
+    EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+    EditorLyric[0].Selected := 0;
+  end;
+end;
+
+procedure TScreenEditSub.SelectPrevNote();
+begin
+  if AktSong.isDuet then
+  begin
+    Czesci[(CP+1) mod 2].Akt := Czesci[CP].Akt;
+    while (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) do
+    begin
+      Czesci[(CP+1) mod 2].Akt := Czesci[CP].Akt;
+      if (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta)=0) then
+        dec(Czesci[CP].Akt)
+      else
+        CP := (CP+1) mod 2;
+
+      if Czesci[CP].Akt < 0 then
+        Czesci[CP].Akt := Czesci[CP].High;
+    end;
+
+    Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
+    EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+    EditorLyric[1].AddCzesc(1, Czesci[1].Akt);
+    EditorLyric[0].Selected := 0;
+    EditorLyric[1].Selected := 0;
+  end else
+  begin
+    Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta[0]].Color := 2;
+
+    EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+    EditorLyric[0].Selected := 0;
+  end;
+end;
+
+procedure TScreenEditSub.MakeSingle;
+var
+  C:  integer;
+
+begin
+  for C := 0 to Length(Czesci[0].Czesc) - 1 do
+  begin
+    if (Length(Czesci[0].Czesc[C].Nuta)=0) then
+      Czesci[0].Czesc[C] := Czesci[1].Czesc[C];
+  end;
+  SetLength(Czesci, 1);
+  AktSong.isDuet := false;
+  CP := 0;
+  Refresh;
+  AktNuta[CP] := 0;
+  Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
+  EditorLyric[0].Y := offset[0]+300;
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+end;
+
+procedure TScreenEditSub.MakeDuet;
+var
+  L:  integer;
+
+begin
+  SetLength(Czesci, 2);
+
+  Czesci[1].Akt := Czesci[0].Akt;
+  Czesci[1].High := Czesci[0].High;
+  Czesci[1].Ilosc := Czesci[0].Ilosc;
+  Czesci[1].Resolution := Czesci[0].Resolution;
+  Czesci[1].NotesGAP := Czesci[0].NotesGAP;
+  Czesci[1].Wartosc := 0;
+  SetLength(Czesci[1].Czesc, Length(Czesci[0].Czesc));
+
+  for L := 0 to Length(Czesci[0].Czesc) - 1 do
+  begin
+    Czesci[1].Czesc[L].Start := Czesci[0].Czesc[L].Start;
+    Czesci[1].Czesc[L].StartNote := Czesci[0].Czesc[L].StartNote;
+    Czesci[1].Czesc[L].Lyric := '';
+    Czesci[1].Czesc[L].LyricWidth := 0;
+    Czesci[1].Czesc[L].Koniec := Czesci[0].Czesc[L].Koniec;
+    Czesci[1].Czesc[L].BaseNote := Czesci[0].Czesc[L].BaseNote;
+    Czesci[1].Czesc[L].HighNut := -1;
+    Czesci[1].Czesc[L].IlNut := 0;
+    Czesci[1].Czesc[L].TotalNotes := 0;
+    SetLength(Czesci[1].Czesc[L].Nuta, 0);
+  end;
+
+  AktSong.isDuet := true;
+   
+  EditorLyric[0].Y := offset[0];
+  EditorLyric[1].Y := offset[1];
+
+  EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[CP].Akt);
+  EditorLyric[(CP+1) mod 2].Selected := 0;
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+  AktNuta[(CP+1) mod 2] := 0;
+
+  //delete medley
+  MedleyNotes.isStart := false;
+  MedleyNotes.isEnd := false;
+  AktSong.Medley.Source := msNone;
+end;
+
+procedure TScreenEditSub.DuetCopyLine;
+var
+  L:        integer;
+  Src, Dst: integer;
+  N:        integer;
+
+begin
+  L := Czesci[CP].Akt;
+  Src := CP;
+  Dst := (CP+1) mod 2;
+
+  SetLength(Czesci[Dst].Czesc[L].Nuta, Czesci[Src].Czesc[L].IlNut);
+  Czesci[Dst].Czesc[L].IlNut := Czesci[Src].Czesc[L].IlNut;
+  Czesci[Dst].Czesc[L].HighNut := Czesci[Src].Czesc[L].HighNut;
+  Czesci[Dst].Czesc[L].Koniec := Czesci[Src].Czesc[L].Koniec;
+  Czesci[Dst].Czesc[L].Start := Czesci[Src].Czesc[L].Start;
+  Czesci[Dst].Czesc[L].BaseNote := Czesci[Src].Czesc[L].BaseNote;
+  Czesci[Dst].Czesc[L].StartNote := Czesci[Src].Czesc[L].StartNote;
+
+  for N := 0 to Czesci[Src].Czesc[L].HighNut do
+  begin
+    Czesci[Dst].Czesc[L].Nuta[N].Tekst := Czesci[Src].Czesc[L].Nuta[N].Tekst;
+    Czesci[Dst].Czesc[L].Nuta[N].Dlugosc := Czesci[Src].Czesc[L].Nuta[N].Dlugosc;
+    Czesci[Dst].Czesc[L].Nuta[N].Ton := Czesci[Src].Czesc[L].Nuta[N].Ton;
+    Czesci[Dst].Czesc[L].Nuta[N].Start := Czesci[Src].Czesc[L].Nuta[N].Start;
+    Czesci[Dst].Czesc[L].Nuta[N].TonGamy := Czesci[Src].Czesc[L].Nuta[N].TonGamy;
+    Czesci[Dst].Czesc[L].Nuta[N].FreeStyle := Czesci[Src].Czesc[L].Nuta[N].FreeStyle;
+    Czesci[Dst].Czesc[L].Nuta[N].Wartosc := Czesci[Src].Czesc[L].Nuta[N].Wartosc;
+  end;
+
+  Refresh;
+  EditorLyric[Dst].AddCzesc(Dst, Czesci[Src].Akt);
+  EditorLyric[Dst].Selected := 0;
+  AktNuta[Dst] := 0;
+  Czesci[Src].Czesc[L].Nuta[AktNuta[Src]].Color := 2;
+end;
+
+procedure TScreenEditSub.DuetMoveLine;
+begin
+  DuetCopyLine;
+  Czesci[CP].Czesc[Czesci[CP].Akt].Lyric := '';
+  Czesci[CP].Czesc[Czesci[CP].Akt].LyricWidth := 0;
+  Czesci[CP].Czesc[Czesci[CP].Akt].HighNut := -1;
+  Czesci[CP].Czesc[Czesci[CP].Akt].IlNut := 0;
+  Czesci[CP].Czesc[Czesci[CP].Akt].TotalNotes := 0;
+  SetLength(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta, 0);
+
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+  EditorLyric[CP].Selected := -1;
+
+  CP := (CP+1) mod 2;
+  Refresh;
+end;
+
+procedure TScreenEditSub.Refresh;
+var
+  P:  integer;
+  L:  integer;
+  N:  integer;
+
+begin
+  FixTimings;
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    Czesci[P].Ilosc := Length(Czesci[P].Czesc);
+    Czesci[P].High := Czesci[P].Ilosc-1;
+    Czesci[P].Wartosc := 0;
+
+    for L := 0 to Czesci[P].High - 1 do
+    begin
+      with Czesci[P].Czesc[L] do
+      begin
+        IlNut := Length(Nuta);
+        HighNut := IlNut-1;
+        TotalNotes := 0;
+
+        if (Length(Nuta)>0) then
+        begin
+          StartNote := Nuta[0].Start;
+          for N := 0 to Length(Czesci[P].Czesc[L].Nuta) - 1 do
+          begin
+            Nuta[N].Color := 0;
+            Czesci[P].Wartosc := Czesci[P].Wartosc + Nuta[N].Dlugosc * Nuta[N].Wartosc;
+            TotalNotes := TotalNotes + Nuta[N].Dlugosc * Nuta[N].Wartosc;
+          end;
+        end;
+      end;
+    end;
+  end;
 end;
 
 procedure TScreenEditSub.onShow;
+var
+  I:  integer;
+
 begin
   Log.LogStatus('Initializing', 'TEditScreen.onShow');
 
@@ -1846,7 +2257,7 @@ begin
     ResetSingTemp;
     AktSong := CatSongs.Song[SongIndex];
     Error := not LoadSong(Path + FileName, SONG_LOAD_COMPLETE);
-    if not Error then
+    if not Error and not AktSong.isDuet then
       FindRefrainStart(AktSong);
   except
     Error := True;
@@ -1859,7 +2270,8 @@ begin
     ScreenPopupError.ShowPopup (Language.Translate('ERROR_CORRUPT_SONG'));
     Exit;
   end
-  else begin
+  else
+  begin
     MidiOut := TMidiOutput.Create(nil);
     MidiOut.Open;
 
@@ -1867,18 +2279,28 @@ begin
     MP3Volume := 50;
     Music.SetVolume(MP3Volume);
 
+    CP := 0;
+
     if not Help.SetHelpID(ID) then
       Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenEditSub)');
 
     Text[TextTitle].Text :=   AktSong.Title;
     Text[TextArtist].Text :=  AktSong.Artist;
-    Text[TextMp3].Text :=     AktSong.Mp3;
+    //Text[TextMp3].Text :=     AktSong.Mp3;
 
     Czesci[0].Akt := 0;
-    AktNuta := 0;
+    AktNuta[0] := 0;
+    AktNuta[1] := 0;
     noteStart := 0; //when playing sentence
     lineStart := 0;
-    Czesci[0].Czesc[0].Nuta[0].Color := 2;
+    cpStart := 0;
+
+    if AktSong.isDuet then
+    begin
+      Czesci[1].Akt := 0;
+      SelectNextNote;
+    end else
+      Czesci[0].Czesc[0].Nuta[0].Color := 2;
 
     if AktSong.Medley.Source <> msNone then
     begin
@@ -1892,27 +2314,35 @@ begin
 
     //set Preview Start
     MedleyNotes.Preview := FindNote(round(GetMidBeat(AktSong.PreviewStart-AktSong.Gap/1000)));
-    Czesci[0].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].IsStartPreview := true;
-    AktSong.PreviewStart := GetTimeFromBeat(Czesci[0].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].start);
+    Czesci[MedleyNotes.Preview.CP].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].IsStartPreview := true;
+    AktSong.PreviewStart :=
+      GetTimeFromBeat(Czesci[MedleyNotes.Preview.CP].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].start);
 
     Music.Open(Path + AktSong.Mp3);
     //Set Down Music Volume for Better hearability of Midi Sounds
     //Music.SetVolume(40);
-    
-    Lyric.Clear;
-    Lyric.X := 400;
-    Lyric.Y := 500;
-    Lyric.Align := 1;
-    Lyric.Size := 14;
-    Lyric.ColR := 0;
-    Lyric.ColG := 0;
-    Lyric.ColB := 0;
-    Lyric.ColSR := Skin_FontHighlightR;
-    Lyric.ColSG := Skin_FontHighlightG;
-    Lyric.ColSB := Skin_FontHighlightB;
-    Lyric.Style := 0;
-    Lyric.AddCzesc(0);
-    Lyric.Selected := 0;
+
+    for I := 0 to Length(Czesci)-1 do
+    begin
+      EditorLyric[I].Clear;
+      EditorLyric[I].X := 400;
+      if not AktSong.isDuet and (I=0) then
+        EditorLyric[I].Y := offset[I]+300
+      else
+        EditorLyric[I].Y := offset[I];
+
+      EditorLyric[I].Align := 1;
+      EditorLyric[I].Size := 13;
+      EditorLyric[I].ColR := 0;
+      EditorLyric[I].ColG := 0;
+      EditorLyric[I].ColB := 0;
+      EditorLyric[I].ColSR := Skin_FontHighlightR;
+      EditorLyric[I].ColSG := Skin_FontHighlightG;
+      EditorLyric[I].ColSB := Skin_FontHighlightB;
+      EditorLyric[I].Style := 0;
+      EditorLyric[I].AddCzesc(I, Czesci[I].Akt);
+      EditorLyric[I].Selected := 0;
+    end;
 
     NotesH := 7;
     NotesW := 4;
@@ -1923,11 +2353,13 @@ begin
   TextEditMode := false;
   BPMEditMode := false;
 
-  MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+  //MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+  MidiLastNote := 0;
   PlaySentenceMidi := false;
   PlayOneNoteMidi := false;
   Music.Stop;
-  LineChanged:=false;
+  LineChanged[0]:=false;
+  LineChanged[1]:=false;
   PlaySentence := false;
   PlayOneNote := false;
 
@@ -1977,53 +2409,73 @@ begin
 
     if AktBeat <> LastClick then
     begin
-      for line := 0 to Length(Czesci[0].Czesc) - 1 do
+      for line := 0 to Length(Czesci[CP].Czesc) - 1 do
       begin
-        for note := 0 to Length(Czesci[0].Czesc[line].Nuta) - 1 do
+        for note := 0 to Length(Czesci[CP].Czesc[line].Nuta) - 1 do
         begin
           //line change
-          if (Czesci[0].Czesc[line].Start = AktBeat) and (line <> Czesci[0].Akt) and not end_ then
+          if (Czesci[CP].Czesc[line].Start = AktBeat) and (line <> Czesci[CP].Akt) and not end_ then
           begin
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-            AktNuta := 0;
-            Czesci[0].Akt := line;
-            //Inc(Czesci[0].Akt);
-            //if Czesci[0].Akt > Length(Czesci[0].Czesc)-1 then //useful?
-            //  Czesci[0].Akt := 0;
-            Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 1;
-            Lyric.AddCzesc(Czesci[0].Akt);
-            Lyric.Selected := AktNuta;
-            LineChanged := true;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            AktNuta[CP] := 0;
+            Czesci[CP].Akt := line;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 1;
+            EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+            EditorLyric[CP].Selected := AktNuta[CP];
+            LineChanged[CP] := true;
           end;
 
-          if (Czesci[0].Czesc[line].Nuta[note].Start = AktBeat) then
+          if (Czesci[CP].Czesc[line].Nuta[note].Start = AktBeat) then
           begin
             LastClick := AktBeat;
             PlayClick := true;
           end;
         end;
       end;
+
+      if AktSong.isDuet then
+      begin
+        for line := 0 to Length(Czesci[(CP+1) mod 2].Czesc) - 1 do
+        begin
+          for note := 0 to Length(Czesci[(CP+1) mod 2].Czesc[line].Nuta) - 1 do
+          begin
+            //line change
+            if (Czesci[(CP+1) mod 2].Czesc[line].Start = AktBeat) and (line <> Czesci[(CP+1) mod 2].Akt) and not end_ then
+            begin
+              if(Length(Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta)>0) then
+                Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta[AktNuta[(CP+1) mod 2]].Color := 0;
+              AktNuta[(CP+1) mod 2] := 0;
+              Czesci[(CP+1) mod 2].Akt := line;
+              Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta[AktNuta[(CP+1) mod 2]].Color := 1;
+              EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[(CP+1) mod 2].Akt);
+              EditorLyric[(CP+1) mod 2].Selected := AktNuta[(CP+1) mod 2];
+              LineChanged[(CP+1) mod 2] := true;
+            end;
+          end;
+        end;
+      end;
     end;
   end else
   begin
-    LineChanged := false;
+    LineChanged[0]:=false;
+    LineChanged[1]:=false;
     PlayVideo := false;
   end;
 
   // midi music
-  if PlaySentenceMidi then begin
-
+  if PlaySentenceMidi then
+  begin
     // stop the music
     if end_ then
     begin
-      MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+      MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
       PlaySentenceMidi := false;
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-      if (Czesci[0].Akt = lineStart) then
-        AktNuta := noteStart;
+      Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+      if (Czesci[CP].Akt = lineStart) then
+        AktNuta[CP] := noteStart;
         
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-      Lyric.Selected := AktNuta;
+      Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+      EditorLyric[CP].Selected := AktNuta[CP];
     end;
 
     // click
@@ -2031,12 +2483,12 @@ begin
 
     if PlayClick then
     begin
-      for Pet := 0 to Czesci[0].Czesc[Czesci[0].Akt].HighNut do
-        if (Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet].Start = AktBeat) then
+      for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
+        if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = AktBeat) then
         begin
           if Pet > 0 then
-            MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet-1].Ton + 60, 127);
-          MidiOut.PutShort($91, Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet].Ton + 60, 127);
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet-1].Ton + 60, 127);
+          MidiOut.PutShort($91, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Ton + 60, 127);
           MidiLastNote := Pet;
         end;
     end;
@@ -2046,15 +2498,16 @@ begin
   if PlaySentence then
   begin
     // stop the music
-    if end_ then begin
+    if end_ then
+    begin
       Music.Stop;
       PlaySentence := false;
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-      if (Czesci[0].Akt = lineStart) then
-        AktNuta := noteStart;
+      Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+      if (Czesci[CP].Akt = lineStart) then
+        AktNuta[CP] := noteStart;
 
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-      Lyric.Selected := AktNuta;
+      Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+      EditorLyric[CP].Selected := AktNuta[CP];
     end;
 
     if (Click) and (PlaySentence) then
@@ -2068,31 +2521,56 @@ begin
   // move "cursor"
   if (PlaySentence or PlaySentenceMidi) then
   begin
-    for line := 0 to Length(Czesci[0].Czesc) - 1 do
+    for line := 0 to Length(Czesci[CP].Czesc) - 1 do
     begin
-      for note := 0 to Length(Czesci[0].Czesc[line].Nuta) - 1 do
+      for note := 0 to Length(Czesci[CP].Czesc[line].Nuta) - 1 do
       begin
         //note change
-        if (Czesci[0].Czesc[line].Nuta[note].Start = AktBeat) and
-          ((note <> AktNuta) or LineChanged) then
+        if (Czesci[CP].Czesc[line].Nuta[note].Start = AktBeat) and
+          ((note <> AktNuta[CP]) or LineChanged[CP]) then
         begin
-          Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 0;
-          if not LineChanged then
+          Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+          if not LineChanged[CP] then
           begin
-            AktNuta := note;
-            Czesci[0].Akt := line;
-            //Inc(AktNuta);
-            //if AktNuta > Length(Czesci[0].Czesc[Czesci[0].Akt].Nuta)-1 then
-            //  Dec(AktNuta);
+            AktNuta[CP] := note;
+            Czesci[CP].Akt := line;
           end else
-            LineChanged := false;
+            LineChanged[CP] := false;
 
-          Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Color := 2;
-          Lyric.AddCzesc(Czesci[0].Akt);
-            Lyric.Selected := AktNuta;
+          Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+          EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+            EditorLyric[CP].Selected := AktNuta[CP];
         end;
       end;
     end;
+
+    if AktSong.isDuet then
+    begin
+      for line := 0 to Length(Czesci[(CP+1) mod 2].Czesc) - 1 do
+      begin
+        for note := 0 to Length(Czesci[(CP+1) mod 2].Czesc[line].Nuta) - 1 do
+        begin
+          //note change
+          if (Czesci[(CP+1) mod 2].Czesc[line].Nuta[note].Start = AktBeat) and
+            ((note <> AktNuta[(CP+1) mod 2]) or LineChanged[(CP+1) mod 2]) then
+          begin
+            if(Length(Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta)>0) then
+              Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta[AktNuta[(CP+1) mod 2]].Color := 0;
+            if not LineChanged[(CP+1) mod 2] then
+            begin
+              AktNuta[(CP+1) mod 2] := note;
+              Czesci[(CP+1) mod 2].Akt := line;
+            end else
+              LineChanged[(CP+1) mod 2] := false;
+
+            Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta[AktNuta[(CP+1) mod 2]].Color := 2;
+            EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[(CP+1) mod 2].Akt);
+              EditorLyric[(CP+1) mod 2].Selected := AktNuta[(CP+1) mod 2];
+          end;
+        end;
+      end;
+    end;
+
   end;
 
   // midi music
@@ -2102,7 +2580,7 @@ begin
     // stop the music
     if (MidiPos > MidiStop) then
     begin
-      MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+      MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
       PlayOneNoteMidi := false;
     end;
 
@@ -2112,14 +2590,14 @@ begin
 
     if AktBeat <> LastClick then
     begin
-      for Pet := 0 to Czesci[0].Czesc[Czesci[0].Akt].HighNut do
+      for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
       begin
-        if (Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet].Start = AktBeat) then
+        if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = AktBeat) then
         begin
           LastClick := AktBeat;
           if Pet > 0 then
-            MidiOut.PutShort($81, Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet-1].Ton + 60, 127);
-          MidiOut.PutShort($91, Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet].Ton + 60, 127);
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet-1].Ton + 60, 127);
+          MidiOut.PutShort($91, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Ton + 60, 127);
           MidiLastNote := Pet;
         end;
       end;
@@ -2143,9 +2621,9 @@ begin
       Text[TextDebug].Text := IntToStr(AktBeat);
       if AktBeat <> LastClick then
       begin
-        for Pet := 0 to Czesci[0].Czesc[Czesci[0].Akt].HighNut do
+        for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
         begin
-          if (Czesci[0].Czesc[Czesci[0].Akt].Nuta[Pet].Start = AktBeat) then
+          if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = AktBeat) then
           begin
             Music.PlayClick;
             LastClick := AktBeat;
@@ -2155,8 +2633,8 @@ begin
     end; // click
   end; // if PlayOneNote
 
-  Text[TextSentence].Text := IntToStr(Czesci[0].Akt + 1) + ' / ' + IntToStr(Czesci[0].Ilosc);
-  Text[TextNote].Text := IntToStr(AktNuta + 1) + ' / ' + IntToStr(Czesci[0].Czesc[Czesci[0].Akt].IlNut);
+  Text[TextSentence].Text := IntToStr(Czesci[CP].Akt + 1) + ' / ' + IntToStr(Czesci[CP].Ilosc);
+  Text[TextNote].Text := IntToStr(AktNuta[CP] + 1) + ' / ' + IntToStr(Czesci[CP].Czesc[Czesci[CP].Akt].IlNut);
 
   // Song info
   if not BPMEditMode then
@@ -2166,29 +2644,30 @@ begin
   Text[TextVideoGap].Text := FloatToStr(AktSong.VideoGap);
 
   //Error reading Variables when no Song is loaded
-  if not Error then
+  if not Error and (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)>AktNuta[CP]) then
   begin
     // Note info
-    Text[TextNStart].Text :=    IntToStr(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start);
-    Text[TextNDlugosc].Text :=  IntToStr(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc);
-    Text[TextNTon].Text :=      IntToStr(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Ton) + ' ( ' + GetNoteName(Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Ton) + ' )';
-    Text[TextNText].Text :=              Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Tekst;
+    Text[TextNStart].Text :=    IntToStr(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
+    Text[TextNDlugosc].Text :=  IntToStr(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
+    Text[TextNTon].Text :=      IntToStr(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Ton) +
+      ' ( ' + GetNoteName(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Ton) + ' )';
+    Text[TextNText].Text :=              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
 
     //F and G and Medley Mod:
-    if Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].FreeStyle then
+    if Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].FreeStyle then
       Text[TextNTon].Text := Text[TextNTon].Text + ' *F*'
-    else if Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Wartosc = 2 then
+    else if Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Wartosc = 2 then
       Text[TextNTon].Text := Text[TextNTon].Text + ' *G*';
 
-    if MedleyNotes.isStart and (Czesci[0].Akt = MedleyNotes.start.line)
-      and (AktNuta = MedleyNotes.start.note) then
+    if MedleyNotes.isStart and (Czesci[CP].Akt = MedleyNotes.start.line)
+      and (AktNuta[0] = MedleyNotes.start.note) then
       Text[TextNTon].Text := Text[TextNTon].Text + ' MedleyStart';
-    if MedleyNotes.isEnd and (Czesci[0].Akt = MedleyNotes.end_.line) and
-      (AktNuta = MedleyNotes.end_.note) then
+    if MedleyNotes.isEnd and (Czesci[CP].Akt = MedleyNotes.end_.line) and
+      (AktNuta[0] = MedleyNotes.end_.note) then
       Text[TextNTon].Text := Text[TextNTon].Text + ' MedleyEnd';
 
     //preview mod
-    if Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].IsStartPreview then
+    if Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].IsStartPreview then
       Text[TextNTon].Text := Text[TextNTon].Text + ' [PreviewStart]';
   end;
 
@@ -2200,19 +2679,84 @@ begin
   inherited Draw;
 
   // draw notes
-  SingDrawNoteLines(20, 305, 780, 15);
+  if not AktSong.isDuet then
+    SingDrawNoteLines(5, offset[0]+90, 795, 15)
+  else
+  begin
+    SingDrawNoteLines(5, offset[0]+45, 795, 15);
+    SingDrawNoteLines(5, offset[1]-140, 795, 15);
+  end;
+
   //Error Drawing when no Song is loaded
   if not Error then
   begin
-    SingDrawBeatDelimeters(40, 305, 760, 0);
-    EditDrawCzesc(40, 410, 760, 0, 15);
+    if not AktSong.isDuet then
+    begin
+      SingDrawBeatDelimeters(5, offset[0]+90, 795, 0);
+      EditDrawCzesc(5, offset[0]+195, 795, 0, 15);
+    end else
+    begin
+      SingDrawBeatDelimeters(5, offset[0]+45, 795, 0);
+      EditDrawCzesc(5, offset[0]+150, 795, 0, 15);
+      SingDrawBeatDelimeters(5, offset[1]-140, 795, 1);
+      EditDrawCzesc(5, offset[1]-35, 795, 1, 15);
+    end;
   end;
 
   // draw text
-  Lyric.Draw;
+  if not AktSong.isDuet then
+  begin
+    EditorLyric[0].Draw;
+    DrawInfoBar(0, 5, offset[0]+250, 790, 15);
+  end else
+  begin
+    EditorLyric[0].Draw;
+    DrawInfoBar(0, 5, offset[0]+185, 790, 15);
 
-  DrawInfoBar(20, 460, 760, 20);
-  glLineWidth(1); //bad fix...
+    EditorLyric[1].Draw;
+    DrawInfoBar(1, 5, offset[1]-160, 790, 15);
+  end;
+
+  if (CP=1) then
+  begin
+    glEnable(GL_BLEND);
+    glColor4f(0, 0, 0, 0.3);
+    //notes
+    glbegin(gl_quads);
+      glVertex2f(5,   offset[0]+45);
+      glVertex2f(5,   offset[0]+180);
+      glVertex2f(795, offset[0]+180);
+      glVertex2f(795, offset[0]+45);
+    glEnd;
+    //lyric
+    glbegin(gl_quads);
+      glVertex2f(5,   offset[0]+5);
+      glVertex2f(5,   offset[0]+35);
+      glVertex2f(795, offset[0]+35);
+      glVertex2f(795, offset[0]+5);
+    glEnd;
+    glDisable(GL_BLEND);
+  end else if AktSong.isDuet then
+  begin
+    glEnable(GL_BLEND);
+    glColor4f(0, 0, 0, 0.3);
+    //notes
+    glbegin(gl_quads);
+      glVertex2f(5,   offset[1]-140);
+      glVertex2f(5,   offset[1]-5);
+      glVertex2f(795, offset[1]-5);
+      glVertex2f(795, offset[1]-140);
+    glEnd;
+    //lyric
+    glbegin(gl_quads);
+      glVertex2f(5,   offset[1]+35);
+      glVertex2f(5,   offset[1]+5);
+      glVertex2f(795, offset[1]+5);
+      glVertex2f(795, offset[1]+35);
+    glEnd;
+    glDisable(GL_BLEND);
+  end;
+           
 
   if UVideo.VideoOpened and PlayVideo then
   begin
@@ -2222,10 +2766,10 @@ begin
 
       if VidVis=windowed then
       begin
-        Window.Left := 500;
-        Window.Right := 770;
-        Window.Upper := 65;
-        Window.Lower := 250;
+        Window.Left := 570;
+        Window.Right := 790;
+        Window.Upper := 10;
+        Window.Lower := 145;
         Window.Reflection := false;
         Window.TargetAspect := acoCrop;
         Window.windowed := true;
@@ -2266,11 +2810,22 @@ end;
 procedure TScreenEditSub.DrawStatics;
 var
   x, y, w, h: Integer;
+
+  procedure DrawBorder(x, y, w, h: real);
+  begin
+    glColor4f(0, 0, 0, 1);
+    glLineWidth(2);
+    glBegin(GL_LINE_LOOP);
+      glVertex2f(x-1, y-1);
+      glVertex2f(x+w+1, y-1);
+      glVertex2f(x+w+1, y+h+1);
+      glVertex2f(x-1, y+h+1);
+    glEnd;
+  end;
 begin
-  //Theme:
-  //bg
   glDisable(GL_BLEND);
 
+  //bg
   x := 0;
   y := 0;
   w := 800;
@@ -2283,37 +2838,52 @@ begin
    glVertex2f(x+w, y);
   glEnd;
 
-  // Line
-  glColor4f(0.95, 0.95, 0.95, 1);
-  x := 20;
+  // line bg
+  if (CP=0) then
+    glColor4f(cRB, cGB, cBB, 1)
+  else
+    glColor4f(cRR, cGR, cBR, 1);
+  x := 650;
+  y := 570;
+  w := 145;
+  h := 25;
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+  DrawBorder(x, y, w, h);
+
+
+  // note bg
+  if (CP=0) then
+    glColor4f(cRB, cGB, cBB, 1)
+  else
+    glColor4f(cRR, cGR, cBR, 1);
+  x := 495;
+  y := 570;
+  w := 145;
+  h := 25;
+  glbegin(gl_quads);
+   glVertex2f(x, y);
+   glVertex2f(x, y+h);
+   glVertex2f(x+w, y+h);
+   glVertex2f(x+w, y);
+  glEnd;
+  DrawBorder(x, y, w, h);
+
+  // some borders:
+
+  //info box
+  x := 5;
   y := 5;
-  w := 200;
-  h := 40;
-  glbegin(gl_quads);
-   glVertex2f(x, y);
-   glVertex2f(x, y+h);
-   glVertex2f(x+w, y+h);
-   glVertex2f(x+w, y);
-  glEnd;
+  w := 790;
+  if AktSong.isDuet then
+    h := 145
+  else
+    h := 150;
 
-  // Note
-  x := 260;
-  y := 5;
-  w := 200;
-  h := 40;
-  glbegin(gl_quads);
-   glVertex2f(x, y);
-   glVertex2f(x, y+h);
-   glVertex2f(x+w, y+h);
-   glVertex2f(x+w, y);
-  glEnd;
-
-
-  // some borders
-  x := 20;
-  y := 55;
-  w := 760;
-  h := 236;
   glColor4f(0.95, 0.95, 0.95, 1);
   glbegin(gl_quads);
    glVertex2f(x, y);
@@ -2321,62 +2891,82 @@ begin
    glVertex2f(x+w, y+h);
    glVertex2f(x+w, y);
   glEnd;
+  DrawBorder(x, y, w, h);
 
-  glColor4f(0, 0, 0, 1);
-  glLineWidth(2);
-  glBegin(GL_LINE_LOOP);
-    glVertex2f(x-1, y-1);
-    glVertex2f(x+w+1, y-1);
-    glVertex2f(x+w+1, y+h+1);
-    glVertex2f(x-1, y+h+1);
-  glEnd;
+  //notes singer 1
+  x := 5;
+  if AktSong.isDuet then
+    y := 200
+  else
+    y := 245;
 
-  x := 20;
-  y := 305;
-  w := 760;
+  w := 790;
   h := 135;
-  glColor4f(0.95, 0.95, 0.95, 1);
+  glColor4f(cRB, cGB, cBB, 1);
   glbegin(gl_quads);
    glVertex2f(x, y);
    glVertex2f(x, y+h);
    glVertex2f(x+w, y+h);
    glVertex2f(x+w, y);
   glEnd;
+  DrawBorder(x, y, w, h);
 
-  glColor4f(0, 0, 0, 1);
-  glLineWidth(2);
-  glBegin(GL_LINE_LOOP);
-    glVertex2f(x-1, y-1);
-    glVertex2f(x+w+1, y-1);
-    glVertex2f(x+w+1, y+h+1);
-    glVertex2f(x-1, y+h+1);
-  glEnd;
+  //notes singer 2
+  if AktSong.isDuet then
+  begin
+    x := 5;
+    y := 385;
+    w := 790;
+    h := 135;
+    glColor4f(cRR, cGR, cBR, 1);
+    glbegin(gl_quads);
+      glVertex2f(x, y);
+      glVertex2f(x, y+h);
+      glVertex2f(x+w, y+h);
+      glVertex2f(x+w, y);
+    glEnd;
+    DrawBorder(x, y, w, h);
+  end;
 
-  x := 20;
-  y := 500;
-  w := 760;
-  h := 40;
-  glColor4f(0.95, 0.95, 0.95, 1);
+  //lyric singer 1
+  x := 5;
+  if AktSong.isDuet then
+    y := 160
+  else
+    y := 460;
+
+  w := 790;
+  h := 30;
+  glColor4f(cRB, cGB, cBB, 1);
   glbegin(gl_quads);
    glVertex2f(x, y);
    glVertex2f(x, y+h);
    glVertex2f(x+w, y+h);
    glVertex2f(x+w, y);
   glEnd;
+  DrawBorder(x, y, w, h);
 
-  glColor4f(0, 0, 0, 1);
-  glLineWidth(2);
-  glBegin(GL_LINE_LOOP);
-    glVertex2f(x-1, y-1);
-    glVertex2f(x+w+1, y-1);
-    glVertex2f(x+w+1, y+h+1);
-    glVertex2f(x-1, y+h+1);
-  glEnd;
+  //lyric singer 2
+  if AktSong.isDuet then
+  begin
+    x := 5;
+    y := 530;
+    w := 790;
+    h := 30;
+    glColor4f(cRR, cGR, cBR, 1);
+      glbegin(gl_quads);
+      glVertex2f(x, y);
+      glVertex2f(x, y+h);
+      glVertex2f(x+w, y+h);
+      glVertex2f(x+w, y);
+    glEnd;
+    DrawBorder(x, y, w, h);
+  end;
 
   glLineWidth(1);
 end;
 
-procedure TScreenEditSub.DrawInfoBar(x, y, w, h: integer);
+procedure TScreenEditSub.DrawInfoBar(P, x, y, w, h: integer);
 var
   start, end_:  integer;
   ww:           integer;
@@ -2387,14 +2977,82 @@ var
   line:         integer;
   numLines:     integer;
 
+  function FindStart(): integer;
+  var
+    I:      integer;
+    start:  integer;
+  begin
+    start := High(integer);
+
+    for I := 0 to Length(Czesci[0].Czesc) - 1 do
+    begin
+      if (Length(Czesci[0].Czesc[I].Nuta)>0) then
+      begin
+        if(start > Czesci[0].Czesc[I].Nuta[0].Start) then
+          start := Czesci[0].Czesc[I].Nuta[0].Start;
+      end;
+    end;
+
+    Result := start;
+
+    if not AktSong.isDuet then
+      Exit;
+
+    for I := 0 to Length(Czesci[1].Czesc) - 1 do
+    begin
+      if (Length(Czesci[1].Czesc[I].Nuta)>0) then
+      begin
+        if(start > Czesci[1].Czesc[I].Nuta[0].Start) then
+          start := Czesci[1].Czesc[I].Nuta[0].Start;
+      end;
+    end;
+
+    Result := start;
+  end;
+
+  function FindEnd(): integer;
+  var
+    I:      integer;
+    end_:   integer;
+    h:      integer;
+  begin
+    end_ := Low(integer);
+
+    for I := 0 to Length(Czesci[0].Czesc) - 1 do
+    begin
+      if (Length(Czesci[0].Czesc[I].Nuta)>0) then
+      begin
+        h := Length(Czesci[0].Czesc[I].Nuta)-1;
+        if(end_ < Czesci[0].Czesc[I].Nuta[h].Start + Czesci[0].Czesc[I].Nuta[h].Dlugosc) then
+          end_ := Czesci[0].Czesc[I].Nuta[h].Start + Czesci[0].Czesc[I].Nuta[h].Dlugosc;
+      end;
+    end;
+
+    Result := end_;
+
+    if not AktSong.isDuet then
+      Exit;
+
+    for I := 0 to Length(Czesci[1].Czesc) - 1 do
+    begin
+      if (Length(Czesci[1].Czesc[I].Nuta)>0) then
+      begin
+        h := Length(Czesci[1].Czesc[I].Nuta)-1;
+        if(end_ < Czesci[1].Czesc[I].Nuta[h].Start + Czesci[1].Czesc[I].Nuta[h].Dlugosc) then
+          end_ := Czesci[1].Czesc[I].Nuta[h].Start + Czesci[1].Czesc[I].Nuta[h].Dlugosc;
+      end;
+    end;
+
+    Result := end_;
+  end;
 begin
-  numLines := Length(Czesci[0].Czesc);
+  numLines := Length(Czesci[P].Czesc);
 
   if(numLines=0) then
     Exit;
 
-  start := Czesci[0].Czesc[0].Start;
-  end_ := Czesci[0].Czesc[numLines-1].Koniec;
+  start := FindStart;
+  end_ := FindEnd;
   ww := end_ - start;
 
   glColor4f(0, 0, 0, 1);
@@ -2407,7 +3065,10 @@ begin
     glVertex2f(x-1, y+h+1);
   glEnd;
 
-  glColor4f(0.9, 0.9, 0.9, 1);
+  if (P=0) then
+    glColor4f(cRB, cGB, cBB, 1)
+  else
+    glColor4f(cRR, cGR, cBR, 1);
   glbegin(gl_quads);
    glVertex2f(x, y);
    glVertex2f(x, y+h);
@@ -2418,32 +3079,27 @@ begin
 
   for line := 0 to numLines - 1 do
   begin
-    if (line = Czesci[0].Akt) and not (PlaySentence or PlaySentenceMidi) then
+    if (line = Czesci[P].Akt) and not (PlaySentence or PlaySentenceMidi) then
       glColor4f(0.4, 0.4, 0, 1)
     else
       glColor4f(1, 0.6, 0, 1);
 
-
-    start := Czesci[0].Czesc[line].Nuta[0].Start;
-    end_ := Czesci[0].Czesc[line].Nuta[Czesci[0].Czesc[line].HighNut].Start+
-      Czesci[0].Czesc[line].Nuta[Czesci[0].Czesc[line].HighNut].Dlugosc;
-
-    pos := start/ww*w;
-    br := (end_-start)/ww*w;
-
-    glbegin(gl_quads);
-      glVertex2f(x+pos, y);
-      glVertex2f(x+pos, y+h);
-      glVertex2f(x+pos+br, y+h);
-      glVertex2f(x+pos+br, y);
-    glEnd;
-    {
-    numNotes := Length(Czesci[0].Czesc[line].Nuta);
-
-    for note := 0 to numNotes - 1 do
+    if (Length(Czesci[P].Czesc[line].Nuta)>0) then
     begin
+      start := Czesci[P].Czesc[line].Nuta[0].Start;
+      end_ := Czesci[P].Czesc[line].Nuta[Czesci[P].Czesc[line].HighNut].Start+
+        Czesci[P].Czesc[line].Nuta[Czesci[P].Czesc[line].HighNut].Dlugosc;
 
-    end;  }
+      pos := start/ww*w;
+      br := (end_-start)/ww*w;
+
+      glbegin(gl_quads);
+        glVertex2f(x+pos, y);
+        glVertex2f(x+pos, y+h);
+        glVertex2f(x+pos+br, y+h);
+        glVertex2f(x+pos+br, y);
+      glEnd;
+    end;
   end;
 
 
@@ -2460,37 +3116,43 @@ begin
       glVertex2f(x+pos+br, y);
     glEnd;
 
-    start := Czesci[0].Czesc[Czesci[0].Akt].Nuta[0].Start;
-    end_ := Czesci[0].Czesc[Czesci[0].Akt].Nuta[Czesci[0].Czesc[Czesci[0].Akt].HighNut].Start+
-      Czesci[0].Czesc[Czesci[0].Akt].Nuta[Czesci[0].Czesc[Czesci[0].Akt].HighNut].Dlugosc;
+    if (Length(Czesci[P].Czesc[Czesci[P].Akt].Nuta)>0) then
+    begin
+      start := Czesci[P].Czesc[Czesci[P].Akt].Nuta[0].Start;
+      end_ := Czesci[P].Czesc[Czesci[P].Akt].Nuta[Czesci[P].Czesc[Czesci[P].Akt].HighNut].Start+
+        Czesci[P].Czesc[Czesci[P].Akt].Nuta[Czesci[P].Czesc[Czesci[P].Akt].HighNut].Dlugosc;
 
-    pos := start/ww*w;
-    br := (end_-start)/ww*w;
+      pos := start/ww*w;
+      br := (end_-start)/ww*w;
 
-    glColor4f(0, 0, 0, 0.5);
+      glColor4f(0, 0, 0, 0.5);
 
-    glEnable(GL_BLEND);
-    glbegin(gl_quads);
-      glVertex2f(x+pos, y);
-      glVertex2f(x+pos, y+h);
-      glVertex2f(x+pos+br, y+h);
-      glVertex2f(x+pos+br, y);
-    glEnd;
-    glDisable(GL_BLEND);
+      glEnable(GL_BLEND);
+      glbegin(gl_quads);
+        glVertex2f(x+pos, y);
+        glVertex2f(x+pos, y+h);
+        glVertex2f(x+pos+br, y+h);
+        glVertex2f(x+pos+br, y);
+      glEnd;
+      glDisable(GL_BLEND);
+    end;
   end else
   begin
     glColor4f(1, 0, 0, 1);
-    pos := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Start/ww*w;
-    br := Czesci[0].Czesc[Czesci[0].Akt].Nuta[AktNuta].Dlugosc/ww*w;
-    if (br<1) then
-      br := 1;
+    if (Length(Czesci[P].Czesc[Czesci[P].Akt].Nuta)>0) then
+    begin
+      pos := Czesci[P].Czesc[Czesci[P].Akt].Nuta[AktNuta[P]].Start/ww*w;
+      br := Czesci[P].Czesc[Czesci[P].Akt].Nuta[AktNuta[P]].Dlugosc/ww*w;
+      if (br<1) then
+        br := 1;
 
-    glbegin(gl_quads);
-      glVertex2f(x+pos, y);
-      glVertex2f(x+pos, y+h);
-      glVertex2f(x+pos+br, y+h);
-      glVertex2f(x+pos+br, y);
-    glEnd;
+      glbegin(gl_quads);
+        glVertex2f(x+pos, y);
+        glVertex2f(x+pos, y+h);
+        glVertex2f(x+pos+br, y+h);
+        glVertex2f(x+pos+br, y);
+      glEnd;
+    end;
   end;
 end;
 

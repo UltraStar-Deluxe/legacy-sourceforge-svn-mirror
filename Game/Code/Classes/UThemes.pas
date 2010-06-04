@@ -265,6 +265,9 @@ type
     MedleyIcon:           TThemeStatic;
     CalculatedMedleyIcon: TThemeStatic;
 
+    //Duet Icon
+    DuetIcon:         TThemeStatic;
+
    //Show Cat in TopLeft Mod
     TextCat:          TThemeText;
     StaticCat:        TThemeStatic;
@@ -334,6 +337,8 @@ type
     //Show actual SongName for Medley-Mode
     StaticSongName  :   TThemeStatic;
     TextSongName    :   TThemeText;
+
+    StaticLyricDuetBar : TThemeStatic;
 
     //TimeBar mod
     StaticTimeProgress:   TThemeStatic;
@@ -1101,6 +1106,9 @@ begin
       ThemeLoadStatic(Song.MedleyIcon, 'SongMedleyIcon');
       ThemeLoadStatic(Song.CalculatedMedleyIcon, 'SongCalculatedMedleyIcon');
 
+      //Duet Icon
+      ThemeLoadStatic(Song.DuetIcon, 'SongDuetIcon');
+
       //Show Cat in TopLeft Mod
       ThemeLoadStatic(Song.StaticCat, 'SongStaticCat');
       ThemeLoadText(Song.TextCat, 'SongTextCat');
@@ -1180,6 +1188,8 @@ begin
       //Song name for Medley
       ThemeLoadStatic(Sing.StaticSongName, 'SingSongNameStatic');
       ThemeLoadText(Sing.TextSongName, 'SingSongNameText');
+
+      ThemeLoadStatic(Sing.StaticLyricDuetBar, 'SingStaticLyricDuetBar');
 
       //TimeBar mod
       ThemeLoadStatic(Sing.StaticTimeProgress, 'SingTimeProgress');

@@ -235,6 +235,7 @@ begin
           PartySession.StartNewParty(Rounds + 2);
 
           Music.PlayStart;
+
           //Go to Player Screen
           FadeTo(@ScreenPartyPlayer);
         end;
@@ -491,7 +492,7 @@ begin
         SetLength(IPlaylist2, 0);
         For I := 0 to high(CatSongs.Song) do
         begin
-          If (CatSongs.Song[I].Main) then
+          If CatSongs.Song[I].Main and (CatSongs.NumCatSongs(CatSongs.Song[I].OrderNum)>0) then
           begin
             SetLength(IPlaylist2, Length(IPlaylist2) + 1);
             IPlaylist2[high(IPlaylist2)] := CatSongs.Song[I].Artist;
@@ -636,6 +637,7 @@ begin
   end;
 
   SelectedPlugin := 0;
+  ScreenSong.Mode := smParty;
 end;
 
 procedure TScreenPartyOptions.SetAnimationProgress(Progress: real);

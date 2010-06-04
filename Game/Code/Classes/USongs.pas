@@ -43,6 +43,7 @@ type
     Folder:     string; // for sorting by folder
     FileName:   string;
 
+    isDuet:     boolean;
     Medley:     TMedley;
     PreviewStart: real; //in seconds
     CustomTags: array of TCustomHeaderTag; // from 1.1
@@ -114,6 +115,8 @@ type
     function VisibleIndex(Index: integer): integer; // returns visible song index (skips invisible)
 
     function SetFilter(FilterStr: String; const fType: Byte): Cardinal;
+    function NumCatSongs(Cat: integer): integer;
+    function NumVisibleCats(): integer;
   end;
 
 var
@@ -138,7 +141,6 @@ begin
 
   //Set Correct SongArray Length
   SetLength(Song, BrowsePos);
-//  if Ini.Debug = 1 then BrowseDir('D:\Extract\Songs\');
 end;
 
 procedure TSongs.BrowseDir(Dir: string);
@@ -156,8 +158,8 @@ begin
   end; // if
   FindClose(SR);
 
- if FindFirst(Dir + '*.txt', 0, SR) = 0 then
- begin
+  if FindFirst(Dir + '*.tx?', 0, SR) = 0 then
+  begin
     repeat
       //New Mod for better Memory Management
 
@@ -179,7 +181,11 @@ begin
         if res then
         begin
           Song[SLen]:=AktSong;
-          FindRefrainStart(Song[SLen]);
+          //Medley and Duet - is it possible? Perhaps later...
+          if not AktSong.isDuet then
+            FindRefrainStart(Song[SLen])
+          else
+            Song[SLen].Medley.Source := msNone;
 
           // scanning complete, file is good
           // if there is no cover then try to find it
@@ -609,8 +615,13 @@ begin
   for S := 0 to high(CatSongs.Song) do
   begin
     if (CatSongs.Song[S].OrderNum = Index) AND (Not CatSongs.Song[S].Main) then
-      CatSongs.Song[S].Visible := true
-    else
+    begin
+      if ((ScreenSong.Mode<>smNormal) and (not CatSongs.Song[S].isDuet)) or
+         (ScreenSong.Mode=smNormal) then
+        CatSongs.Song[S].Visible := true
+      else
+        CatSongs.Song[S].Visible := false;
+    end else
       CatSongs.Song[S].Visible := false;
   end;
 end;
@@ -619,7 +630,8 @@ procedure TCatSongs.HideCategory(Index: integer); // hides all songs in category
 var
   S:    integer; // song
 begin
-  for S := 0 to high(CatSongs.Song) do begin
+  for S := 0 to high(CatSongs.Song) do
+  begin
     if not CatSongs.Song[S].Main then
       CatSongs.Song[S].Visible := false // hides all at now
   end;
@@ -631,11 +643,41 @@ var
 begin
   Num := CatSongs.Song[Index].OrderNum;
   if Num <> CatNumShow then
-    begin
+  begin
     ShowCategory(Num);
-    end
-  else begin
+  end else
+  begin
     ShowCategoryList;
+  end;
+end;
+
+function TCatSongs.NumCatSongs(Cat: integer): integer;
+var
+  I: integer;
+begin
+  Result := 0;
+  for I := 0 to Length(CatSongs.Song)-1 do
+  begin
+    if (CatSongs.Song[I].OrderNum = Cat) AND (Not CatSongs.Song[I].Main) then
+    begin
+      if ((ScreenSong.Mode<>smNormal) and (not CatSongs.Song[I].isDuet)) or
+         (ScreenSong.Mode=smNormal) then
+        inc(Result);
+    end;
+  end;
+end;
+
+function TCatSongs.NumVisibleCats(): integer;
+var
+  I: integer;
+begin
+  Result := 0;
+  for I := 0 to Length(CatSongs.Song)-1 do
+  begin
+    if CatSongs.Song[I].Main and CatSongs.Song[I].Visible then
+    begin
+      inc(Result);
+    end;
   end;
 end;
 
@@ -643,13 +685,22 @@ end;
 procedure TCatSongs.ShowCategoryList;
 var
   S:    integer;
+  vis:  boolean;
 begin
   //Hide All Songs Show All Cats
-  for S := 0 to high(CatSongs.Song) do begin
+  for S := 0 to high(CatSongs.Song) do
+  begin
+    vis := false;
+
     if CatSongs.Song[S].Main then
-      CatSongs.Song[S].Visible := true
-    else
-      CatSongs.Song[S].Visible := false
+    begin
+      if (ScreenSong.Mode=smNormal) then
+        Vis := true
+      else if (NumCatSongs(CatSongs.Song[S].OrderNum)>0) then
+        Vis := true;
+    end;
+
+    CatSongs.Song[S].Visible := vis;
   end;
   CatSongs.Selected := CatNumShow; //Show last shown Category
   CatNumShow := -1;
@@ -700,9 +751,11 @@ var
 begin
   {fType: 0: All
           1: Title
-          2: Artist}
+          2: Artist
+          3: Duet}
   FilterStr := Trim(FilterStr);
-  if FilterStr<>'' then begin
+  if FilterStr<>'' then
+  begin
     Result := 0;
     //Create Search Array
     SetLength(SearchStr, 1);
@@ -742,14 +795,31 @@ begin
         Song[i].Visible:=False;
     end;
     CatNumShow := -2;
-  end
-  else begin
-    for i:=0 to High(Song) do begin
+  end else if (fType<>3) then
+  begin
+    for i:=0 to High(Song) do
+    begin
       Song[i].Visible:=(Ini.Tabs=1)=Song[i].Main;
+      if (ScreenSong.Mode<>smNormal) and Song[i].isDuet then
+        Song[i].Visible := false;
       CatNumShow := -1;
     end;
     Result := 0;
+  end else
+  begin
+    Result := 0;
+    for i:=0 to High(Song) do
+    begin
+      Song[i].Visible := false;
+      if not Song[i].Main and Song[i].isDuet then
+      begin
+        Song[i].Visible:=true;
+        inc(Result);
+      end;
+      CatNumShow := -2;
+    end;
   end;
+           
 end;
 
 end.

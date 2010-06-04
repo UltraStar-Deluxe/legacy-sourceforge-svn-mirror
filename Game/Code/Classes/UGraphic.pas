@@ -302,7 +302,7 @@ begin
   Log.LogBenchmark('--> Loading Textures', 2);
 
   Log.BenchmarkStart(2);
-  Lyric := TLyric.Create;
+  //Lyric := TLyric.Create;
   Log.BenchmarkEnd(2);
   Log.LogBenchmark('--> Loading Fonts', 2);
 
@@ -468,7 +468,6 @@ begin
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Name', 3); Log.BenchmarkStart(3);
   ScreenLevel :=            TScreenLevel.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Level', 3); Log.BenchmarkStart(3);
-
   ScreenSong :=             TScreenSong.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Song', 3); Log.BenchmarkStart(3);
 

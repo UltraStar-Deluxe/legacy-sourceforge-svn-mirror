@@ -265,6 +265,8 @@ begin
 end;
 
 procedure TScreenMain.onShow;
+var
+  J:  integer;
 begin
   ScreenSong.Mode := smNormal;
   ScreenSong.SongIndex := -1;

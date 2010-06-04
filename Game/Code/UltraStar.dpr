@@ -5,6 +5,7 @@ program UltraStar;
 {$R 'UltraStar.res' 'UltraStar.rc'}
 
 uses
+  acinerella in 'lib\acinerella\acinerella.pas',
   SDL in 'lib\JEDI-SDLv1.0\SDL\Pas\SDL.pas',
   moduleloader in 'lib\JEDI-SDLv1.0\SDL\Pas\moduleloader.pas',
   sdlutils in 'lib\JEDI-SDLv1.0\SDL\Pas\sdlutils.pas',
@@ -120,11 +121,10 @@ uses
 
   Windows,
   SysUtils,
-  UVideo in 'Classes\UVideo.pas',
-  acinerella in 'lib\acinerella\acinerella.pas';
+  UVideo in 'Classes\UVideo.pas';
 
 const
-  Version = 'UltraStar Deluxe v1.0.1a Challenge-Mod r7c5-10 2010-05-29';
+  Version = 'UltraStar Deluxe Challenge Duet beta 2010-06-04';
 
 var
   WndTitle: string;
@@ -315,16 +315,15 @@ begin
   Log.LogBenchmark('Loading Particel System', 1);
 
   // Joypad
-  if (Ini.Joypad = 1) OR (Params.Joypad) then begin
+  {if (Ini.Joypad = 1) OR (Params.Joypad) then begin
     Log.BenchmarkStart(1);
     Log.LogStatus('Initialize Joystick', 'Initialization');   Joy := TJoy.Create;
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Initializing Joystick', 1);
-  end;
+  end;}
 
   Log.BenchmarkEnd(0);
   Log.LogBenchmark('Loading Time', 0);
-
 
   //------------------------------
   //Start- Mainloop

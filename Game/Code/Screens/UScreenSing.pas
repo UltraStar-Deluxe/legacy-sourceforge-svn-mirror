@@ -15,11 +15,14 @@ type
     protected
       paused: boolean; //Pause Mod
       PauseTime: Real;
-      NumEmptySentences: integer;
+      NumEmptySentences: array [0..1] of integer;
     public
       //TextTime:           integer;
       MP3Volume:        integer;
       MP3VolumeHandler: THandler;
+
+      //Lyric bar for Duet mode
+      StaticLyricDuetBar:   integer;
 
       //TimeBar mod
        StaticTimeProgress:  integer;
@@ -70,8 +73,8 @@ type
 
       Tex_Background:     TTexture;
       FadeOut:            boolean;
-      LyricMain:          TLyric;
-      LyricSub:           TLyric;
+      LyricMain:          array [0..1] of TLyric;
+      LyricSub:           array [0..1] of TLyric;
 
       //VideoAspect
       VideoAspectText:    integer;
@@ -95,7 +98,7 @@ type
       procedure Pause; //Pause Mod(Toggles Pause)
 
       //OnSentenceEnd for LineBonus + Singbar
-      procedure onSentenceEnd(S: Cardinal);
+      procedure onSentenceEnd(CP: integer; S: Cardinal);
       //OnSentenceChange (for Golden Notes)
       procedure onSentenceChange(S: Cardinal);
 
@@ -103,6 +106,9 @@ type
       procedure LoadNextSong;
       procedure UpdateMedleyStats(medley_end: boolean);
       procedure DrawMedleyCountdown();
+
+      procedure SetLyricFontMain(Lyric: TLyric);
+      procedure SetLyricFontSub(Lyric: TLyric);
   end;
 
 const
@@ -252,6 +258,8 @@ begin
 
   LoadFromTheme(Theme.Sing);
 
+  StaticLyricDuetBar := AddStatic(Theme.Sing.StaticLyricDuetBar);
+
   //TimeBar mod
     StaticTimeProgress :=  AddStatic(Theme.Sing.StaticTimeProgress);
     TextTimeText       :=  AddText(Theme.Sing.TextTimeText);
@@ -306,8 +314,10 @@ begin
   VideoAspectStatic:= AddStatic(Theme.Sing.VideoAspectStatic);
   VideoAspectText:=   AddText(Theme.Sing.VideoAspectText);
 
-  LyricMain := TLyric.Create;
-  LyricSub :=  TLyric.Create;
+  LyricMain[0] := TLyric.Create;
+  LyricSub[0] :=  TLyric.Create;
+  LyricMain[1] := TLyric.Create;
+  LyricSub[1] :=  TLyric.Create;
   UVideo.Init;
 
   MP3Volume := 100;
@@ -676,82 +686,6 @@ begin
   end;
   //Set Position of Line Bonus - PhrasenBonus End
 
-  // main text
-  LyricMain.Clear;
-  LyricMain.X := 400;
-  LyricMain.Y := Skin_LyricsT;
-  LyricMain.Scale := 1.4; //1.4
-  LyricMain.Align := 1;
-
-  // sub text
-  LyricSub.Clear;
-  LyricSub.X := 400;
-  LyricSub.Y := Skin_LyricsT + 35; //42 //40
-  LyricSub.Align := 1;
-
-  // set custom options
-  case Ini.LyricsFont of
-    0:
-      begin
-        LyricMain.FontStyle := 0;
-        LyricSub.FontStyle := 0;
-        LyricMain.Size := 14; // 13
-        LyricSub.Size := 14; // 13
-        LyricMain.ColR := Skin_FontR;
-        LyricMain.ColG := Skin_FontG;
-        LyricMain.ColB := Skin_FontB; //Change für Crazy Joker
-        {LyricMain.ColSR := Skin_FontHighlightR;
-        LyricMain.ColSG := Skin_FontHighlightG;
-        LyricMain.ColSB := Skin_FontHighlightB;1aa5dc}
-        LyricMain.ColSR := 5/255; //26
-        LyricMain.ColSG := 163/255; //165
-        LyricMain.ColSB := 210/255;  //220
-
-        LyricSub.ColR := 0.4; //0.6
-        LyricSub.ColG := 0.4; //0.6
-        LyricSub.ColB := 0.4; //0.6
-      end;
-    1:
-      begin
-        LyricMain.FontStyle := 2;
-        LyricSub.FontStyle := 2;
-        LyricMain.Size := 14;
-        LyricSub.Size := 14;
-        LyricMain.ColR := 0.75;
-        LyricMain.ColG := 0.75;
-        LyricMain.ColB := 1;
-        LyricMain.ColSR := 0.5;
-        LyricMain.ColSG := 0.5;
-        LyricMain.ColSB := 1;
-        LyricSub.ColR := 0.8;
-        LyricSub.ColG := 0.8;
-        LyricSub.ColB := 0.8;
-      end;
-    2:
-      begin
-        LyricMain.FontStyle := 3;
-        LyricSub.FontStyle := 3;
-        LyricMain.Size := 12;
-        LyricSub.Size := 12;
-        LyricMain.ColR := 0.75;
-        LyricMain.ColG := 0.75;
-        LyricMain.ColB := 1;
-        LyricMain.ColSR := 0.5;
-        LyricMain.ColSG := 0.5;
-        LyricMain.ColSB := 1;
-        LyricSub.ColR := 0.8;
-        LyricSub.ColG := 0.8;
-        LyricSub.ColB := 0.8;
-      end;
-  end; // case
-
-  case Ini.LyricsEffect of
-    0:  LyricMain.Style := 1; // 0 - one selected, 1 - selected all to the current
-    1:  LyricMain.Style := 2;
-    2:  LyricMain.Style := 3;
-    3:  LyricMain.Style := 4;
-  end; // case
-
   LoadNextSong;
 
   Log.LogStatus('End', 'onShow');
@@ -808,6 +742,87 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TScreenSing.SetLyricFontMain(Lyric: TLyric);
+begin
+  // set custom options
+  case Ini.LyricsFont of
+    0:
+      begin
+        Lyric.FontStyle := 0;
+        Lyric.Size := 14; // 13
+        Lyric.ColR := Skin_FontR;
+        Lyric.ColG := Skin_FontG;
+        Lyric.ColB := Skin_FontB; //Change für Crazy Joker
+        {Lyric.ColSR := Skin_FontHighlightR;
+        Lyric.ColSG := Skin_FontHighlightG;
+        Lyric.ColSB := Skin_FontHighlightB;1aa5dc}
+        Lyric.ColSR := 5/255; //26
+        Lyric.ColSG := 163/255; //165
+        Lyric.ColSB := 210/255;  //220
+      end;
+    1:
+      begin
+        Lyric.FontStyle := 2;
+        Lyric.Size := 14;
+        Lyric.ColR := 0.75;
+        Lyric.ColG := 0.75;
+        Lyric.ColB := 1;
+        Lyric.ColSR := 0.5;
+        Lyric.ColSG := 0.5;
+        Lyric.ColSB := 1;
+      end;
+    2:
+      begin
+        Lyric.FontStyle := 3;
+        Lyric.Size := 12;
+        Lyric.ColR := 0.75;
+        Lyric.ColG := 0.75;
+        Lyric.ColB := 1;
+        Lyric.ColSR := 0.5;
+        Lyric.ColSG := 0.5;
+        Lyric.ColSB := 1;
+      end;
+    end; // case
+
+    case Ini.LyricsEffect of
+      0:  Lyric.Style := 1; // 0 - one selected, 1 - selected all to the current
+      1:  Lyric.Style := 2;
+      2:  Lyric.Style := 3;
+      3:  Lyric.Style := 4;
+    end; // case
+end;
+
+procedure TScreenSing.SetLyricFontSub(Lyric: TLyric);
+begin
+  // set custom options
+  case Ini.LyricsFont of
+    0:
+      begin
+        Lyric.FontStyle := 0;
+        Lyric.Size := 14; // 13
+        Lyric.ColR := 0.4; //0.6
+        Lyric.ColG := 0.4; //0.6
+        Lyric.ColB := 0.4; //0.6
+      end;
+    1:
+      begin
+        Lyric.FontStyle := 2;
+        Lyric.Size := 14;
+        Lyric.ColR := 0.8;
+        Lyric.ColG := 0.8;
+        Lyric.ColB := 0.8;
+      end;
+    2:
+      begin
+        Lyric.FontStyle := 3;
+        Lyric.Size := 12;
+        Lyric.ColR := 0.8;
+        Lyric.ColG := 0.8;
+        Lyric.ColB := 0.8;
+      end;
+    end; // case
 end;
 
 procedure TScreenSing.LoadNextSong;
@@ -906,6 +921,46 @@ begin
       Czas.Razem := AktSong.Finish / 1000;
   end;
 
+  // main text
+  LyricMain[0].Clear;
+  LyricMain[0].X := 400;
+  LyricMain[0].Y := Skin_LyricsT;
+  LyricMain[0].Scale := 1.4; //1.4
+  LyricMain[0].Align := 1;
+
+  // sub text
+  LyricSub[0].Clear;
+  LyricSub[0].X := 400;
+  LyricSub[0].Y := Skin_LyricsT + 35; //42 //40
+  LyricSub[0].Align := 1;
+
+  SetLyricFontMain(LyricMain[0]);
+  SetLyricFontSub(LyricSub[0]);
+
+  if AktSong.isDuet then
+  begin
+    // main text
+    LyricMain[1].Clear;
+    LyricMain[1].X := 400;
+    LyricMain[1].Y := Skin_LyricsT;
+    LyricMain[0].Y := 5{Skin_LyricsT};
+    LyricMain[1].Scale := 1.4;
+    LyricMain[1].Align := 1;
+
+    // sub text
+    LyricSub[1].Clear;
+    LyricSub[1].X := 400;
+    LyricSub[0].Y := 5{Skin_LyricsT} + 35;
+    LyricSub[1].Y := Skin_LyricsT + 35;
+    LyricSub[1].Align := 1;
+
+    SetLyricFontMain(LyricMain[1]);
+    SetLyricFontSub(LyricSub[1]);
+
+    Static[StaticLyricDuetBar].Visible := true;
+  end else
+    Static[StaticLyricDuetBar].Visible := false;
+
   Czas.OldBeat := -1;
 
 
@@ -913,10 +968,19 @@ begin
     ClearScores(P);
 
   // fill texts
-  LyricMain.AddCzesc(0);
-  LyricMain.Selected := -1;
-  LyricSub.AddCzesc(1);
-  LyricSub.Selected := -1;
+  LyricMain[0].AddCzesc(0, 0);
+  LyricMain[0].Selected := -1;
+  LyricSub[0].AddCzesc(0, 1);
+  LyricSub[0].Selected := -1;
+
+  if AktSong.isDuet then
+  begin
+    // fill texts
+    LyricMain[1].AddCzesc(1, 0);
+    LyricMain[1].Selected := -1;
+    LyricSub[1].AddCzesc(1, 1);
+    LyricSub[1].Selected := -1;
+  end;
 
   //Deactivate Pause
   Paused := False;
@@ -927,9 +991,14 @@ begin
   //GoldenStarsTwinkle Mod End
 
   //Set Num of Empty Sentences for Phrasen Bonus
-  NumEmptySentences := 0;
-  for P := low(Czesci[0].Czesc) to high(Czesci[0].Czesc) do
-    if Czesci[0].Czesc[P].TotalNotes = 0 then Inc(NumEmptySentences);
+  NumEmptySentences[0] := 0;
+  NumEmptySentences[1] := 0;
+
+  for I := 0 to Length(Czesci) - 1 do
+  begin
+    for P := low(Czesci[I].Czesc) to high(Czesci[I].Czesc) do
+      if Czesci[I].Czesc[P].TotalNotes = 0 then Inc(NumEmptySentences[I]);
+  end;
 
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
   begin
@@ -1142,9 +1211,13 @@ begin
 
   lastLine := Length(Czesci[0].Czesc)-1;
   lastWord := Length(Czesci[0].Czesc[lastLine].Nuta)-1;
-  if (Czas.AktBeat>(Czesci[0].Czesc[lastLine].Nuta[lastWord].Start+
-    Czesci[0].Czesc[lastLine].Nuta[lastWord].Dlugosc)) then
-    ScreenSong.SungToEnd := true;
+
+  if (lastLine>=0) and (lastWord>=0) then
+  begin
+    if (Czas.AktBeat>(Czesci[0].Czesc[lastLine].Nuta[lastWord].Start+
+      Czesci[0].Czesc[lastLine].Nuta[lastWord].Dlugosc)) then
+      ScreenSong.SungToEnd := true;
+  end;
 
   // for medley-mode:
   CurTime := Czas.Teraz;
@@ -1569,15 +1642,15 @@ begin
   end;
 end;
 
-procedure TScreenSing.onSentenceEnd(S: Cardinal);
+procedure TScreenSing.onSentenceEnd(CP: integer; S: Cardinal);
 var
-I: Integer;
-A: Real;
-B: integer; //Max Points for Notes
-begin
+  I: Integer;
+  A: Real;
+  B: integer; //Max Points for Notes
 
+begin
   //Check for Empty Sentence
-  if (Czesci[0].Czesc[S].TotalNotes<=0) then
+  if (Czesci[CP].Czesc[S].TotalNotes<=0) then
     exit;
 
   //Set Max Note Points
@@ -1586,27 +1659,30 @@ begin
   else
     B := 10000;
 
-  for I := 0 to High(Player) do begin
+  for I := 0 to High(Player) do
+  begin
+    if not AktSong.isDuet or (I mod 2 = CP) then
+    begin
+      
     A := Player[I].Score + Player[I].ScoreGolden - Player[I].ScoreLast + 2;
 
     //SingBar Mod
-    If ({(Ini.Oscilloscope = 2) and }(Czesci[0].Czesc[S].TotalNotes>0)) then
+    If (Czesci[CP].Czesc[S].TotalNotes>0) then
     begin
-      Player[I].ScorePercentTarget := Player[I].ScorePercentTarget + floor(A / (B * Czesci[0].Czesc[S].TotalNotes / Czesci[0].Wartosc) * 40 - 26);
+      Player[I].ScorePercentTarget := Player[I].ScorePercentTarget +
+        floor(A / (B * Czesci[0].Czesc[S].TotalNotes / Czesci[CP].Wartosc) * 40 - 26);
       if Player[I].ScorePercentTarget < 0 then Player[I].ScorePercentTarget := 0;
       if Player[I].ScorePercentTarget > 99 then Player[I].ScorePercentTarget := 99;
-
     //end Singbar Mod
     end;
 
     //PhrasenBonus - Line Bonus Mod
 
     //Generate Steps 0 to 8
-    A := Floor(A / (B * Czesci[0].Czesc[S].TotalNotes / Czesci[0].Wartosc) * 8);
+    A := Floor(A / (B * Czesci[CP].Czesc[S].TotalNotes / Czesci[CP].Wartosc) * 8);
 
     If (Ini.LineBonus > 0) then
     begin
-
       //Generate Text
       if A >= 8 then
         Player[I].LineBonus_Text := Theme.Sing.LineBonusText[8]
@@ -1614,7 +1690,8 @@ begin
         Player[I].LineBonus_Text := Theme.Sing.LineBonusText[Floor(A)];
 
       //PhrasenBonus give Points
-      Player[I].ScoreLine := Player[I].ScoreLine + (1000 / (Length(Czesci[0].Czesc) - NumEmptySentences) * A / 8);
+      Player[I].ScoreLine := Player[I].ScoreLine +
+        (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[I mod 2]) * A / 8);
       Player[I].ScoreLineI := Round(Player[I].ScoreLine / 10) * 10;
       //Update Total Score
       Player[I].ScoreTotalI := Player[I].ScoreI + Player[I].ScoreGoldenI + Player[I].ScoreLineI;
@@ -1657,6 +1734,7 @@ begin
       Player[I].LineBonus_Visible := True;
       Player[I].LineBonus_Age := 1;
     end;
+
     //PhrasenBonus - Line Bonus Mod End// }
 
     //PerfectLineTwinkle Mod (effect) Pt.1
@@ -1667,9 +1745,10 @@ begin
     end;
     //PerfectLineTwinkle Mod end
 
-  //Refresh LastScore
-  Player[I].ScoreLast := Player[I].Score + Player[I].ScoreGolden;
-
+    //Refresh LastScore
+    Player[I].ScoreLast := Player[I].Score + Player[I].ScoreGolden;
+  end else
+    Player[I].LineBonus_Visible := false;
   end;
 
   //PerfectLineTwinkle Mod (effect) Pt.2

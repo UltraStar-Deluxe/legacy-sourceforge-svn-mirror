@@ -9,8 +9,9 @@ type
   TScreenSongJumpto = class(TMenu)
     private
       //For ChangeMusic
-      LastPlayed: Integer;
-      VisibleBool: Boolean;
+      LastPlayed:   Integer;
+      VisibleBool:  Boolean;
+      isDuet:       Boolean;
     public
       VisSongs: Integer;
 
@@ -45,12 +46,19 @@ begin
   If (PressedDown) Then
   begin // Key Down
     case PressedKey of
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL, SDLK_LEFTBRACKET, SDLK_SEMICOLON:
+      SDLK_0..SDLK_9, SDLK_A..SDLK_Z,
+      SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM,
+      SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK,
+      SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL,
+      SDLK_LEFTBRACKET, SDLK_SEMICOLON:
         begin
-          if Interaction = 0 then
+          if not isDuet then
           begin
-            Button[0].Text[0].Text := Button[0].Text[0].Text + chr(ScanCode);
-            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+            if Interaction = 0 then
+            begin
+              Button[0].Text[0].Text := Button[0].Text[0].Text + chr(ScanCode);
+              SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+            end;
           end;
         end;
 
@@ -85,9 +93,29 @@ begin
 
       SDLK_BACKSPACE:
         begin
-          if (Interaction = 0) AND (Length(Button[0].Text[0].Text) > 0) then
+          if (Interaction = 0) AND (Length(Button[0].Text[0].Text) > 0) and not isDuet then
           begin
             Button[0].Text[0].DeleteLastL;
+            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+          end else if (Interaction = 0) and isDuet then
+          begin
+            Button[0].Text[0].Text := '';
+            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+          end;
+        end;
+
+      SDLK_F1:
+        begin
+          if not isDuet then
+          begin
+            //show/hide duet songs
+            isDuet := true;
+            Button[0].Text[0].Text := 'Duet Songs';
+            SetTextFound(CatSongs.SetFilter('', 3));
+          end else
+          begin
+            isDuet := false;
+            Button[0].Text[0].Text := '';
             SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
           end;
         end;
@@ -166,6 +194,7 @@ begin
 
   Interaction := 0;
   LastPlayed  := 0;
+  isDuet := false;
 end;
 
 procedure TScreenSongJumpto.SetVisible(Value: Boolean);
@@ -186,6 +215,7 @@ begin
 
     Button[0].Text[0].Text := '';
     Text[0].Text := Theme.SongJumpto.NoSongsFound;
+    isDuet := false;
   end;
 
   //Select Input

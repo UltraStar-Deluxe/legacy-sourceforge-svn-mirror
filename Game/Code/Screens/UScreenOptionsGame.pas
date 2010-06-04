@@ -7,12 +7,16 @@ uses
 
 type
   TScreenOptionsGame = class(TMenu)
-    public
+    private
       old_Tabs, old_Sorting: integer;
+
+      procedure Leave;
+      procedure RefreshSongs;
+      
+    public
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
-      procedure RefreshSongs;
   end;
 
 const
@@ -40,16 +44,13 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-          Music.PlayBack;
-          RefreshSongs;
-          FadeTo(@ScreenOptions);
+          Leave;
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 7 then begin
-            Music.PlayBack;
-            RefreshSongs;
-            FadeTo(@ScreenOptions);
+          if SelInteraction = 7 then
+          begin
+            Leave;
           end;
         end;
       SDLK_DOWN:
@@ -114,6 +115,15 @@ begin
   //Refresh Songs Patch
   old_Sorting := Ini.Sorting;
   old_Tabs    := Ini.Tabs;
+end;
+
+procedure TScreenOptionsGame.Leave;
+begin
+
+
+  Music.PlayBack;
+  RefreshSongs;
+  FadeTo(@ScreenOptions);
 end;
 
 end.

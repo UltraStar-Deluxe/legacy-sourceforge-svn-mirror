@@ -135,6 +135,7 @@ end;
 
 procedure Init;
 begin
+  inst := nil;
   videodecoder := nil;
 
   VideoOpened:=False;

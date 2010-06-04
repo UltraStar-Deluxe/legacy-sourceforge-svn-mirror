@@ -69,7 +69,7 @@ type
       property Style: integer write SetStyle;
       property FontStyle: integer write SetFStyle;
       procedure AddWord(Text: string);
-      procedure AddCzesc(NrCzesci: integer); //AddLine?
+      procedure AddCzesc(CP, NrCzesci: integer); //AddLine?
       procedure ChangeCurText(Text: String);
 
       function SelectedLetter: integer;  // LCD
@@ -80,8 +80,8 @@ type
 
   end;
 
-var
-  Lyric:    TLyric;
+{var
+  Lyric:    TLyric;}
 
 implementation
 uses TextGL, UGraphic, UDrawTexture;
@@ -220,15 +220,24 @@ begin
   Refresh;
 end;
 
-procedure TLyric.AddCzesc(NrCzesci: integer);
+procedure TLyric.AddCzesc(CP, NrCzesci: integer);
 var
   N:    integer;
 begin
   Clear;
-  for N := 0 to Czesci[0].Czesc[NrCzesci].HighNut do begin
-    Italic := Czesci[0].Czesc[NrCzesci].Nuta[N].FreeStyle;
-    AddWord(Czesci[0].Czesc[NrCzesci].Nuta[N].Tekst);
-    Text := Text + Czesci[0].Czesc[NrCzesci].Nuta[N].Tekst;
+  if (Length(Czesci[CP].Czesc[NrCzesci].Nuta)>0) then
+  begin
+    for N := 0 to Czesci[CP].Czesc[NrCzesci].HighNut do
+    begin
+      Italic := Czesci[CP].Czesc[NrCzesci].Nuta[N].FreeStyle;
+      AddWord(Czesci[CP].Czesc[NrCzesci].Nuta[N].Tekst);
+      Text := Text + Czesci[CP].Czesc[NrCzesci].Nuta[N].Tekst;
+    end;
+  end else
+  begin
+    Italic := false;
+    AddWord(' ');
+    Text := ' ';
   end;
   Selected := -1;
 end;
@@ -301,7 +310,7 @@ begin
         for W := 0 to High(Word) do
           if Word[W].Selected then begin
             Tex_Ball.X := (Word[W].X - 10) + Word[W].Done * Word[W].Width;
-            Tex_Ball.Y := 480 - 10*sin(Word[W].Done * pi);
+            Tex_Ball.Y := YR -12 - 10*sin(Word[W].Done * pi);
             Tex_Ball.W := 20;
             Tex_Ball.H := 20;
             DrawTexture(Tex_Ball);

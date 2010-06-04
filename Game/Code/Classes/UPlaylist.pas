@@ -60,7 +60,7 @@ type
 
 
 implementation
-uses USongs, ULog, UFiles, UGraphic, UThemes, SysUtils;
+uses USongs, ULog, UFiles, UGraphic, UThemes, SysUtils, UMusic;
 
 //----------
 //Create - Construct Class - Dummy for now
@@ -247,7 +247,8 @@ begin
   //Show Songs in PL
   For I := 0 to high(PlayLists[Index].Items) do
   begin
-    CatSongs.Song[PlayLists[Index].Items[I].SongID].Visible := True;
+    if (ScreenSong.Mode=smNormal) or not CatSongs.Song[PlayLists[Index].Items[I].SongID].isDuet then
+      CatSongs.Song[PlayLists[Index].Items[I].SongID].Visible := True;
   end;
 
   //Set CatSongsMode + Playlist Mode
