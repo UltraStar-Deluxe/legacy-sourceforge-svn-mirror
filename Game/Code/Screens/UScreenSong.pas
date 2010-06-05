@@ -2693,7 +2693,7 @@ begin
       Music.PlayChange;
       ChangeMusic;
       SetScroll4;
-    end else
+    end else if (Ini.ShuffleTime>0) then
       WaitHandler.change_time := WaitHandler.change_time + TimeSkip;
   end;
 
