@@ -1665,9 +1665,12 @@ begin
   //We draw Buttons for our own
   for I := 0 to Length(Button) - 1 do
   begin
-    if (I<>Interaction) or not Assigned(fCurrentVideo) or (VideoAlpha<1) then
+    if (I<>Interaction) or not Assigned(fCurrentVideo) or (VideoAlpha<1) or AudioPlayback.Finished then
       Button[I].Draw;
   end;
+
+  if AudioPlayback.Finished then
+    StopVideoPreview;
 
   if Assigned(fCurrentVideo) then
   begin
