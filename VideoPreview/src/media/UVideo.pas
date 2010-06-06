@@ -1090,7 +1090,7 @@ begin
 
   glEnable(GL_SCISSOR_TEST);
   glEnable(GL_BLEND);
-  glDepthRange(0, 1);
+  glDepthRange(0, 10);
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_TEST);
 
@@ -1165,10 +1165,11 @@ begin
 
   glEnable(GL_SCISSOR_TEST);
   glEnable(GL_BLEND);
-  glDepthRange(0, 1);
+  glDepthRange(0, 10);
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_TEST);
 
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, fFrameTex);
 
@@ -1408,6 +1409,12 @@ end;
 procedure TVideo_FFmpeg.SetAlpha(Alpha: double);
 begin
   fAlpha := Alpha;
+
+  if (fAlpha>1) then
+    fAlpha := 1;
+
+  if (fAlpha<0) then
+    fAlpha := 0;
 end;
 
 function TVideo_FFmpeg.GetAlpha(): double;

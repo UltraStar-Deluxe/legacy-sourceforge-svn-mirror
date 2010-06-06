@@ -62,8 +62,12 @@ type
 
       isScrolling: boolean;   // true if song flow is about to move
 
+      fCurrentVideo: IVideo;
+
       procedure StartMusicPreview();
       procedure StopMusicPreview();
+      procedure StartVideoPreview();
+      procedure StopVideoPreview();
     public
       TextArtist:   integer;
       TextTitle:    integer;
@@ -128,6 +132,7 @@ type
       function Draw: boolean; override;
       procedure GenerateThumbnails();
       procedure OnShow; override;
+      procedure OnShowFinish; override;
       procedure OnHide; override;
       procedure SelectNext;
       procedure SelectPrev;
@@ -886,6 +891,8 @@ begin
 
   PreviewOpened := -1;
   isScrolling := false;
+
+  fCurrentVideo := nil;
 end;
 
 procedure TScreenSong.GenerateThumbnails();
@@ -960,6 +967,7 @@ begin
   if (Ini.PreviewVolume <> 0) then
   begin
     StartMusicPreview;
+    StartVideoPreview;
   end;
 
   // fade in detailed cover
@@ -973,6 +981,7 @@ begin
   UnLoadDetailedCover;
 
   StopMusicPreview();
+  StopVideoPreview();
   PreviewOpened := -1;
 end;
 
@@ -1506,6 +1515,9 @@ begin
   AudioPlayback.Stop;
   PreviewOpened := -1;
 
+  // reset video playback engine
+  fCurrentVideo := nil;
+
   if Ini.Players <= 3 then PlayersPlay := Ini.Players + 1;
   if Ini.Players  = 4 then PlayersPlay := 6;
 
@@ -1544,9 +1556,15 @@ begin
     end;
   end;
 
-  isScrolling := true;
+  isScrolling := false;
   SetJoker;
   SetStatics;
+end;
+
+procedure TScreenSong.OnShowFinish;
+begin
+  isScrolling := true;
+  CoverTime := 10;
 end;
 
 procedure TScreenSong.OnHide;
@@ -1573,9 +1591,10 @@ end;
 
 function TScreenSong.Draw: boolean;
 var
-  dx: real;
-  dt: real;
-  I:  integer;
+  dx:         real;
+  dt:         real;
+  I:          integer;
+  VideoAlpha: real;
 begin
   if isScrolling then
   begin
@@ -1611,7 +1630,7 @@ begin
   //Log.LogBenchmark('SetScroll4', 5);
 
   //Fading Functions, Only if Covertime is under 5 Seconds
-  if (CoverTime < 5) then
+  if (CoverTime < 9) then
   begin
     // cover fade
     if (CoverTime < 1) and (CoverTime + TimeSkip >= 1) then
@@ -1641,10 +1660,40 @@ begin
   //Draw BG
   DrawBG;
 
+  VideoAlpha := Button[interaction].Texture.Alpha*(CoverTime-1);
   //Instead of Draw FG Procedure:
   //We draw Buttons for our own
   for I := 0 to Length(Button) - 1 do
-    Button[I].Draw;
+  begin
+    if (I<>Interaction) or not Assigned(fCurrentVideo) or (VideoAlpha<1) then
+      Button[I].Draw;
+  end;
+
+  if Assigned(fCurrentVideo) then
+  begin
+    // Just call this once
+    // when Screens = 2
+    if (ScreenAct = 1) then
+      fCurrentVideo.GetFrame(CatSongs.Song[Interaction].VideoGAP + AudioPlayback.Position);
+
+    fCurrentVideo.SetScreen(ScreenAct);
+    fCurrentVideo.Alpha := VideoAlpha;
+
+    //set up window
+    with Button[interaction] do
+    begin
+      fCurrentVideo.SetScreenPosition(X, Y, Z);
+      fCurrentVideo.Width := W;
+      fCurrentVideo.Height := H;
+      fCurrentVideo.ReflectionSpacing := Reflectionspacing;
+    end;
+    fCurrentVideo.AspectCorrection := acoCrop;
+
+    fCurrentVideo.Draw;
+
+    if Button[interaction].Reflection then
+      fCurrentVideo.DrawReflection;
+  end;
 
   // Statics
   for I := 0 to Length(Statics) - 1 do
@@ -1743,7 +1792,7 @@ begin
 
   if CatSongs.VisibleSongs = 0 then
     Exit;
-    
+
   Song := CatSongs.Song[Interaction];
   if not assigned(Song) then
     Exit;
@@ -1755,7 +1804,7 @@ begin
   if AudioPlayback.Open(Song.Path.Append(Song.Mp3)) then
   begin
     PreviewOpened := Interaction;
-    
+
     AudioPlayback.Position := AudioPlayback.Length / 4;
     // set preview volume
     if (Ini.PreviewFading = 0) then
@@ -1777,6 +1826,55 @@ procedure TScreenSong.StopMusicPreview();
 begin
   // Stop preview of previous song
   AudioPlayback.Stop;
+end;
+
+procedure TScreenSong.StartVideoPreview();
+var
+  VideoFile:  IPath;
+  Song:       TSong;
+
+begin
+  if Assigned(fCurrentVideo) then
+  begin
+    fCurrentVideo.Stop();
+    fCurrentVideo := nil;
+  end;
+
+  //if no audio open => exit
+  if (PreviewOpened = -1) then
+    Exit;
+
+  if CatSongs.VisibleSongs = 0 then
+    Exit;
+
+  Song := CatSongs.Song[Interaction];
+  if not assigned(Song) then
+    Exit;
+
+  //fix: if main cat than there is nothing to play
+  if Song.main then
+    Exit;
+
+  VideoFile := Song.Path.Append(Song.Video);
+  if (Song.Video.IsSet) and VideoFile.IsFile then
+  begin
+    fCurrentVideo := VideoPlayback.Open(VideoFile);
+    if (fCurrentVideo <> nil) then
+    begin
+      fCurrentVideo.Position := Song.VideoGAP + AudioPlayback.Position;
+      fCurrentVideo.Play;
+    end;
+  end;
+end;
+
+procedure TScreenSong.StopVideoPreview();
+begin
+  // Stop video preview of previous song
+  if Assigned(fCurrentVideo) then
+  begin
+    fCurrentVideo.Stop();
+    fCurrentVideo := nil;
+  end;
 end;
 
 // Changes previewed song
