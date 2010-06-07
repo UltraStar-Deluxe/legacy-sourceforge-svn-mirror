@@ -53,11 +53,25 @@ uses
   {$IFDEF UseMIDIPort}
   MidiOut,
   {$ENDIF}
-  UThemes;
+  UThemes,
+  UPath;
 
 type
+  TVisibleHeaders = record
+        Title: UTF8String;
+        Artist: UTF8String;
+        CoverId:  Integer;
+        BackgroundId: Integer;
+        Mp3Id:  Integer;
+        GAP:  Real;
+        Video:  IPath;
+        VideoGAP: real;
+        BPM:  array of TBPM;
+  end;
+
   TScreenEditSub = class(TMenu)
     private
+
       AktBeat:          integer;
       //Variable is True if no Song is loaded
       Error:            boolean;
@@ -169,6 +183,12 @@ type
       CurrentY:   integer;
       Lyric:            TEditorLyrics;
 
+      //undo declaration
+      UndoLines:       array of TLines;
+      UndoStateNote:      array of integer;
+      CurrentUndoLines: integer;
+      UndoHeader: array of TVisibleHeaders;
+
       procedure DivideBPM;
       procedure MultiplyBPM;
       procedure LyricsCapitalize;
@@ -186,6 +206,8 @@ type
       procedure PasteText;
       procedure CopySentence(Src, Dst: integer);
       procedure CopySentences(Src, Dst, Num: integer);
+      procedure CopyToUndo; //copy current Lines,mouse position and headers
+      procedure CopyFromUndo; //undo last Lines,mouse position and headers
       procedure DrawStatics;
       procedure DrawInfoBar(x, y, w, h: integer);
       //Note Name Mod
@@ -212,8 +234,8 @@ uses
   USkins,
   ULanguage,
   UTextEncoding,
-  UUnicodeUtils,
-  UPath;
+  UUnicodeUtils;
+
 
 
 procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
@@ -279,6 +301,10 @@ begin
           begin
             //ScreenPopupInfo.ShowPopup(Language.Translate('INFO_FILE_SAVED'));
             Text[TextDebug].Text := Language.Translate('INFO_FILE_SAVED');
+            SetLength(UndoLines, 0); //clear undo lines
+            SetLength(UndoStateNote, 0); //clear undo currentnote state
+            SetLength(Undoheader, 0); //clear undo headrers
+            CurrentUndoLines := 0;
           end
           else if (SResult = ssrEncodingError) then
           begin
@@ -310,6 +336,7 @@ begin
           // Divide lengths by 2
           if (SDL_ModState = KMOD_LSHIFT) then
           begin
+            CopyToUndo;
             DivideBPM;
             Exit;
           end;
@@ -319,6 +346,7 @@ begin
           // Multiply lengths by 2
           if (SDL_ModState = KMOD_LSHIFT) then
           begin
+            CopyToUndo;
             MultiplyBPM;
             Exit;
           end;
@@ -327,11 +355,19 @@ begin
         begin
           // Capitalize letter at the beginning of line
           if SDL_ModState = 0 then
+            begin
+            CopyToUndo;
             LyricsCapitalize;
+            Lyric.AddLine(Lines[0].Current);
+            Lyric.Selected := CurrentNote;
+            end;
 
           // Correct spaces
           if SDL_ModState = KMOD_LSHIFT then
-            LyricsCorrectSpaces;
+            begin
+              CopyToUndo;
+              LyricsCorrectSpaces;
+            end;
 
           // Copy sentence
           if SDL_ModState = KMOD_LCTRL then
@@ -352,6 +388,7 @@ begin
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
           begin
+            CopyToUndo;
             CopySentence(CopySrc, Lines[0].Current);
           end;
           GoldenRec.KillAll;
@@ -359,6 +396,7 @@ begin
       SDLK_T:
         begin
           // Fixes timings between sentences
+          CopyToUndo;
           FixTimings;
           Exit;
         end;
@@ -403,7 +441,7 @@ begin
             AudioPlayback.Stop;
             AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start)+0{-0.10};
             PlayStopTime := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_)+0;
-            AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);            
+            AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
             AudioPlayback.Play;
             LastClick := -100;
           end;
@@ -413,6 +451,7 @@ begin
       // Golden Note
       SDLK_G:
         begin
+          CopyToUndo;
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntGolden) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
           else
@@ -424,6 +463,7 @@ begin
       // Freestyle Note
       SDLK_F:
         begin
+          CopyToUndo;
           if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntFreestyle) then
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
           else
@@ -431,19 +471,31 @@ begin
           GoldenRec.KillAll;
           Exit;
         end;
+      SDLK_Z:
+        begin
+          if SDL_ModState = KMOD_LCTRL then
+          begin
+              CopyFromUndo;
+              GoldenRec.KillAll;
+          end;
+        end;
     end;
 
     // check special keys
     case PressedKey of
-      SDLK_ESCAPE,
-      SDLK_BACKSPACE :
+      SDLK_ESCAPE :
+//      SDLK_BACKSPACE : // disable to leave editor by backspace key
         begin
-          FadeTo(@ScreenSong);
+          if length(UndoLines) > 0 then
+          ScreenPopupcheck.CheckFadeTo(@ScreenSong,'Do you want leave editor without save ?')
+          else
+            FadeTo(@ScreenSong);
         end;
 
       SDLK_BACKQUOTE:
         begin
           // Increase Note Length (same as Alt + Right)
+          CopyToUndo;
           Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
           if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
             Inc(Lines[0].Line[Lines[0].Current].End_);
@@ -453,6 +505,7 @@ begin
       SDLK_EQUALS:
         begin
           // Increase BPM
+          CopyToUndo;
           if SDL_ModState = 0 then
             CurrentSong.BPM[0].BPM := Round((CurrentSong.BPM[0].BPM * 5) + 1) / 5; // (1/20)
           if SDL_ModState = KMOD_LSHIFT then
@@ -464,6 +517,7 @@ begin
       SDLK_MINUS:
         begin
           // Decrease BPM
+          CopyToUndo;
           if SDL_ModState = 0 then
             CurrentSong.BPM[0].BPM := Round((CurrentSong.BPM[0].BPM * 5) - 1) / 5;
           if SDL_ModState = KMOD_LSHIFT then
@@ -476,6 +530,7 @@ begin
         begin
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
           begin
+            CopyToUndo;
             CopySentence(CopySrc, Lines[0].Current);
             CopySentence(CopySrc+1, Lines[0].Current+1);
             CopySentence(CopySrc+2, Lines[0].Current+2);
@@ -485,6 +540,7 @@ begin
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then
           begin
+            CopyToUndo;
             CopySentences(CopySrc, Lines[0].Current, 4);
             GoldenRec.KillAll;
           end;
@@ -493,6 +549,7 @@ begin
         begin
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
           begin
+            CopyToUndo;
             CopySentence(CopySrc, Lines[0].Current);
             CopySentence(CopySrc+1, Lines[0].Current+1);
             CopySentence(CopySrc+2, Lines[0].Current+2);
@@ -503,6 +560,7 @@ begin
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT + KMOD_LALT then
           begin
+            CopyToUndo;
             CopySentences(CopySrc, Lines[0].Current, 5);
             GoldenRec.KillAll;
           end;
@@ -511,6 +569,7 @@ begin
       SDLK_9:
         begin
           // Decrease GAP
+          CopyToUndo;
           if SDL_ModState = 0 then
             CurrentSong.GAP := CurrentSong.GAP - 10;
           if SDL_ModState = KMOD_LSHIFT then
@@ -519,6 +578,7 @@ begin
       SDLK_0:
         begin
           // Increase GAP
+          CopyToUndo;
           if SDL_ModState = 0 then
             CurrentSong.GAP := CurrentSong.GAP + 10;
           if SDL_ModState = KMOD_LSHIFT then
@@ -528,6 +588,7 @@ begin
       SDLK_KP_PLUS:
         begin
           // Increase tone of all notes
+          CopyToUndo;
           if SDL_ModState = 0 then
             ChangeWholeTone(1);
           if SDL_ModState = KMOD_LSHIFT then
@@ -538,6 +599,7 @@ begin
       SDLK_KP_MINUS:
         begin
           // Decrease tone of all notes
+          CopyToUndo;
           if SDL_ModState = 0 then
             ChangeWholeTone(-1);
           if SDL_ModState = KMOD_LSHIFT then
@@ -547,6 +609,7 @@ begin
 
       SDLK_SLASH:
         begin
+          CopyToUndo;
           if SDL_ModState = 0 then
           begin
             // Insert start of sentece
@@ -594,7 +657,7 @@ begin
           PlayStopTime := (GetTimeFromBeat(
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length));
-          AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);            
+          AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
           AudioPlayback.Play;
           LastClick := -100;
         end;
@@ -637,6 +700,7 @@ begin
           if SDL_ModState = KMOD_LCTRL then
           begin
             // moves text to right in current sentence
+            CopyToUndo;
             DeleteNote;
             GoldenRec.KillAll;
           end;
@@ -645,12 +709,14 @@ begin
       SDLK_PERIOD:
         begin
           // moves text to right in current sentence
+          CopyToUndo;
           MoveTextToRight;
         end;
 
       SDLK_RIGHT:
         begin
           // right
+          CopyToUndo;
           if SDL_ModState = 0 then
           begin
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
@@ -710,6 +776,7 @@ begin
       SDLK_LEFT:
         begin
           // left
+          CopyToUndo;
           if SDL_ModState = 0 then
           begin
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
@@ -776,7 +843,7 @@ begin
           if SDL_ModState = 0 then
           begin
             {$IFDEF UseMIDIPort}
-            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));            
+            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
             {$ENDIF}
@@ -798,6 +865,7 @@ begin
           // decrease tone
           if SDL_ModState = KMOD_LCTRL then
           begin
+            CopyToUndo;
             TransposeNote(-1);
             GoldenRec.KillAll;
           end;
@@ -811,7 +879,7 @@ begin
           if SDL_ModState = 0 then
           begin
             {$IFDEF UseMIDIPort}
-            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));            
+            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
             PlaySentenceMidi := false;
             {$endif}
@@ -833,6 +901,7 @@ begin
           // increase tone
           if SDL_ModState = KMOD_LCTRL then
           begin
+            CopyToUndo;
             TransposeNote(1);
             GoldenRec.KillAll;
           end;
@@ -864,12 +933,12 @@ begin
       inc(editLenghtText);
       inc(TextPosition);
 
-      if TextEditMode then
+{      if TextEditMode then
         begin
         Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text := CurrentEditText;
         Lyric.AddLine(Lines[0].Current);
         Lyric.Selected := CurrentNote;
-        end;
+        end;}
       Exit;
     end;
 
@@ -899,6 +968,7 @@ begin
       SDLK_F4, SDLK_RETURN:
         begin
           // Exit Text Edit Mode
+          CopyToUndo;
           if TitleEditMode then
           begin
             CurrentSong.Title := UTF8Copy(CurrentEditText, 1, TextPosition) + UTF8Copy(CurrentEditText, TextPosition+1, LengthUTF8(CurrentEditText)-TextPosition);
@@ -913,8 +983,9 @@ begin
           begin
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text := UTF8Copy(CurrentEditText, 1, TextPosition) + UTF8Copy(CurrentEditText, TextPosition+1, LengthUTF8(CurrentEditText)-TextPosition);
             SelectsS[CurrentSlideId].TextOpt[0].Text := CurrentEditText;
+            Lyric.AddLine(Lines[0].Current);
           end;
-          Lyric.AddLine(Lines[0].Current);
+          Lyric.Selected := CurrentNote;
           TitleEditMode := false;
           TextEditMode := false;
           ArtistEditMode := false;
@@ -1005,30 +1076,35 @@ begin
   // changed cover
   if ((CoverSlideId = Interactions[nBut].Num) and (Action = maLeft) and (SelectsS[Interactions[nBut].Num].SelectedOption > 0)) then
   begin
+    CopyToUndo;
     SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption -1;
     CurrentSong.Cover := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
   end;
 
   if ((CoverSlideId = Interactions[nBut].Num) and (Action = maRight) and (SelectsS[Interactions[nBut].Num].SelectedOption < Length(SelectsS[Interactions[nBut].Num].TextOptT)-1)) then
   begin
+    CopyToUndo;
     SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption +1;
     CurrentSong.Cover := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
   end;
 
   if ((BackgroundSlideId = Interactions[nBut].Num) and (Action = maLeft) and (SelectsS[Interactions[nBut].Num].SelectedOption > 0)) then
   begin
+    CopyToUndo;
     SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption -1;
     CurrentSong.Background := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
   end;
 
   if ((BackgroundSlideId = Interactions[nBut].Num) and (Action = maRight) and (SelectsS[Interactions[nBut].Num].SelectedOption < Length(SelectsS[Interactions[nBut].Num].TextOptT)-1)) then
   begin
+    CopyToUndo;
     SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption +1;
     CurrentSong.Background := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
   end;
 
   if ((Mp3SlideId = Interactions[nBut].Num) and (Action = maLeft) and (SelectsS[Interactions[nBut].Num].SelectedOption > 0)) then
     begin
+      CopyToUndo;
       SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption -1;
       CurrentSong.Mp3 := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
       AudioPlayback.Close;
@@ -1037,6 +1113,7 @@ begin
 
   if ((Mp3SlideId = Interactions[nBut].Num) and (Action = maRight) and (SelectsS[Interactions[nBut].Num].SelectedOption < Length(SelectsS[Interactions[nBut].Num].TextOptT)-1)) then
     begin
+      CopyToUndo;
       SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption +1;
       CurrentSong.Mp3 := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
       AudioPlayback.Close;
@@ -1075,47 +1152,45 @@ end;
 
 procedure TScreenEditSub.DivideBPM;
 var
-  C:    integer;
-  N:    integer;
+  i,j:    integer;
 
 begin
   CurrentSong.BPM[0].BPM := CurrentSong.BPM[0].BPM / 2;
 
-  for C := 0 to Lines[0].High do
+  for i := 0 to Lines[0].High do
   begin
-    Lines[0].Line[C].Start := Lines[0].Line[C].Start div 2;
-    Lines[0].Line[C].End_  := Lines[0].Line[C].End_ div 2;
-    for N := 0 to Lines[0].Line[C].HighNote do
+    Lines[0].Line[i].Start := Lines[0].Line[i].Start div 2;
+    Lines[0].Line[i].End_  := Lines[0].Line[i].End_ div 2;
+    for j := 0 to Lines[0].Line[i].HighNote do
     begin
-      Lines[0].Line[C].Note[N].Start  := Lines[0].Line[C].Note[N].Start div 2;
-      Lines[0].Line[C].Note[N].Length := Round(Lines[0].Line[C].Note[N].Length / 2);
-    end; // N
-  end; // C
+      Lines[0].Line[i].Note[j].Start  := Lines[0].Line[i].Note[j].Start div 2;
+      Lines[0].Line[i].Note[j].Length := Round(Lines[0].Line[i].Note[j].Length / 2);
+    end; // j
+  end; // i
 end;
 
 procedure TScreenEditSub.MultiplyBPM;
 var
-  C:    integer;
-  N:    integer;
+  i,j:    integer;
 begin
   CurrentSong.BPM[0].BPM := CurrentSong.BPM[0].BPM * 2;
-  for C := 0 to Lines[0].High do
+  for i := 0 to Lines[0].High do
   begin
-    Lines[0].Line[C].Start := Lines[0].Line[C].Start * 2;
-    Lines[0].Line[C].End_  := Lines[0].Line[C].End_ * 2;
-    for N := 0 to Lines[0].Line[C].HighNote do
+    Lines[0].Line[i].Start := Lines[0].Line[i].Start * 2;
+    Lines[0].Line[i].End_  := Lines[0].Line[i].End_ * 2;
+    for j := 0 to Lines[0].Line[i].HighNote do
     begin
-      Lines[0].Line[C].Note[N].Start  := Lines[0].Line[C].Note[N].Start * 2;
-      Lines[0].Line[C].Note[N].Length := Lines[0].Line[C].Note[N].Length * 2;
-    end; // N
-  end; // C
+      Lines[0].Line[i].Note[j].Start  := Lines[0].Line[i].Note[j].Start * 2;
+      Lines[0].Line[i].Note[j].Length := Lines[0].Line[i].Note[j].Length * 2;
+    end; // i
+  end; // j
 end;
 
 procedure TScreenEditSub.LyricsCapitalize;
 var
-  C:    integer;
+  i:    integer;
   //N:    integer; // temporary
-  S:    string;
+  S:    UTF8String;
 begin
   // temporary
   {
@@ -1124,12 +1199,12 @@ begin
       Lines[0].Line[C].Note[N].Text := UTF8LowerCase(Lines[0].Line[C].Note[N].Text);
   }
 
-  for C := 0 to Lines[0].High do
+  for i := 0 to Lines[0].High do
   begin
-    S := AnsiUpperCase(Copy(Lines[0].Line[C].Note[0].Text, 1, 1));
-    S := S + Copy(Lines[0].Line[C].Note[0].Text, 2, Length(Lines[0].Line[C].Note[0].Text)-1);
-    Lines[0].Line[C].Note[0].Text := S;
-  end; // C
+    S := UTF8UpperCase(UTF8Copy(Lines[0].Line[i].Note[0].Text, 1, 1));
+    S := S + UTF8Copy(Lines[0].Line[i].Note[0].Text, 2, Length(Lines[0].Line[i].Note[0].Text)-1);
+    Lines[0].Line[i].Note[0].Text := S;
+  end; // i
 end;
 
 procedure TScreenEditSub.LyricsCorrectSpaces;
@@ -1545,6 +1620,129 @@ begin
     CopySentence(Src + C, Dst + C);
 end;
 
+procedure TScreenEditSub.CopyToUndo;
+var
+ I,J: integer;
+begin
+  SetLength(UndoLines, high(UndoLines)+2);
+  CurrentUndoLines := high(UndoLines);
+  SetLength(UndoStateNote, CurrentUndoLines+1);
+  SetLength(UndoHeader, CurrentUndoLines+1);
+
+  Undoheader[CurrentUndoLines].Title := CurrentSong.Title;
+  Undoheader[CurrentUndoLines].Artist := CurrentSong.Artist;
+  Undoheader[CurrentUndoLines].CoverId := SelectsS[CoverSlideId].SelectedOption;
+  Undoheader[CurrentUndoLines].BackgroundId := SelectsS[BackgroundSlideId].SelectedOption;
+  Undoheader[CurrentUndoLines].Mp3Id := SelectsS[Mp3SlideId].SelectedOption;
+  Undoheader[CurrentUndoLines].GAP  := CurrentSong.GAP;
+  Undoheader[CurrentUndoLines].Video := CurrentSong.Video;
+  Undoheader[CurrentUndoLines].VideoGAP := CurrentSong.VideoGAP;
+  SetLength(Undoheader[CurrentUndoLines].BPM, length(CurrentSong.BPM));
+  for I:=0 to length(CurrentSong.BPM)-1 do
+  begin
+    Undoheader[CurrentUndoLines].BPM[I].BPM := CurrentSong.BPM[I].BPM;
+    Undoheader[CurrentUndoLines].BPM[I].StartBeat := CurrentSong.BPM[I].StartBeat;
+  end;
+
+  UndoStateNote[CurrentUndoLines] := currentnote;
+
+  UndoLines[CurrentUndoLines].Current := Lines[0].Current;
+  UndoLines[CurrentUndoLines].High := Lines[0].High;
+  UndoLines[CurrentUndoLines].Number := Lines[0].Number;
+  UndoLines[CurrentUndoLines].Resolution := Lines[0].Resolution;
+  UndoLines[CurrentUndoLines].NotesGAP := Lines[0].NotesGAP;
+  UndoLines[CurrentUndoLines].ScoreValue := Lines[0].ScoreValue;
+  SetLength(UndoLines[CurrentUndoLines].Line, length(Lines[0].Line));
+
+  for I:=0 to length(Lines[0].Line)-1 do
+  begin
+    UndoLines[CurrentUndoLines].Line[I].Start := Lines[0].Line[I].Start;
+    UndoLines[CurrentUndoLines].Line[I].Lyric := Lines[0].Line[I].Lyric;
+    UndoLines[CurrentUndoLines].Line[I].End_ := Lines[0].Line[I].End_;
+    UndoLines[CurrentUndoLines].Line[I].BaseNote := Lines[0].Line[I].BaseNote;
+    UndoLines[CurrentUndoLines].Line[I].HighNote := Lines[0].Line[I].HighNote;
+    UndoLines[CurrentUndoLines].Line[I].TotalNotes := Lines[0].Line[I].TotalNotes;
+    UndoLines[CurrentUndoLines].Line[I].LastLine := Lines[0].Line[I].LastLine;
+
+    SetLength(UndoLines[CurrentUndoLines].Line[I].Note, length(Lines[0].Line[I].Note));
+    for J:=0 to length(Lines[0].Line[I].Note)-1 do
+    begin
+      UndoLines[CurrentUndoLines].Line[I].Note[J].Color := Lines[0].Line[I].Note[J].Color;
+      UndoLines[CurrentUndoLines].Line[I].Note[J].Start := Lines[0].Line[I].Note[J].Start;
+      UndoLines[CurrentUndoLines].Line[I].Note[J].Length := Lines[0].Line[I].Note[J].Length;
+      UndoLines[CurrentUndoLines].Line[I].Note[J].Tone := Lines[0].Line[I].Note[J].Tone;
+      UndoLines[CurrentUndoLines].Line[I].Note[J].Text := Lines[0].Line[I].Note[J].Text;
+      UndoLines[CurrentUndoLines].Line[I].Note[J].NoteType := Lines[0].Line[I].Note[J].NoteType;
+    end; //for J
+  end; //for I
+end;
+
+procedure TScreenEditSub.CopyFromUndo;
+var
+ I,J: integer;
+
+begin
+
+CurrentUndoLines := high(UndoLines);
+
+if CurrentUndoLines >= 0 then
+begin
+  CurrentSong.Title := Undoheader[CurrentUndoLines].Title;
+  CurrentSong.Artist := Undoheader[CurrentUndoLines].Artist;
+  SelectsS[CoverSlideId].SelectedOption := Undoheader[CurrentUndoLines].CoverId;
+  SelectsS[BackgroundSlideId].SelectedOption := Undoheader[CurrentUndoLines].BackgroundId;
+  SelectsS[Mp3SlideId].SelectedOption := Undoheader[CurrentUndoLines].Mp3Id;
+  CurrentSong.GAP := Undoheader[CurrentUndoLines].GAP;
+  CurrentSong.Video := Undoheader[CurrentUndoLines].Video;
+  CurrentSong.VideoGAP := Undoheader[CurrentUndoLines].VideoGAP;
+  currentnote := UndoStateNote[CurrentUndoLines];
+  SetLength(CurrentSong.BPM, length(Undoheader[CurrentUndoLines].BPM));
+  for I:=0 to length(Undoheader[CurrentUndoLines].BPM)-1 do
+  begin
+    CurrentSong.BPM[I].BPM := Undoheader[CurrentUndoLines].BPM[I].BPM;
+    CurrentSong.BPM[I].StartBeat := Undoheader[CurrentUndoLines].BPM[I].StartBeat;
+  end;
+  Lines[0].Current := UndoLines[CurrentUndoLines].Current;
+  Lines[0].High := UndoLines[CurrentUndoLines].High;
+  Lines[0].Number := UndoLines[CurrentUndoLines].Number;
+  Lines[0].Resolution := UndoLines[CurrentUndoLines].Resolution;
+  Lines[0].NotesGAP := UndoLines[CurrentUndoLines].NotesGAP;
+  Lines[0].ScoreValue := UndoLines[CurrentUndoLines].ScoreValue;
+  SetLength(Lines[0].Line, length(UndoLines[CurrentUndoLines].Line));
+  for I:=0 to length(UndoLines[CurrentUndoLines].Line)-1 do
+  begin
+      Lines[0].Line[I].Start := UndoLines[CurrentUndoLines].Line[I].Start;
+      Lines[0].Line[I].Lyric := UndoLines[CurrentUndoLines].Line[I].Lyric;
+      Lines[0].Line[I].End_ := UndoLines[CurrentUndoLines].Line[I].End_;
+      Lines[0].Line[I].BaseNote := UndoLines[CurrentUndoLines].Line[I].BaseNote;
+      Lines[0].Line[I].HighNote := UndoLines[CurrentUndoLines].Line[I].HighNote;
+      Lines[0].Line[I].TotalNotes := UndoLines[CurrentUndoLines].Line[I].TotalNotes;
+      Lines[0].Line[I].LastLine := UndoLines[CurrentUndoLines].Line[I].LastLine;
+
+      SetLength(Lines[0].Line[I].Note, length(UndoLines[CurrentUndoLines].Line[I].Note));
+      for J:=0 to length(UndoLines[CurrentUndoLines].Line[I].Note)-1 do
+      begin
+        Lines[0].Line[I].Note[J].Color := UndoLines[CurrentUndoLines].Line[I].Note[J].Color;
+        Lines[0].Line[I].Note[J].Start := UndoLines[CurrentUndoLines].Line[I].Note[J].Start;
+        Lines[0].Line[I].Note[J].Length := UndoLines[CurrentUndoLines].Line[I].Note[J].Length;
+        Lines[0].Line[I].Note[J].Tone := UndoLines[CurrentUndoLines].Line[I].Note[J].Tone;
+        Lines[0].Line[I].Note[J].Text := UndoLines[CurrentUndoLines].Line[I].Note[J].Text;
+        log.LogError(Lines[0].Line[I].Note[J].Text);
+        Lines[0].Line[I].Note[J].NoteType := UndoLines[CurrentUndoLines].Line[I].Note[J].NoteType;
+      end; //for J
+  end; //for I
+  SetLength(UndoLines, high(UndoLines));
+  Text[TextDebug].Text := Language.Translate('INFO_UNDO');
+  // to refresh all headers
+  SelectsS[LyricSlideId].TextOpt[0].Text := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
+  SelectsS[ArtistSlideId].TextOpt[0].Text := CurrentSong.Artist;
+  SelectsS[TitleSlideId].TextOpt[0].Text := CurrentSong.Title;
+  Lyric.AddLine(Lines[0].Current);
+  Lyric.Selected := CurrentNote;
+end; //if CurrentUndoLines
+end;
+
+
 procedure TScreenEditSub.DrawStatics;
 var
   x, y, w, h: Integer;
@@ -1868,19 +2066,23 @@ procedure TScreenEditSub.OnShow;
 var
   FileExt: IPath;
   Files: TPathDynArray;
-  N: integer;
+  i: integer;
 begin
   inherited;
 
   AudioPlayback.Stop;
   PlaySentence := false;
   PlaySentenceMidi := false;
-
+  Text[TextDebug].Text := '';
   Log.LogStatus('Initializing', 'TEditScreen.OnShow');
   Lyric := TEditorLyrics.Create;
 
   ResetSingTemp;
   GoldenRec.KillAll;
+//  SetLength(UndoSong, 0);
+  SetLength(UndoLines, 0);
+  SetLength(UndoStateNote, 0);
+  SetLength(Undoheader, 0);
 
   try
     //Check if File is XML
@@ -1935,12 +2137,12 @@ begin
     SetLength(Files, 0);
     SlideMP3Index := -1;
     Songs.FindFilesByExtension(Path(includeTrailingPathDelimiter(CurrentSong.Path.ToNative)), Path('.mp3'), true, Files);
-    for n:=0 to high(Files) do
+    for i:=0 to high(Files) do
     begin
       SetLength(MP3Val, high(MP3Val)+2);
-      MP3Val[n] := filesystem.ExtractFileName(files[n]).ToUTF8;
-      if (UTF8CompareText(MP3Val[n],CurrentSong.Mp3.ToUTF8) = 0) then
-            SlideMP3Index := n;
+      MP3Val[i] := filesystem.ExtractFileName(files[i]).ToUTF8;
+      if (UTF8CompareText(MP3Val[i],CurrentSong.Mp3.ToUTF8) = 0) then
+            SlideMP3Index := i;
     end;
     UpdateSelectSlideOptions(Theme.EditSub.SlideMP3,MP3SlideId,MP3Val,SlideMP3Index);
 
@@ -1949,12 +2151,12 @@ begin
     SetLength(CoverVal, 0);
     SlideCoverIndex := -1;
     Songs.FindFilesByExtension(Path(includeTrailingPathDelimiter(CurrentSong.Path.ToNative)), Path('.jpg'), true, Files);
-    for n:=0 to high(Files) do
+    for i:=0 to high(Files) do
     begin
       SetLength(CoverVal, high(CoverVal)+2);
-      CoverVal[n] := ExtractFileName(files[n].ToUTF8());
-      if UTF8CompareText(CoverVal[n], CurrentSong.Cover.ToUTF8) = 0 then
-            SlideCoverIndex := n;
+      CoverVal[i] := ExtractFileName(files[i].ToUTF8());
+      if UTF8CompareText(CoverVal[i], CurrentSong.Cover.ToUTF8) = 0 then
+            SlideCoverIndex := i;
     end;
     if high(Files) < 0 then
     begin
@@ -1969,12 +2171,12 @@ begin
     SetLength(BackgroundVal, 0);
     SlideBackgroundIndex := -1;
     Songs.FindFilesByExtension(Path(includeTrailingPathDelimiter(CurrentSong.Path.ToNative)), Path('.jpg'), true, Files);
-    for n:=0 to high(Files) do
+    for i:=0 to high(Files) do
     begin
       SetLength(BackgroundVal, high(BackgroundVal)+2);
-      BackgroundVal[n] := ExtractFileName(files[n].ToUTF8());
-      if UTF8CompareText(BackgroundVal[n], CurrentSong.Background.ToUTF8) = 0 then
-            SlideBackgroundIndex := n;
+      BackgroundVal[i] := ExtractFileName(files[i].ToUTF8());
+      if UTF8CompareText(BackgroundVal[i], CurrentSong.Background.ToUTF8) = 0 then
+            SlideBackgroundIndex := i;
     end;
 
     if high(Files) < 0 then
@@ -2031,14 +2233,14 @@ begin
     SelectsS[LyricSlideId].TextOpt[0].X := SelectsS[LyricSlideId].TextureSBG.X + 5;
 
     // volume slides
-    for n:=0 to 100 do
+    for i:=0 to 100 do
     begin
       SetLength(VolumeAudio, high(VolumeAudio)+2);
       SetLength(VolumeMidi, high(VolumeMidi)+2);
       SetLength(VolumeClick, high(VolumeClick)+2);
-      VolumeAudio[n] := inttostr(n);
-      VolumeMidi[n] := inttostr(n);
-      VolumeClick[n] := inttostr(n);
+      VolumeAudio[i] := inttostr(i);
+      VolumeMidi[i] := inttostr(i);
+      VolumeClick[i] := inttostr(i);
     end;
     VolumeAudioIndex := 100;
     VolumeMidiIndex := 100;
@@ -2084,7 +2286,7 @@ end;
 
 function TScreenEditSub.Draw: boolean;
 var
-  Pet:    integer;
+  i:    integer;
 begin
 
   glClearColor(1,1,1,1);
@@ -2110,17 +2312,17 @@ begin
 
     if AktBeat <> LastClick then
     begin
-      for Pet := 0 to Lines[0].Line[Lines[0].Current].HighNote do
-        if (Lines[0].Line[Lines[0].Current].Note[Pet].Start = AktBeat) then
+      for i := 0 to Lines[0].Line[Lines[0].Current].HighNote do
+        if (Lines[0].Line[Lines[0].Current].Note[i].Start = AktBeat) then
         begin
 
           LastClick := AktBeat;
           {$IFDEF UseMIDIPort}
           MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
-          if Pet > 0 then
-            MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[Pet-1].Tone + 60, 127);
-          MidiOut.PutShort($91, Lines[0].Line[Lines[0].Current].Note[Pet].Tone + 60, 127);
-          MidiLastNote := Pet;
+          if i > 0 then
+            MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[i-1].Tone + 60, 127);
+          MidiOut.PutShort($91, Lines[0].Line[Lines[0].Current].Note[i].Tone + 60, 127);
+          MidiLastNote := i;
           {$ENDIF}
 
         end;
@@ -2145,8 +2347,8 @@ begin
       Text[TextDebug].Text := IntToStr(AktBeat);
       if AktBeat <> LastClick then
       begin
-        for Pet := 0 to Lines[0].Line[Lines[0].Current].HighNote do
-          if (Lines[0].Line[Lines[0].Current].Note[Pet].Start = AktBeat) then
+        for i := 0 to Lines[0].Line[Lines[0].Current].HighNote do
+          if (Lines[0].Line[Lines[0].Current].Note[i].Start = AktBeat) then
           begin
             SoundLib.Click.Volume := SelectsS[VolumeClickSlideId].SelectedOption / 100;
             AudioPlayback.PlaySound( SoundLib.Click );
