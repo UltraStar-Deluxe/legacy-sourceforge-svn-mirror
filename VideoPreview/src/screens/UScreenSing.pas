@@ -847,19 +847,8 @@ begin
       fCurrentVideo.GetFrame(VideoFrameTime);
     end;
 
-    //***** for testing:
-    {fCurrentVideo.SetScreenPosition(10, 10, 1);
-    fCurrentVideo.Width := 200;
-    fCurrentVideo.Height := 200;
-    fCurrentVideo.ReflectionSpacing := 10;
-    fCurrentVideo.Alpha := 1;
-    fCurrentVideo.AspectCorrection := acoLetterBox;}
-    //***** end testing
-
     fCurrentVideo.SetScreen(ScreenAct);
     fCurrentVideo.Draw;
-    
-    //fCurrentVideo.DrawReflection; //just for testing, should be deleted!
   end;
 
   // draw static menu (FG)

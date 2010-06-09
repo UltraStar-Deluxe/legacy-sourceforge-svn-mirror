@@ -1837,6 +1837,9 @@ var
   Song:       TSong;
 
 begin
+  if (Ini.VideoPreview=0)  then
+    Exit;
+
   if Assigned(fCurrentVideo) then
   begin
     fCurrentVideo.Stop();
