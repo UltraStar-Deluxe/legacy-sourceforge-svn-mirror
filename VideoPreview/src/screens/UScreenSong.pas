@@ -1574,6 +1574,7 @@ begin
 
   // stop preview
   StopMusicPreview();
+  StopVideoPreview();
 end;
 
 procedure TScreenSong.DrawExtensions;
@@ -1887,8 +1888,10 @@ end;
 procedure TScreenSong.ChangeMusic;
 begin
   StopMusicPreview();
+  StopVideoPreview();
   PreviewOpened := -1;
   StartMusicPreview();
+  StartVideoPreview();
 end;
 
 procedure TScreenSong.SkipTo(Target: cardinal);
