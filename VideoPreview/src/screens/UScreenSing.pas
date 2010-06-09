@@ -498,7 +498,7 @@ begin
    *}
   fShowVisualization := false;
   VideoFile := CurrentSong.Path.Append(CurrentSong.Video);
-  if (CurrentSong.Video.IsSet) and VideoFile.IsFile then
+  if (Ini.VideoEnabled = 1) and CurrentSong.Video.IsSet() and VideoFile.IsFile then
   begin
     fVideoClip := VideoPlayback.Open(VideoFile);
     fCurrentVideo := fVideoClip;

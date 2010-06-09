@@ -122,6 +122,7 @@ type
       Spectrograph:   integer;
       MovieSize:      integer;
       VideoPreview:   integer;
+      VideoEnabled:   integer;
 
       // Sound
       MicBoost:       integer;
@@ -216,6 +217,7 @@ const
   ISpectrograph:     array[0..1] of UTF8String  = ('Off', 'On');
   IMovieSize:        array[0..2] of UTF8String  = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
   IVideoPreview:     array[0..1] of UTF8String  = ('Off', 'On');
+  IVideoEnabled:     array[0..1] of UTF8String  = ('Off', 'On');
 
   IClickAssist:      array[0..1] of UTF8String  = ('Off', 'On');
   IBeatClick:        array[0..1] of UTF8String  = ('Off', 'On');
@@ -298,6 +300,7 @@ var
   ISpectrographTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
   IMovieSizeTranslated:        array[0..2] of UTF8String  = ('Half', 'Full [Vid]', 'Full [BG+Vid]');
   IVideoPreviewTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
+  IVideoEnabledTranslated:     array[0..1] of UTF8String  = ('Off', 'On');
 
   IClickAssistTranslated:      array[0..1] of UTF8String  = ('Off', 'On');
   IBeatClickTranslated:        array[0..1] of UTF8String  = ('Off', 'On');
@@ -420,6 +423,9 @@ begin
 
   IVideoPreviewTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_OFF');
   IVideoPreviewTranslated[1]          := ULanguage.Language.Translate('OPTION_VALUE_ON');
+
+  IVideoEnabledTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_OFF');
+  IVideoEnabledTranslated[1]          := ULanguage.Language.Translate('OPTION_VALUE_ON');
 
   IClickAssistTranslated[0]           := ULanguage.Language.Translate('OPTION_VALUE_OFF');
   IClickAssistTranslated[1]           := ULanguage.Language.Translate('OPTION_VALUE_ON');
@@ -939,6 +945,9 @@ begin
   // VideoPreview
   VideoPreview := GetArrayIndex(IVideoPreview, IniFile.ReadString('Graphics', 'VideoPreview', IVideoPreview[1]));
 
+  // VideoEnabled
+  VideoEnabled := GetArrayIndex(IVideoEnabled, IniFile.ReadString('Graphics', 'VideoEnabled', IVideoEnabled[1]));
+
   // ClickAssist
   ClickAssist := GetArrayIndex(IClickAssist, IniFile.ReadString('Sound', 'ClickAssist', 'Off'));
 
@@ -1088,6 +1097,9 @@ begin
 
   // VideoPreview
   IniFile.WriteString('Graphics', 'VideoPreview', IVideoPreview[VideoPreview]);
+
+  // VideoEnabled
+  IniFile.WriteString('Graphics', 'VideoEnabled', IVideoEnabled[VideoEnabled]);
 
   // ClickAssist
   IniFile.WriteString('Sound', 'ClickAssist', IClickAssist[ClickAssist]);
