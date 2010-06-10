@@ -1695,7 +1695,8 @@ begin
 
         //PhrasenBonus give Points
         Player[I].ScoreLine := Player[I].ScoreLine +
-          (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[I mod 2]) * A / 8);
+          (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8);
+
         Player[I].ScoreLineI := Round(Player[I].ScoreLine / 10) * 10;
         //Update Total Score
         Player[I].ScoreTotalI := Player[I].ScoreI + Player[I].ScoreGoldenI + Player[I].ScoreLineI;

@@ -150,6 +150,7 @@ type
 
 
       constructor Create; override;
+      procedure ChangeSorting(tabs: boolean; sorting: integer);
       procedure SetScroll;
       procedure SetScroll1;
       procedure SetScroll2;
@@ -364,10 +365,6 @@ var
   SDL_ModState:  Word;
   Letter: Char;
   VisArr: array of integer;
-
-  Artist: string;
-  Title:  string;
-  jump:   boolean;
 
 begin
   Result := true;
@@ -812,7 +809,8 @@ begin
             begin
               WaitHandler.changed := false;
               CatSongs.Selected := Interaction;
-              if not CatSongs.Song[Interaction].Main then begin // clicked on Song
+              if not CatSongs.Song[Interaction].Main then
+              begin // clicked on Song
                 if CatSongs.CatNumShow = -3 then
                   ScreenSongMenu.MenuShow(SM_Playlist)
                 else
@@ -1117,91 +1115,17 @@ begin
           begin
             //Change Sorting
             if (Ini.Sorting<Length(ISorting)-1) then
-              Inc(Ini.Sorting)
+              ChangeSorting(Ini.Tabs=1, Ini.Sorting+1)
             else
-              Ini.Sorting := 0;
-
-            InfoHandler.txt := 'Sorting: ' + ISorting[Ini.Sorting];
+              ChangeSorting(Ini.Tabs=1, 0);
           end else
           begin
             //Change Tabs (on/off)
             if (Ini.Tabs=1) then
-            begin
-              Ini.Tabs := 0;
-              InfoHandler.txt := 'Tabs: off';
-            end else
-            begin
-              Ini.Tabs := 1;
-              InfoHandler.txt := 'Tabs: on';
-            end;
-          end;
-
-          if not CatSongs.Song[Interaction].Main then
-          begin
-            Artist := CatSongs.Song[Interaction].Artist;
-            Title := CatSongs.Song[Interaction].Title;
-            jump := true;
-          end else
-            jump := false;
-
-          Refresh(false);
-          PlaylistMan.LoadPlayLists;
-          
-          if jump then
-            I2 := PlaylistMan.FindSong(Artist, Title)
-          else
-          begin
-            //Find Category
-            I := Interaction;
-            while not catsongs.Song[I].Main  do
-            begin
-              Dec (I);
-              if (I < low(CatSongs.Song)) then
-                break;
-            end;
-            if (I<= 1) then
-            Interaction := high(catsongs.Song)
+              ChangeSorting(false, Ini.Sorting)
             else
-            Interaction := I - 1;
-
-            CatSongs.ShowCategoryList;
-
-            //Show Cat in Top Left Mod
-            HideCatTL;
-
-            //Show Wrong Song when Tabs on Fix
-            SelectNext;
-            FixSelected;
+              ChangeSorting(true, Ini.Sorting);
           end;
-
-          if (Ini.Tabs=1) and not (CatSongs.CatNumShow = -3) and jump then
-          begin
-            //Search Cat
-            for I := I2 downto low(CatSongs.Song) do
-            begin
-              if CatSongs.Song[I].Main then
-                break;
-            end;
-
-            //Choose Cat
-            CatSongs.ShowCategoryList;
-            ShowCatTL(I);
-            CatSongs.ClickCategoryButton(I);
-          end else
-            HideCatTL;
-
-          //Choose Song
-          if jump then
-          begin
-            SkipTo2(I2);
-            SongCurrent := SongTarget;
-            ChangeMusic;
-          end;
-
-          Ini.Save;
-
-          InfoHandler.changed := true;
-          InfoHandler.change_time := 0;
         end;
 
       SDLK_1:
@@ -1428,6 +1352,106 @@ begin
 
   MP3Volume := Ini.PreviewVolume * 10;
 end;
+
+procedure TScreenSong.ChangeSorting(tabs: boolean; sorting: integer);
+var
+  changed:  boolean;
+  Artist:   string;
+  Title:    string;
+  jump:     boolean;
+  I, I2:    integer;
+
+begin
+  changed := false;
+
+  if (tabs and (Ini.Tabs=0)) or (not tabs and (Ini.Tabs=1)) then
+    changed := true;
+
+  if (sorting <> Ini.Sorting) then
+    changed := true;
+
+  if not changed then
+    Exit;
+
+  Ini.Sorting := sorting;
+
+  if tabs then
+  begin
+    Ini.Tabs := 1;
+    InfoHandler.txt := 'Tabs: on ' + 'Sorting: ' + ISorting[Ini.Sorting];
+  end else
+  begin
+    Ini.Tabs := 0;
+    InfoHandler.txt := 'Tabs: off ' + 'Sorting: ' + ISorting[Ini.Sorting];
+  end;
+
+  if not CatSongs.Song[Interaction].Main then
+  begin
+    Artist := CatSongs.Song[Interaction].Artist;
+    Title := CatSongs.Song[Interaction].Title;
+    jump := true;
+  end else
+    jump := false;
+
+  Refresh(false);
+  PlaylistMan.LoadPlayLists;
+          
+  if jump then
+    I2 := PlaylistMan.FindSong(Artist, Title)
+  else
+  begin
+    //Find Category
+    I := Interaction;
+    while not CatSongs.Song[I].Main  do
+    begin
+      Dec (I);
+      if (I < low(CatSongs.Song)) then
+        break;
+    end;
+    if (I<= 1) then
+      Interaction := high(catsongs.Song)
+    else
+      Interaction := I - 1;
+
+    //Show Cat in Top Left Mod
+    HideCatTL;
+
+    //Show Wrong Song when Tabs on Fix
+    SelectNext;
+    FixSelected;
+    ChangeMusic;
+  end;
+
+  if (Ini.Tabs=1) and not (CatSongs.CatNumShow = -3) and jump then
+  begin
+    //Search Cat
+    for I := I2 downto low(CatSongs.Song) do
+    begin
+      if CatSongs.Song[I].Main then
+        break;
+    end;
+
+    //Choose Cat
+    CatSongs.ShowCategoryList;
+    ShowCatTL(I);
+    CatSongs.ClickCategoryButton(I);
+  end;
+
+  //Choose Song
+  if jump then
+  begin
+    SkipTo2(I2);
+    SongCurrent := SongTarget;
+    ChangeMusic;
+  end;
+
+  Ini.Save;
+
+  InfoHandler.changed := true;
+  InfoHandler.change_time := 0;
+end;
+
+
 
 procedure TScreenSong.SetScroll;
 var

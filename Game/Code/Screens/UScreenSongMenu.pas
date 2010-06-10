@@ -24,6 +24,12 @@ type
 
 const
   SM_Main = 1;
+
+  SM_Song = 8 or 1;
+
+  SM_Medley = 16 or 1;
+
+  SM_Sort = 32 or 1;
   
   SM_PlayList = 64 or 1;
   SM_Playlist_Add = 64 or 2;
@@ -110,17 +116,34 @@ begin
         begin
           if UVideo.VideoOpened then
           begin
-            if ScreenSong.VidVis=full then
-              ScreenSong.VidVis:=windowed
-            else begin
-              ScreenSong.VidVis:=full;
-              UVideo.SetAspectCorrection(TAspectCorrection(
+            if ScreenSong.TargetVidVis=full then
+            begin
+              ScreenSong.TargetVidVis:=windowed;
+              ScreenSong.TargetAspect := acoCrop;
+              if not ScreenSong.VidVisHandler.changed then
+              begin
+                ScreenSong.VidVisHandler.changed := true;
+                ScreenSong.VidVisHandler.change_time := 0;
+              end;
+            end else
+            begin
+              ScreenSong.TargetVidVis:=full;
+              if not ScreenSong.VidVisHandler.changed then
+              begin
+                ScreenSong.VidVisHandler.changed := true;
+                ScreenSong.VidVisHandler.change_time := 0;
+              end;
+              //UVideo.SetAspectCorrection(TAspectCorrection(
+              //  DataBase.GetAspect(CatSongs.Song[Interaction].Artist,
+              //  CatSongs.Song[Interaction].Title, Ini.AspectCorrect)));
+              ScreenSong.TargetAspect := TAspectCorrection(
                 DataBase.GetAspect(CatSongs.Song[Interaction].Artist,
-                CatSongs.Song[Interaction].Title, Ini.AspectCorrect)));
+                CatSongs.Song[Interaction].Title, Ini.AspectCorrect));
+
               ScreenSong.AspectHandler.changed := true;
               ScreenSong.AspectHandler.change_time := Czas.Teraz;
             end;
-            Visible := False;
+
           end;
         end;
         
@@ -154,11 +177,17 @@ begin
         begin
           if (Interaction=3) then
             InteractInc;
+
+          if (CurMenu = SM_Sort) then
+            Button[3].Visible := (Ini.Sorting <> SelectValue);
         end;
       SDLK_LEFT:
         begin
           if (Interaction=3) then
             InteractDec;
+
+          if (CurMenu = SM_Sort) then
+            Button[3].Visible := (Ini.Sorting <> SelectValue);
         end;
 
       SDLK_1:
@@ -245,6 +274,9 @@ begin
 end;
 
 procedure TScreenSongMenu.MenuShow(sMenu: Byte);
+var
+  I: integer;
+
 begin
   Interaction := 0; //Reset Interaction
   Visible := True;  //Set Visible
@@ -256,6 +288,29 @@ begin
         Text[0].Text := Language.Translate('SONG_MENU_NAME_MAIN');
 
         Button[0].Visible := True;
+        Button[1].Visible := (CatSongs.Song[ScreenSong.Interaction].Medley.Source>msNone);
+        Button[2].Visible := True;
+        Button[3].Visible := True;
+        SelectsS[0].Visible := False;
+
+        Button[0].Text[0].Text := Language.Translate('SONG_MENU_SONG');
+        Button[1].Text[0].Text := Language.Translate('SONG_MENU_MEDLEY');
+        Button[2].Text[0].Text := Language.Translate('SONG_MENU_SORT');
+        Button[3].Text[0].Text := Language.Translate('SONG_MENU_HELP');
+
+        {Button[0].Text[0].Text := Language.Translate('SONG_MENU_PLAY');
+        Button[1].Text[0].Text := Language.Translate('SONG_MENU_CHANGEPLAYERS');
+        Button[2].Text[0].Text := Language.Translate('SONG_MENU_PLAYLIST_ADD');
+        Button[3].Text[0].Text := Language.Translate('SONG_MENU_EDIT');}
+      end;
+
+    SM_Song:
+      begin
+        ID := 'ID_032';
+        CurMenu := sMenu;
+        Text[0].Text := Language.Translate('SONG_MENU_SONG');
+
+        Button[0].Visible := True;
         Button[1].Visible := True;
         Button[2].Visible := True;
         Button[3].Visible := True;
@@ -265,6 +320,47 @@ begin
         Button[1].Text[0].Text := Language.Translate('SONG_MENU_CHANGEPLAYERS');
         Button[2].Text[0].Text := Language.Translate('SONG_MENU_PLAYLIST_ADD');
         Button[3].Text[0].Text := Language.Translate('SONG_MENU_EDIT');
+      end;
+
+    SM_Medley:
+      begin
+        ID := 'ID_034';
+        CurMenu := sMenu;
+        Text[0].Text := Language.Translate('SONG_MENU_MEDLEY');
+
+        Button[0].Visible := True;
+        Button[1].Visible := (Length(PlaylistMedley.Song)>0);
+        Button[2].Visible := (Length(PlaylistMedley.Song)>0) or
+          (CatSongs.Song[ScreenSong.Interaction].Medley.Source > msNone);
+        Button[3].Visible := not ScreenSong.MakeMedley;
+        SelectsS[0].Visible := False;
+
+        Button[0].Text[0].Text := Language.Translate('SONG_MENU_MEDLEY_ADD');
+        Button[1].Text[0].Text := Language.Translate('SONG_MENU_MEDLEY_DELETE');
+        Button[2].Text[0].Text := Language.Translate('SONG_MENU_MEDLEY_START');
+        Button[3].Text[0].Text := Language.Translate('SONG_MENU_MEDLEY_START5');
+      end;
+    SM_Sort:
+      begin
+        ID := 'ID_034';
+        CurMenu := sMenu;
+        Text[0].Text := Language.Translate('SONG_MENU_SORT');
+
+        Button[0].Visible := True;
+        Button[1].Visible := (Length(PlaylistMedley.Song)=0);
+        Button[2].Visible := False;
+        SelectsS[0].Visible := True;
+
+        Button[0].Text[0].Text := Language.Translate('SONG_MENU_SORT_TABS');
+        Button[1].Text[0].Text := Language.Translate('SONG_MENU_SORT_DUETS');
+        Button[3].Text[0].Text := Language.Translate('SONG_MENU_SORT_CONFIRM');
+
+        SetLength(ISelections, Length(UIni.ISorting));
+        For I := 0 to Length(UIni.ISorting)-1 do
+          ISelections[I] := UIni.ISorting[I];
+
+        UpdateSelectSlideOptions(Theme.SongMenu.SelectSlide3, 0, ISelections, SelectValue);
+        Button[3].Visible := (Ini.Sorting <> SelectValue);
       end;
 
     SM_PlayList:
@@ -464,6 +560,38 @@ begin
         Case Interaction of
           0: //Button 1
             begin
+              MenuShow(SM_Song);
+            end;
+
+          1: //Button 2
+            begin
+              MenuShow(SM_Medley);
+            end;
+
+          2: //Button 3
+            begin
+              MenuShow(SM_Sort);
+            end;
+
+          3: //SelectSlide 3
+            begin
+              //Dummy
+            end;
+
+          4: //Button 4
+            begin
+              Help.SetHelpID(ScreenSong.ID);
+              ScreenPopupHelp.ShowPopup();
+              Visible := False;
+            end;
+        end;
+      end;
+
+    SM_Song:
+      begin
+        Case Interaction of
+          0: //Button 1
+            begin
               ScreenSong.StartSong;
               Visible := False;
             end;
@@ -490,6 +618,90 @@ begin
             begin
               ScreenSong.OpenEditor;
               Visible := False;
+            end;
+        end;
+      end;
+
+    SM_Medley:
+      begin
+        Case Interaction of
+          0: //Button 1
+            begin
+              ScreenSong.MakeMedley := true;
+              ScreenSong.StartMedley(99, msCalculated);
+
+              Visible := False;
+            end;
+
+          1: //Button 2
+            begin
+              SetLength(PlaylistMedley.Song, Length(PlaylistMedley.Song)-1);
+              PlaylistMedley.NumMedleySongs := Length(PlaylistMedley.Song);
+
+              if Length(PlaylistMedley.Song)=0 then
+                ScreenSong.MakeMedley := false;
+
+              Visible := False;
+            end;
+
+          2: //Button 3
+            begin
+              if ScreenSong.MakeMedley then
+              begin
+                ScreenSong.Mode := smMedley;
+                Music.Stop;
+                //Do the Action that is specified in Ini
+                case Ini.OnSongClick of
+                  0: FadeTo(@ScreenSing);
+                  1: ScreenSong.SelectPlayers;
+                  2: FadeTo(@ScreenSing);
+                end;
+              end else
+                ScreenSong.StartMedley(0, msCalculated);
+                
+              Visible := False;
+            end;
+
+          3: //SelectSlide 3
+            begin
+              //Dummy
+            end;
+
+          4: //Button 4
+            begin
+              ScreenSong.StartMedley(5, msCalculated);
+            end;
+        end;
+      end;
+
+    SM_Sort:
+      begin
+        Case Interaction of
+          0: //Button 1
+            begin
+              //Change Tabs (on/off)
+              if (Ini.Tabs=1) then
+                ScreenSong.ChangeSorting(false, Ini.Sorting)
+              else
+                ScreenSong.ChangeSorting(true, Ini.Sorting);
+            end;
+
+          1: //Button 2
+            begin
+              ScreenSongJumpto.ToggleDuetFilter;
+              Visible := false;
+            end;
+
+          3: //Slide
+            begin
+              //dummy
+            end;
+
+          4: //Button 4
+            begin
+              //Change Sorting
+              ScreenSong.ChangeSorting(Ini.Tabs=1, SelectValue);
+              Visible := false;
             end;
         end;
       end;

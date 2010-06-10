@@ -515,7 +515,7 @@ begin
     Music.PlayClick;
 
   // debug system on LPT
-  if ((Czas.AktBeatC + Czesci[CP].Resolution + Czesci[CP].NotesGAP) mod Czesci[CP].Resolution = 0) then
+  {if ((Czas.AktBeatC + Czesci[CP].Resolution + Czesci[CP].NotesGAP) mod Czesci[CP].Resolution = 0) then
   begin
     //LPT_1 := 0;
 //    Light.LightOne(0, 150);
@@ -525,7 +525,7 @@ begin
       Light.LightOne(0, 150)
     else
       Light.LightOne(1, 150)}
-  end;
+  //end;
 
   if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
     Exit;

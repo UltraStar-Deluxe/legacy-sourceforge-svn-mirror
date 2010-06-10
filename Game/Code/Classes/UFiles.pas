@@ -998,6 +998,7 @@ var
   RelativeSubTime:    integer;
   NoteState: String;
   CP:     integer;
+  P:      integer;
 
   procedure WriteCustomTags; //from 1.1 (modified)
   var
@@ -1132,17 +1133,17 @@ begin
     end; // C
   end else
   begin
-    CP := -1;
+    P := -1;
     for C := 0 to Czesc[0].High do //go through all lines
     begin
       if isIdenticalLine(C) then
       begin
         //not end?
-        if (C < Czesc[0].High) and (CP <> 3) then
+        if (C < Czesc[0].High) and (P <> 3) then
         begin
           //P1+P2 ==> P3
           S := 'P3';
-          CP := 3;
+          P := 3;
           WriteLn(SongFile, S);
         end;
         WriteLine(0, C);
@@ -1151,10 +1152,10 @@ begin
         //singer 1 P1
         if (Length(Czesc[0].Czesc[C].Nuta)>0) then
         begin
-          if (C < Czesc[0].High) and (CP <> 1) then
+          if (C < Czesc[0].High) and (P <> 1) then
           begin
             S := 'P1';
-            CP := 1;
+            P := 1;
             WriteLn(SongFile, S);
           end;
           WriteLine(0, C);
@@ -1163,25 +1164,29 @@ begin
         //singer 2 P2
         if (Length(Czesc[1].Czesc[C].Nuta)>0) then
         begin
-          if (C < Czesc[0].High) and (CP <> 2) then
+          if (C < Czesc[0].High) and (P <> 2) then
           begin
             S := 'P2';
-            CP := 2;
+            P := 2;
             WriteLn(SongFile, S);
           end;
           WriteLine(1, C);
         end;
       end;
 
-      if C < Czesc[0].High then
+      CP := P-1;
+      if CP=2 then
+        CP := 0;
+
+      if C < Czesc[CP].High then
       begin      // don't write end of last sentence
         if not Relative then
-          S := '- ' + IntToStr(Czesc[0].Czesc[C+1].Start)
+          S := '- ' + IntToStr(Czesc[CP].Czesc[C+1].Start)
         else
         begin
-          S := '- ' + IntToStr(Czesc[0].Czesc[C+1].Start - RelativeSubTime) +
-            ' ' + IntToStr(Czesc[0].Czesc[C+1].Start - RelativeSubTime);
-          RelativeSubTime := Czesc[0].Czesc[C+1].Start;
+          S := '- ' + IntToStr(Czesc[CP].Czesc[C+1].Start - RelativeSubTime) +
+            ' ' + IntToStr(Czesc[CP].Czesc[C+1].Start - RelativeSubTime);
+          RelativeSubTime := Czesc[CP].Czesc[C+1].Start;
         end;
         WriteLn(SongFile, S);
       end;

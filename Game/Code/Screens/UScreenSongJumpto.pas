@@ -27,6 +27,10 @@ type
       function Draw: boolean; override;
 
       procedure SetTextFound(const Count: Cardinal);
+      procedure ToggleDuetFilter();
+      procedure SetDuetFilter();
+      procedure ResetDuetFilter();
+      procedure RefreshDuetFilter();
   end;
 
 var
@@ -106,18 +110,7 @@ begin
 
       SDLK_F1:
         begin
-          if not isDuet then
-          begin
-            //show/hide duet songs
-            isDuet := true;
-            Button[0].Text[0].Text := 'Duet Songs';
-            SetTextFound(CatSongs.SetFilter('', 3));
-          end else
-          begin
-            isDuet := false;
-            Button[0].Text[0].Text := '';
-            SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
-          end;
+          ToggleDuetFilter;
         end;
 
       SDLK_RETURN,
@@ -267,6 +260,36 @@ begin
 
     ScreenSong.ChangeMusic;
   end;
+end;
+
+procedure TScreenSongJumpto.ToggleDuetFilter;
+begin
+  if not isDuet then
+    SetDuetFilter
+  else
+    ResetDuetFilter;
+end;
+
+procedure TScreenSongJumpto.SetDuetFilter;
+begin
+  isDuet := true;
+  Button[0].Text[0].Text := 'Duet Songs';
+  SetTextFound(CatSongs.SetFilter('', 3));
+end;
+
+procedure TScreenSongJumpto.ResetDuetFilter;
+begin
+  isDuet := false;
+  Button[0].Text[0].Text := '';
+  SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+end;
+
+procedure TScreenSongJumpto.RefreshDuetFilter;
+begin
+  if isDuet then
+    SetDuetFilter
+  else
+    ResetDuetFilter;
 end;
 
 end.
