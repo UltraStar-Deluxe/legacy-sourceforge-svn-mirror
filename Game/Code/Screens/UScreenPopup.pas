@@ -763,10 +763,10 @@ var
   h, offset:      integer;
 begin
 
-  maxh := ScreenH+ScreenH-Rect.Bottom;
+  maxh := 2*RenderH+Rect.Bottom;
   h := 0;
 
-  offset := round(Help.GetScrollPos()*(max_high-ScreenH+ScreenH-Rect.Bottom));
+  offset := round(Help.GetScrollPos()*(max_high-Rect.Bottom));
 
   I := 0;
   while (I<Length(TextsGFX)) and (h<maxh) do
