@@ -297,11 +297,6 @@ begin
         Button[1].Text[0].Text := Language.Translate('SONG_MENU_MEDLEY');
         Button[2].Text[0].Text := Language.Translate('SONG_MENU_SORT');
         Button[3].Text[0].Text := Language.Translate('SONG_MENU_HELP');
-
-        {Button[0].Text[0].Text := Language.Translate('SONG_MENU_PLAY');
-        Button[1].Text[0].Text := Language.Translate('SONG_MENU_CHANGEPLAYERS');
-        Button[2].Text[0].Text := Language.Translate('SONG_MENU_PLAYLIST_ADD');
-        Button[3].Text[0].Text := Language.Translate('SONG_MENU_EDIT');}
       end;
 
     SM_Song:
@@ -324,7 +319,7 @@ begin
 
     SM_Medley:
       begin
-        ID := 'ID_034';
+        ID := 'ID_032';
         CurMenu := sMenu;
         Text[0].Text := Language.Translate('SONG_MENU_MEDLEY');
 
@@ -342,7 +337,7 @@ begin
       end;
     SM_Sort:
       begin
-        ID := 'ID_034';
+        ID := 'ID_032';
         CurMenu := sMenu;
         Text[0].Text := Language.Translate('SONG_MENU_SORT');
 

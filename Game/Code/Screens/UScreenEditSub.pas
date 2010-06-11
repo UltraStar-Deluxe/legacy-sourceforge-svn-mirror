@@ -884,12 +884,14 @@ begin
 
       SDLK_DELETE:
         begin
-
           if SDL_ModState = KMOD_LCTRL then
           begin
             // moves text to right in current sentence
             DeleteNote;
           end;
+
+          if SDL_ModState = KMOD_LSHIFT then
+            DeleteSentence;
         end;
 
       SDLK_PERIOD:
@@ -1567,30 +1569,84 @@ var
   S:    integer;
   Min:  integer;
   Max:  integer;
+
+  function GetMin(L: integer): integer;
+  var
+    len:  integer;
+    min:  integer;
+  begin
+    Result := low(integer);
+    if (Length(Czesci[0].Czesc[L].Nuta)>0) then
+    begin
+      len := Length(Czesci[0].Czesc[L].Nuta);
+      Result := Czesci[0].Czesc[L].Nuta[len-1].Start + Czesci[0].Czesc[L].Nuta[len-1].Dlugosc;
+    end;
+
+    if not AktSong.isDuet then
+      Exit;
+
+    if (Length(Czesci[1].Czesc[L].Nuta)>0) then
+    begin
+      len := Length(Czesci[1].Czesc[L].Nuta);
+      min := Czesci[1].Czesc[L].Nuta[len-1].Start + Czesci[1].Czesc[L].Nuta[len-1].Dlugosc;
+      if (min>Result) then
+        Result := min;
+    end;
+  end;
+
+  function GetMax(L: integer): integer;
+  var
+    max:  integer;
+  begin
+    Result := high(integer);
+    if (Length(Czesci[0].Czesc[L].Nuta)>0) then
+    begin
+      Result := Czesci[0].Czesc[L].Nuta[0].Start;
+    end;
+
+    if not AktSong.isDuet then
+      Exit;
+
+    if (Length(Czesci[1].Czesc[L].Nuta)>0) then
+    begin
+      max := Czesci[1].Czesc[L].Nuta[0].Start;
+      if (max<Result) then
+        Result := max;
+    end;
+  end;
+
 begin
   for P := 0 to Length(Czesci) - 1 do
   begin
+    for C := 1 to Length(Czesci[P].Czesc) - 1 do
+    begin
+      Min := GetMin(C-1);
+      Max := GetMax(C);
+      case (Max - Min) of
+        0:    S := Max;
+        1:    S := Max;
+        2:    S := Max - 1;
+        3:    S := Max - 2;
+        else
+          S := Min + 2;
+      end; // case
+
+      Czesci[P].Czesc[C].Start := S;
+    end; // for
+  end;
+
+  //second run for duet mode:
+  if not AktSong.isDuet then
+    Exit;
+  
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    Czesci[P].Czesc[0].Start := -100;
     for C := 1 to Czesci[P].High do
     begin
-      with Czesci[P].Czesc[C-1] do
-      begin
-        if (Length(Nuta)>0) then
-        begin
-          Min := Nuta[HighNut].Start + Nuta[HighNut].Dlugosc;
-          Max := Czesci[P].Czesc[C].StartNote;
-          case (Max - Min) of
-            0:    S := Max;
-            1:    S := Max;
-            2:    S := Max - 1;
-            3:    S := Max - 2;
-            else
-              S := Min + 2;
-          end; // case
-          
-          Czesci[P].Czesc[C].Start := S;
-        end;
-      end; // with
-    end; // for
+      if (Length(Czesci[P].Czesc[C-1].Nuta)=0) then
+        Czesci[P].Czesc[C].Start := Czesci[(P+1) mod 2].Czesc[C].Start;
+    end;
   end;
 end;
 
@@ -1839,30 +1895,58 @@ end;
 
 procedure TScreenEditSub.DeleteSentence;
 var
-  P:  integer;
-  C:  integer;
-  N:  integer;
+  Pv, Pt: integer;
+  P:      integer;
+  C:      integer;
+  N:      integer;
 
 begin
-  for P := 0 to Length(Czesci) - 1 do
+  Pv := CP;
+  Pt := CP;
+
+  if AktSong.isDuet then
+  begin
+    if (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)=0) then
+    begin
+      Pv := 0;
+      Pt := 1;
+    end;
+  end;
+
+  for P := Pv to Pt do
   begin
     C := Czesci[CP].Akt;
-    //Move all Sentences after the current to the Left
-    for N := C+1 to Czesci[P].High do
-      Czesci[P].Czesc[N-1] := Czesci[P].Czesc[N];
+    if (Pv <> Pt) or not AktSong.isDuet then
+    begin
+      //Move all Sentences after the current to the Left
+      for N := C+1 to Czesci[P].High do
+        //Czesci[P].Czesc[N-1] := Czesci[P].Czesc[N];
+        CopyLine(P, N, P, N-1);
 
-    //Delete Last Sentence
-    SetLength(Czesci[P].Czesc, Czesci[P].High);
-    Czesci[P].High := High(Czesci[P].Czesc);
-    Czesci[P].Ilosc := Length(Czesci[P].Czesc);
+      //Delete Last Sentence
+      SetLength(Czesci[P].Czesc, Czesci[P].High);
+      Czesci[P].High := High(Czesci[P].Czesc);
+      Czesci[P].Ilosc := Length(Czesci[P].Czesc);
 
-    AktNuta[P] := 0;
-    if (C > 0) then
-      Czesci[P].Akt := C - 1
-    else
-      Czesci[P].Akt := 0;
+      AktNuta[P] := 0;
+      if (C > 0) then
+        Czesci[P].Akt := C - 1
+      else
+        Czesci[P].Akt := 0;
+    end else
+    begin
+      //delete all notes in that line
+      SetLength(Czesci[P].Czesc[C].Nuta, 0);
+
+      //switch to the other line
+      CP := (CP+1) mod 2;
+      AktNuta[CP] := 0;
+      AktNuta[(CP+1) mod 2] := 0;
+    end;
   end;
-  Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+  Refresh;
+  SelectPrevNote();
+  SelectNextNote();
 end;
 
 procedure TScreenEditSub.TransposeNote(Transpose: integer);
@@ -2336,6 +2420,7 @@ begin
   end
   else
   begin
+    Refresh;
     MidiOut := TMidiOutput.Create(nil);
     MidiOut.Open;
 
@@ -3035,6 +3120,7 @@ end;
 procedure TScreenEditSub.DrawInfoBar(P, x, y, w, h: integer);
 var
   start, end_:  integer;
+  start2:       integer;
   ww:           integer;
 
   pos:          real;
@@ -3117,9 +3203,9 @@ begin
   if(numLines=0) then
     Exit;
 
-  start := FindStart;
+  start2 := FindStart;
   end_ := FindEnd;
-  ww := end_ - start;
+  ww := end_ - start2;
 
   glColor4f(0, 0, 0, 1);
   glDisable(GL_BLEND);
@@ -3156,7 +3242,7 @@ begin
       end_ := Czesci[P].Czesc[line].Nuta[Czesci[P].Czesc[line].HighNut].Start+
         Czesci[P].Czesc[line].Nuta[Czesci[P].Czesc[line].HighNut].Dlugosc;
 
-      pos := start/ww*w;
+      pos := (start-start2)/ww*w;
       br := (end_-start)/ww*w;
 
       glbegin(gl_quads);
@@ -3172,7 +3258,7 @@ begin
   if(PlaySentence or PlaySentenceMidi) then
   begin
     glColor4f(1, 0, 0, 1);
-    pos := AktBeat/ww*w;
+    pos := (AktBeat-start2)/ww*w;
     br := 1;
 
     glbegin(gl_quads);
@@ -3188,7 +3274,7 @@ begin
       end_ := Czesci[P].Czesc[Czesci[P].Akt].Nuta[Czesci[P].Czesc[Czesci[P].Akt].HighNut].Start+
         Czesci[P].Czesc[Czesci[P].Akt].Nuta[Czesci[P].Czesc[Czesci[P].Akt].HighNut].Dlugosc;
 
-      pos := start/ww*w;
+      pos := (start-start2)/ww*w;
       br := (end_-start)/ww*w;
 
       glColor4f(0, 0, 0, 0.5);
@@ -3207,7 +3293,7 @@ begin
     glColor4f(1, 0, 0, 1);
     if (Length(Czesci[P].Czesc[Czesci[P].Akt].Nuta)>0) then
     begin
-      pos := Czesci[P].Czesc[Czesci[P].Akt].Nuta[AktNuta[P]].Start/ww*w;
+      pos := (Czesci[P].Czesc[Czesci[P].Akt].Nuta[AktNuta[P]].Start-start2)/ww*w;
       br := Czesci[P].Czesc[Czesci[P].Akt].Nuta[AktNuta[P]].Dlugosc/ww*w;
       if (br<1) then
         br := 1;

@@ -370,7 +370,6 @@ end;
 
 procedure TScreenPopupHelp.onShow;
 begin
-
 end;
 
 procedure TScreenPopupHelp.onHide;
