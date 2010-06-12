@@ -288,8 +288,16 @@ begin
           if SDL_ModState = 0 then
           begin
             // Insert start of sentece
-            if AktNuta[CP] > 0 then
-              DivideSentence;
+            if (AktNuta[CP] > 0) then
+              DivideSentence
+            else if AktSong.isDuet and
+              (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0) then
+            begin
+              if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start >
+                Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta[0].Start+
+                Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta[0].Dlugosc) then
+                DivideSentence;
+            end;
           end;
 
           if SDL_ModState = KMOD_LSHIFT then
