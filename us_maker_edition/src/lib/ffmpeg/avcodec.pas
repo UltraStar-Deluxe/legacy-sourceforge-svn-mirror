@@ -14,20 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *)
-
-(*
+ *
  * This is a part of Pascal porting of ffmpeg.
  * - Originally by Victor Zinetz for Delphi and Free Pascal on Windows.
  * - For Mac OS X, some modifications were made by The Creative CAT, denoted as CAT
  *   in the source codes.
  * - Changes and updates by the UltraStar Deluxe Team
- *)
-
-(*
+ *
  * Conversion of libavcodec/avcodec.h
  * Min. version: 51.16.0, revision 6577, Sat Oct 7 15:30:46 2006 UTC 
- * Max. version: 52.67.0, revision 23057, Tue May 11 18:30 2010 CET
+ * Max. version: 52.72.0, revision 23338, Sun May 30 20:55 2010 CET
  *
  *)
 
@@ -86,7 +82,7 @@ const
    *)
   (* Max. supported version by this header *)
   LIBAVCODEC_MAX_VERSION_MAJOR   = 52;
-  LIBAVCODEC_MAX_VERSION_MINOR   = 67;
+  LIBAVCODEC_MAX_VERSION_MINOR   = 72;
   LIBAVCODEC_MAX_VERSION_RELEASE = 0;
   LIBAVCODEC_MAX_VERSION = (LIBAVCODEC_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                            (LIBAVCODEC_MAX_VERSION_MINOR * VERSION_MINOR) +
@@ -306,6 +302,9 @@ type
 {$IFEND}
 {$IF LIBAVCODEC_VERSION >= 52062000}  // >= 52.62.0
     CODEC_ID_YOP,
+{$IFEND}
+{$IF LIBAVCODEC_VERSION >= 52067002}  // >= 52.67.2
+    CODEC_ID_VP8,
 {$IFEND}
 
     //* various PCM "codecs" */
@@ -850,6 +849,14 @@ const
   CODEC_CAP_SUBFRAMES        = $0100;
   {$IFEND}
 
+  {$IF LIBAVCODEC_VERSION >= 52071000} // >= 52.71.0
+  (**
+   * Codec is experimental and is thus avoided in favor of non experimental
+   * encoders
+   *)
+  CODEC_CAP_EXPERIMENTAL     = $0200;
+  {$IFEND}
+
    //the following defines may change, don't expect compatibility if you use them
    MB_TYPE_INTRA4x4   = $001;
    MB_TYPE_INTRA16x16 = $002; //FIXME h264 specific
@@ -1255,6 +1262,16 @@ type
      * 0 means there is no such variable
      *)
     log_level_offset_offset: cint;
+{$IFEND}
+
+{$IF LIBAVUTIL_VERSION >= 50015003} // 50.15.3
+    (**
+     * Offset in the structure where a pointer to the parent context for loging is stored.
+     * for example a decoder that uses eval.c could pass its AVCodecContext to eval as such
+     * parent context. And a av_log() implementation could then display the parent context
+     * can be NULL of course
+     *)
+    parent_log_context_offset: cint;
 {$IFEND}
   end;
 
@@ -3012,7 +3029,11 @@ type
      *)
     crf_max: cfloat;
     {$IFEND}
-  end;
+
+    {$IF LIBAVCODEC_VERSION >= 52067002} // >= 52.67.2
+    log_level_offset: cint;
+    {$IFEND}
+  end; {TAVCodecContext}
 
 (**
  * AVCodec.
@@ -3852,6 +3873,10 @@ function avcodec_get_edge_width(): cuint;
  * Modifies width and height values so that they will result in a memory
  * buffer that is acceptable for the codec if you do not use any horizontal
  * padding.
+ *
+ * May only be used if a codec with CODEC_CAP_DR1 has been opened.
+ * If CODEC_FLAG_EMU_EDGE is not set, the dimensions must have been increased
+ * according to avcodec_get_edge_width() before.
  *)
 procedure avcodec_align_dimensions(s: PAVCodecContext; width: PCint; height: PCint);
   cdecl; external av__codec;
@@ -3861,6 +3886,10 @@ procedure avcodec_align_dimensions(s: PAVCodecContext; width: PCint; height: PCi
  * Modifies width and height values so that they will result in a memory
  * buffer that is acceptable for the codec if you also ensure that all
  * line sizes are a multiple of the respective linesize_align[i].
+ *
+ * May only be used if a codec with CODEC_CAP_DR1 has been opened.
+ * If CODEC_FLAG_EMU_EDGE is not set, the dimensions must have been increased
+ * according to avcodec_get_edge_width() before.
  *)
 procedure avcodec_align_dimensions2(s: PAVCodecContext; width: PCint; height: PCint;
                                     linesize_align: PQuadIntArray);
@@ -4212,6 +4241,9 @@ function av_get_bits_per_sample_format(sample_fmt: TSampleFormat): cint;
 const
   AV_PARSER_PTS_NB      = 4;
   PARSER_FLAG_COMPLETE_FRAMES = $0001;
+{$IF LIBAVCODEC_VERSION >= 52070000} // 52.70.0
+  PARSER_FLAG_ONCE            = $0002;
+{$IFEND}
 
 type
   {* frame parsing *}
@@ -4694,20 +4726,19 @@ const
 {$ENDIF}
 
 (**
- * We need the sign of of the error, because some platforms have 
+ * We need the sign of the error, because some platforms have 
  * E* and errno already negated. The previous version failed
- * with Delphi, because it needs EINVAL defined.
+ * with Delphi, because it needed EINVAL defined.
  * Warning: This code is platform dependent and assumes constants 
  * to be 32 bit.
  * This version does the following steps:
  * 1) shr 30:        shifts the sign bit to bit position 2
  * 2) and $00000002: sets all other bits to zero
  *                   positive EINVAL gives 0, negative gives 2
- * 3) not:           inverts all bits. This gives -1 and -3
- * 4) + 2:           positive EINVAL gives 1, negative -1
+ * 3) - 1:           positive EINVAL gives -1, negative 1
  *)
 const
-  AVERROR_SIGN = not((EINVAL shr 30) and $00000002) + 2;
+  AVERROR_SIGN = (EINVAL shr 30) and $00000002 - 1;
 
 (*
 #if EINVAL > 0

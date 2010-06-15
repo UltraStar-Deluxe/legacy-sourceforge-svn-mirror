@@ -48,24 +48,6 @@ interface
   {$DEFINE PIXEL_FMT_BGR}
 {$ENDIF}
 
-type
-  {**
-   * vacStretch: Stretch to screen width and height
-   *   - ignores aspect
-   *   + no borders
-   *   + no image data loss
-   * vacCrop: Stretch to screen width or height, crop the other dimension
-   *   + keeps aspect
-   *   + no borders
-   *   - frame borders are cropped (image data loss)
-   * vacLetterBox: Stretch to screen width, add bars at or crop top and bottom
-   *   + keeps aspect
-   *   - borders at top and bottom
-   *   o top/bottom is cropped if width < height (unusual)
-   *}
-  TAspectCorrection = (acoStretch, acoCrop, acoLetterBox);
-
-
 implementation
 
 uses
@@ -112,12 +94,9 @@ const
   PIXEL_FMT_SIZE   = 3;
 {$ENDIF}
 
-type
-  TRectCoords = record
-    Left, Right:  double;
-    Upper, Lower: double;
-  end;
+  ReflectionH = 0.5; //reflection height (50%)
 
+type
   IVideo_FFmpeg = interface (IVideo)
   ['{E640E130-C8C0-4399-AF02-67A3569313AB}']
     function Open(const FileName: IPath): boolean;
@@ -149,11 +128,25 @@ type
     fSwScaleContext: PSwsContext;
     {$ENDIF}
 
+    fScreen:          integer; //actual screen to draw on
+
+    fPosX:    double;
+    fPosY:    double;
+    fPosZ:    double;
+    fWidth:   double;
+    fHeight:  double;
+
+    fFrameRange:        TRectCoords;
+
+    fAlpha:             double;
+    fReflectionSpacing: double;
+
+
     fAspect: real;        //**< width/height ratio
     fAspectCorrection: TAspectCorrection;
 
-    fTimeBase: extended;  //**< FFmpeg time base per time unit
-    fFrameTime: extended;  //**< video time position (absolute)
+    fFrameDuration: extended; //**< duration of a video frame in seconds (= 1/fps)
+    fFrameTime: extended; //**< video time position (absolute)
     fLoopTime: extended;  //**< start time of the current loop
 
     fPboEnabled: boolean;
@@ -163,6 +156,8 @@ type
     procedure SynchronizeTime(Frame: PAVFrame; var pts: double);
 
     procedure GetVideoRect(var ScreenRect, TexRect: TRectCoords);
+    procedure DrawBorders(ScreenRect: TRectCoords);
+    procedure DrawBordersReflected(ScreenRect: TRectCoords; AlphaUpper, AlphaLower: double);
 
     procedure ShowDebugInfo();
 
@@ -183,8 +178,39 @@ type
     procedure SetPosition(Time: real);
     function GetPosition: real;
 
-    procedure GetFrame(Time: Extended);
-    procedure DrawGL(Screen: integer);
+    procedure SetScreen(Screen: integer);
+    function GetScreen(): integer;
+
+    procedure SetScreenPosition(X, Y, Z: double);
+    procedure GetScreenPosition(var X, Y, Z: double);
+
+    procedure SetWidth(Width: double);
+    function GetWidth(): double;
+
+    procedure SetHeight(Height: double);
+    function GetHeight(): double;
+
+    {**
+     * Sub-image of the video frame to draw.
+     * This can be used for zooming or similar purposes.
+     *}
+     procedure SetFrameRange(Range: TRectCoords);
+     function GetFrameRange(): TRectCoords;
+
+     function GetFrameAspect(): real;
+
+     procedure SetAspectCorrection(AspectCorrection: TAspectCorrection);
+     function GetAspectCorrection(): TAspectCorrection;
+
+     procedure SetAlpha(Alpha: double);
+     function GetAlpha(): double;
+
+     procedure SetReflectionSpacing(Spacing: double);
+     function GetReflectionSpacing(): double;
+
+     procedure GetFrame(Time: Extended);
+     procedure Draw();
+     procedure DrawReflection();
   end;
 
   TVideoPlayback_FFmpeg = class( TInterfacedObject, IVideoPlayback )
@@ -406,19 +432,18 @@ begin
     fAspect := fAspect * fCodecContext^.width /
                          fCodecContext^.height;
 
-  fTimeBase := 1/av_q2d(fStream^.r_frame_rate);
+  fFrameDuration := 1/av_q2d(fStream^.r_frame_rate);
 
-  // hack to get reasonable timebase (for divx and others)
-  if (fTimeBase < 0.02) then // 0.02 <-> 50 fps
+  // hack to get reasonable framerate (for divx and others)
+  if (fFrameDuration < 0.02) then // 0.02 <-> 50 fps
   begin
-    fTimeBase := av_q2d(fStream^.r_frame_rate);
-    while (fTimeBase > 50) do
-      fTimeBase := fTimeBase/10;
-    fTimeBase := 1/fTimeBase;
+    fFrameDuration := av_q2d(fStream^.r_frame_rate);
+    while (fFrameDuration > 50) do
+      fFrameDuration := fFrameDuration/10;
+    fFrameDuration := 1/fFrameDuration;
   end;
 
-  Log.LogInfo('VideoTimeBase: ' + floattostr(fTimeBase), 'TVideoPlayback_ffmpeg.Open');
-  Log.LogInfo('Framerate: '+inttostr(floor(1/fTimeBase))+'fps', 'TVideoPlayback_ffmpeg.Open');
+  Log.LogInfo('Framerate: '+inttostr(floor(1/fFrameDuration))+'fps', 'TVideoPlayback_ffmpeg.Open');
 
   {$IFDEF UseSWScale}
   // if available get a SWScale-context -> faster than the deprecated img_convert().
@@ -484,7 +509,7 @@ begin
 
   fOpened := False;
   fPaused := False;
-  fTimeBase := 0;
+  fFrameDuration := 0;
   fFrameTime := 0;
   fStream := nil;
   fStreamIndex := -1;
@@ -498,6 +523,22 @@ begin
   fPboId := 0;
 
   fAspectCorrection := acoCrop;
+
+  fScreen := 1;
+
+  fPosX := 0;
+  fPosY := 0;
+  fPosZ := 0;
+  fWidth := RenderW;
+  fHeight := RenderH;
+
+  fFrameRange.Left := 0;
+  fFrameRange.Right := 1;
+  fFrameRange.Upper := 0;
+  fFrameRange.Lower := 1;
+
+  fAlpha := 1;
+  fReflectionSpacing := 0;
 end;
 
 procedure TVideo_FFmpeg.Close;
@@ -686,12 +727,6 @@ begin
     Exit;
 
   {*
-   * TODO:
-   * Check if it is correct to assume that fTimeBase is the time of one frame?
-   * The tutorial and FFPlay do not make this assumption.
-   *}
-
-  {*
    * Synchronization - begin
    *}
 
@@ -710,12 +745,12 @@ begin
     {$IFDEF DebugDisplay}
     DebugWriteln('Time:      '+inttostr(floor(Time*1000)) + sLineBreak +
                  'VideoTime: '+inttostr(floor(fFrameTime*1000)) + sLineBreak +
-                 'TimeBase:  '+inttostr(floor(fTimeBase*1000)) + sLineBreak +
+                 'TimeBase:  '+inttostr(floor(fFrameDuration*1000)) + sLineBreak +
                  'TimeDiff:  '+inttostr(floor(TimeDifference*1000)));
     {$endif}
 
     // check if time has reached the next frame
-    if (TimeDiff < fTimeBase) then
+    if (TimeDiff < fFrameDuration) then
     begin
       {$ifdef DebugFrames}
       // frame delay debug display
@@ -726,7 +761,7 @@ begin
       DebugWriteln('not getting new frame' + sLineBreak +
           'Time:      '+inttostr(floor(Time*1000)) + sLineBreak +
           'VideoTime: '+inttostr(floor(fFrameTime*1000)) + sLineBreak +
-          'TimeBase:  '+inttostr(floor(fTimeBase*1000)) + sLineBreak +
+          'TimeBase:  '+inttostr(floor(fFrameDuration*1000)) + sLineBreak +
           'TimeDiff:  '+inttostr(floor(TimeDifference*1000)));
       {$endif}
 
@@ -745,9 +780,9 @@ begin
 
   // check if we have to skip frames
   // Either if we are one frame behind or if the skip threshold has been reached.
-  // Do not skip if the difference is less than fTimeBase as there is no next frame.
-  // Note: We assume that fTimeBase is the length of one frame.
-  if (TimeDiff >= Max(fTimeBase, SKIP_FRAME_DIFF)) then
+  // Do not skip if the difference is less than fFrameDuration as there is no next frame.
+  // Note: We assume that fFrameDuration is the length of one frame.
+  if (TimeDiff >= Max(fFrameDuration, SKIP_FRAME_DIFF)) then
   begin
     {$IFDEF DebugFrames}
     //frame drop debug display
@@ -755,13 +790,13 @@ begin
     {$ENDIF}
     {$IFDEF DebugDisplay}
     DebugWriteln('skipping frames' + sLineBreak +
-        'TimeBase:  '+inttostr(floor(fTimeBase*1000)) + sLineBreak +
+        'TimeBase:  '+inttostr(floor(fFrameDuration*1000)) + sLineBreak +
         'TimeDiff:  '+inttostr(floor(TimeDifference*1000)));
     {$endif}
 
     // update video-time
-    DropFrameCount := Trunc(TimeDiff / fTimeBase);
-    fFrameTime := fFrameTime + DropFrameCount*fTimeBase;
+    DropFrameCount := Trunc(TimeDiff / fFrameDuration);
+    fFrameTime := fFrameTime + DropFrameCount*fFrameDuration;
 
     // skip frames
     for i := 1 to DropFrameCount do
@@ -889,72 +924,142 @@ procedure TVideo_FFmpeg.GetVideoRect(var ScreenRect, TexRect: TRectCoords);
 var
   ScreenAspect: double;  // aspect of screen resolution
   ScaledVideoWidth, ScaledVideoHeight: double;
+
 begin
   // Three aspects to take into account:
   //  1. Screen/display resolution (e.g. 1920x1080 -> 16:9)
-  //  2. Render aspect (fixed to 800x600 -> 4:3)
+  //  2. Render aspect (fWidth x fHeight -> variable)
   //  3. Movie aspect (video frame aspect stored in fAspect)
-  ScreenAspect := ScreenW / ScreenH;
+  ScreenAspect := fWidth*((ScreenW/Screens)/RenderW)/(fHeight*(ScreenH/RenderH));
 
   case fAspectCorrection of
     acoStretch: begin
-      ScaledVideoWidth  := RenderW;
-      ScaledVideoHeight := RenderH;
+      ScaledVideoWidth  := fWidth;
+      ScaledVideoHeight := fHeight;
     end;
+
     acoCrop: begin
       if (ScreenAspect >= fAspect) then
       begin
-        ScaledVideoWidth  := RenderW;
-        ScaledVideoHeight := RenderH * ScreenAspect/fAspect;
-      end
-      else
+        ScaledVideoWidth  := fWidth;
+        ScaledVideoHeight := fHeight * ScreenAspect/fAspect;
+      end else
       begin
-        ScaledVideoHeight := RenderH;
-        ScaledVideoWidth  := RenderW * fAspect/ScreenAspect;
+        ScaledVideoHeight := fHeight;
+        ScaledVideoWidth  := fWidth * fAspect/ScreenAspect;
       end;
     end;
+
     acoLetterBox: begin
-      ScaledVideoWidth  := RenderW;
-      ScaledVideoHeight := RenderH * ScreenAspect/fAspect;
-    end
-    else
+      if (ScreenAspect <= fAspect) then
+      begin
+        ScaledVideoWidth  := fWidth;
+        ScaledVideoHeight := fHeight * ScreenAspect/fAspect;
+      end else
+      begin
+        ScaledVideoHeight := fHeight;
+        ScaledVideoWidth  := fWidth * fAspect/ScreenAspect;
+      end;
+    end else
       raise Exception.Create('Unhandled aspect correction!');
   end;
 
-  // center video
-  ScreenRect.Left  := (RenderW - ScaledVideoWidth) / 2;
+  //center video
+  ScreenRect.Left  := (fWidth - ScaledVideoWidth) / 2 + fPosX;
   ScreenRect.Right := ScreenRect.Left + ScaledVideoWidth;
-  ScreenRect.Upper := (RenderH - ScaledVideoHeight) / 2;
+  ScreenRect.Upper := (fHeight - ScaledVideoHeight) / 2 + fPosY;
   ScreenRect.Lower := ScreenRect.Upper + ScaledVideoHeight;
 
   // texture contains right/lower (power-of-2) padding.
   // Determine the texture coords of the video frame.
-  TexRect.Left  := 0;
-  TexRect.Right := fCodecContext^.width  / fTexWidth;
-  TexRect.Upper := 0;
-  TexRect.Lower := fCodecContext^.height / fTexHeight;
+  TexRect.Left  := (fCodecContext^.width / fTexWidth) * fFrameRange.Left;
+  TexRect.Right := (fCodecContext^.width / fTexWidth) * fFrameRange.Right;
+  TexRect.Upper := (fCodecContext^.height / fTexHeight) * fFrameRange.Upper;
+  TexRect.Lower := (fCodecContext^.height / fTexHeight) * fFrameRange.Lower;
 end;
 
-procedure TVideo_FFmpeg.DrawGL(Screen: integer);
-var
-  ScreenRect: TRectCoords;
-  TexRect: TRectCoords;
-begin
-  // have a nice black background to draw on
-  // (even if there were errors opening the vid)
-  // TODO: Philipp: IMO TVideoPlayback should not clear the screen at
-  //       all, because clearing is already done by the background class
-  //       at this moment.
-  if (Screen = 1) then
+procedure TVideo_FFmpeg.DrawBorders(ScreenRect: TRectCoords);
+  procedure DrawRect(left, right, upper, lower: double);
   begin
-    // It is important that we just clear once before we start
-    // drawing the first screen otherwise the first screen
-    // would be cleared by the drawgl called when the second
-    // screen is drawn
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+    glColor4f(0, 0, 0, fAlpha);
+    glBegin(GL_QUADS);
+      glVertex3f(left, upper, fPosZ);
+      glVertex3f(right, upper, fPosZ);
+      glVertex3f(right, lower, fPosZ);
+      glVertex3f(left, lower, fPosZ);
+    glEnd;
   end;
+begin
+  //upper border
+  if(ScreenRect.Upper > fPosY) then
+    DrawRect(fPosX, fPosX+fWidth, fPosY, ScreenRect.Upper);
 
+  //lower border
+  if(ScreenRect.Lower < fPosY+fHeight) then
+    DrawRect(fPosX, fPosX+fWidth, ScreenRect.Lower, fPosY+fHeight);
+
+  //left border
+  if(ScreenRect.Left > fPosX) then
+    DrawRect(fPosX, ScreenRect.Left, fPosY, fPosY+fHeight);
+
+  //right border
+  if(ScreenRect.Right < fPosX+fWidth) then
+    DrawRect(ScreenRect.Right, fPosX+fWidth, fPosY, fPosY+fHeight);
+end;
+
+procedure TVideo_FFmpeg.DrawBordersReflected(ScreenRect: TRectCoords; AlphaUpper, AlphaLower: double);
+var
+  rPosUpper, rPosLower: double;
+
+  procedure DrawRect(left, right, upper, lower: double);
+  var
+    AlphaTop: double;
+    AlphaBottom: double;
+
+  begin
+    AlphaTop := AlphaUpper+(AlphaLower-AlphaUpper)*(upper-rPosUpper)/(fHeight*ReflectionH);
+    AlphaBottom := AlphaLower+(AlphaUpper-AlphaLower)*(rPosLower-lower)/(fHeight*ReflectionH);
+
+    glBegin(GL_QUADS);
+      glColor4f(0, 0, 0, AlphaTop);
+      glVertex3f(left, upper, fPosZ);
+      glVertex3f(right, upper, fPosZ);
+
+      glColor4f(0, 0, 0, AlphaBottom);
+      glVertex3f(right, lower, fPosZ);
+      glVertex3f(left, lower, fPosZ);
+    glEnd;
+  end;
+begin
+  rPosUpper := fPosY+fHeight+fReflectionSpacing;
+  rPosLower := rPosUpper+fHeight*ReflectionH;
+
+  //upper border
+  if(ScreenRect.Upper > rPosUpper) then
+    DrawRect(fPosX, fPosX+fWidth, rPosUpper, ScreenRect.Upper);
+
+  //lower border
+  if(ScreenRect.Lower < rPosLower) then
+    DrawRect(fPosX, fPosX+fWidth, ScreenRect.Lower, rPosLower);
+
+  //left border
+  if(ScreenRect.Left > fPosX) then
+    DrawRect(fPosX, ScreenRect.Left, rPosUpper, rPosLower);
+
+  //right border
+  if(ScreenRect.Right < fPosX+fWidth) then
+    DrawRect(ScreenRect.Right, fPosX+fWidth, rPosUpper, rPosLower);
+end;
+
+
+procedure TVideo_FFmpeg.Draw();
+var
+  ScreenRect:   TRectCoords;
+  TexRect:      TRectCoords;
+  HeightFactor: double;
+  WidthFactor:  double;
+
+begin
   // exit if there's nothing to draw
   if (not fOpened) then
     Exit;
@@ -966,31 +1071,53 @@ begin
   // get texture and screen positions
   GetVideoRect(ScreenRect, TexRect);
 
-  // we could use blending for brightness control, but do we need this?
-  glDisable(GL_BLEND);
+  WidthFactor := (ScreenW/Screens) / RenderW;
+  HeightFactor := ScreenH / RenderH;
+
+  glScissor(
+    round(fPosX*WidthFactor + (ScreenW/Screens)*(fScreen-1)),
+    round((RenderH-fPosY-fHeight)*HeightFactor),
+    round(fWidth*WidthFactor),
+    round(fHeight*HeightFactor)
+    );
+
+  glEnable(GL_SCISSOR_TEST);
+  glEnable(GL_BLEND);
+  glDepthRange(0, 10);
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_DEPTH_TEST);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, fFrameTex);
-  glColor3f(1, 1, 1);
+  glColor4f(1, 1, 1, fAlpha);
   glBegin(GL_QUADS);
     // upper-left coord
     glTexCoord2f(TexRect.Left, TexRect.Upper);
-    glVertex2f(ScreenRect.Left, ScreenRect.Upper);
+    glVertex3f(ScreenRect.Left, ScreenRect.Upper, fPosZ);
     // lower-left coord
     glTexCoord2f(TexRect.Left, TexRect.Lower);
-    glVertex2f(ScreenRect.Left, ScreenRect.Lower);
+    glVertex3f(ScreenRect.Left, ScreenRect.Lower, fPosZ);
     // lower-right coord
     glTexCoord2f(TexRect.Right, TexRect.Lower);
-    glVertex2f(ScreenRect.Right, ScreenRect.Lower);
+    glVertex3f(ScreenRect.Right, ScreenRect.Lower, fPosZ);
     // upper-right coord
     glTexCoord2f(TexRect.Right, TexRect.Upper);
-    glVertex2f(ScreenRect.Right, ScreenRect.Upper);
+    glVertex3f(ScreenRect.Right, ScreenRect.Upper, fPosZ);
   glEnd;
+
   glDisable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  //draw black borders
+  DrawBorders(ScreenRect);
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_BLEND);
+  glDisable(GL_SCISSOR_TEST);
 
   {$IFDEF VideoBenchmark}
   Log.BenchmarkEnd(15);
-  Log.LogBenchmark('DrawGL', 15);
+  Log.LogBenchmark('Draw', 15);
   {$ENDIF}
 
   {$IF Defined(Info) or Defined(DebugFrames)}
@@ -998,10 +1125,98 @@ begin
   {$IFEND}
 end;
 
+procedure TVideo_FFmpeg.DrawReflection();
+var
+  ScreenRect:   TRectCoords;
+  TexRect:      TRectCoords;
+  HeightFactor: double;
+  WidthFactor:  double;
+
+  AlphaTop:     double;
+  AlphaBottom:  double;
+
+  AlphaUpper:   double;
+  AlphaLower:   double;
+
+begin
+  // exit if there's nothing to draw
+  if (not fOpened) then
+    Exit;
+
+  // get texture and screen positions
+  GetVideoRect(ScreenRect, TexRect);
+
+  WidthFactor := (ScreenW/Screens) / RenderW;
+  HeightFactor := ScreenH / RenderH;
+
+  glScissor(
+    round(fPosX*WidthFactor + (ScreenW/Screens)*(fScreen-1)),
+    round((RenderH-fPosY-fHeight-fReflectionSpacing-fHeight*ReflectionH)*HeightFactor),
+    round(fWidth*WidthFactor),
+    round(fHeight*HeightFactor*ReflectionH)
+    );
+
+  glEnable(GL_SCISSOR_TEST);
+  glEnable(GL_BLEND);
+  glDepthRange(0, 10);
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_DEPTH_TEST);
+
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, fFrameTex);
+
+  //calculate new ScreenRect coordinates for Reflection
+  ScreenRect.Lower := fPosY + fHeight + fReflectionSpacing
+    + (ScreenRect.Upper-fPosY) + (ScreenRect.Lower-ScreenRect.Upper)*ReflectionH;
+  ScreenRect.Upper := fPosY + fHeight + fReflectionSpacing
+    + (ScreenRect.Upper-fPosY);
+
+  AlphaUpper := fAlpha-0.3;
+  AlphaLower := 0;
+
+  AlphaTop := AlphaUpper-(AlphaLower-AlphaUpper)*
+    (ScreenRect.Upper-fPosY-fHeight-fReflectionSpacing)/fHeight;
+  AlphaBottom := AlphaLower+(AlphaUpper-AlphaLower)*
+    (fPosY+fHeight+fReflectionSpacing+fHeight*ReflectionH-ScreenRect.Lower)/fHeight;
+
+  glBegin(GL_QUADS);
+    //Top Left
+    glColor4f(1, 1, 1, AlphaTop);
+    glTexCoord2f(TexRect.Left, TexRect.Lower);
+    glVertex3f(ScreenRect.Left, ScreenRect.Upper, fPosZ);
+
+    //Bottom Left
+    glColor4f(1, 1, 1, AlphaBottom);
+    glTexCoord2f(TexRect.Left, (TexRect.Lower-TexRect.Upper)*(1-ReflectionH));
+    glVertex3f(ScreenRect.Left, ScreenRect.Lower, fPosZ);
+
+    //Bottom Right
+    glColor4f(1, 1, 1, AlphaBottom);
+    glTexCoord2f(TexRect.Right, (TexRect.Lower-TexRect.Upper)*(1-ReflectionH));
+    glVertex3f(ScreenRect.Right, ScreenRect.Lower, fPosZ);
+
+    //Top Right
+    glColor4f(1, 1, 1, AlphaTop);
+    glTexCoord2f(TexRect.Right, TexRect.Lower);
+    glVertex3f(ScreenRect.Right, ScreenRect.Upper, fPosZ);
+  glEnd;
+
+  glDisable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  //draw black borders
+  DrawBordersReflected(ScreenRect, AlphaUpper, AlphaLower);
+
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_BLEND);
+  glDisable(GL_SCISSOR_TEST);
+end;
+
 procedure TVideo_FFmpeg.ShowDebugInfo();
 begin
   {$IFDEF Info}
-  if (fFrameTime+fTimeBase < 0) then
+  if (fFrameTime+fFrameDuration < 0) then
   begin
     glColor4f(0.7, 1, 0.3, 1);
     SetFontStyle (1);
@@ -1093,7 +1308,10 @@ begin
   fEOF := false;
   fFrameTexValid := false;
 
-  if (av_seek_frame(fFormatContext, fStreamIndex, Floor(Time/fTimeBase), SeekFlags) < 0) then
+  if (av_seek_frame(fFormatContext,
+     fStreamIndex,
+     Round(Time / av_q2d(fStream^.time_base)),
+     SeekFlags) < 0) then
   begin
     Log.LogError('av_seek_frame() failed', 'TVideoPlayback_ffmpeg.SetPosition');
     Exit;
@@ -1106,6 +1324,111 @@ function  TVideo_FFmpeg.GetPosition: real;
 begin
   Result := fFrameTime;
 end;
+
+procedure TVideo_FFmpeg.SetScreen(Screen: integer);
+begin
+  fScreen := Screen;
+end;
+
+function TVideo_FFmpeg.GetScreen(): integer;
+begin
+  Result := fScreen;
+end;
+
+
+procedure TVideo_FFmpeg.SetScreenPosition(X, Y, Z: double);
+begin
+  fPosX := X;
+  fPosY := Y;
+  fPosZ := Z;
+end;
+
+procedure TVideo_FFmpeg.GetScreenPosition(var X, Y, Z: double);
+begin
+  X := fPosX;
+  Y := fPosY;
+  Z := fPosZ;
+end;
+
+
+procedure TVideo_FFmpeg.SetWidth(Width: double);
+begin
+  fWidth := Width;
+end;
+
+function TVideo_FFmpeg.GetWidth(): double;
+begin
+  Result := fWidth;
+end;
+
+
+procedure TVideo_FFmpeg.SetHeight(Height: double);
+begin
+  fHeight := Height;
+end;
+
+function TVideo_FFmpeg.GetHeight(): double;
+begin
+  Result := fHeight;
+end;
+
+
+procedure TVideo_FFmpeg.SetFrameRange(Range: TRectCoords);
+begin
+  fFrameRange := Range;
+end;
+
+function TVideo_FFmpeg.GetFrameRange(): TRectCoords;
+begin
+  Result := fFrameRange;
+end;
+
+
+function TVideo_FFmpeg.GetFrameAspect(): real;
+begin
+  Result := fAspect;
+end;
+
+
+procedure TVideo_FFmpeg.SetAspectCorrection(AspectCorrection: TAspectCorrection);
+begin
+  fAspectCorrection := AspectCorrection;
+end;
+
+function TVideo_FFmpeg.GetAspectCorrection(): TAspectCorrection;
+begin
+  Result := fAspectCorrection;
+end;
+
+
+
+procedure TVideo_FFmpeg.SetAlpha(Alpha: double);
+begin
+  fAlpha := Alpha;
+
+  if (fAlpha>1) then
+    fAlpha := 1;
+
+  if (fAlpha<0) then
+    fAlpha := 0;
+end;
+
+function TVideo_FFmpeg.GetAlpha(): double;
+begin
+  Result := fAlpha;
+end;
+
+
+procedure TVideo_FFmpeg.SetReflectionSpacing(Spacing: double);
+begin
+  fReflectionSpacing := Spacing;
+end;
+
+function TVideo_FFmpeg.GetReflectionSpacing(): double;
+begin
+  Result := fReflectionSpacing;
+end;
+
 
 initialization
   MediaManager.Add(TVideoPlayback_FFmpeg.Create);

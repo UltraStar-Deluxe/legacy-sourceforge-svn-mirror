@@ -14,20 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *)
-
-(*
+ *
  * This is a part of Pascal porting of ffmpeg.
  * - Originally by Victor Zinetz for Delphi and Free Pascal on Windows.
  * - For Mac OS X, some modifications were made by The Creative CAT, denoted as CAT
  *   in the source codes.
  * - Changes and updates by the UltraStar Deluxe Team
- *)
-
-(*
+ *
  * Conversion of libavformat/avformat.h
  * Min. version: 50.5.0 , revision  6577, Sat Oct  7 15:30:46 2006 UTC
- * Max. version: 52.62.0, revision 23102, Thu May 13  1:15:00 2010 CET 
+ * Max. version: 52.67.0, revision 23357, Sun May 30 21:30:00 2010 CET 
  *)
 
 unit avformat;
@@ -85,7 +81,7 @@ const
    *)
   (* Max. supported version by this header *)
   LIBAVFORMAT_MAX_VERSION_MAJOR   = 52;
-  LIBAVFORMAT_MAX_VERSION_MINOR   = 62;
+  LIBAVFORMAT_MAX_VERSION_MINOR   = 67;
   LIBAVFORMAT_MAX_VERSION_RELEASE = 0;
   LIBAVFORMAT_MAX_VERSION = (LIBAVFORMAT_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                             (LIBAVFORMAT_MAX_VERSION_MINOR * VERSION_MINOR) +
@@ -405,6 +401,9 @@ const
   AVFMT_FLAG_NOFILLIN = $0010; ///< Do not infer any values from other values, just return what is stored in the container
   AVFMT_FLAG_NOPARSE  = $0020; ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
 {$IFEND}
+{$IF LIBAVFORMAT_VERSION >= 52063000}  // >= 52.63.0
+  AVFMT_FLAG_RTP_HINT = $0040; ///< Add RTP hinting to the output file
+{$IFEND}
 
   // used by AVStream
   MAX_REORDER_DELAY = 16;
@@ -671,6 +670,9 @@ type
     AVSTREAM_PARSE_FULL,       (**< full parsing and repack *)
     AVSTREAM_PARSE_HEADERS,    (**< Only parse headers, do not repack. *)
     AVSTREAM_PARSE_TIMESTAMPS  (**< full parsing and interpolation of timestamps for frames not starting on a packet boundary *)
+    {$IF LIBAVFORMAT_VERSION >= 52066000} // 52.66.0
+  , AVSTREAM_PARSE_FULL_ONCE   (**< full parsing and repack of the first frame only, only implemented for H.264 currently *)
+    {$IFEND}
   );
 
   TAVIndexEntry = record

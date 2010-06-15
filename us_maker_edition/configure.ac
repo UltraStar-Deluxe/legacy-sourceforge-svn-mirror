@@ -16,7 +16,7 @@ AC_PREREQ(2.61)
 
 # Init autoconf
 AC_INIT([ultrastardx], 
-        [1.1-beta], 
+        [1.1-RC], 
         [http://sourceforge.net/tracker/?group_id=191560&atid=937872])
 # specify the website here
 PACKAGE_WEBSITE="http://www.ultrastardeluxe.org/"
@@ -230,6 +230,16 @@ AC_SUBST(USE_PROJECTM_CWRAPPER, $libprojectM_USE_CWRAPPER)
 PKG_HAVE([portaudio], [portaudio-2.0], yes)
 PKG_VERSION([portaudio], [portaudio-2.0])
 AC_SUBST_DEFINE(HAVE_PORTAUDIO, $portaudio_HAVE)
+
+# find pcre
+libpcre_PKG="libpcre"
+PKG_HAVE([libpcre], [$libpcre_PKG], no)
+PKG_VERSION([libpcre], [$libpcre_PKG])
+AC_SUBST_DEFINE(HAVE_LIBPCRE, $libpcre_HAVE)
+# get libpcre library dir
+PKG_VALUE([libpcre], [LIBDIR], [variable=libdir], [$libpcre_PKG], 
+          [library dir (e.g. /usr/lib, /sw/lib, ...)])
+
 # find portmixer
 PKG_HAVE([portmixer], [portmixer], no)
 AC_SUBST_DEFINE(HAVE_PORTMIXER, $portmixer_HAVE)

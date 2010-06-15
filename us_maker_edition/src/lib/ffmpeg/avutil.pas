@@ -14,22 +14,18 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *)
-
-(*
+ *
  * This is a part of Pascal porting of ffmpeg.
  * - Originally by Victor Zinetz for Delphi and Free Pascal on Windows.
  * - For Mac OS X, some modifications were made by The Creative CAT, denoted as CAT
  *   in the source codes.
  * - Changes and updates by the UltraStar Deluxe Team
- *)
-
-(*
+ *
  * Conversions of
  *
  * libavutil/avutil.h:
  *  Min. version: 49.0.1,  revision  6577, Sat Oct  7 15:30:46 2006 UTC
- *  Max. version: 50.15.2, revision 23059, Tue May 11 22:05:00 2010 CET
+ *  Max. version: 50.16.0, revision 23255, Sun May 30 22:05:00 2010 CET
  *
  * libavutil/mem.h:
  *  revision 16590, Tue Jan 13 23:44:16 2009 UTC
@@ -96,7 +92,7 @@ const
    *)
   (* Max. supported version by this header *)
   LIBAVUTIL_MAX_VERSION_MAJOR   = 50;
-  LIBAVUTIL_MAX_VERSION_MINOR   = 15;
+  LIBAVUTIL_MAX_VERSION_MINOR   = 16;
   LIBAVUTIL_MAX_VERSION_RELEASE = 0;
   LIBAVUTIL_MAX_VERSION = (LIBAVUTIL_MAX_VERSION_MAJOR * VERSION_MAJOR) +
                           (LIBAVUTIL_MAX_VERSION_MINOR * VERSION_MINOR) +
@@ -124,7 +120,7 @@ const
  * Returns the LIBAVUTIL_VERSION_INT constant.
  *)
 function avutil_version(): cuint;
-  cdecl; external av__format;
+  cdecl; external av__util;
 {$IFEND}
 
 {$IF LIBAVUTIL_VERSION >= 50004000} // >= 50.4.0
@@ -132,13 +128,13 @@ function avutil_version(): cuint;
  * Returns the libavutil build-time configuration.
  *)
 function avutil_configuration(): PAnsiChar;
-  cdecl; external av__format;
+  cdecl; external av__util;
 
 (**
  * Returns the libavutil license.
  *)
 function avutil_license(): PAnsiChar;
-  cdecl; external av__format;
+  cdecl; external av__util;
 {$IFEND}
 
 {
@@ -158,98 +154,9 @@ type
   );
 }
 
-(* libavutil/error.h *)
+{$INCLUDE error.pas}
 
-{$IF LIBAVUTIL_VERSION >= 50012000} // >= 50.12.0
-
-{* error handling *}
-
-const
-{$IFDEF UNIX}
-  ENOENT = ESysENOENT;
-  EIO    = ESysEIO;
-  ENOMEM = ESysENOMEM;
-  EINVAL = ESysEINVAL;
-  EDOM   = ESysEDOM;
-  ENOSYS = ESysENOSYS;
-  EILSEQ = ESysEILSEQ;
-  EPIPE  = ESysEPIPE;
-{$ELSE}
-  ENOENT = 2;
-  EIO    = 5;
-  ENOMEM = 12;
-  EINVAL = 22;
-  EPIPE  = 32;  // just an assumption. needs to be checked.
-  EDOM   = 33;
-  {$IFDEF MSWINDOWS}
-  // Note: we assume that ffmpeg was compiled with MinGW.
-  // This must be changed if DLLs were compiled with cygwin.
-  ENOSYS = 40;  // MSVC/MINGW: 40, CYGWIN: 88,  LINUX/FPC: 38
-  EILSEQ = 42;  // MSVC/MINGW: 42, CYGWIN: 138, LINUX/FPC: 84
-  {$ENDIF}
-{$ENDIF}
-
-(**
- * We need the sign of of the error, because some platforms have 
- * E* and errno already negated. The previous version failed
- * with Delphi, because it needs EINVAL defined.
- * Warning: This code is platform dependent and assumes constants 
- * to be 32 bit.
- * This version does the following steps:
- * 1) shr 30:        shifts the sign bit to bit position 2
- * 2) and $00000002: sets all other bits to zero
- *                   positive EINVAL gives 0, negative gives 2
- * 3) not:           inverts all bits. This gives -1 and -3
- * 4) + 2:           positive EINVAL gives 1, negative -1
- *)
-const
-  AVERROR_SIGN = not((EINVAL shr 30) and $00000002) + 2;
-
-(*
-#if EINVAL > 0
-#define AVERROR(e) (-(e)) {**< Returns a negative error code from a POSIX error code, to return from library functions. *}
-#define AVUNERROR(e) (-(e)) {**< Returns a POSIX error code from a library function error return value. *}
-#else
-{* Some platforms have E* and errno already negated. *}
-#define AVERROR(e) (e)
-#define AVUNERROR(e) (e)
-#endif
-*)
-
-const
-  AVERROR_UNKNOWN     = AVERROR_SIGN * EINVAL;  (**< unknown error *)
-  AVERROR_IO          = AVERROR_SIGN * EIO;     (**< I/O error *)
-  AVERROR_NUMEXPECTED = AVERROR_SIGN * EDOM;    (**< Number syntax expected in filename. *)
-  AVERROR_INVALIDDATA = AVERROR_SIGN * EINVAL;  (**< invalid data found *)
-  AVERROR_NOMEM       = AVERROR_SIGN * ENOMEM;  (**< not enough memory *)
-  AVERROR_NOFMT       = AVERROR_SIGN * EILSEQ;  (**< unknown format *)
-  AVERROR_NOTSUPP     = AVERROR_SIGN * ENOSYS;  (**< Operation not supported. *)
-  AVERROR_NOENT       = AVERROR_SIGN * ENOENT;  (**< No such file or directory. *)
-{$IF LIBAVCODEC_VERSION >= 52017000} // 52.17.0
-  AVERROR_EOF         = AVERROR_SIGN * EPIPE;   (**< End of file. *)
-{$IFEND}
-  // Note: function calls as constant-initializers are invalid
-  //AVERROR_PATCHWELCOME = -MKTAG('P','A','W','E'); {**< Not yet implemented in FFmpeg. Patches welcome. *}
-  AVERROR_PATCHWELCOME = -(ord('P') or (ord('A') shl 8) or (ord('W') shl 16) or (ord('E') shl 24));
-{$IFEND}
-
-{$IF LIBAVUTIL_VERSION >= 50013000} // >= 50.13.0
-(*
- * Puts a description of the AVERROR code errnum in errbuf.
- * In case of failure the global variable errno is set to indicate the
- * error. Even in case of failure av_strerror() will print a generic
- * error message indicating the errnum provided to errbuf.
- *
- * @param errbuf_size the size in bytes of errbuf
- * @return 0 on success, a negative value if a description for errnum
- * cannot be found
- *)
-
-function av_strerror(errnum: cint; errbuf: Pchar; errbuf_size: cint): cint;
-  cdecl; external av__util;
-{$IFEND}
-
-(* libavutil/pixfmt.h *)
+(* libavutil/pixfmt.h up to revision 23144, May 16 2010 *)
 
 type
 (**
@@ -298,8 +205,8 @@ type
     PIX_FMT_RGB555,    ///< packed RGB 5:5:5, 16bpp, (msb)1A 5R 5G 5B(lsb), in CPU endianness, most significant bit to 0
 {$IFEND}
     PIX_FMT_GRAY8,     ///<        Y        ,  8bpp
-    PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 0 is white, 1 is black
-    PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black, 1 is white
+    PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 0 is white, 1 is black, in each byte pixels are ordered from the msb to the lsb
+    PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black, 1 is white, in each byte pixels are ordered from the msb to the lsb
     PIX_FMT_PAL8,      ///< 8 bit with PIX_FMT_RGB32 palette
     PIX_FMT_YUVJ420P,  ///< planar YUV 4:2:0, 12bpp, full scale (JPEG)
     PIX_FMT_YUVJ422P,  ///< planar YUV 4:2:2, 16bpp, full scale (JPEG)
@@ -316,12 +223,12 @@ type
     PIX_FMT_BGR555,    ///< packed RGB 5:5:5, 16bpp, (msb)1A 5B 5G 5R(lsb), in CPU endianness, most significant bit to 1
 {$IFEND}
     PIX_FMT_BGR8,      ///< packed RGB 3:3:2,  8bpp, (msb)2B 3G 3R(lsb)
-    PIX_FMT_BGR4,      ///< packed RGB 1:2:1,  4bpp, (msb)1B 2G 1R(lsb)
+    PIX_FMT_BGR4,      ///< packed RGB 1:2:1, bitstream,  4bpp, (msb)1B 2G 1R(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
     PIX_FMT_BGR4_BYTE, ///< packed RGB 1:2:1,  8bpp, (msb)1B 2G 1R(lsb)
     PIX_FMT_RGB8,      ///< packed RGB 3:3:2,  8bpp, (msb)2R 3G 3B(lsb)
-    PIX_FMT_RGB4,      ///< packed RGB 1:2:1,  4bpp, (msb)1R 2G 1B(lsb)
+    PIX_FMT_RGB4,      ///< packed RGB 1:2:1, bitstream,  4bpp, (msb)1R 2G 1B(lsb), a byte contains two pixels, the first pixel in the byte is the one composed by the 4 msb bits
     PIX_FMT_RGB4_BYTE, ///< packed RGB 1:2:1,  8bpp, (msb)1R 2G 1B(lsb)
-    PIX_FMT_NV12,      ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 for UV
+    PIX_FMT_NV12,      ///< planar YUV 4:2:0, 12bpp, 1 plane for Y and 1 plane for the UV components, which are interleaved (first byte U and the following byte V)
     PIX_FMT_NV21,      ///< as above, but U and V bytes are swapped
 {$IF LIBAVUTIL_VERSION <= 50001000} // 50.01.0
     PIX_FMT_RGB32_1,   ///< packed RGB 8:8:8, 32bpp, (msb)8R 8G 8B 8A(lsb), in CPU endianness
@@ -343,8 +250,8 @@ type
     PIX_FMT_VDPAU_WMV3,///< WMV3 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     PIX_FMT_VDPAU_VC1, ///< VC-1 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
 {$IF LIBAVUTIL_VERSION >= 49015000} // 49.15.0
-    PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, big-endian
-    PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, little-endian
+    PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
+    PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
 {$IFEND}
 {$IF LIBAVUTIL_VERSION >= 50001000} // 50.01.0
     PIX_FMT_RGB565BE,  ///< packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), big-endian
@@ -417,9 +324,10 @@ const
   PIX_FMT_YUV422  = PIX_FMT_YUYV422;
 {$IFEND}
 
-(* libavutil/common.h *) // until now MKTAG is all from common.h KMS 9/6/2009
+(* libavutil/common.h *) // until now MKTAG and MKBETAG is all from common.h KMS 19/5/2010
 
 function MKTAG(a, b, c, d: AnsiChar): integer;
+function MKBETAG(a, b, c, d: AnsiChar): integer;
 
 (* libavutil/mem.h *)
 
@@ -574,6 +482,11 @@ void av_log_set_callback(void (*)(void*, int, const char*, va_list));
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
 **}
 
+{$IF LIBAVUTIL_VERSION >= 50015003} // 50.15.3
+function av_default_item_name (ctx: pointer): Pchar;
+  cdecl; external av__util;
+{$IFEND}
+
 implementation
 
 (* libavutil/common.h *)
@@ -581,6 +494,11 @@ implementation
 function MKTAG(a, b, c, d: AnsiChar): integer;
 begin
   Result := (ord(a) or (ord(b) shl 8) or (ord(c) shl 16) or (ord(d) shl 24));
+end;
+
+function MKBETAG(a, b, c, d: AnsiChar): integer;
+begin
+  Result := (ord(d) or (ord(c) shl 8) or (ord(b) shl 16) or (ord(a) shl 24));
 end;
 
 end.

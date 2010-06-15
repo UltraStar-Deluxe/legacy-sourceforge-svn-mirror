@@ -185,8 +185,13 @@ begin
 
   // Add song paths
   AddSongPath(Params.SongPath);
+{$IF Defined(DARWIN)}
+  AddSongPath(Platform.GetMusicPath);
+  AddSongPath(UserPath.Append('songs'));
+{$ELSE}
   AddSongPath(SharedPath.Append('songs'));
   AddSongPath(UserPath.Append('songs'));
+{$IFEND}
 
   // Add category cover paths
   AddCoverPath(SharedPath.Append('covers'));

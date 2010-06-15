@@ -39,7 +39,7 @@ uses
 
 procedure Main;
 procedure MainLoop;
-function CheckEvents: boolean;
+procedure CheckEvents;
 
 type
   TMainThreadExecProc = procedure(Data: Pointer);
@@ -98,6 +98,7 @@ uses
 procedure Main;
 var
   WindowTitle: string;
+  BadPlayer: integer;
 begin
   {$IFNDEF Debug}
   try
@@ -304,8 +305,14 @@ begin
     SoundLib.StartBgMusic;
 
     // check microphone settings, goto record options if they are corrupt
-    if (not AudioInputProcessor.ValidateSettings) then
+    BadPlayer := AudioInputProcessor.ValidateSettings;
+    if (BadPlayer <> 0) then
+    begin
+      ScreenPopupError.ShowPopup(
+          Format(Language.Translate('ERROR_PLAYER_DEVICE_ASSIGNMENT'),
+          [BadPlayer]));
       Display.CurrentScreen^.FadeTo( @ScreenOptionsRecord );
+    end;
 
     //------------------------------
     // Start Mainloop
@@ -347,13 +354,14 @@ var
   Delay:            integer;
   TicksCurrent:     cardinal;
   TicksBeforeFrame: cardinal;
-  Continue:         boolean;
+  Done:             boolean;
 begin
   SDL_EnableKeyRepeat(125, 125);
 
+  Done := false;
+
   CountSkipTime();  // JB - for some reason this seems to be needed when we use the SDL Timer functions.
-  while Continue do
-  begin
+  repeat
     TicksBeforeFrame := SDL_GetTicks;
     
     // joypad
@@ -361,10 +369,10 @@ begin
       Joy.Update;
 
     // keyboard events
-    Continue := CheckEvents;
+    CheckEvents;
 
     // display
-    Continue := Display.Draw;
+    Done := not Display.Draw;
     SwapBuffers;
 
     // FPS limiter
@@ -376,7 +384,7 @@ begin
 
     CountSkipTime;
 
-  end;
+  until Done;
 end;
 
 procedure DoQuit;
@@ -394,13 +402,14 @@ begin
   end;
 end;
 
-function CheckEvents: boolean;
+procedure CheckEvents;
 var
   Event:     TSDL_event;
   mouseDown: boolean;
   mouseBtn:  integer;
+  KeepGoing: boolean;
 begin
-  Result := true;
+  KeepGoing := true;
   while (SDL_PollEvent(@Event) <> 0) do
   begin
     case Event.type_ of
@@ -445,17 +454,17 @@ begin
           if not Assigned(Display.NextScreen) then
           begin //drop input when changing screens
             if (ScreenPopupError <> nil) and (ScreenPopupError.Visible) then
-              Result := ScreenPopupError.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
+              KeepGoing := ScreenPopupError.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
             else if (ScreenPopupInfo <> nil) and (ScreenPopupInfo.Visible) then
-              Result := ScreenPopupInfo.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
+              KeepGoing := ScreenPopupInfo.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
             else if (ScreenPopupCheck <> nil) and (ScreenPopupCheck.Visible) then
-              Result := ScreenPopupCheck.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
+              KeepGoing := ScreenPopupCheck.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y)
             else
             begin
-              Result := Display.CurrentScreen^.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y);
+              KeepGoing := Display.CurrentScreen^.ParseMouse(mouseBtn, mouseDown, Event.button.x, Event.button.y);
 
               // if screen wants to exit
-              if not Result then
+              if not KeepGoing then
                 DoQuit;
             end;
           end;
@@ -535,18 +544,18 @@ begin
             // if there is a visible popup then let it handle input instead of underlying screen
             // shoud be done in a way to be sure the topmost popup has preference (maybe error, then check)
             else if (ScreenPopupError <> nil) and (ScreenPopupError.Visible) then
-              Result := ScreenPopupError.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
+              KeepGoing := ScreenPopupError.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
             else if (ScreenPopupInfo <> nil) and (ScreenPopupInfo.Visible) then
-              Result := ScreenPopupInfo.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
+              KeepGoing := ScreenPopupInfo.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
             else if (ScreenPopupCheck <> nil) and (ScreenPopupCheck.Visible) then
-              Result := ScreenPopupCheck.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
+              KeepGoing := ScreenPopupCheck.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true)
             else
             begin
               // check if screen wants to exit
-              Result := Display.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true);
+              KeepGoing := Display.ParseInput(Event.key.keysym.sym, Event.key.keysym.unicode, true);
 
               // if screen wants to exit
-              if not Result then
+              if not KeepGoing then
                 DoQuit;
 
             end;

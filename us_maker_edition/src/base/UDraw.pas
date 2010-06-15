@@ -1145,6 +1145,9 @@ begin
        (LyricsState.TotalTime > 0) then
     begin
       LyricsProgress := CurLyricsTime / LyricsState.TotalTime;
+      // avoid that the bar "overflows" for inaccurate song lengths
+      if (LyricsProgress > 1.0) then
+        LyricsProgress := 1.0;
       glTexCoord2f((width * LyricsProgress) / 8, 0);
       glVertex2f(x + width * LyricsProgress, y);
 
