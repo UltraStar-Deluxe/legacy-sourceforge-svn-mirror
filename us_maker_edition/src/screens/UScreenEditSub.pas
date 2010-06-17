@@ -92,6 +92,7 @@ type
       CurrentNote:      integer;
       PlaySentence:     boolean;
       PlaySentenceMidi: boolean;
+      PlayVideo:        boolean;
       PlayStopTime:     real;
       LastClick:        integer;
       Click:            boolean;
@@ -190,6 +191,9 @@ type
       CurrentUndoLines: integer;
       UndoHeader: array of TVisibleHeaders;
 
+      //video view
+      fCurrentVideo: IVideo;
+
       procedure DivideBPM;
       procedure MultiplyBPM;
       procedure LyricsCapitalize;
@@ -211,6 +215,9 @@ type
       procedure CopyFromUndo; //undo last Lines,mouse position and headers
       procedure DrawStatics;
       procedure DrawInfoBar(x, y, w, h: integer);
+      //video view
+      procedure StartVideoPreview();
+      procedure StopVideoPreview();
       //Note Name Mod
       function GetNoteName(Note: integer): string;
     public
@@ -389,6 +396,8 @@ begin
               AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
               AudioPlayback.Play;
               LastClick := -100;
+              PlayVideo := true;
+              StartVideoPreview();
           end;
           // Paste text
           if SDL_ModState = KMOD_LCTRL then
@@ -420,6 +429,8 @@ begin
             // Play Sentence
             Click := true;
             AudioPlayback.Stop;
+            PlayVideo := false;
+            StopVideoPreview;
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             CurrentNote := 0;
             R := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start);
@@ -438,6 +449,8 @@ begin
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             CurrentNote := 0;
             PlaySentenceMidi := true;
+            PlayVideo := false;
+            StopVideoPreview;
             MidiTime := USTime.GetTime;
             MidiStart := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start);
             MidiStop := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_);
@@ -449,6 +462,8 @@ begin
             Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
             CurrentNote := 0;
             PlaySentenceMidi := true;
+            PlayVideo := false;
+            StopVideoPreview;
             MidiTime  := USTime.GetTime;
             MidiStart := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start);
             MidiStop  := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_);
@@ -677,6 +692,8 @@ begin
             // Play Sentence
             PlaySentenceMidi := false; // stop midi
             PlaySentence := true;
+            PlayVideo := false;
+            StopVideoPreview;
             Click := false;
             AudioPlayback.Stop;
             AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
@@ -2024,9 +2041,45 @@ begin
   glLineWidth(1);
 end;
 
+// from revision 2475
+procedure TScreenEditSub.StartVideoPreview;
+var
+  VideoFile:  IPath;
+
+begin
+  if Assigned(fCurrentVideo) then
+  begin
+    fCurrentVideo.Stop();
+    fCurrentVideo := nil;
+  end;
+
+  VideoFile := CurrentSong.Path.Append(CurrentSong.Video);
+  if (CurrentSong.Video.IsSet) and VideoFile.IsFile then
+  begin
+    fCurrentVideo := VideoPlayback.Open(VideoFile);
+    if (fCurrentVideo <> nil) then
+    begin
+      fCurrentVideo.Position := CurrentSong.VideoGAP + AudioPlayback.Position;
+      fCurrentVideo.Play;
+    end;
+  end;
+end;
+
+procedure TScreenEditSub.StopVideoPreview;
+begin
+  // Stop video preview of previous song
+  if Assigned(fCurrentVideo) then
+  begin
+    fCurrentVideo.Stop();
+    fCurrentVideo := nil;
+  end;
+end;
+
 constructor TScreenEditSub.Create;
 begin
   inherited Create;
+  //video
+  fCurrentVideo := nil;
   SetLength(Player, 1);
   SetLength(TitleVal, 0);
   SetLength(ArtistVal, 0);
@@ -2140,7 +2193,8 @@ var
   i: integer;
 begin
   inherited;
-
+  // reset video playback engine
+  fCurrentVideo := nil;
   AudioPlayback.Stop;
   PlaySentence := false;
   PlaySentenceMidi := false;
@@ -2406,9 +2460,9 @@ begin
   end; // if PlaySentenceMidi
 
   // move "cursor"
-  if (PlaySentence or PlaySentenceMidi) then //and Not (PlayNote) then
+  if (PlaySentence or PlaySentenceMidi or PlayVideo) then //and Not (PlayNote) then
   begin
-    if PlaySentence then
+    if (PlaySentence or PlayVideo) then
       AktBeat := Floor(GetMidBeat(AudioPlayback.Position - (CurrentSong.GAP) / 1000));
     if PlaySentenceMidi then
       AktBeat := Floor(GetMidBeat(MidiPos - CurrentSong.GAP / 1000));
@@ -2442,13 +2496,15 @@ begin
   end; //end move cursor
 
   // mp3 music
-  if PlaySentence then
+  if (PlaySentence or PlayVideo) then
   begin
     // stop the music
     if (AudioPlayback.Position > PlayStopTime) then
     begin
       AudioPlayback.Stop;
       PlaySentence := false;
+      PlayVideo := false;
+      StopVideoPreview;
     end;
 
     // click
@@ -2526,6 +2582,22 @@ begin
   GoldenRec.SpawnRec;
   // draw text
   Lyric.Draw;
+  //video
+  if Assigned(fCurrentVideo) then
+  begin
+      fCurrentVideo.GetFrame(CurrentSong.VideoGAP + AudioPlayback.Position);
+      fCurrentVideo.SetScreen(1);
+      fCurrentVideo.Alpha := 1;
+      fCurrentVideo.SetScreenPosition(510, 60, 1);
+      fCurrentVideo.Width := 250;
+      fCurrentVideo.Height := 205;
+      fCurrentVideo.ReflectionSpacing := 1;
+      fCurrentVideo.AspectCorrection := acoCrop;
+
+      fCurrentVideo.Draw;
+  end;
+
+
 
   Result := true;
 end;
