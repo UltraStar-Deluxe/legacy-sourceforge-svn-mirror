@@ -727,7 +727,8 @@ begin
         begin
           Log.LogError('Note length error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
-          //Exit;
+          if (Ini.LoadFaultySongs=0) then
+            Result := false;
         end;
 
         if(medley) then

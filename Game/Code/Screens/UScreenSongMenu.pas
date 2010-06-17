@@ -66,13 +66,12 @@ begin
 
     if (CurMenu = SM_Playlist_New) AND (Interaction=0) then
     begin
+      if not (ScanCode in [0..31, 127..159]) then
+      begin
+        Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + chr(ScanCode);
+        Exit;
+      end;
       case PressedKey of
-        SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
-          begin
-            Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + chr(ScanCode);
-            exit;
-          end;
-
         SDLK_BACKSPACE:
           begin
             Button[Interaction].Text[0].DeleteLastL;

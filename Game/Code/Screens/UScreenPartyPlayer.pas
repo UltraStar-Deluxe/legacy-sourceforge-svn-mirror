@@ -65,8 +65,14 @@ var
   end;
 
 begin
-
   Result := true;
+
+  if not (ScanCode in [0..31, 127..159]) then
+  begin
+    Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + chr(ScanCode);
+    Exit;
+  end;
+
   If (PressedDown) Then
   begin // Key Down
     SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
@@ -242,11 +248,6 @@ begin
       SDLK_TAB:
         begin
           ScreenPopupHelp.ShowPopup();
-        end;
-
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
-        begin
-          Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + chr(ScanCode);
         end;
 
       // Templates for Names Mod

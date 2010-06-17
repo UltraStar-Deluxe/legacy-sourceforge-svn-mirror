@@ -28,6 +28,13 @@ var
 SDL_ModState:  Word;
 begin
   Result := true;
+
+  if not (ScanCode in [0..31, 127..159]) then
+  begin
+    Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + chr(ScanCode);
+    Exit;
+  end;
+
   If (PressedDown) Then
   begin // Key Down
 
@@ -35,11 +42,6 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT);
 
     case PressedKey of
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z, SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM, SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK, SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL:
-        begin
-          Button[Interaction].Text[0].Text := Button[Interaction].Text[0].Text + chr(ScanCode);
-        end;
-
       SDLK_TAB:
         begin
           ScreenPopupHelp.ShowPopup();
@@ -193,6 +195,7 @@ begin
       SDLK_UP:      InteractPrev;
       SDLK_RIGHT:   InteractNext;
       SDLK_LEFT:    InteractPrev;
+
     end;
   end;
 end;
