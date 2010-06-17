@@ -38,7 +38,7 @@ uses
   SDL,
   SysUtils,
   UFiles,
-  UGraphicClasses,  
+  UGraphicClasses,
   UTime,
   USongs,
   USong,
@@ -46,6 +46,7 @@ uses
   ULog,
   UTexture,
   UMenuText,
+  URecord,
   UEditorLyrics,
   UFilesystem,
   Math,
@@ -187,12 +188,15 @@ type
 
       //undo declaration
       UndoLines:       array of TLines;
-      UndoStateNote:      array of integer; //UNDO: note's position  
+      UndoStateNote:      array of integer; //UNDO: note's position
       CurrentUndoLines: integer;
       UndoHeader: array of TVisibleHeaders;
 
       //video view
       fCurrentVideo: IVideo;
+
+      //singtrack
+      CurrentSound:        TCaptureBuffer;
 
       procedure DivideBPM;
       procedure MultiplyBPM;
@@ -213,6 +217,7 @@ type
       procedure CopySentences(Src, Dst, Num: integer);
       procedure CopyToUndo; //copy current Lines,mouse position and headers
       procedure CopyFromUndo; //undo last Lines,mouse position and headers
+      procedure DrawPlayerTrack(X, Y, W: real; Space: integer; CurrentTone: integer; Count: integer; CurrentNote: integer);
       procedure DrawStatics;
       procedure DrawInfoBar(x, y, w, h: integer);
       //video view
@@ -1836,6 +1841,53 @@ begin
 end; //if CurrentUndoLines
 end;
 
+procedure TScreenEditSub.DrawPlayerTrack(X, Y, W: real; Space: integer; CurrentTone: integer; Count: integer; CurrentNote: integer);
+var
+  TempR:      real;
+  Rec:        TRecR;
+  N, scale:          integer;
+//  R, G, B, A: real;
+  NotesH2,W1,H1,X1,X2:    real;
+begin
+
+  glColor3f(1, 1, 1);
+  glEnable(GL_TEXTURE_2D);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    TempR := W / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
+
+          NotesH2 := int(NotesH * 0.65);
+            W1 := NotesW * 2 + 2;
+            H1 := NotesH * 1.5;// + 3.5;
+            X2 := 40 + 0.5 + 10*ScreenX+Count;
+            X1 := X2-W1-2;
+
+            Rec.Left  := X1;
+            Rec.Right := X2;
+            scale := 0;
+            repeat
+            if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone+12*scale > CurrentTone) then
+              dec(scale)
+            else
+              inc(scale);
+
+            until (
+                  (((Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone + 12*scale) / 12) < 1) and
+                  (((Lines[0].Line[Lines[0].Current].Note[CurrentNote].Tone + 12*scale) / 12) >= 0));
+
+            Rec.Top := 410 - (CurrentTone-12*scale-Lines[0].Line[Lines[0].Current].BaseNote)*Space/2 - H1;
+            Rec.Bottom := Rec.Top + 2 * H1;
+
+        glColor3f(1, 1, 1);
+        glBindTexture(GL_TEXTURE_2D, Tex_Lyric_Help_Bar.TexNum);
+        glBegin(GL_QUADS);
+          glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
+          glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
+          glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
+          glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+        glEnd;
+end;
 
 procedure TScreenEditSub.DrawStatics;
 var
@@ -2401,6 +2453,8 @@ begin
     NotesH := 7;
     NotesW := 4;
 
+    // user input tracking
+    AudioInput.CaptureStart;
   end;
 
   //Interaction := 0;
@@ -2415,7 +2469,7 @@ end;
 function TScreenEditSub.Draw: boolean;
 var
   i:    integer;
-  lastline, note: integer;
+  lastline, note,Count: integer;
   notechange:          boolean;
 begin
 
@@ -2579,6 +2633,15 @@ begin
     SingDrawBeatDelimeters(40, 305, 760, 0);
     EditDrawLine(40, 410, 760, 0, 15);
   end;
+
+  CurrentSound := AudioInputProcessor.Sound[0];
+  CurrentSound.AnalyzeBuffer;
+  if (CurrentSound.ToneString <> '-') then
+  begin
+    Count := trunc((720 / (GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_) - GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start)))*(AudioPlayback.Position-GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start)));
+    DrawPlayerTrack(0, 16, 32, 15, CurrentSound.Tone, Count,CurrentNote);
+  end;
+
   GoldenRec.SpawnRec;
   // draw text
   Lyric.Draw;
@@ -2610,6 +2673,7 @@ begin
   {$ENDIF}
   Lyric.Free;
   //Music.SetVolume(1.0);
+  AudioInput.CaptureStop;  
 end;
 
 function TScreenEditSub.GetNoteName(Note: integer): string;
