@@ -226,6 +226,7 @@ type
       procedure DrawPlayerTrack(X, Y, W: real; Space: integer; CurrentTone: integer; Count: integer; CurrentNote: integer);
       procedure DrawStatics;
       procedure DrawInfoBar(x, y, w, h: integer);
+      procedure DrawText(Left, Top, Right: real; NrLines: integer; Space: integer);
       //video view
       procedure StartVideoPreview();
       procedure StopVideoPreview();
@@ -252,9 +253,9 @@ uses
   UNote,
   USkins,
   ULanguage,
+  TextGL,
   UTextEncoding,
   UUnicodeUtils;
-
 
 
 procedure OnSaveEncodingError(Value: boolean; Data: Pointer);
@@ -2119,6 +2120,65 @@ begin
   glLineWidth(1);
 end;
 
+procedure TScreenEditSub.DrawText(Left, Top, Right: real; NrLines: integer; Space: integer);
+var
+  Rec:   TRecR;
+  Count: integer;
+  TempR: real;
+
+  PlayerNumber:  integer;
+
+  GoldenStarPos: real;
+
+  lTmpA, lTmpB : real;
+begin
+  if (ScreenSing.settings.NotesVisible and (1 shl NrLines) <> 0) then
+  begin
+
+    PlayerNumber := NrLines + 1; // Player 1 is 0
+    glColor3f(1, 1, 1);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    lTmpA := (Right-Left);
+    lTmpB := (Lines[NrLines].Line[Lines[NrLines].Current].End_ - Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start);
+
+  if ( lTmpA > 0 ) and ( lTmpB > 0 ) then
+    TempR := lTmpA / lTmpB
+  else
+    TempR := 0;
+
+  with Lines[NrLines].Line[Lines[NrLines].Current] do
+  begin
+    for Count := 0 to HighNote do
+    begin
+      with Note[Count] do
+      begin
+          // left part
+          Rec.Left  := 0;
+          Rec.Right := 0;
+          BaseNote := Lines[0].Line[Lines[NrLines].Current].BaseNote;
+          Rec.Top := Top - (Tone-BaseNote)*Space/2 - NotesH;
+          Rec.Bottom := Rec.Top + 2 * NotesH;
+          // middle part
+          Rec.Left := (Start-Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start) * TempR + Left + 0.5 + 10*ScreenX + NotesW;
+          Rec.Right := (Start+Length-Lines[NrLines].Line[Lines[NrLines].Current].Note[0].Start) * TempR + Left - NotesW - 0.5 + 10*ScreenX;
+          glColor4f(0, 0, 0, 1);
+          SetFontStyle (1);
+          SetFontItalic(False);
+          SetFontSize(14);
+          SetFontPos (Rec.Left, Rec.Top);
+          glPrint(Text);
+        end; // with
+      end; // for
+    end; // with
+
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
+  end;
+end;
+
 // from revision 2475
 procedure TScreenEditSub.StartVideoPreview;
 var
@@ -2672,6 +2732,7 @@ begin
   begin
     SingDrawBeatDelimeters(40, 305, 760, 0);
     EditDrawLine(40, 410, 760, 0, 15);
+    DrawText(40, 410, 760, 0, 15);
   end;
 
   CurrentSound := AudioInputProcessor.Sound[0];
