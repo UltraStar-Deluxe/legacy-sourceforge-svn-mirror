@@ -521,6 +521,7 @@ type
       SelectVolAudio:      TThemeSelectSlide;
       SelectVolMidi:       TThemeSelectSlide;
       SelectVolClick:      TThemeSelectSlide;
+      SlideVideoGap:      TThemeSelectSlide;
   end;
 
   //Error- and Check-Popup
@@ -1418,6 +1419,7 @@ begin
       ThemeLoadSelectSlide(EditSub.SelectVolAudio, 'EditSubSelectVolAudio');
       ThemeLoadSelectSlide(EditSub.SelectVolMidi, 'EditSubSelectVolMidi');
       ThemeLoadSelectSlide(EditSub.SelectVolClick, 'EditSubSelectVolClick');
+      ThemeLoadSelectSlide(EditSub.SlideVideoGap, 'EditSubVideoGap');
 
       //error and check popup
       ThemeLoadBasic (ErrorPopup, 'ErrorPopup');

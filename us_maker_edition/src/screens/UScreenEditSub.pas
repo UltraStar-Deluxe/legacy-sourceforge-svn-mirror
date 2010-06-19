@@ -173,11 +173,17 @@ type
       LyricData:        integer;
       LyricVal:         array of UTF8String;
       SlideLyricIndex:  integer;
+      // VideoGap header
+      VideoGapSlideId:  integer;
+      VideoGapData:        integer;
+      VideoGapVal:         array of UTF8String;
+      SlideVideoGapIndex:  integer;
       // Volume Slide
       VolumeAudioSlideId: integer;
       VolumeMidiSlideId:  integer;
       VolumeClickSlideId: integer;
       VolumeAudioIndex,VolumeMidiIndex,VolumeClickIndex: integer; //for update slide
+
       VolumeAudio:    array of UTF8String;
       VolumeMidi:    array of UTF8String;
       VolumeClick:    array of UTF8String;
@@ -606,6 +612,26 @@ begin
             CopySentences(CopySrc, Lines[0].Current, 5);
             GoldenRec.KillAll;
           end;
+        end;
+
+      SDLK_7:
+        begin
+          if SDL_ModState = 0 then
+            CurrentSong.VideoGAP := (round(CurrentSong.VideoGAP*100) - 1 )/100;
+          if SDL_ModState = KMOD_LSHIFT then
+            CurrentSong.VideoGAP := (round(CurrentSong.VideoGAP*100) - 10 )/100;
+          if SDL_ModState = KMOD_LCTRL then
+            CurrentSong.VideoGAP := (round(CurrentSong.VideoGAP*100) - 100 )/100;
+        end;
+
+      SDLK_8:
+        begin
+          if SDL_ModState = 0 then
+            CurrentSong.VideoGAP := (round(CurrentSong.VideoGAP*100) + 1 )/100;
+          if SDL_ModState = KMOD_LSHIFT then
+            CurrentSong.VideoGAP := (round(CurrentSong.VideoGAP*100) + 10 )/100;
+          if SDL_ModState = KMOD_LCTRL then
+            CurrentSong.VideoGAP := (round(CurrentSong.VideoGAP*100) + 100 )/100;
         end;
 
       SDLK_9:
@@ -2213,6 +2239,10 @@ begin
   VolumeAudioSlideId := AddSelectSlide(Theme.EditSub.SelectVolAudio, VolumeAudioIndex, VolumeAudio);
   VolumeMidiSlideId := AddSelectSlide(Theme.EditSub.SelectVolMidi, VolumeMidiIndex, VolumeMidi);
   VolumeClickSlideId := AddSelectSlide(Theme.EditSub.SelectVolClick, VolumeClickIndex, VolumeClick);
+  // VideoGap Header
+  VideoGapSlideId := AddSelectSlide(Theme.EditSub.SlideVideoGap, VideoGapdata, VideoGapVal);
+  SelectsS[VideoGapSlideId].Text.Align := 0;
+  SelectsS[VideoGapSlideId].Text.X := SelectsS[VideoGapSlideId].Texture.X + 3;
 
 //  TextTitle :=  AddText(180, 65,  0, 24, 0, 0, 0, 'a');
 //  TextArtist := AddText(180, 90,  0, 24, 0, 0, 0, 'b');
@@ -2401,13 +2431,21 @@ begin
     UpdateSelectSlideOptions(Theme.EditSub.SlideTone,ToneSlideId,ToneVal,SlideToneIndex);
     SelectsS[ToneSlideId].TextOpt[0].Align := 0;
     SelectsS[ToneSlideId].TextOpt[0].X := SelectsS[ToneSlideId].TextureSBG.X + 5;
-    // Header Tone
+    // Header Lyric
     SetLength(LyricVal, 1);
     LyricVal[0] := '';
     SlideLyricIndex := 1;
     UpdateSelectSlideOptions(Theme.EditSub.SlideLyric,LyricSlideId,LyricVal,SlideLyricIndex);
     SelectsS[LyricSlideId].TextOpt[0].Align := 0;
     SelectsS[LyricSlideId].TextOpt[0].X := SelectsS[LyricSlideId].TextureSBG.X + 5;
+
+    // Header VideoGap
+    SetLength(VideoGapVal, 1);
+    VideoGapVal[0] := '';
+    SlideVideoGapIndex := 1;
+    UpdateSelectSlideOptions(Theme.EditSub.SlideVideoGap,VideoGapSlideId,VideoGapVal,SlideVideoGapIndex);
+    SelectsS[VideoGapSlideId].TextOpt[0].Align := 0;
+    SelectsS[VideoGapSlideId].TextOpt[0].X := SelectsS[VideoGapSlideId].TextureSBG.X + 5;
 
     // volume slides
     SetLength(VolumeAudio, 0);
@@ -2608,6 +2646,8 @@ begin
     //Text[TextNText].Text :=              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
     LyricVal[0] := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
     SelectsS[LyricSlideId].TextOpt[0].Text := LyricVal[0];
+    VideoGapVal[0] := floattostr(CurrentSong.VideoGAP);
+    SelectsS[VideoGapSlideId].TextOpt[0].Text := VideoGapVal[0];
   end;
 
   // Text Edit Mode
