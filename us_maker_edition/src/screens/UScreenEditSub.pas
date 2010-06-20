@@ -203,6 +203,8 @@ type
 
       //singtrack
       CurrentSound:        TCaptureBuffer;
+      // Interactive note
+      InteractiveNoteId:  array of integer;
 
       procedure DivideBPM;
       procedure MultiplyBPM;
@@ -232,6 +234,8 @@ type
       procedure StopVideoPreview();
       //Note Name Mod
       function GetNoteName(Note: integer): string;
+      // show transparent background note for intaractions
+      procedure ShowInteractiveBackground;
     public
       Tex_Background:     TTexture;
       FadeOut:            boolean;
@@ -290,6 +294,7 @@ var
   SDL_ModState:  word;
   R:    real;
   SResult: TSaveSongResult;
+  i:  integer;
 begin
   Result := true;
 
@@ -358,6 +363,7 @@ begin
           begin
             CopyToUndo;
             DivideBPM;
+            ShowInteractiveBackground;
             Exit;
           end;
         end;
@@ -368,6 +374,7 @@ begin
           begin
             CopyToUndo;
             MultiplyBPM;
+            ShowInteractiveBackground;
             Exit;
           end;
         end;
@@ -426,6 +433,7 @@ begin
             CopySentence(CopySrc, Lines[0].Current);
           end;
           GoldenRec.KillAll;
+          ShowInteractiveBackground;
         end;
       SDLK_T:
         begin
@@ -527,6 +535,7 @@ begin
               CopyFromUndo;
               GoldenRec.KillAll;
           end;
+          ShowInteractiveBackground;
         end;
     end;
 
@@ -549,6 +558,7 @@ begin
           if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
             Inc(Lines[0].Line[Lines[0].Current].End_);
           GoldenRec.KillAll;
+        ShowInteractiveBackground;
         end;
 
       SDLK_EQUALS:
@@ -593,6 +603,7 @@ begin
             CopySentences(CopySrc, Lines[0].Current, 4);
             GoldenRec.KillAll;
           end;
+        ShowInteractiveBackground;
         end;
       SDLK_5:
         begin
@@ -613,6 +624,7 @@ begin
             CopySentences(CopySrc, Lines[0].Current, 5);
             GoldenRec.KillAll;
           end;
+        ShowInteractiveBackground;
         end;
 
       SDLK_7:
@@ -663,6 +675,7 @@ begin
           if SDL_ModState = KMOD_LSHIFT then
             ChangeWholeTone(12);
           GoldenRec.KillAll;
+          ShowInteractiveBackground;
         end;
 
       SDLK_KP_MINUS:
@@ -674,6 +687,7 @@ begin
           if SDL_ModState = KMOD_LSHIFT then
             ChangeWholeTone(-12);
             GoldenRec.KillAll;
+          ShowInteractiveBackground;
         end;
 
       SDLK_SLASH:
@@ -703,7 +717,7 @@ begin
             Lyric.Selected := CurrentNote;
             GoldenRec.KillAll;
           end;
-
+        ShowInteractiveBackground;
         end;
 
       SDLK_F4:
@@ -783,6 +797,27 @@ begin
              TextEditMode := true;
            end;
 
+           if high(InteractiveNoteId) >= Lines[0].Line[Lines[0].Current].HighNote then
+           for i := 0 to Lines[0].Line[Lines[0].Current].HighNote do
+           begin
+                if Interaction = InteractiveNoteId[i] then
+                begin
+                  Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+                  currentnote := i;
+                  Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
+                  Lyric.Selected := CurrentNote;
+                  //play curren note
+                  PlaySentence := true;
+                  Click := false;
+                  AudioPlayback.Stop;
+                  AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+                  PlayStopTime := (GetTimeFromBeat(
+                    Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
+                    Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length));
+                  AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
+                  AudioPlayback.Play;
+                end;
+           end;
         end;
 
       SDLK_DELETE:
@@ -793,6 +828,7 @@ begin
             CopyToUndo;
             DeleteNote;
             GoldenRec.KillAll;
+            ShowInteractiveBackground;
           end;
         end;
 
@@ -811,6 +847,7 @@ begin
           begin
             AudioPlayback.Stop;
             PlaySentence := false;
+            PlayVideo := false;            
             {$IFDEF UseMIDIPort}
             MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
@@ -867,7 +904,7 @@ begin
             MoveAllToEnd(1);
             GoldenRec.KillAll;
           end;
-
+        ShowInteractiveBackground;
         end;
 
       SDLK_LEFT:
@@ -878,6 +915,7 @@ begin
           begin
             AudioPlayback.Stop;
             PlaySentence := false;
+            PlayVideo := false;
             {$IFDEF UseMIDIPort}
             MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
@@ -938,12 +976,11 @@ begin
             MoveAllToEnd(-1);
             GoldenRec.KillAll;
           end;
-
+        ShowInteractiveBackground;
         end;
 
       SDLK_DOWN:
         begin
-
           // skip to next sentence
           if SDL_ModState = 0 then
           begin
@@ -964,6 +1001,7 @@ begin
             Lyric.Selected := 0;
             AudioPlayback.Stop;
             PlaySentence := false;
+            PlayVideo := false;
             GoldenRec.KillAll;
           end;
 
@@ -974,16 +1012,16 @@ begin
             TransposeNote(-1);
             GoldenRec.KillAll;
           end;
-
+        ShowInteractiveBackground;
         end;
 
       SDLK_UP:
         begin
-
           // skip to previous sentence
           if SDL_ModState = 0 then
           begin
             AudioPlayback.Stop;
+            PlayVideo := false;
             PlaySentence := false;
             {$IFDEF UseMIDIPort}
             MidiOut.PutShort(MIDI_NOTEOFF or 1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
@@ -1010,6 +1048,7 @@ begin
             TransposeNote(1);
             GoldenRec.KillAll;
           end;
+        ShowInteractiveBackground;
         end;
 
       end; // case
@@ -2179,6 +2218,41 @@ begin
   end;
 end;
 
+// show transparent background for intaractive note
+
+procedure TScreenEditSub.ShowInteractiveBackground;
+var
+  TempR:      real;
+  i:          integer;
+begin
+
+  for i := 0 to high(InteractiveNoteId) do
+  begin
+    Button[i].SetX(0);
+    Button[i].SetY(0);
+    Button[i].SetW(0);
+    Button[i].SetH(0);
+  end;
+
+// adding transparent buttons
+  while (high(InteractiveNoteId) < Lines[0].Line[Lines[0].Current].HighNote) do
+  begin
+      SetLength(InteractiveNoteId, high(InteractiveNoteId)+2);
+      AddButton(0, 0, 0, 0,PATH_NONE);
+//      AddButton(0, 0, 0, 0,Skin.GetTextureFileName('ButtonF'));
+      InteractiveNoteId[high(InteractiveNoteId)] := Length(Interactions)-1;
+  end;
+
+  TempR := 720 / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
+  for i := 0 to Lines[0].Line[Lines[0].Current].HighNote do
+  begin
+    Button[i].SetX(40 + (Lines[0].Line[Lines[0].Current].Note[i].Start - Lines[0].Line[Lines[0].Current].Note[0].Start) * TempR + 0.5 + 10*ScreenX);
+    Button[i].SetY(410 - (Lines[0].Line[Lines[0].Current].Note[i].Tone - Lines[0].Line[Lines[0].Current].BaseNote)*15/2 - 9);
+    Button[i].SetW((Lines[0].Line[Lines[0].Current].Note[i].Length) * TempR - 0.5  + 10*(ScreenX));
+    Button[i].SetH(19);
+  end;
+end;
+
 // from revision 2475
 procedure TScreenEditSub.StartVideoPreview;
 var
@@ -2550,7 +2624,8 @@ begin
 
     NotesH := 7;
     NotesW := 4;
-
+    //show transparent background for notes
+    ShowInteractiveBackground;
     // user input tracking
     AudioInput.CaptureStart;
   end;
@@ -2630,7 +2705,7 @@ begin
         Lyric.AddLine(Lines[0].Current);
         Lyric.Selected := 0;
         CurrentNote := 0;
-        //showNoteButtons; //prepared for active notes
+        ShowInteractiveBackground;
         GoldenRec.KillAll;
     end;
 
