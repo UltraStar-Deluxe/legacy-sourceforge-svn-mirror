@@ -165,7 +165,7 @@ type
       procedure SelectPrev;
       procedure SkipTo(Target: Cardinal);
       procedure RandomSongChallenge();
-      procedure SkipTo2(Target: Integer); //skipt exactly to the target song nr.
+      procedure SkipTo2(Target: Integer); //skip exactly to the target song nr.
       procedure FixSelected; //Show Wrong Song when Tabs on Fix
       procedure FixSelected2; //Show Wrong Song when Tabs on Fix
       procedure ShowCatTL(Cat: Integer);// Show Cat in Top left
@@ -1395,7 +1395,7 @@ begin
 
   Refresh(false);
   PlaylistMan.LoadPlayLists;
-          
+
   if jump then
     I2 := PlaylistMan.FindSong(Artist, Title)
   else
@@ -2063,7 +2063,7 @@ end;
 
 procedure TScreenSong.onShow;
 var
-  I:  Integer;
+  I:              integer;
 
 begin
   if Music.VocalRemoverActivated() then
@@ -2154,12 +2154,7 @@ begin
   end else if (Mode<>smNormal) and (Ini.Tabs = 0) then
   begin
     CatSongs.SetFilter('', 0);
-  end else if (Ini.Tabs = 0) then
-  begin
-    CatSongs.SetFilter('', 0);
-    FixSelected;
   end;
-
 
   //Playlist Mode
   if (Mode = smNormal) then

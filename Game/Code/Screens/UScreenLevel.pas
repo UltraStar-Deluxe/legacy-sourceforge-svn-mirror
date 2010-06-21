@@ -88,8 +88,6 @@ begin
   Interaction := Ini.Difficulty;
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenLevel)');
-//  LCD.WriteText(1, '  Choose mode:  ');
-//  UpdateLCD;
 end;
 
 procedure TScreenLevel.SetAnimationProgress(Progress: real);

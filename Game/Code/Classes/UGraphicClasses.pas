@@ -8,6 +8,8 @@ type
 
  TParticleType=(GoldenNote, PerfectNote, NoteHitTwinkle, PerfectLineTwinkle, ColoredStar, Flare);
 
+ TAlpha = array[0..3] of real; //p1 main, p2 main, p1 sub, p2 sub
+
  TColour3f = Record
                r, g, b: Real;
              end;
@@ -24,13 +26,16 @@ type
    RecIndex : Integer;  //To which rectangle this particle belongs (only GoldenNote)
    StarType : TParticleType;  // GoldenNote | PerfectNote | NoteHitTwinkle | PerfectLineTwinkle
    Alpha    : Real;     // used for fading...
+   CP       : Integer;
    mX, mY   : Real;     // movement-vector for PerfectLineTwinkle
    SizeMod  : Real;     // experimental size modifier
    SurviveSentenceChange : Boolean;
 
-   Constructor Create(cX,cY: Real; cScreen: Integer; cLive: Byte; cFrame : integer; cRecArrayIndex : Integer; cStarType : TParticleType; Player: Cardinal);
+   Constructor Create(cX,cY: Real; cScreen: Integer; cLive: Byte;
+    cFrame : integer; cRecArrayIndex : Integer; cStarType : TParticleType;
+    Player: Cardinal; CP: integer);
    Destructor Destroy();
-   procedure Draw;
+   procedure Draw(Alph: TAlpha);
    procedure LiveOn;
  end;
 
@@ -39,6 +44,7 @@ type
    TotalStarCount   : Integer;
    CurrentStarCount : Integer;
    Screen           : Integer;
+   CP               : Integer;
  end;
 
  PerfectNotePositions = Record
@@ -57,20 +63,21 @@ type
 
    constructor Create;
    destructor  Destroy; override;
-   procedure Draw;
+   procedure Draw(Alpha: TAlpha);
    function  Spawn(X, Y: Real;
                    Screen: Integer;
                    Live: Byte;
                    StartFrame: Integer;
                    RecArrayIndex: Integer;  // this is only used with GoldenNotes
                    StarType: TParticleType;
-                   Player: Cardinal         // for PerfectLineTwinkle
+                   Player: Cardinal;         // for PerfectLineTwinkle
+                   CP: integer
              ): Cardinal;
-   procedure SpawnRec();
+   procedure SpawnRec(Alph: TAlpha);
    procedure Kill(index: Cardinal);
    procedure KillAll();
-   procedure SentenceChange();
-   procedure SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: Real);
+   procedure SentenceChange(CP: integer);   //TODO!!!!
+   procedure SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: Real; CP: integer);
    procedure SavePerfectNotePos(Xtop, Ytop: Real);
    procedure GoldenNoteTwinkle(Top,Bottom,Right: Real; Player: Integer);
    procedure SpawnPerfectLineTwinkle();
@@ -82,7 +89,9 @@ implementation
 uses sysutils, Windows, gl, UIni, UMain, UThemes, USkins, UGraphic, UDrawTexture, math, dialogs;
 
 //TParticle
-Constructor TParticle.Create(cX,cY: Real; cScreen: Integer; cLive: Byte; cFrame : integer; cRecArrayIndex : Integer; cStarType : TParticleType; Player: Cardinal);
+Constructor TParticle.Create(cX,cY: Real; cScreen: Integer; cLive: Byte;
+  cFrame : integer; cRecArrayIndex : Integer; cStarType : TParticleType;
+  Player: Cardinal; CP: integer);
 begin
   inherited Create;
   // in this constructor we set all initial values for our particle
@@ -94,6 +103,7 @@ begin
   RecIndex := cRecArrayIndex;
   StarType := cStarType;
   Alpha := (-cos((Frame+1)*2*pi/16)+1); // neat fade-in-and-out
+  Self.CP := CP;
   SetLength(Scale,1);
   Scale[0] := 1;
   SurviveSentenceChange := False;
@@ -292,14 +302,14 @@ begin
   end;
 end;
 
-procedure TParticle.Draw;
+procedure TParticle.Draw(Alph: TAlpha);
 var L: Cardinal;
 begin
   if ScreenAct = Screen then
     // this draws (multiple) texture(s) of our particle
     for L:=0 to High(Col) do
     begin
-      glColor4f(Col[L].r, Col[L].g, Col[L].b, Alpha);
+      glColor4f(Col[L].r, Col[L].g, Col[L].b, Alpha*Alph[CP]);
 
       glBindTexture(GL_TEXTURE_2D, Tex);
       glEnable(GL_TEXTURE_2D);
@@ -339,7 +349,7 @@ begin
 end;
 
 
-procedure TEffectManager.Draw;
+procedure TEffectManager.Draw(Alpha: TAlpha);
 var
   I: Integer;
   CurrentTime: Cardinal;
@@ -373,20 +383,22 @@ begin
  //Draw
  for I := 0 to high(Particle) do
    begin
-     Particle[I].Draw;
+     Particle[I].Draw(Alpha);
    end;
 end;
 
 // this method creates just one particle
-function TEffectManager.Spawn(X, Y: Real; Screen: Integer; Live: Byte; StartFrame : Integer; RecArrayIndex : Integer; StarType : TParticleType; Player: Cardinal): Cardinal;
+function TEffectManager.Spawn(X, Y: Real; Screen: Integer; Live: Byte;
+  StartFrame : Integer; RecArrayIndex : Integer; StarType : TParticleType;
+  Player: Cardinal; CP: integer): Cardinal;
 begin
   Result := Length(Particle);
   SetLength(Particle, (Result + 1));
-  Particle[Result] := TParticle.Create(X, Y, Screen, Live, StartFrame, RecArrayIndex, StarType, Player);
+  Particle[Result] := TParticle.Create(X, Y, Screen, Live, StartFrame, RecArrayIndex, StarType, Player, CP);
 end;
 
 // manage Sparkling of GoldenNote Bars
-procedure TEffectManager.SpawnRec();
+procedure TEffectManager.SpawnRec(Alph: TAlpha);
 Var
   Xkatze, Ykatze    : Real;
   RandomFrame : Integer;
@@ -402,11 +414,12 @@ for P:= 0 to high(RecArray) do
         Ykatze := RandomRange(Ceil(RecArray[P].yTop), Ceil(RecArray[P].yBottom));
         RandomFrame := RandomRange(0,14);
         // Spawn a GoldenNote Particle
-        Spawn(Xkatze, Ykatze, RecArray[P].Screen, 16 - RandomFrame, RandomFrame, P, GoldenNote, 0);
+        Spawn(Xkatze, Ykatze, RecArray[P].Screen, 16 - RandomFrame,
+          RandomFrame, P, GoldenNote, 0, RecArray[P].CP);
         inc(RecArray[P].CurrentStarCount);
       end;
     end;
-  draw;
+  draw(Alph);
 end;
 
 // kill one particle (with given index in our particle array)
@@ -444,7 +457,7 @@ begin
   end;
 end;
 
-procedure TEffectManager.SentenceChange();
+procedure TEffectManager.SentenceChange(CP: integer);
 var c: Cardinal;
 begin
   c:=0;
@@ -486,35 +499,35 @@ begin
           Ykatze := RandomRange(ceil(Top) , ceil(Bottom));
           XKatze := RandomRange(-7,3);
           LKatze := RandomRange(7,13);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Top)-6 , ceil(Top));
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(4,7);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Bottom), ceil(Bottom)+6);
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(4,7);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Top)-10 , ceil(Top)-6);
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(1,4);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Bottom)+6 , ceil(Bottom)+10);
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(1,4);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
         end;
 
         exit; // found a matching GoldenRec, did spawning stuff... done
@@ -522,7 +535,7 @@ begin
     end;
 end;
 
-procedure TEffectManager.SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: Real);
+procedure TEffectManager.SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: Real; CP: integer);
 var
   P : Integer;   // P like used in Positions
   NewIndex : Integer;
@@ -545,6 +558,7 @@ begin
     RecArray[NewIndex].TotalStarCount := ceil(Xbottom - Xtop) div 12 + 3;
     RecArray[NewIndex].CurrentStarCount := 0;
     RecArray[NewIndex].Screen := ScreenAct;
+    RecArray[NewIndex].CP := CP;
 end;
 
 procedure TEffectManager.SavePerfectNotePos(Xtop, Ytop: Real);
@@ -574,7 +588,7 @@ begin
         Xkatze := RandomRange(ceil(Xtop) - 5 , ceil(Xtop) + 10);
         Ykatze := RandomRange(ceil(Ytop) - 5 , ceil(Ytop) + 10);
         RandomFrame := RandomRange(0,14);
-        Spawn(Xkatze, Ykatze, ScreenAct, 16 - RandomFrame, RandomFrame, -1, PerfectNote, 0);
+        Spawn(Xkatze, Ykatze, ScreenAct, 16 - RandomFrame, RandomFrame, -1, PerfectNote, 0, 0);
      end; //for
 
 end;
@@ -646,7 +660,7 @@ begin
       for I:= 0 to 80 do
       begin
         Life:=RandomRange(8,16);
-        Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P);
+        Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
       end;
     end;
 end;

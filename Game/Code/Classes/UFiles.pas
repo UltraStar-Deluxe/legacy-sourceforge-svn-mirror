@@ -563,7 +563,8 @@ begin
     Muzyka.IlNut := Muzyka.IlNut + 1;
 
     Nuta[HighNut].Start := StartP;
-    if IlNut = 1 then begin
+    if IlNut = 1 then
+    begin
       StartNote := Nuta[HighNut].Start;
       if Czesci[NrCzesci].Ilosc = 1 then
         Start := -100;
@@ -623,6 +624,7 @@ begin
   Czesci[NrCzesciP].High := Czesci[NrCzesciP].High + 1;
   Czesci[NrCzesciP].Ilosc := Czesci[NrCzesciP].Ilosc + 1;
   Czesci[NrCzesciP].Czesc[Czesci[NrCzesciP].High].HighNut := -1;
+  Czesci[NrCzesciP].Czesc[Czesci[NrCzesciP].High].IlNut := 0;
 
   if not AktSong.Relative then
     Czesci[NrCzesciP].Czesc[Czesci[NrCzesciP].High].Start := Param1;
@@ -662,7 +664,15 @@ begin
     bt := low(integer);
     numLines := Length(Czesci[p].Czesc);
 
-    if(numLines=0) and not AktSong.isDuet then
+    if (numLines>0) and (Length(Czesci[p].Czesc[numLines-1].Nuta)=0) then
+    begin
+      Dec(numLines);
+      SetLength(Czesci[p].Czesc, numLines);
+      Dec(Czesci[p].High);
+      Dec(Czesci[p].Ilosc);
+    end;
+
+    if(numLines=0) then
     begin
       Log.LogError('Song ' + AktSong.Path + AktSong.Filename + ' has no lines?');
       if (Ini.LoadFaultySongs=0) then
@@ -673,7 +683,7 @@ begin
     begin
       numNotes := Length(Czesci[p].Czesc[line].Nuta);
 
-      if(numNotes=0) and not AktSong.isDuet then
+      if(numNotes=0) then
       begin
         Log.LogError('Sentence ' + IntToStr(line+1) + ' in song ' + AktSong.Path + AktSong.Filename + ' has no notes?');
         if (Ini.LoadFaultySongs=0) then
@@ -769,7 +779,7 @@ var
   Param2:   integer;
   Param3:   integer;
   ParamS:   string;
-  I: Integer;
+  I:        integer;
   isNewSentence: boolean;
 begin
   Result := false;
@@ -845,6 +855,7 @@ begin
     begin
       AktSong.isDuet := true;
       SetLength(Czesci, 2);
+      CP := -1;
     end else
       SetLength(Czesci, 1);
 
@@ -900,7 +911,8 @@ begin
         isNewSentence := false;
       end;
 
-      if TempC = '-' then begin
+      if TempC = '-' then
+      begin
         if isNewSentence then
         begin
           Log.LogError('Double sentence break in file: "' + Name + '"; Line '+IntToStr(FileLineNo)+' (LoadSong)');
@@ -917,9 +929,17 @@ begin
           NewSentence(CP, (Param1 + Rel[CP]) * Mult, Param2, LoadFullFile)
         else
         begin
-          // both singer
-          NewSentence(0, (Param1 + Rel[0]) * Mult, Param2, LoadFullFile);
-          NewSentence(1, (Param1 + Rel[1]) * Mult, Param2, LoadFullFile);
+          for I := 0 to 1 do
+          begin
+            if (Czesci[I].Czesc[Czesci[I].High].IlNut > 0) then
+            begin
+              with Czesci[I].Czesc[Czesci[I].High] do
+              begin
+                if (Nuta[HighNut].Start + Nuta[HighNut].Dlugosc <= (Param1 + Rel[I]) * Mult) then
+                  NewSentence(I, (Param1 + Rel[I]) * Mult, Param2, LoadFullFile);
+              end;
+            end;
+          end;
         end;
         isNewSentence := true;
       end; // if
@@ -935,7 +955,8 @@ begin
       end;
 
 
-      if not AktSong.isDuet then begin
+      if not AktSong.isDuet then
+      begin
         Czesci[CP].Czesc[Czesci[CP].High].BaseNote := Base[CP];
         if LoadFullFile then
           Czesci[CP].Czesc[Czesci[CP].High].LyricWidth := glTextWidth(PChar(Czesci[CP].Czesc[Czesci[CP].High].Lyric));
@@ -948,7 +969,8 @@ begin
         //Total Notes Patch End
       end else
       begin
-        for Pet := 0 to High(Czesci) do begin
+        for Pet := 0 to High(Czesci) do
+        begin
           Czesci[Pet].Czesc[Czesci[Pet].High].BaseNote := Base[Pet];
           if LoadFullFile then
             Czesci[Pet].Czesc[Czesci[Pet].High].LyricWidth := glTextWidth(PChar(Czesci[Pet].Czesc[Czesci[Pet].High].Lyric));
@@ -1113,81 +1135,27 @@ begin
   // write custom header tags (from 1.1)
   WriteCustomTags;
 
-  if not Song.isDuet then
+  for P := 0 to Length(Czesci) - 1 do
   begin
-    for C := 0 to Czesc[0].High do
+    if AktSong.isDuet then
     begin
-      WriteLine(0, C);
+      S := 'P' + IntToStr(P+1);
+      WriteLn(SongFile, S);
+    end;
 
-      if C < Czesc[0].High then
+    for C := 0 to Czesc[P].High do
+    begin
+      WriteLine(P, C);
+
+      if C < Czesc[P].High then
       begin      // don't write end of last sentence
         if not Relative then
-          S := '- ' + IntToStr(Czesc[0].Czesc[C+1].Start)
+          S := '- ' + IntToStr(Czesc[P].Czesc[C+1].Start)
         else
         begin
-          S := '- ' + IntToStr(Czesc[0].Czesc[C+1].Start - RelativeSubTime) +
-            ' ' + IntToStr(Czesc[0].Czesc[C+1].Start - RelativeSubTime);
-          RelativeSubTime := Czesc[0].Czesc[C+1].Start;
-        end;
-        WriteLn(SongFile, S);
-      end;
-    end; // C
-  end else
-  begin
-    P := -1;
-    for C := 0 to Czesc[0].High do //go through all lines
-    begin
-      if isIdenticalLine(C) then
-      begin
-        //not end?
-        if (C < Czesc[0].High) and (P <> 3) then
-        begin
-          //P1+P2 ==> P3
-          S := 'P3';
-          P := 3;
-          WriteLn(SongFile, S);
-        end;
-        WriteLine(0, C);
-      end else
-      begin
-        //singer 1 P1
-        if (Length(Czesc[0].Czesc[C].Nuta)>0) then
-        begin
-          if (C < Czesc[0].High) and (P <> 1) then
-          begin
-            S := 'P1';
-            P := 1;
-            WriteLn(SongFile, S);
-          end;
-          WriteLine(0, C);
-        end;
-
-        //singer 2 P2
-        if (Length(Czesc[1].Czesc[C].Nuta)>0) then
-        begin
-          if (C < Czesc[0].High) and (P <> 2) then
-          begin
-            S := 'P2';
-            P := 2;
-            WriteLn(SongFile, S);
-          end;
-          WriteLine(1, C);
-        end;
-      end;
-
-      CP := P-1;
-      if CP=2 then
-        CP := 0;
-
-      if C < Czesc[CP].High then
-      begin      // don't write end of last sentence
-        if not Relative then
-          S := '- ' + IntToStr(Czesc[CP].Czesc[C+1].Start)
-        else
-        begin
-          S := '- ' + IntToStr(Czesc[CP].Czesc[C+1].Start - RelativeSubTime) +
-            ' ' + IntToStr(Czesc[CP].Czesc[C+1].Start - RelativeSubTime);
-          RelativeSubTime := Czesc[CP].Czesc[C+1].Start;
+          S := '- ' + IntToStr(Czesc[P].Czesc[C+1].Start - RelativeSubTime) +
+            ' ' + IntToStr(Czesc[P].Czesc[C+1].Start - RelativeSubTime);
+          RelativeSubTime := Czesc[P].Czesc[C+1].Start;
         end;
         WriteLn(SongFile, S);
       end;

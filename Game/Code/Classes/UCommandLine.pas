@@ -16,7 +16,6 @@ type
       Benchmark:  Boolean;
       NoLog:      Boolean;
       FullScreen: Boolean;
-      Joypad:     Boolean;
 
       //Some Value Variables Set when Reading Infos {-1: Not Set, others: Value}
       Depth:      Integer;
@@ -65,7 +64,6 @@ begin
   Benchmark   := False;
   NoLog       := False;
   FullScreen  := False;
-  Joypad      := False;
 
   //Some Value Variables Set when Reading Infos {-1: Not Set, others: Value}
   sResolution := '';
@@ -114,8 +112,6 @@ begin
         NoLog       := True
       else if (Command = 'fullscreen') then
         Fullscreen  := True
-      else if (Command = 'joypad') then
-        Joypad    := True
 
       //Integer Variables
       else if (Command = 'depth') then

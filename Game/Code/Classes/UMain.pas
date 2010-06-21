@@ -112,7 +112,7 @@ function GetTimeFromBeat(Beat: integer): real;
 procedure ClearScores(PlayerNum: integer);
 
 implementation
-uses USongs, UJoystick, math, UCommandLine, UVideo;
+uses USongs, math, UCommandLine, UVideo;
 
 procedure MainLoop;
 var
@@ -121,10 +121,6 @@ begin
   SDL_EnableKeyRepeat(125, 125);
   While not Done do
   Begin
-    // joypad
-    if (Ini.Joypad = 1) OR (Params.Joypad) then
-      Joy.Update;
-
     // keyboard events
     CheckEvents;
 
@@ -395,7 +391,10 @@ begin
     for Pet := 0 to Czesci[CP].High do
     begin
       if Czas.AktBeat >= Czesci[CP].Czesc[Pet].Start then
-        Czesci[CP].Akt := Pet;
+      begin
+        if (GetTimeFromBeat(Czesci[CP].Czesc[Pet].StartNote) <= Czas.Teraz+10) then
+          Czesci[CP].Akt := Pet;
+      end;
     end;
 
     // czysczenie nut gracza, gdy to jest nowa plansza
@@ -479,8 +478,7 @@ begin
   end;
   
   //On Sentence Change...
-  if(CP=0) then
-    Sender.onSentenceChange(Czesci[CP].Akt);
+  Sender.onSentenceChange(CP, Czesci[CP].Akt);
 end;
 
 procedure NewBeat(CP: integer; Sender: TScreenSing);
@@ -513,19 +511,6 @@ begin
   // beat click
   if (Ini.BeatClick = 1) and ((Czas.AktBeatC + Czesci[CP].Resolution + Czesci[CP].NotesGAP) mod Czesci[CP].Resolution = 0) then
     Music.PlayClick;
-
-  // debug system on LPT
-  {if ((Czas.AktBeatC + Czesci[CP].Resolution + Czesci[CP].NotesGAP) mod Czesci[CP].Resolution = 0) then
-  begin
-    //LPT_1 := 0;
-//    Light.LightOne(0, 150);
-
-
-{    if ((Czas.AktBeatC + Czesci[0].Resolution + Czesci[0].NotesGAP) mod (Czesci[0].Resolution * 2) = 0) then
-      Light.LightOne(0, 150)
-    else
-      Light.LightOne(1, 150)}
-  //end;
 
   if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
     Exit;

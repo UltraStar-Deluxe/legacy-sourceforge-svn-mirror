@@ -276,16 +276,22 @@ begin
 end;
 
 function TScreenSingModi.Draw: boolean;
+Const
+  dt = 5;
+  
 var
   Min:    integer;
   Sec:    integer;
   Tekst:  string;
-  S, I:      integer;
+  S, I:   integer;
+  K, J:   integer;
   T:      integer;
-  lastLine, LastWord: integer;
+  lastLine, LastWord:     integer;
   medley_end:             boolean;
   medley_start_applause:  boolean;
   CurTime:  real;
+  ab:       real;
+
 begin
   //Aspect
   if AspectHandler.changed and (Czas.Teraz>AspectHandler.change_time + 3) then
@@ -618,11 +624,59 @@ end;
     end;
   end;
 
+  for I := 0 to Length(Czesci) - 1 do
+  begin
+    K := Czesci[I].Akt;
+    for J := 0 to Czesci[I].High do
+    begin
+      if Czas.AktBeat >= Czesci[I].Czesc[J].Start then
+        K := J;
+    end;
+    ab := GetTimeFromBeat(Czesci[I].Czesc[K].StartNote) - Czas.Teraz;
+
+    if (K = Czesci[I].High) then
+      ab := Czas.Teraz - GetTimeFromBeat(Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Start+
+        Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Dlugosc);
+
+    if (ab>2*dt) then
+    begin
+      Alpha[I] := Alpha[I]-TimeSkip/dt;
+      if (Alpha[I]<0) then
+        Alpha[I] := 0;
+    end else if (ab>dt) then
+    begin
+      Alpha[I] := Alpha[I]+TimeSkip/dt;
+      if (Alpha[I]>1) then
+        Alpha[I] := 1;
+    end else
+      Alpha[I] := 1;
+
+    if (K < Czesci[I].High) then
+    begin
+      ab := GetTimeFromBeat(Czesci[I].Czesc[K+1].StartNote) - Czas.Teraz;
+
+      if (ab>2*dt) then
+        Alpha[I+2] := 0
+      else if (ab>dt) then
+        Alpha[I+2] := (1-(ab-dt)/dt)
+      else
+        Alpha[I+2] := 1;
+    end;
+  end;
+
+  if not AktSong.isDuet then
+  begin
+    Alpha[1] := Alpha[0];
+    Alpha[3] := Alpha[2];
+  end;
+
+  Static[StaticLyricBar].Texture.Alpha := Alpha[1];
+
   // draw custom items
-  SingModiDraw(PlayerInfo);  // always draw
+  SingModiDraw(PlayerInfo, Alpha);  // always draw
 
   //GoldenNoteStarsTwinkle Mod
-  GoldenRec.SpawnRec;
+  GoldenRec.SpawnRec(Alpha);
   //GoldenNoteStarsTwinkle Mod
 
   //Update PlayerInfo

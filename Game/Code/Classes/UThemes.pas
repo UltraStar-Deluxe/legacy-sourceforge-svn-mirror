@@ -338,7 +338,8 @@ type
     StaticSongName  :   TThemeStatic;
     TextSongName    :   TThemeText;
 
-    StaticLyricDuetBar : TThemeStatic;
+    StaticLyricBar :    TThemeStatic;
+    StaticLyricDuetBar: TThemeStatic;
 
     //TimeBar mod
     StaticTimeProgress:   TThemeStatic;
@@ -1189,6 +1190,7 @@ begin
       ThemeLoadStatic(Sing.StaticSongName, 'SingSongNameStatic');
       ThemeLoadText(Sing.TextSongName, 'SingSongNameText');
 
+      ThemeLoadStatic(Sing.StaticLyricBar, 'SingStaticLyricBar');
       ThemeLoadStatic(Sing.StaticLyricDuetBar, 'SingStaticLyricDuetBar');
 
       //TimeBar mod

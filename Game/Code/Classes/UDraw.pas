@@ -18,19 +18,19 @@ type
     Mid:    real;
   end;
 
-procedure SingDraw;
+procedure SingDraw(Alpha: TAlpha);
 procedure SingDrawLyricHelper(CP: integer; NR: TRecR);
-procedure SingDrawNotes(NR: TRecR);
-procedure SingDrawNotesDuet(NR: TRecR);
-procedure SingModiDraw (PlayerInfo: TPlayerInfo);
+procedure SingDrawNotes(NR: TRecR; Alpha: TAlpha);
+procedure SingDrawNotesDuet(NR: TRecR; Alpha: TAlpha);
+procedure SingModiDraw(PlayerInfo: TPlayerInfo; Alpha: TAlpha);
 procedure SingDrawBackground;
 procedure SingDrawOscilloscope(X, Y, W, H: real; NrSound: integer);
-procedure SingDrawNoteLines(Left, Top, Right: real; Space: integer);
+procedure SingDrawNoteLines(Left, Top, Right: real; Space: integer; Alpha: real);
 procedure SingDrawBeatDelimeters(Left, Top, Right: real; NrCzesci: integer);
 
-procedure SingDrawCzesc(Left, Top, Right: real; NrCzesci: integer; Space: integer);
-procedure SingDrawPlayerCzesc(X, Y, W: real; CP, NrGracza: integer; Space: integer);
-procedure SingDrawPlayerBGCzesc(Left, Top, Right: real; NrCzesci, NrGracza: integer; Space: integer);
+procedure SingDrawCzesc(Left, Top, Right: real; NrCzesci: integer; Space: integer; Alpha: real);
+procedure SingDrawPlayerCzesc(X, Y, W: real; CP, NrGracza: integer; Space: integer; Alpha: real);
+procedure SingDrawPlayerBGCzesc(Left, Top, Right: real; NrCzesci, NrGracza: integer; Space: integer; Alpha: real);
 
 // TimeBar mod
 procedure SingDrawTimeBar();
@@ -189,12 +189,12 @@ begin;
   glEnd;
 end;
 
-procedure SingDrawNoteLines(Left, Top, Right: real; Space: integer);
+procedure SingDrawNoteLines(Left, Top, Right: real; Space: integer; Alpha: real);
 var
   Pet:    integer;
 begin
   glEnable(GL_BLEND);
-  glColor4f(Skin_P1_LinesR, Skin_P1_LinesG, Skin_P1_LinesB, 0.4);
+  glColor4f(Skin_P1_LinesR, Skin_P1_LinesG, Skin_P1_LinesB, 0.4*Alpha);
   glBegin(GL_LINES);
   for Pet := 0 to 9 do begin
     glVertex2f(Left,  Top + Pet * Space);
@@ -213,16 +213,16 @@ var
   st:     integer;
 begin
   CP := NrCzesci;
-  if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
+  {if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
   begin
     CP := (CP+1) mod 2;
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
   end else
-  begin
+  begin }
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
+    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
     begin
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
         end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
@@ -230,7 +230,7 @@ begin
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
         st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
     end;
-  end;
+  end; }
 
   TempR := (Right-Left) / (end_ - st);
 
@@ -250,7 +250,7 @@ begin
 end;
 
 // draw blank Notebars
-procedure SingDrawCzesc(Left, Top, Right: real; NrCzesci: integer; Space: integer);
+procedure SingDrawCzesc(Left, Top, Right: real; NrCzesci: integer; Space: integer; Alpha: real);
 var
   Rec:      TRecR;
   Pet:      integer;
@@ -268,17 +268,17 @@ begin
   begin
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
+    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
     begin
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
         end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
 
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
         st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-    end;
+    end;}
   end;
 
-  glColor3f(1, 1, 1);
+  glColor4f(1, 1, 1, Alpha);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -296,12 +296,12 @@ begin
           // If Golden note Effect of then Change not Color
           begin
             case Wartosc of
-              1: glColor4f(1, 1, 1, 0.85);
-              2: glColor4f(1, 1, 0.3, 0.85); // no stars, paint yellow -> glColor4f(1, 1, 0.3, 0.85);
+              1: glColor4f(1, 1, 1, 0.85*Alpha);
+              2: glColor4f(1, 1, 0.3, 0.85*Alpha); // no stars, paint yellow -> glColor4f(1, 1, 0.3, 0.85);
             end; // case
           end //Else all Notes same Color
           else
-            glColor4f(1, 1, 1, 0.85);
+            glColor4f(1, 1, 1, 0.85*Alpha);
 
           // lewa czesc  -  left part
           Rec.Left := (Start-st) * TempR + Left + 0.5 + 10*ScreenX;
@@ -347,7 +347,7 @@ begin
           // Golden Star Patch
           if (Wartosc = 2) AND (Ini.EffectSing=1) then
           begin
-            GoldenRec.SaveGoldenStarsRec(GoldenStarPos, Rec.Top, Rec.Right, Rec.Bottom);
+            GoldenRec.SaveGoldenStarsRec(GoldenStarPos, Rec.Top, Rec.Right, Rec.Bottom, NrCzesci);
           end;
 
         end; // if not FreeStyle
@@ -361,7 +361,7 @@ end;
 
 
 // draw sung notes
-procedure SingDrawPlayerCzesc(X, Y, W: real; CP, NrGracza: integer; Space: integer);
+procedure SingDrawPlayerCzesc(X, Y, W: real; CP, NrGracza: integer; Space: integer; Alpha: real);
 var
   TempR:    real;
   Rec:      TRecR;
@@ -376,17 +376,17 @@ begin
   begin
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
+    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
     begin
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
         end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
 
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
         st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-    end;
+    end; }
   end;
 
-  glColor3f(1, 1, 1);
+  glColor4f(1, 1, 1, Alpha);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -411,7 +411,7 @@ begin
         end; //if
 
         //        if True then
-        Rec.Top    := Y - (Ton-Czesci[CP].Czesc[Czesci[0].Akt].BaseNote)*Space/2 - NotesH2;
+        Rec.Top    := Y - (Ton-Czesci[CP].Czesc[Czesci[CP].Akt].BaseNote)*Space/2 - NotesH2;
         Rec.Bottom := Rec.Top + 2 *NotesH2;
 
         glColor3f(1, 1, 1);
@@ -485,7 +485,7 @@ begin
 end;
 
 //draw Note glow
-procedure SingDrawPlayerBGCzesc(Left, Top, Right: real; NrCzesci, NrGracza: integer; Space: integer);
+procedure SingDrawPlayerBGCzesc(Left, Top, Right: real; NrCzesci, NrGracza: integer; Space: integer; Alpha: real);
 var
   Rec:      TRecR;
   Pet:      integer;
@@ -508,17 +508,17 @@ begin
     begin
       st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
       end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-      if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
+      {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
       begin
         if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
           end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
 
         if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
           st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-      end;
+      end;}
     end;
 
-    glColor4f(1, 1, 1, sqrt((1+sin(Music.Position * 3))/4)/ 2 + 0.5 );
+    glColor4f(1, 1, 1, (sqrt((1+sin(Music.Position * 3))/4)/ 2 + 0.5)*Alpha);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -605,7 +605,7 @@ begin
   if BarFrom > 40 then
     BarFrom := 40;
 
-  if (Czesci[CP].Czesc[Czesci[CP].Akt].StartNote - Czesci[CP].Czesc[Czesci[CP].Akt].Start > 8) and  //16->12 for more help bars and then 12->8 for even more
+  if (BarFrom > 8) and  //16->12 for more help bars and then 12->8 for even more
     (Czesci[CP].Czesc[Czesci[CP].Akt].StartNote - Czas.MidBeat > 0) and
     (Czesci[CP].Czesc[Czesci[CP].Akt].StartNote - Czas.MidBeat < 40) then
   begin            // ale nie za wczesnie
@@ -636,7 +636,7 @@ begin
   end;
 end;
 
-procedure SingDraw();
+procedure SingDraw(Alpha: TAlpha);
 var
   Pet:      integer;
   Pet2:     integer;
@@ -644,6 +644,7 @@ var
   Rec:      TRecR;
   TexRec:   TRecR;
   NR:       TRecR;
+  ab:       real;
   //FS:       real;
 
   BarAlpha: real;
@@ -681,19 +682,24 @@ begin
 
   // rysuje paski pod nutami
   if PlayersPlay = 1 then
-    SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15);
-  if (PlayersPlay = 2) or (PlayersPlay = 4) then begin
-    SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P1_NotesB - 105, Nr.Right + 10*ScreenX, 15);
-    SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15);
+    SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[0]);
+  if (PlayersPlay = 2) or (PlayersPlay = 4) then
+  begin
+    SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P1_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[0]);
+    SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[1]);
   end;
 
-  if (PlayersPlay = 3) or (PlayersPlay = 6) then begin
-    SingDrawNoteLines(Nr.Left + 10*ScreenX, 120, Nr.Right + 10*ScreenX, 12);
-    SingDrawNoteLines(Nr.Left + 10*ScreenX, 245, Nr.Right + 10*ScreenX, 12);
-    SingDrawNoteLines(Nr.Left + 10*ScreenX, 370, Nr.Right + 10*ScreenX, 12);
+  if (PlayersPlay = 3) or (PlayersPlay = 6) then
+  begin
+    SingDrawNoteLines(Nr.Left + 10*ScreenX, 120, Nr.Right + 10*ScreenX, 12, Alpha[0]);
+    SingDrawNoteLines(Nr.Left + 10*ScreenX, 245, Nr.Right + 10*ScreenX, 12, Alpha[1]);
+    SingDrawNoteLines(Nr.Left + 10*ScreenX, 370, Nr.Right + 10*ScreenX, 12, Alpha[0]);
   end;
 
   // rysuje tekst - new Lyric engine
+  ScreenSing.LyricMain[0].SetAlpha(Alpha[0]);
+  ScreenSing.LyricSub[0].SetAlpha(Alpha[2]);
+
   ScreenSing.LyricMain[0].Draw;
   ScreenSing.LyricSub[0].Draw;
 
@@ -701,6 +707,9 @@ begin
 
   if (AktSong.isDuet) then
   begin
+    ScreenSing.LyricMain[1].SetAlpha(Alpha[1]);
+    ScreenSing.LyricSub[1].SetAlpha(Alpha[3]);
+
     ScreenSing.LyricMain[1].Draw;
     ScreenSing.LyricSub[1].Draw;
     SingDrawLyricHelper(1, NR);
@@ -919,33 +928,33 @@ begin
   end;
 
   if AktSong.isDuet then
-    SingDrawNotesDuet(NR)
+    SingDrawNotesDuet(NR, Alpha)
   else
-    SingDrawNotes(NR);
+    SingDrawNotes(NR, Alpha);
 
   glDisable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
 end;
 
-procedure SingDrawNotes(NR: TRecR);
+procedure SingDrawNotes(NR: TRecR; Alpha: TAlpha);
 begin
   if PlayersPlay = 1 then
   begin
-    SingDrawPlayerBGCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 0, 15);
-    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
-    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 0, 15);
+    SingDrawPlayerBGCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 0, 15, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
   end;
 
   if (PlayersPlay = 2) then
   begin
-    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15);
-    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15, Alpha[0]);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15, Alpha[0]);
 
-    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
+    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
 
-    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15);
-    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15);
+    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
+    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15, Alpha[0]);
   end;
 
   if PlayersPlay = 3 then
@@ -953,40 +962,40 @@ begin
     NotesW := NotesW * 0.8;
     NotesH := NotesH * 0.8;
 
-    SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12);
-    SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12);
-    SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12, Alpha[0]);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12, Alpha[0]);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12, Alpha[0]);
 
-    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12);
-    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
+    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12, Alpha[0]);
 
-    SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12);
-    SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12);
-    SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12);
+    SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12, Alpha[0]);
+    SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12, Alpha[0]);
+    SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12, Alpha[0]);
   end;
 
   if PlayersPlay = 4 then
   begin
     if ScreenAct = 1 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15, Alpha[0]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 2, 15);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 3, 15);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 3, 15, Alpha[0]);
     end;
 
-    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
+    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
 
     if ScreenAct = 1 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15);
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15, Alpha[0]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15);
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 3, 15);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 3, 15, Alpha[0]);
     end;
   end;
 
@@ -995,52 +1004,52 @@ begin
     NotesH := NotesH * 0.8;
 
     if ScreenAct = 1 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12, Alpha[0]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 3, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 4, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 5, 12);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 4, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 5, 12, Alpha[0]);
     end;
 
-    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12);
-    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
+    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12, Alpha[0]);
 
     if ScreenAct = 1 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12);
+      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12, Alpha[0]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 4, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12);
+      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 4, 12, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12, Alpha[0]);
     end;
   end;
 end;
 
-procedure SingDrawNotesDuet(NR: TRecR);
+procedure SingDrawNotesDuet(NR: TRecR; Alpha: TAlpha);
 begin
   if PlayersPlay = 1 then
   begin
-    SingDrawPlayerBGCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 0, 15);
-    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
-    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 0, 15);
+    SingDrawPlayerBGCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 0, 15, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
   end;
 
   if (PlayersPlay = 2) then
   begin
-    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15);
-    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 1, 1, 15);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15, Alpha[0]);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 1, 1, 15, Alpha[1]);
 
-    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 1, 15);
+    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 1, 15, Alpha[1]);
 
-    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15);
-    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 1, 15);
+    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
+    SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 1, 15, Alpha[1]);
   end;
 
   if PlayersPlay = 3 then
@@ -1048,40 +1057,40 @@ begin
     NotesW := NotesW * 0.8;
     NotesH := NotesH * 0.8;
 
-    SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12);
-    SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 1, 1, 12);
-    SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12, Alpha[0]);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 1, 1, 12, Alpha[1]);
+    SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12, Alpha[0]);
 
-    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 1, 12);
-    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
+    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 1, 12, Alpha[1]);
+    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12, Alpha[0]);
 
-    SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12);
-    SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 1, 1, 12);
-    SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12);
+    SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12, Alpha[0]);
+    SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 1, 1, 12, Alpha[1]);
+    SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12, Alpha[0]);
   end;
 
   if PlayersPlay = 4 then
   begin
     if ScreenAct = 1 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 1, 1, 15);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 1, 1, 15, Alpha[1]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 2, 15);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 1, 3, 15);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 1, 3, 15, Alpha[1]);
     end;
 
-    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 1, 15);
+    SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 1, 15, Alpha[1]);
 
     if ScreenAct = 1 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15);
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 1, 15);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 1, 15, Alpha[1]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15);
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 3, 15);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 3, 15, Alpha[1]);
     end;
   end;
 
@@ -1090,34 +1099,34 @@ begin
     NotesH := NotesH * 0.8;
 
     if ScreenAct = 1 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 1, 1, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 1, 1, 12, Alpha[1]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12, Alpha[0]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 3, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 1, 4, 12);
-      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 5, 12);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 1, 4, 12, Alpha[1]);
+      SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 5, 12, Alpha[0]);
     end;
 
-    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 1, 12);
-    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
+    SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12, Alpha[0]);
+    SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 1, 12, Alpha[1]);
+    SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12, Alpha[0]);
 
     if ScreenAct = 1 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 1, 1, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12);
+      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 1, 1, 12, Alpha[1]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12, Alpha[0]);
     end;
     if ScreenAct = 2 then begin
-      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 1, 4, 12);
-      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12);
+      SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 1, 4, 12, Alpha[1]);
+      SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12, Alpha[0]);
     end;
   end;
 end;
 
-procedure SingModiDraw (PlayerInfo: TPlayerInfo);
+procedure SingModiDraw (PlayerInfo: TPlayerInfo; Alpha: TAlpha);
 var
   Pet:      integer;
   Pet2:     integer;
@@ -1125,6 +1134,8 @@ var
   Rec:      TRecR;
   TexRec:   TRecR;
   NR:       TRecR;
+  ab:       real;
+
   //FS:       real;
   BarFrom:  integer;
   BarAlpha: real;
@@ -1146,9 +1157,11 @@ var
 
 begin
   // positions
-  if Ini.SingWindow = 0 then begin
+  if Ini.SingWindow = 0 then
+  begin
     NR.Left := 120;
-  end else begin
+  end else
+  begin
     NR.Left := 20;
   end;
   NR.Right := 780;
@@ -1168,20 +1181,25 @@ begin
   begin
     // rysuje paski pod nutami
     if PlayersPlay = 1 then
-      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15);
-    if (PlayersPlay = 2) or (PlayersPlay = 4) then begin
-      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P1_NotesB - 105, Nr.Right + 10*ScreenX, 15);
-      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15);
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[0]);
+    if (PlayersPlay = 2) or (PlayersPlay = 4) then
+    begin
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P1_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[1]);
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[0]);
     end;
 
-    if (PlayersPlay = 3) or (PlayersPlay = 6) then begin
-      SingDrawNoteLines(Nr.Left + 10*ScreenX, 120, Nr.Right + 10*ScreenX, 12);
-      SingDrawNoteLines(Nr.Left + 10*ScreenX, 245, Nr.Right + 10*ScreenX, 12);
-      SingDrawNoteLines(Nr.Left + 10*ScreenX, 370, Nr.Right + 10*ScreenX, 12);
+    if (PlayersPlay = 3) or (PlayersPlay = 6) then
+    begin
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, 120, Nr.Right + 10*ScreenX, 12, Alpha[0]);
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, 245, Nr.Right + 10*ScreenX, 12, Alpha[1]);
+      SingDrawNoteLines(Nr.Left + 10*ScreenX, 370, Nr.Right + 10*ScreenX, 12, Alpha[0]);
     end;
   end;
 
     // rysuje tekst - new Lyric engine
+    ScreenSingModi.LyricMain[0].SetAlpha(Alpha[0]);
+    ScreenSingModi.LyricSub[0].SetAlpha(Alpha[2]);
+
     ScreenSingModi.LyricMain[0].Draw;
     ScreenSingModi.LyricSub[0].Draw;
 
@@ -1472,23 +1490,23 @@ begin
   if (DLLMAn.Selected.ShowNotes And DLLMan.Selected.LoadSong) then
   begin
     if (PlayersPlay = 1) And PlayerInfo.Playerinfo[0].Enabled then begin
-      SingDrawPlayerBGCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 0, 15);
-      SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
-      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 0, 15);
+      SingDrawPlayerBGCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 0, 15, Alpha[0]);
+      SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+      SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
     end;
 
     if (PlayersPlay = 2)  then begin
       if PlayerInfo.Playerinfo[0].Enabled then
       begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15);
-        SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15, Alpha[0]);
+        SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
       end;
       if PlayerInfo.Playerinfo[1].Enabled then
       begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15);
-        SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
-        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15, Alpha[0]);
+        SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15, Alpha[0]);
       end;
 
     end;
@@ -1499,46 +1517,46 @@ begin
 
       if PlayerInfo.Playerinfo[0].Enabled then
       begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12);
-        SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-        SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12, Alpha[0]);
+        SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12, Alpha[0]);
       end;
 
       if PlayerInfo.Playerinfo[1].Enabled then
       begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12);
-        SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12);
-        SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12, Alpha[0]);
+        SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12, Alpha[0]);
       end;
 
       if PlayerInfo.Playerinfo[2].Enabled then
       begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12);
-        SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
-        SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12, Alpha[0]);
+        SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12, Alpha[0]);
       end;
     end;
 
     if PlayersPlay = 4 then begin
       if ScreenAct = 1 then begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15);
-        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15, Alpha[0]);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15, Alpha[0]);
       end;
       if ScreenAct = 2 then begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 2, 15);
-        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 3, 15);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 2, 15, Alpha[0]);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 3, 15, Alpha[0]);
       end;
 
-      SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15);
-      SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15);
+      SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
+      SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
 
       if ScreenAct = 1 then begin
-        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15);
-        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15);
+        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15, Alpha[0]);
       end;
       if ScreenAct = 2 then begin
-        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15);
-        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 3, 15);
+        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 3, 15, Alpha[0]);
       end;
     end;
 
@@ -1547,29 +1565,29 @@ begin
       NotesH := NotesH * 0.8;
 
       if ScreenAct = 1 then begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12);
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12);
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12, Alpha[0]);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12, Alpha[0]);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12, Alpha[0]);
       end;
       if ScreenAct = 2 then begin
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 3, 12);
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 4, 12);
-        SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 5, 12);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 3, 12, Alpha[0]);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 4, 12, Alpha[0]);
+        SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 5, 12, Alpha[0]);
       end;
 
-      SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12);
-      SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12);
-      SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12);
+      SingDrawCzesc(NR.Left + 20, 120+95, NR.Right - 20, 0, 12, Alpha[0]);
+      SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12, Alpha[0]);
+      SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12, Alpha[0]);
 
       if ScreenAct = 1 then begin
-        SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12);
-        SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12);
-        SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12);
+        SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12, Alpha[0]);
       end;
       if ScreenAct = 2 then begin
-        SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12);
-        SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 4, 12);
-        SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12);
+        SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 4, 12, Alpha[0]);
+        SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12, Alpha[0]);
       end;
     end;
   end;
@@ -1737,14 +1755,14 @@ begin
   begin
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
+    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
     begin
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
         end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
 
       if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
         st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-    end;
+    end;}
   end;
 
   glColor3f(1, 1, 1);

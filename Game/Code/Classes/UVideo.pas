@@ -34,7 +34,8 @@ uses SDL,
      dialogs,
      {$endif}
      {$ENDIF}
-     UIni;
+     UIni,
+     UTime;
 
 type
   TAspectCorrection = (acoStretch, acoCrop, acoLetterBox); //from 1.1
@@ -64,7 +65,9 @@ procedure GetVideoRect(var ScreenRect, TexRect: TRectCoords; Window: TRectCoords
 procedure SetAspectCorrection(aspect: TAspectCorrection);
 procedure ResetAspectCorrection;
 
-
+Const
+  MIN_FPS = 40;
+  MAX_FPS = 55;
 
 var
   VideoOpened:        Boolean;
@@ -256,7 +259,7 @@ begin
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
   end;
 
-  mmfps := 50;
+  mmfps := (MAX_FPS-MIN_FPS)/2;
 end;
 
 procedure acClose;
@@ -388,13 +391,16 @@ begin
     if Ini.Debug = 1 then
     begin
       //frame decode debug display
-      GoldenRec.Spawn(200,85,1,16,0,-1,ColoredStar,$ffff00);
+      GoldenRec.Spawn(200,85,1,16,0,-1,ColoredStar,$ffff00,0);
     end;
 
   end;
 end;
 
 procedure acGetFrame(Time: Extended);
+Const
+  MAX = 3000;
+
 var
   FrameFinished:  Integer;
   errnum:         Integer;
@@ -412,6 +418,36 @@ const
 begin
   if not VideoOpened then Exit;
   if VideoPaused then Exit;
+
+  mmfps := (Display.mFPS+mmfps)/2;
+  if(Ini.PerformanceMode=1) then
+  begin
+    if (mmfps<MIN_FPS) then
+    begin
+      if(SkipLines<3) and (Counter<MAX) then
+        Counter := Counter + round(TimeSkip*1000)
+      else if (SkipLines<3) and (Counter>=MAX) then
+      begin
+        Inc(SkipLines);
+        mmfps:=(MAX_FPS-MIN_FPS)/2;
+        Counter := 0;
+      end;
+    end else if (mmfps>MAX_FPS) then
+    begin
+      if(SkipLines>0) and (Counter<MAX) then
+        Counter := Counter + round(TimeSkip*1000)
+      else if (SkipLines>0) and (Counter>=MAX) then
+      begin
+        Dec(SkipLines);
+        LastSkipLines := SkipLines;
+        Counter := 0;
+      end;
+    end else Counter := 0;
+  end;
+
+  if (Counter>MAX) then
+    Counter := MAX;
+
   if (NegativeSkipTime < 0)and(Time+NegativeSkipTime>=0) then NegativeSkipTime:=0;
 
   myTime:=Time+VideoSkipTime;
@@ -429,7 +465,7 @@ begin
     if Ini.Debug = 1 then
     begin
       // frame delay debug display
-      GoldenRec.Spawn(200,65,1,16,0,-1,ColoredStar,$00ff00);
+      GoldenRec.Spawn(200,65,1,16,0,-1,ColoredStar,$00ff00,0);
     end;
     Exit;// we don't need a new frame now
   end;
@@ -438,7 +474,7 @@ begin
     if Ini.Debug = 1 then
     begin
       //frame drop debug display
-      GoldenRec.Spawn(200,105,1,16,0,-1,ColoredStar,$ff0000);
+      GoldenRec.Spawn(200,105,1,16,0,-1,ColoredStar,$ff0000,0);
     end;
 
     DropFrame:=True;
@@ -501,32 +537,6 @@ begin
   errnum:=1;       //TODO!!
   if errnum >=0 then
   begin
-    mmfps := (Display.mFPS+mmfps)/2;
-    if(Ini.PerformanceMode=1) then
-    begin
-      if (mmfps<45) then
-      begin
-        if(SkipLines<3) and (Counter<100) then
-          Counter := round(Counter+70/mmfps)
-        else if (SkipLines<3) and (Counter>=100) then
-        begin
-          Inc(SkipLines);
-          mmfps:=50;
-          Counter := 0;
-        end;
-      end else if (mmfps>75) then
-      begin
-        if(SkipLines>0) and (Counter<=100) then
-          Counter := round(Counter+70/mmfps)
-        else if (SkipLines>0) and (Counter>=100) then
-        begin
-          Dec(SkipLines);
-          LastSkipLines := SkipLines;
-          Counter := 0;
-        end;
-      end else Counter := 0;
-    end;
-
     if(not pbo_supported) then
     begin
       FrameDataPtr:=Pointer(videodecoder^.buffer);
@@ -614,7 +624,7 @@ begin
     if Ini.Debug = 1 then
     begin
       //frame decode debug display
-      GoldenRec.Spawn(200,85,1,16,0,-1,ColoredStar,$ffff00);
+      GoldenRec.Spawn(200,85,1,16,0,-1,ColoredStar,$ffff00,0);
     end;
 
   end;
@@ -916,8 +926,8 @@ begin
     glColor4f(0, 0, 0, 0.2);
     glbegin(gl_quads);
       glVertex2f(0, 50);
-      glVertex2f(0, 160);
-      glVertex2f(250, 160);
+      glVertex2f(0, 170);
+      glVertex2f(250, 170);
       glVertex2f(250, 50);
     glEnd;
 
@@ -946,6 +956,9 @@ begin
 
     SetFontPos (5, 125);
     glPrint(PChar('skipL: '+inttostr(SkipLines)));
+
+    SetFontPos (5, 140);
+    glPrint(PChar('Counter: '+inttostr(Counter)));
   end;
 end;
 

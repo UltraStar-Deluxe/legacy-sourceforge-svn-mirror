@@ -83,14 +83,8 @@ type
     SumPlayers:     integer;
     DuelRatio:      integer;
 
-    // Controller
-    Joypad:         integer;
-
     // Soundcards
     SoundCard:      array[0..7, 1..2] of integer;
-
-    // Devices
-    LPT:            integer;
 
     procedure Load;
     procedure Save;
@@ -182,9 +176,6 @@ const
   IPartyPopup:    array[0..1] of string = ('Off', 'On');
   ISumPlayers:    array[0..2] of string = ('Never', 'Dynamic', 'Always');
   IDuelRatio:     array[0..9] of string = ('normal', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%');
-
-  IJoypad:        array[0..1] of string = ('Off', 'On');
-  ILPT:           array[0..2] of string = ('Off', 'LCD', 'Lights');
 
   IChannel:       array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
 
@@ -613,17 +604,6 @@ begin
   for Pet := 0 to High(IDuelRatio) do
     if Tekst = IDuelRatio[Pet] then Ini.DuelRatio := Pet;
 
-  // Joypad
-  Tekst := IniFile.ReadString('Controller',    'Joypad',   IJoypad[0]);
-  for Pet := 0 to High(IJoypad) do
-    if Tekst = IJoypad[Pet] then Ini.Joypad := Pet;
-
-  // LCD
-  Tekst := IniFile.ReadString('Devices',    'LPT',   ILPT[0]);
-  for Pet := 0 to High(ILPT) do
-    if Tekst = ILPT[Pet] then Ini.LPT := Pet;
-
-
   // SongPath
   if (Params.SongPath <> '') then
     SongPath := IncludeTrailingPathDelimiter(Params.SongPath)
@@ -850,10 +830,6 @@ begin
     //DuelRatio
     Tekst := IDuelRatio[Ini.DuelRatio];
     IniFile.WriteString('Advanced', 'DuelRatio', Tekst);
-
-    // Joypad
-    Tekst := IJoypad[Ini.Joypad];
-    IniFile.WriteString('Controller',    'Joypad',    Tekst);
 
     IniFile.Free;
   end;

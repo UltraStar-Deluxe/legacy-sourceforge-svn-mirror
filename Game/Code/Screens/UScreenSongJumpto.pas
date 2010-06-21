@@ -105,6 +105,7 @@ begin
           begin
             Button[0].Text[0].Text := '';
             SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+            isDuet := false;
           end;
         end;
 
@@ -291,5 +292,4 @@ begin
   else
     ResetDuetFilter;
 end;
-
 end.

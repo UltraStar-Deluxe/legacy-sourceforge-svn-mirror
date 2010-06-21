@@ -276,12 +276,15 @@ end;
 
 constructor TRecord.Create;
 var
+  Info:       BASS_DEVICEINFO;
   SC:         integer; // soundcard
   SCI:        integer; // soundcard input
   Descr:      string;
   InputName:  string;
   Flags:      integer;
   No:         integer;
+  Proceed:    boolean;
+
   function isDuplicate(Desc: String): Boolean;
   var
     I: Integer;
@@ -302,12 +305,14 @@ var
 begin
   // checks for recording devices and puts them into array;
   SetLength(SoundCard, 0);
-
+  BASS_RecordFree;
   SC := 0;
-  Descr := BASS_RecordGetDeviceDescription(SC);
+  //Descr := BASS_RecordGetDeviceDescription(SC);
+  Proceed := BASS_RecordGetDeviceInfo(SC, &Info);
+  Descr := Info.name;
 
-  while (Descr <> '') do begin
-
+  while {(Descr <> '')} Proceed and not (info.flags and BASS_DEVICE_ENABLED=0) do
+  begin
     //If there is another SoundCard with the Same ID, Search an available Name
     if (IsDuplicate(Descr)) then
     begin
@@ -327,7 +332,7 @@ begin
 //      mic[device] := -1; // default to no change
     SCI := 0;
     BASS_RecordInit(SC);
-    Flags := BASS_RecordGetInput(SCI);
+    Flags := BASS_RecordGetInput(SCI, PSingle(nil)^);
     InputName := BASS_RecordGetInputName(SCI);
 //    Log.LogError('Input #' + IntToStr(SCI) + ' (' + IntToStr(Flags) + '): ' + InputName);
 
@@ -335,8 +340,10 @@ begin
     SoundCard[SC].Input[SCI].Name := InputName;
 
     // process each input
-    while (Flags <> -1) do begin
-      if SCI >= 1 then begin
+    while (Flags <> -1) and (Flags and BASS_INPUT_OFF<>0) do
+    begin
+      if SCI >= 1 then
+      begin
         SetLength(SoundCard[SC].Input, SCI+1);
         InputName := BASS_RecordGetInputName(SCI);
         SoundCard[SC].Input[SCI].Name := InputName;
@@ -348,7 +355,7 @@ begin
         end;}
 
       Inc(SCI);
-      Flags := BASS_RecordGetInput(SCI);
+      Flags := BASS_RecordGetInput(SCI, PSingle(nil)^);
     end;
 
 {      if mic[device] <> -1 then begin
@@ -363,7 +370,9 @@ begin
     BASS_RecordFree;
 
     Inc(SC);
-    Descr := BASS_RecordGetDeviceDescription(SC);
+    //Descr := BASS_RecordGetDeviceDescription(SC);
+    Proceed := BASS_RecordGetDeviceInfo(SC, &Info);
+    Descr := Info.name;
   end; // while
 end;
 end.

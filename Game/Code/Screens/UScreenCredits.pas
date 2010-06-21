@@ -259,6 +259,7 @@ var
   f,g,h: Real;
   STime:cardinal;
   Delay:cardinal;
+  Alpha:TAlpha;
 
   myPixel: longword;
   myColor: Cardinal;
@@ -424,7 +425,7 @@ Data := Music.GetFFTData;
           for k:=1 to 3 do begin
              l:=410+floor((CTime-Timings[21])/(Timings[1]-Timings[21])*(536-410))+RandomRange(-5,5);
              j:=floor((Timings[1]-CTime)/22)+RandomRange(285,301);
-             GoldenRec.Spawn(l, j, 1, 16, 0, -1, Flare, 0);
+             GoldenRec.Spawn(l, j, 1, 16, 0, -1, Flare, 0, 0);
           end;
         end;
 
@@ -486,15 +487,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -539,15 +540,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+20) and (CTime<=STime+22) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -597,15 +598,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -650,15 +651,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -706,15 +707,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
 
@@ -765,15 +766,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -821,15 +822,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -879,15 +880,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -938,15 +939,15 @@ Data := Music.GetFFTData;
       glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
 
       if (CTime >= STime+10) and (CTime<=STime+12) then begin
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1);
-        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
       end;
 
       glPushMatrix;
@@ -986,7 +987,7 @@ Data := Music.GetFFTData;
       if Data[k]>0.2 then begin
          l:=RandomRange(6,16);
          j:=RandomRange(0,27);
-         GoldenRec.Spawn(myLogoCoords[j,0], myLogoCoords[j,1], 16-l, l, 0, -1, PerfectNote, 0);
+         GoldenRec.Spawn(myLogoCoords[j,0], myLogoCoords[j,1], 16-l, l, 0, -1, PerfectNote, 0, 0);
       end;
     end;
 
@@ -1102,7 +1103,9 @@ Data := Music.GetFFTData;
     glPrint (Addr(RuntimeStr[1]));
 }
   // make the stars shine
-  GoldenRec.Draw;
+  Alpha[0] := 1;
+  Alpha[1] := 1;
+  GoldenRec.Draw(Alpha);
 
   //timing hack
 //    Draw_FunkyText;

@@ -7,11 +7,11 @@ uses gl, SDL, UTexture, Classes, ULog;
 procedure BuildFont;			                // Build Our Bitmap Font
 procedure KillFont;     		                // Delete The Font
 function  glTextWidth(text: pchar): real;     // Returns Text Width
-procedure glPrintDone(text: pchar; Done: real; ColR, ColG, ColB: real);
+procedure glPrintDone(text: pchar; Done: real; ColR, ColG, ColB, Alpha: real);
 procedure glPrintLetter(letter: char);
 procedure glPrintLetterCut(letter: char; Start, Finish: real);
 procedure glPrint(text: pchar);	                  // Custom GL "Print" Routine
-procedure glPrintCut(text: pchar);
+procedure glPrintCut(text: pchar; Alpha: real);
 procedure SetFontPos(X, Y: real);                     // Sets X And Y
 procedure SetFontSize(Size: real);
 procedure SetFontStyle(Style: integer); // sets active font style (normal, bold, etc)
@@ -143,13 +143,13 @@ begin
   end; // while
 end;
 
-procedure glPrintDone(text: pchar; Done: real; ColR, ColG, ColB: real);
+procedure glPrintDone(text: pchar; Done: real; ColR, ColG, ColB, Alpha: real);
 begin
   Fonts[ActFont].Done := Done;
   PColR := ColR;
   PColG := ColG;
   PColB := ColB;
-  glPrintCut(text);
+  glPrintCut(text, Alpha);
   Fonts[ActFont].Done := -1;
 end;
 
@@ -272,7 +272,7 @@ begin
   end; // while
 end;
 
-procedure glPrintCut(text: pchar);
+procedure glPrintCut(text: pchar; Alpha: real);
 var
   Letter:       char;
   PToDo:        real;
@@ -301,7 +301,7 @@ begin
 
     if (PToDo > 0) and (PDoingNow > PToDo) then begin
       glPrintLetterCut(Letter, 0, PToDo / PDoingNow);
-      glColor3f(PColR, PColG,  PColB);
+      glColor4f(PColR, PColG,  PColB, Alpha);
       glPrintLetterCut(Letter, PToDo / PDoingNow, 1);
     end;
 

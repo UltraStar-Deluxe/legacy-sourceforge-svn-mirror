@@ -295,32 +295,14 @@ begin
   else
     Text[TextNextPlayer3].Visible := False;
 
-
-//  LCD.WriteText(1, '  Choose mode:  ');
-//  UpdateLCD;
 end;
 
 procedure TScreenPartyNewRound.Update;
-{
-  //Set Visibility of Round Infos
-  I := Length(PartySession.Rounds);
-  if (I >= 1) then
-  begin
-    Static[StaticRound1].Visible := True;
-    Text[TextRound1].Visible := True;
-    Text[TextWinner1].Visible := True;
-
-    //Texts:
-    Text[TextRound1].Text := Language.Translate(DllMan.Plugins[PartySession.Rounds[0].Plugin].Name);
-    Text[TextWinner1].Text := PartySession.GetWinnerString(0);
-  end;   }
-
-
-
 var
   N, R: Integer;
   T: Integer;
   NumRounds: Integer;
+
 begin
   //N:=0;
   //current round-number

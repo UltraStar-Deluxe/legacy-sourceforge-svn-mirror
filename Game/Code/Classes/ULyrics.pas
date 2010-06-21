@@ -31,6 +31,7 @@ type
       StyleI:         integer;          // 0 - one selection, 1 - long selection, 2 - one selection with fade to normal text, 3 - long selection with fade with color from left
       FontStyleI:     integer;          // font number
       Word:           array of TWord;
+      Alpha:          real;
       procedure SetX(Value: real);
       procedure SetY(Value: real);
       function GetClientX: real;
@@ -76,7 +77,9 @@ type
       function SelectedLength: integer;  // LCD
 
       procedure Clear;
-      procedure Draw;
+      procedure Draw();
+      procedure SetAlpha(alpha: real);
+      function GetAlpha: real;
 
   end;
 
@@ -85,6 +88,22 @@ type
 
 implementation
 uses TextGL, UGraphic, UDrawTexture;
+
+procedure TLyric.SetAlpha(alpha: real);
+begin
+  Self.Alpha := alpha;
+
+  if (Self.Alpha>1) then
+    Self.Alpha := 1;
+
+  if (Self.Alpha<0) then
+    Self.Alpha := 0;
+end;
+
+function TLyric.GetAlpha: real;
+begin
+  Result := Alpha;
+end;
 
 procedure TLyric.SetX(Value: real);
 begin
@@ -250,6 +269,7 @@ begin
   SetLength(Word, 0);
   Text := '';
   SelectedI := -1;
+  Alpha := 1;
 end;
 
 procedure TLyric.Refresh;
@@ -268,10 +288,11 @@ begin
   end;
 end;
 
-procedure TLyric.Draw;
+procedure TLyric.Draw();
 var
   W:    integer;
 begin
+  glEnable(GL_BLEND);
   case StyleI of
     0:
       begin
@@ -317,6 +338,7 @@ begin
           end;
       end;
   end; // case
+  glDisable(GL_BLEND);
 end;
 
 procedure TLyric.DrawNormal(W: integer);
@@ -325,7 +347,7 @@ begin
   SetFontPos(Word[W].X+ 10*ScreenX, Word[W].Y);
   SetFontSize(Word[W].Size);
   SetFontItalic(Word[W].Italic);
-  glColor3f(Word[W].ColR, Word[W].ColG, Word[W].ColB);
+  glColor4f(Word[W].ColR, Word[W].ColG, Word[W].ColB, Alpha);
   glPrint(pchar(Word[W].Text));
 end;
 
@@ -339,11 +361,10 @@ begin
   SetFontPos(Word[W].X, Word[W].Y);
   SetFontSize(Word[W].Size);
   SetFontItalic(Word[W].Italic);
-
   if D = 0 then
-    glColor3f(ColR, ColG, ColB)
+    glColor4f(ColR, ColG, ColB, Alpha)
   else
-    glColor3f(ColSR, ColSG, ColSB);
+    glColor4f(ColSR, ColSG, ColSB, Alpha);
 
   glPrint(pchar(Word[W].Text));
 end;
@@ -358,7 +379,7 @@ begin
   SetFontPos(Word[W].X - D * Word[W].Width * (Word[W].Scale - 1) / 2 + (D+1)*10*ScreenX, Word[W].Y - D * 1.5 * Word[W].Size *(Word[W].Scale - 1));
   SetFontSize(Word[W].Size + D * (Word[W].Size * Word[W].Scale - Word[W].Size));
   SetFontItalic(Word[W].Italic);
-  glColor3f(Word[W].ColR, Word[W].ColG, Word[W].ColB);
+  glColor4f(Word[W].ColR, Word[W].ColG, Word[W].ColB, Alpha);
   glPrint(pchar(Word[W].Text))
 end;
 
@@ -371,8 +392,8 @@ begin
   SetFontPos(Word[W].X, Word[W].Y);
   SetFontSize(Word[W].Size);
   SetFontItalic(Word[W].Italic);
-  glColor3f(Word[W].ColR, Word[W].ColG, Word[W].ColB);
-  glPrintDone(pchar(Word[W].Text), D, ColR, ColG, ColB);
+  glColor4f(Word[W].ColR, Word[W].ColG, Word[W].ColB, Alpha);
+  glPrintDone(pchar(Word[W].Text), D, ColR, ColG, ColB, Alpha);
 end;
 
 function TLyric.SelectedLetter;  // LCD

@@ -37,6 +37,9 @@ FXtest.exe: fxtest\FXtest.dpr
 livefx.exe: livefx\livefx.dpr
   $(DCC)
 
+livespec.exe: livespec\livespec.dpr
+  $(DCC)
+
 Multi.exe: multi\Multi.dpr
   $(DCC)
 
@@ -55,7 +58,13 @@ samplevis.exe: SampleVis\samplevis.dpr
 Speakers.exe: Speakers\Speakers.dpr
   $(DCC)
 
+spectrum.exe: spectrum\spectrum.dpr
+  $(DCC)
+
 StreamTest.exe: StreamTest\StreamTest.dpr
+  $(DCC)
+
+synth.exe: synth\synth.dpr
   $(DCC)
 
 writewav.exe: writewav\writewav.dpr

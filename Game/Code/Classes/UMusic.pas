@@ -245,7 +245,7 @@ begin
 
   while (i < length) do
   begin
-    dmch := round((((0 - lch^) + (rch^)) div 2)*1.5);
+    dmch := round((((0 - lch^) + (rch^)) / 2)*1.5);
 
     lch^ := dmch;
     rch^ := dmch;
@@ -479,9 +479,9 @@ begin
   //Old Sets Wave Volume
   //BASS_SetVolume(Volume);
   //New: Sets Volume only for this Application
-  BASS_SetConfig(BASS_CONFIG_GVOL_SAMPLE, Volume);
-  BASS_SetConfig(BASS_CONFIG_GVOL_STREAM, Volume);
-  BASS_SetConfig(BASS_CONFIG_GVOL_MUSIC, Volume);
+  BASS_SetConfig(BASS_CONFIG_GVOL_SAMPLE, Volume*100);
+  BASS_SetConfig(BASS_CONFIG_GVOL_STREAM, Volume*100);
+  BASS_SetConfig(BASS_CONFIG_GVOL_MUSIC, Volume*100);
 end;
 
 procedure TMusic.SetMusicVolume(Volume: Integer);
@@ -491,10 +491,10 @@ begin
     Volume := 100;
 
   //Set MP3 Volume
-  BASS_ChannelSetAttributes (Bass, -1, Volume, -101);
+  BASS_ChannelSetAttribute(Bass, BASS_ATTRIB_VOL, Volume/100);
 
   //Set Applause Volume
-  BASS_ChannelSetAttributes (BassApplause, -1, Volume, -101);
+  BASS_ChannelSetAttribute(BassApplause, BASS_ATTRIB_VOL, Volume/100);
 end;
 
 procedure TMusic.Fade(InitVolume, TargetVolume: Integer; FadeTime: real);
@@ -507,9 +507,9 @@ begin
   else if TargetVolume<0 then
     TargetVolume := 0;
 
-  BASS_ChannelSetAttributes (Bass, -1, InitVolume, -101);
+  BASS_ChannelSetAttribute(Bass, BASS_ATTRIB_VOL, InitVolume/100);
   time := round(FadeTime*1000);
-  BASS_ChannelSlideAttributes (Bass, -1, TargetVolume, -101, time);
+  BASS_ChannelSlideAttribute(Bass, BASS_ATTRIB_VOL, TargetVolume/100, time);
 end;
 
 procedure TMusic.FadeStop(FadeTime: real);
@@ -517,7 +517,7 @@ var
   time: dword;
 begin
   time := round(FadeTime*1000);
-  BASS_ChannelSlideAttributes (Bass, -1, -2, -101, time);  //fade out and stop
+  BASS_ChannelSlideAttribute(Bass, BASS_ATTRIB_VOL, -1, time);  //fade out and stop
 end;
 
 procedure TMusic.SetLoop(Enabled: boolean);
@@ -560,7 +560,7 @@ begin
 //  if Loaded then begin
 //    MediaPlayer.StartPos := Round(Time);
     bytes := BASS_ChannelSeconds2Bytes(Bass, Time);
-    BASS_ChannelSetPosition(Bass, bytes);
+    BASS_ChannelSetPosition(Bass, bytes, BASS_POS_BYTE);
 //  end;
 end;
 
@@ -603,7 +603,7 @@ var
 begin
   //Result := 60;
 
-  bytes  := BASS_ChannelGetLength( Bass );
+  bytes  := BASS_ChannelGetLength(Bass, BASS_POS_BYTE);
   Result := BASS_ChannelBytes2Seconds(Bass, bytes);
 
 {  if Assigned(MediaPlayer) then begin
@@ -618,7 +618,7 @@ var
   bytes:    integer;
 begin
   //Result := 0;//MediaPlayer.Position / 1000;
-  bytes := BASS_ChannelGetPosition(BASS);
+  bytes := BASS_ChannelGetPosition(BASS, BASS_POS_BYTE);
   Result := BASS_ChannelBytes2Seconds(BASS, bytes);
 end;
 
@@ -836,6 +836,7 @@ procedure TMusic.CaptureCard(RecordI, PlayerLeft, PlayerRight: byte);
 var
   Error:      integer;
   ErrorMsg:   string;
+  Player:     integer;
 begin
   if not BASS_RecordInit(RecordI) then begin
     Error := BASS_ErrorGetCode;
@@ -855,10 +856,11 @@ begin
     Log.LogError('Music -> CaptureCard: Error initializing record: ' + ErrorMsg);
 
 
-  end else begin
-
+  end else
+  begin
+  Player := PlayerLeft + PlayerRight*256;
   //SoundCard[RecordI].BassRecordStream := BASS_RecordStart(44100, 2, MakeLong(0, 20) , @GetMicrophone, PlayerLeft + PlayerRight*256);
-  Recording.SoundCard[RecordI].BassRecordStream := BASS_RecordStart(44100, 2, MakeLong(0, 20) , @GetMicrophone, PlayerLeft + PlayerRight*256);
+  Recording.SoundCard[RecordI].BassRecordStream := BASS_RecordStart(44100, 2, MakeLong(0, 20) , @GetMicrophone, Pointer(Player));
 
   {if SoundCard[RecordI].BassRecordStream = 0 then begin
     Error := BASS_ErrorGetCode;

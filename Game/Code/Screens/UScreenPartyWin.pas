@@ -248,20 +248,10 @@ begin
     Static[StaticTeam3BG].Visible := False;
     Static[StaticTeam3Deco].Visible := False;
   end;
-
-
-//  LCD.WriteText(1, '  Choose mode:  ');
-//  UpdateLCD;
 end;
 
 procedure TScreenPartyWin.SetAnimationProgress(Progress: real);
 begin
-  {if (ScreenSingModi.PlayerInfo.NumPlayers >= 1) then
-    Static[StaticTeam1].Texture.ScaleW := Progress * ScreenSingModi.PlayerInfo.Playerinfo[0].Score / maxScore;
-  if (ScreenSingModi.PlayerInfo.NumPlayers >= 2) then
-    Static[StaticTeam2].Texture.ScaleW := Progress * ScreenSingModi.PlayerInfo.Playerinfo[1].Score / maxScore;
-  if (ScreenSingModi.PlayerInfo.NumPlayers >= 3) then
-    Static[StaticTeam3].Texture.ScaleW := Progress * ScreenSingModi.PlayerInfo.Playerinfo[2].Score / maxScore;}
 end;
 
 end.
