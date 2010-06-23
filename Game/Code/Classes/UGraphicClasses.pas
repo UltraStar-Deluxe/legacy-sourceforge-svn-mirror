@@ -79,7 +79,7 @@ type
    procedure SentenceChange(CP: integer);   //TODO!!!!
    procedure SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: Real; CP: integer);
    procedure SavePerfectNotePos(Xtop, Ytop: Real);
-   procedure GoldenNoteTwinkle(Top,Bottom,Right: Real; Player: Integer);
+   procedure GoldenNoteTwinkle(Top,Bottom,Right: Real; Player: Integer; CP: Integer);
    procedure SpawnPerfectLineTwinkle();
  end;
 
@@ -476,7 +476,7 @@ begin
   end;
 end;
 
-procedure TeffectManager.GoldenNoteTwinkle(Top,Bottom,Right: Real; Player: Integer);
+procedure TeffectManager.GoldenNoteTwinkle(Top,Bottom,Right: Real; Player: Integer; CP: integer);
 //Twinkle stars while golden note hit
 // this is called from UDraw.pas, SingDrawPlayerCzesc
 var
@@ -499,35 +499,35 @@ begin
           Ykatze := RandomRange(ceil(Top) , ceil(Bottom));
           XKatze := RandomRange(-7,3);
           LKatze := RandomRange(7,13);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, Player, CP);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Top)-6 , ceil(Top));
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(4,7);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, Player, CP);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Bottom), ceil(Bottom)+6);
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(4,7);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, Player, CP);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Top)-10 , ceil(Top)-6);
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(1,4);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, Player, CP);
         end;
         for C := 1 to 3 do
         begin
           Ykatze := RandomRange(ceil(Bottom)+6 , ceil(Bottom)+10);
           XKatze := RandomRange(-5,1);
           LKatze := RandomRange(1,4);
-          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, 0, (Player+1) mod 2);
+          Spawn(Ceil(Right)+XKatze, YKatze, ScreenAct, LKatze, 0, -1, NoteHitTwinkle, Player, CP);
         end;
 
         exit; // found a matching GoldenRec, did spawning stuff... done

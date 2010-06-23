@@ -929,8 +929,6 @@ begin
       SDLK_PERIOD:
         begin
           // moves text to right in current sentence
-          if AktSong.isDuet then
-            Exit;
           MoveTextToRight;
         end;
 
@@ -1010,9 +1008,6 @@ begin
           // alt + ctrl + shift + right = move all from cursor to right
           if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
           begin
-            if AktSong.isDuet then
-              Exit;
-
             MoveAllToEnd(1);
             FixTimings;
           end;
@@ -1095,8 +1090,6 @@ begin
           // alt + ctrl + shift + right = move all from cursor to left
           if SDL_ModState = KMOD_LALT + KMOD_LCTRL + KMOD_LSHIFT then
           begin
-            if AktSong.isDuet then
-              Exit;
             MoveAllToEnd(-1);
             FixTimings;
           end;
@@ -1985,6 +1978,7 @@ begin
   //SelectPrevNote();
   //SelectNextNote();
   Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
 end;
 
 procedure TScreenEditSub.TransposeNote(Transpose: integer);
@@ -2021,26 +2015,26 @@ var
   N:    integer;
   NStart: integer;
 begin
-  for C := Czesci[0].Akt to Czesci[0].High do
+  for C := Czesci[CP].Akt to Czesci[CP].High do
   begin
     NStart := 0;
-    if C = Czesci[0].Akt then NStart := AktNuta[0];
-    for N := NStart to Czesci[0].Czesc[C].HighNut do
+    if C = Czesci[CP].Akt then NStart := AktNuta[CP];
+    for N := NStart to Czesci[CP].Czesc[C].HighNut do
     begin
-      Inc(Czesci[0].Czesc[C].Nuta[N].Start, Move); // move note start
+      Inc(Czesci[CP].Czesc[C].Nuta[N].Start, Move); // move note start
 
       if N = 0 then
       begin // fix beginning
-        Inc(Czesci[0].Czesc[C].Start, Move);
-        Inc(Czesci[0].Czesc[C].StartNote, Move);
+        Inc(Czesci[CP].Czesc[C].Start, Move);
+        Inc(Czesci[CP].Czesc[C].StartNote, Move);
       end;
 
-      if N = Czesci[0].Czesc[C].HighNut then // fix ending
-        Inc(Czesci[0].Czesc[C].Koniec, Move);
+      if N = Czesci[CP].Czesc[C].HighNut then // fix ending
+        Inc(Czesci[CP].Czesc[C].Koniec, Move);
 
     end; // for
   end; // for
-  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
 end;
 
 procedure TScreenEditSub.MoveTextToRight;
@@ -2049,19 +2043,20 @@ var
   N:      integer;
   NHigh:  integer;
 begin
-  C := Czesci[0].Akt;
-  NHigh := Czesci[0].Czesc[C].HighNut;
+  C := Czesci[CP].Akt;
+  NHigh := Czesci[CP].Czesc[C].HighNut;
 
   // last word
-  Czesci[0].Czesc[C].Nuta[NHigh].Tekst := Czesci[0].Czesc[C].Nuta[NHigh-1].Tekst + Czesci[0].Czesc[C].Nuta[NHigh].Tekst;
+  Czesci[CP].Czesc[C].Nuta[NHigh].Tekst := Czesci[CP].Czesc[C].Nuta[NHigh-1].Tekst +
+    Czesci[CP].Czesc[C].Nuta[NHigh].Tekst;
 
   // other words
-  for N := NHigh - 1 downto AktNuta[0] + 1 do
+  for N := NHigh - 1 downto AktNuta[CP] + 1 do
   begin
-    Czesci[0].Czesc[C].Nuta[N].Tekst := Czesci[0].Czesc[C].Nuta[N-1].Tekst;
+    Czesci[CP].Czesc[C].Nuta[N].Tekst := Czesci[CP].Czesc[C].Nuta[N-1].Tekst;
   end; // for
-  Czesci[0].Czesc[C].Nuta[AktNuta[0]].Tekst := '- ';
-  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+  Czesci[CP].Czesc[C].Nuta[AktNuta[CP]].Tekst := '- ';
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
 end;
 
 procedure TScreenEditSub.MarkSrc;

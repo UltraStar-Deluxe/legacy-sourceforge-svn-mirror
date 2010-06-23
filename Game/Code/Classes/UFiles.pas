@@ -121,8 +121,10 @@ begin
   Song.Artist := '';
 
   //Sortings:
-  Song.Genre := 'Unknown';
-  Song.Edition := 'Unknown';
+  SetLength(Song.Genre, 1);
+  Song.Genre[0] := 'Unknown';
+  SetLength(Song.Edition, 1);
+  Song.Edition[0] := 'Unknown';
   Song.Language := 'Unknown'; //Language Patch
 
   //Required Information
@@ -157,6 +159,7 @@ var
   Done: byte;
   MedleyFlags: byte; //bit-vector for medley/preview tags
   lWarnIfTagsNotFound : Boolean;
+  Len:  integer;
 
   { adds a custom header tag to the song
     if there is no ':' in the read line, Tag should be empty
@@ -305,13 +308,27 @@ begin
         //Genre Sorting
         else if (Identifier = 'GENRE') then
         begin
-          Song.Genre := Value;
+          Len := Length(Song.Genre);
+          if (Song.Genre[0] <> 'Unknown') then
+          begin
+            Inc(Len);
+            SetLength(Song.Genre, Len);
+          end;
+
+          Song.Genre[Len-1] := Value;
         end
 
         //Edition Sorting
         else if (Identifier = 'EDITION') then
         begin
-          Song.Edition := Value;
+          Len := Length(Song.Edition);
+          if (Song.Edition[0] <> 'Unknown') then
+          begin
+            Inc(Len);
+            SetLength(Song.Edition, Len);
+          end;
+
+          Song.Edition[Len-1] := Value;
         end
 
         //Creator Tag
@@ -1101,8 +1118,13 @@ begin
   WriteLn(SongFile, '#ARTIST:' + Song.Artist);
 
   if Song.Creator     <> '' then    WriteLn(SongFile, '#CREATOR:'     + Song.Creator);
-  if Song.Edition     <> 'Unknown' then WriteLn(SongFile, '#EDITION:' + Song.Edition);
-  if Song.Genre       <> 'Unknown' then   WriteLn(SongFile, '#GENRE:' + Song.Genre);
+
+  for C := 0 to Length(Song.Edition)-1 do
+    if Song.Edition[C]  <> 'Unknown' then WriteLn(SongFile, '#EDITION:' + Song.Edition[C]);
+
+  for C := 0 to Length(Song.Genre) - 1 do
+    if Song.Genre[C] <> 'Unknown' then   WriteLn(SongFile, '#GENRE:' + Song.Genre[C]);
+    
   if Song.Language    <> 'Unknown' then    WriteLn(SongFile, '#LANGUAGE:'    + Song.Language);
 
   WriteLn(SongFile, '#MP3:' + Song.Mp3);

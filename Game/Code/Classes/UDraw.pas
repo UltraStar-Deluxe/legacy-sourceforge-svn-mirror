@@ -386,7 +386,6 @@ begin
     end; }
   end;
 
-  glColor4f(1, 1, 1, Alpha);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -414,7 +413,7 @@ begin
         Rec.Top    := Y - (Ton-Czesci[CP].Czesc[Czesci[CP].Akt].BaseNote)*Space/2 - NotesH2;
         Rec.Bottom := Rec.Top + 2 *NotesH2;
 
-        glColor3f(1, 1, 1);
+        glColor4f(1, 1, 1, Alpha);
         glBindTexture(GL_TEXTURE_2D, Tex_Left[NrGracza+1].TexNum);
         glBegin(GL_QUADS);
           glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
@@ -442,7 +441,6 @@ begin
           glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
           glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
         glEnd;
-        glColor3f(1, 1, 1);
 
         // prawa czesc
         Rec.Left := Rec.Right;
@@ -480,7 +478,7 @@ begin
     // some kind of weird index into a colour-table
 
     if (Ini.EffectSing=1) then
-      GoldenRec.GoldenNoteTwinkle(Rec.Top,Rec.Bottom,Rec.Right, NrGracza);
+      GoldenRec.GoldenNoteTwinkle(Rec.Top,Rec.Bottom,Rec.Right, NrGracza, CP);
   end; // if
 end;
 
