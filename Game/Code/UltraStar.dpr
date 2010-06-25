@@ -14,7 +14,6 @@ uses
   glu in 'lib\JEDI-SDLv1.0\OpenGL\Pas\glu.pas',
   glext in 'lib\JEDI-SDLv1.0\OpenGL\Pas\glext.pas',
   sdl_ttf in 'lib\JEDI-SDLv1.0\SDL_ttf\Pas\sdl_ttf.pas',
-  //smpeg in 'lib\JEDI-SDLv1.0\smpeg\Pas\smpeg.pas',
   bass in 'lib\bass\delphi\bass.pas',
   PNGImage in 'lib\PNGImage\PNGImage.pas',
   PNGzLib in 'lib\PNGImage\PNGzLib.pas',
@@ -53,14 +52,10 @@ uses
   USongs in 'Classes\USongs.pas',
   UIni in 'Classes\UIni.pas',
   UHelp in 'Classes\UHelp.pas',
-  //USmpeg in 'SMpeg\USmpeg.pas',
   ULyrics in 'Classes\ULyrics.pas',
   USkins in 'Classes\USkins.pas',
   UThemes in 'Classes\UThemes.pas',
   ULog in 'Classes\ULog.pas',
-  UJoystick in 'Classes\UJoystick.pas',
-  //ULCD in 'Classes\ULCD.pas',
-  //ULight in 'Classes\ULight.pas',
   UDataBase in 'Classes\UDataBase.pas',
   UCovers in 'Classes\UCovers.pas',
   UCatCovers in 'Classes\UCatCovers.pas',
@@ -124,7 +119,7 @@ uses
   UVideo in 'Classes\UVideo.pas';
 
 const
-  Version = 'UltraStar Deluxe Challenge Duet beta 2010-06-04';
+  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9 beta 2';
 
 var
   WndTitle: string;
@@ -314,31 +309,18 @@ begin
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Loading Particel System', 1);
 
-  // Joypad
-  {if (Ini.Joypad = 1) OR (Params.Joypad) then begin
-    Log.BenchmarkStart(1);
-    Log.LogStatus('Initialize Joystick', 'Initialization');   Joy := TJoy.Create;
-    Log.BenchmarkEnd(1);
-    Log.LogBenchmark('Initializing Joystick', 1);
-  end;}
-
   Log.BenchmarkEnd(0);
   Log.LogBenchmark('Loading Time', 0);
 
   //------------------------------
   //Start- Mainloop
   //------------------------------
-  //Music.SetLoop(true);
-  //Music.SetVolume(50);
-  //Music.Open(SkinPath + 'Menu Music 3.mp3');
-  //Music.Play;
+
   Log.LogStatus('Main Loop', 'Initialization');               MainLoop;
 
   //------------------------------
   //Finish Application
   //------------------------------
-  //if Ini.LPT = 1 then LCD.Clear;
-  //if Ini.LPT = 2 then Light.TurnOff;
 
   Log.Free;
 end.
