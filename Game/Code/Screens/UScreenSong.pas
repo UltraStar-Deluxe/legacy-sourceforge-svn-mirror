@@ -2638,7 +2638,7 @@ begin
     not MakeMedley and not CatSongs.Song[Interaction].Main and
     (Length(CatSongs.Song)-CatSongs.CatCount>1) then
   begin
-    if (WaitHandler.changed and
+    if (WaitHandler.changed and Music.isOpen and
       (((Ini.ShuffleTime<9) and (WaitHandler.change_time + TimeSkip>Ini.ShuffleTime*15))
       or (Music.Finished))) then
     begin

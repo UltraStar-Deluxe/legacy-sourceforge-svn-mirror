@@ -82,6 +82,7 @@ type
       procedure Stop;
       procedure Close;
       function Finished: boolean;
+      function isOpen: boolean;
       function Length: real;
       function Position: real;
       procedure PlayStart;
@@ -357,11 +358,13 @@ begin
   Loop := false;
   fHWND := Classes.AllocateHWND( nil);
 
-  if BASS_Init(1, 44100, 0, fHWND, nil) = false then 
+  if BASS_Init(-1, 44100, 0, fHWND, nil) = false then
   begin
     Application.MessageBox ('Could not initialize BASS', 'Error');
     Exit;
   end;
+
+  BASS_SetConfig(BASS_CONFIG_VERIFY, high(WORD));
   DSP_VocalRemover := 0;
   SetLength(BassVoices, 0);
   Log.BenchmarkEnd(4); Log.LogBenchmark('--> Bass Init', 4);
@@ -499,7 +502,7 @@ end;
 
 procedure TMusic.Fade(InitVolume, TargetVolume: Integer; FadeTime: real);
 var
-  time: dword;
+  time: DWORD;
 begin
   //Max Volume Prevention
   if TargetVolume > 100 then
@@ -514,7 +517,7 @@ end;
 
 procedure TMusic.FadeStop(FadeTime: real);
 var
-  time: dword;
+  time: DWORD;
 begin
   time := round(FadeTime*1000);
   BASS_ChannelSlideAttribute(Bass, BASS_ATTRIB_VOL, -1, time);  //fade out and stop
@@ -526,15 +529,26 @@ begin
 end;
 
 function TMusic.Open(Name: string): boolean;
+var
+  errorCode: integer;
 begin
   Loaded := false;
 
-  if FileExists(Name) then begin
+  if FileExists(Name) then
+  begin
 {    MediaPlayer.FileName := Name;
     MediaPlayer.Open;}
 
-    Bass := Bass_StreamCreateFile(false, pchar(Name), 0, 0, 0);
-    Loaded := true;
+    Bass := Bass_StreamCreateFile(false, PChar(Name), 0, 0, 0);
+    if (Bass>0) then
+      Loaded := true
+    else
+    begin
+      Loaded := false;
+      errorCode := BASS_ErrorGetCode();
+      Log.LogError('Error (' + IntToStr(errorCode) + ') on open File: ' + Name);
+    end;
+
     DSP_VocalRemover:=0;
     //Set Max Volume
     //SetMusicVolume (100);
@@ -555,7 +569,7 @@ end;
 
 procedure TMusic.MoveTo(Time: real);
 var
-  bytes:    integer;
+  bytes:    QWORD;
 begin
 //  if Loaded then begin
 //    MediaPlayer.StartPos := Round(Time);
@@ -599,7 +613,7 @@ end;
 
 function TMusic.Length: real;
 var
-  bytes:    integer;
+  bytes:    QWORD;
 begin
   //Result := 60;
 
@@ -615,11 +629,16 @@ end;
 
 function TMusic.Position: real;
 var
-  bytes:    integer;
+  bytes:    QWORD;
 begin
   //Result := 0;//MediaPlayer.Position / 1000;
   bytes := BASS_ChannelGetPosition(BASS, BASS_POS_BYTE);
   Result := BASS_ChannelBytes2Seconds(BASS, bytes);
+end;
+
+function TMusic.isOpen: boolean;
+begin
+  Result := Loaded;
 end;
 
 function TMusic.Finished: boolean;
