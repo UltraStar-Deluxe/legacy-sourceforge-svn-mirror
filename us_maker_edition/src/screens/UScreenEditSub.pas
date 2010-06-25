@@ -187,6 +187,8 @@ type
       VolumeAudio:    array of UTF8String;
       VolumeMidi:    array of UTF8String;
       VolumeClick:    array of UTF8String;
+      // background image & video preview
+      BackgroundImageId:  integer;
       //  currentX, CurrentY
       CurrentX:   integer;
       CurrentY:   integer;
@@ -237,7 +239,7 @@ type
       // show transparent background note for intaractions
       procedure ShowInteractiveBackground;
     public
-      Tex_Background:     TTexture;
+      Tex_PrevBackground:     TTexture;
       FadeOut:            boolean;
       constructor Create; override;
       procedure OnShow; override;
@@ -1237,6 +1239,14 @@ begin
     CopyToUndo;
     SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption -1;
     CurrentSong.Background := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
+    // change background picture
+    Tex_PrevBackground := Texture.LoadTexture(CurrentSong.Path.Append(CurrentSong.Background));
+    Texture.AddTexture(Tex_PrevBackground, TEXTURE_TYPE_PLAIN, false);
+    Statics[BackgroundImageId].Texture := Tex_PrevBackground;
+    Statics[BackgroundImageId].Texture.X := theme.EditSub.BackgroundImage.X;
+    Statics[BackgroundImageId].Texture.Y := theme.EditSub.BackgroundImage.Y;
+    Statics[BackgroundImageId].Texture.W := theme.EditSub.BackgroundImage.W;
+    Statics[BackgroundImageId].Texture.H := theme.EditSub.BackgroundImage.H;
   end;
 
   if ((BackgroundSlideId = Interactions[nBut].Num) and (Action = maRight) and (SelectsS[Interactions[nBut].Num].SelectedOption < Length(SelectsS[Interactions[nBut].Num].TextOptT)-1)) then
@@ -1244,7 +1254,15 @@ begin
     CopyToUndo;
     SelectsS[Interactions[nBut].Num].SelectedOption := SelectsS[Interactions[nBut].Num].SelectedOption +1;
     CurrentSong.Background := Path(SelectsS[Interactions[nBut].Num].TextOptT[SelectsS[Interactions[nBut].Num].SelectedOption]);
-  end;
+    // change background picture
+    Tex_PrevBackground := Texture.LoadTexture(CurrentSong.Path.Append(CurrentSong.Background));
+    Texture.AddTexture(Tex_PrevBackground, TEXTURE_TYPE_PLAIN, false);
+    Statics[BackgroundImageId].Texture := Tex_PrevBackground;
+    Statics[BackgroundImageId].Texture.X := theme.EditSub.BackgroundImage.X;
+    Statics[BackgroundImageId].Texture.Y := theme.EditSub.BackgroundImage.Y;
+    Statics[BackgroundImageId].Texture.W := theme.EditSub.BackgroundImage.W;
+    Statics[BackgroundImageId].Texture.H := theme.EditSub.BackgroundImage.H;
+    end;
 
   if ((Mp3SlideId = Interactions[nBut].Num) and (Action = maLeft) and (SelectsS[Interactions[nBut].Num].SelectedOption > 0)) then
     begin
@@ -1962,7 +1980,7 @@ begin
   //Theme:
   //bg
   glDisable(GL_BLEND);
-
+{
   x := 0;
   y := 0;
   w := 800;
@@ -1973,7 +1991,7 @@ begin
    glVertex2f(x, y+h);
    glVertex2f(x+w, y+h);
    glVertex2f(x+w, y);
-  glEnd;
+  glEnd;}
 
   // Line
   glColor4f(0.9, 0.9, 0.9, 1);
@@ -2290,6 +2308,7 @@ end;
 constructor TScreenEditSub.Create;
 begin
   inherited Create;
+  LoadFromTheme(Theme.EditSub);
   //video
   fCurrentVideo := nil;
   SetLength(Player, 1);
@@ -2378,6 +2397,8 @@ begin
   SelectsS[VideoGapSlideId].Text.Align := 0;
   SelectsS[VideoGapSlideId].Text.X := SelectsS[VideoGapSlideId].Texture.X + 3;
 
+  // background image & preview
+  BackgroundImageId := AddStatic(Theme.EditSub.BackgroundImage);
 //  TextTitle :=  AddText(180, 65,  0, 24, 0, 0, 0, 'a');
 //  TextArtist := AddText(180, 90,  0, 24, 0, 0, 0, 'b');
 //  TextMp3 :=    AddText(180, 115, 0, 24, 0, 0, 0, 'c');
@@ -2584,7 +2605,7 @@ begin
     // volume slides
     SetLength(VolumeAudio, 0);
     SetLength(VolumeMidi, 0);
-    SetLength(VolumeClick, 0);     
+    SetLength(VolumeClick, 0);
     for i:=0 to 100 do
     begin
       SetLength(VolumeAudio, high(VolumeAudio)+2);
@@ -2630,6 +2651,32 @@ begin
     AudioInput.CaptureStart;
   end;
 
+  // background picture
+  try
+    //BgFile := CurrentSong.Path.Append(CurrentSong.Background);
+    Statics[BackgroundImageId].Texture.X := 500;
+    Statics[BackgroundImageId].Texture.Y := 65;
+    Statics[BackgroundImageId].Texture.W := 80;
+    Statics[BackgroundImageId].Texture.H := 0;
+
+    if (Not (CurrentSong.Background = PATH_NONE) and CurrentSong.Path.Append(CurrentSong.Background).Exists) then
+    begin
+      log.LogError('background:' + CurrentSong.Background.ToUTF8());
+      Tex_PrevBackground := Texture.LoadTexture(CurrentSong.Path.Append(CurrentSong.Background));
+      Texture.AddTexture(Tex_PrevBackground, TEXTURE_TYPE_PLAIN, true);
+      Statics[BackgroundImageId].Texture := Tex_PrevBackground;
+      Statics[BackgroundImageId].Texture.X := theme.EditSub.BackgroundImage.X;
+      Statics[BackgroundImageId].Texture.Y := theme.EditSub.BackgroundImage.Y;
+      Statics[BackgroundImageId].Texture.W := theme.EditSub.BackgroundImage.W;
+      Statics[BackgroundImageId].Texture.H := theme.EditSub.BackgroundImage.H;
+
+    end;
+
+    except
+      Log.LogError('Background could not be loaded: ' + CurrentSong.Background.ToNative);
+      Tex_PrevBackground.TexNum := 0;
+    end;
+
   //Interaction := 0;
   TextEditMode := false;
   TitleEditMode := false;
@@ -2646,7 +2693,7 @@ var
   notechange:          boolean;
 begin
 
-  glClearColor(1,1,1,1);
+  //glClearColor(1,1,1,1);
 
   // midi music
   if PlaySentenceMidi then
@@ -2827,9 +2874,9 @@ begin
       fCurrentVideo.GetFrame(CurrentSong.VideoGAP + AudioPlayback.Position);
       fCurrentVideo.SetScreen(1);
       fCurrentVideo.Alpha := 1;
-      fCurrentVideo.SetScreenPosition(510, 60, 1);
-      fCurrentVideo.Width := 250;
-      fCurrentVideo.Height := 205;
+      fCurrentVideo.SetScreenPosition(theme.EditSub.BackgroundImage.X, theme.EditSub.BackgroundImage.Y, 1);
+      fCurrentVideo.Width := theme.EditSub.BackgroundImage.W;
+      fCurrentVideo.Height := theme.EditSub.BackgroundImage.H;
       fCurrentVideo.ReflectionSpacing := 1;
       fCurrentVideo.AspectCorrection := acoCrop;
 
@@ -2849,7 +2896,7 @@ begin
   {$ENDIF}
   Lyric.Free;
   //Music.SetVolume(1.0);
-  AudioInput.CaptureStop;  
+  AudioInput.CaptureStop;
 end;
 
 function TScreenEditSub.GetNoteName(Note: integer): string;

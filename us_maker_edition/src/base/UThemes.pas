@@ -507,6 +507,7 @@ type
 
   TThemeEditSub = class(TThemeBasic)
       //in editor - headers
+      BackgroundImage:     TThemeStatic;
       SlideTitle:          TThemeSelectSlide;
       SlideArtist:         TThemeSelectSlide;
       SlideMP3:            TThemeSelectSlide;
@@ -521,7 +522,7 @@ type
       SelectVolAudio:      TThemeSelectSlide;
       SelectVolMidi:       TThemeSelectSlide;
       SelectVolClick:      TThemeSelectSlide;
-      SlideVideoGap:      TThemeSelectSlide;
+      SlideVideoGap:       TThemeSelectSlide;
   end;
 
   //Error- and Check-Popup
@@ -913,7 +914,7 @@ begin
 
   Edit := TThemeEdit.Create;
   EditSub := TThemeEditSub.Create;
-  
+
   ErrorPopup := TThemeError.Create;
   CheckPopup := TThemeCheck.Create;
 
@@ -1405,11 +1406,12 @@ begin
 
       // editor
       ThemeLoadBasic (EditSub,               'EditSub');
+      ThemeLoadStatic(EditSub.BackgroundImage, 'EditSubBackgroundImage');
       ThemeLoadSelectSlide(EditSub.SlideTitle, 'EditSubTitle');
       ThemeLoadSelectSlide(EditSub.SlideArtist, 'EditSubArtist');
       ThemeLoadSelectSlide(EditSub.SlideMP3, 'EditSubMP3');
-      ThemeLoadSelectSlide(EditSub.SlideCover, 'EditSubCover');
-      ThemeLoadSelectSlide(EditSub.SlideBackground, 'EditSubBackground');
+      ThemeLoadSelectSlide(EditSub.SlideCover, 'EditSubSlideCover');
+      ThemeLoadSelectSlide(EditSub.SlideBackground, 'EditSubSlideBG');
       ThemeLoadSelectSlide(EditSub.SlideBPM, 'EditSubBPM');
       ThemeLoadSelectSlide(EditSub.SlideGAP, 'EditSubGAP');
       ThemeLoadSelectSlide(EditSub.SlideStart, 'EditSubStart');
