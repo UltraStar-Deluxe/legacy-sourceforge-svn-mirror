@@ -191,6 +191,8 @@ type
       VolumeClick:    array of UTF8String;
       // background image & video preview
       BackgroundImageId:  integer;
+      // player static picture
+      playerIconId:     array[1..2] of integer;
       //  currentX, CurrentY
       CurrentX:   integer;
       CurrentY:   integer;
@@ -209,6 +211,10 @@ type
       CurrentSound:        TCaptureBuffer;
       // Interactive note
       InteractiveNoteId:  array of integer;
+      TransparentNoteButtonId: array of integer;
+      // Interactive Line bar
+      InteractiveLineId:  array of integer;
+      TransparentLineButtonId:  array of integer;
 
       procedure DivideBPM;
       procedure MultiplyBPM;
@@ -231,7 +237,7 @@ type
       procedure CopyFromUndo; //undo last Lines,mouse position and headers
       procedure DrawPlayerTrack(X, Y, W: real; Space: integer; CurrentTone: integer; Count: integer; CurrentNote: integer);
       procedure DrawStatics;
-      procedure DrawInfoBar(x, y, w, h: integer);
+      procedure DrawInfoBar(x, y, w, h: integer; currentLines: integer);
       procedure DrawText(Left, Top, Right: real; NrLines: integer; Space: integer);
       //video view
       procedure StartVideoPreview();
@@ -809,6 +815,21 @@ begin
              CurrentSlideId := LyricSlideId;
              TextPosition := LengthUTF8(BackupEditText);
              TextEditMode := true;
+           end;
+
+           for i := 0 to Lines[0].High do
+           begin
+              if Interaction = InteractiveLineId[i] then
+              begin
+                CopyToUndo;
+                GoldenRec.KillAll;
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+                Lines[0].Current := i;
+                ShowInteractiveBackground;
+                currentnote := 0;
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;                
+              end;
+
            end;
 
            if high(InteractiveNoteId) >= Lines[0].Line[Lines[0].Current].HighNote then
@@ -2123,11 +2144,12 @@ begin
   glLineWidth(1);
 end;
 
-procedure TScreenEditSub.DrawInfoBar(x, y, w, h: integer);
+procedure TScreenEditSub.DrawInfoBar(x, y, w, h: integer; currentLines: integer);
 var
   start, end_:        integer;
   SongStart, SongEnd: integer;
   ww:                 integer;
+  i:                  integer;
 
   pos:                real;
   br:                 real;
@@ -2136,14 +2158,7 @@ var
   numLines:           integer;
 
 begin
-  numLines := Length(Lines[0].Line);
-
-  if(numLines=0) then
-    Exit;
-
-  SongStart := Lines[0].Line[0].Note[0].Start;
-  SongEnd := Lines[0].Line[numLines-1].End_;
-  ww := SongEnd - SongStart;
+  numLines := Length(Lines[currentLines].Line);
 
   glColor4f(0, 0, 0, 1);
   glDisable(GL_BLEND);
@@ -2163,23 +2178,53 @@ begin
    glVertex2f(x+w, y);
   glEnd;
 
+  if(numLines=1) then
+    Exit;
+
+  SongStart := Lines[currentLines].Line[0].Note[0].Start;
+  SongEnd := Lines[currentLines].Line[numLines-1].End_;
+  ww := SongEnd - SongStart;
+
+  Statics[playerIconId[currentLines+1]].Visible := true;
+
+  for i := 0 to Length(TransparentLineButtonId)-1 do
+  begin
+    Button[TransparentLineButtonId[i]].SetX(0);
+    Button[TransparentLineButtonId[i]].SetY(0);
+    Button[TransparentLineButtonId[i]].SetW(0);
+    Button[TransparentLineButtonId[i]].SetH(0);
+  end;
+
+  while (length(TransparentLineButtonId) < numLines) do
+  begin
+      SetLength(InteractiveLineId, Length(InteractiveLineId)+1);
+      SetLength(TransparentLineButtonId, Length(TransparentLineButtonId)+1);
+      TransparentLineButtonId[Length(TransparentLineButtonId)-1] := AddButton(0, 0, 0, 0,PATH_NONE);
+//      AddButton(0, 0, 0, 0,Skin.GetTextureFileName('ButtonF'));
+      InteractiveLineId[Length(InteractiveLineId)-1] := length(Interactions)-1;
+  end;
 
   for line := 0 to numLines - 1 do
   begin
-    if (line = Lines[0].Current) and not (PlaySentence or PlaySentenceMidi) then
+    if (line = Lines[currentLines].Current) and not (PlaySentence or PlaySentenceMidi) then
       glColor4f(0.4, 0.4, 0, 1)
     else
       glColor4f(1, 0.6, 0, 1);
 
 
-    start := Lines[0].Line[line].Note[0].Start;
-    end_ := Lines[0].Line[line].Note[Lines[0].Line[line].HighNote].Start+
-      Lines[0].Line[line].Note[Lines[0].Line[line].HighNote].Length;
+    start := Lines[currentLines].Line[line].Note[0].Start;
+    end_ := Lines[currentLines].Line[line].Note[Lines[0].Line[line].HighNote].Start+
+      Lines[currentLines].Line[line].Note[Lines[0].Line[line].HighNote].Length;
 
     pos := (start - SongStart)/ww*w;
     br := (end_-start)/ww*w;
 
     // todo: add transparent active button to change current line
+    Button[TransparentLineButtonId[line]].SetX(x+pos);
+    Button[TransparentLineButtonId[line]].SetY(y);
+    Button[TransparentLineButtonId[line]].SetW(br);
+    Button[TransparentLineButtonId[line]].SetH(h);
+
     glbegin(gl_quads);
       glVertex2f(x+pos, y);
       glVertex2f(x+pos, y+h);
@@ -2198,8 +2243,8 @@ begin
   end else
   begin
     glColor4f(1, 0, 0, 1);
-    pos := (Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start - SongStart)/ww*w;
-    br := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length/ww*w;
+    pos := (Lines[currentLines].Line[Lines[0].Current].Note[CurrentNote].Start - SongStart)/ww*w;
+    br := Lines[currentLines].Line[Lines[0].Current].Note[CurrentNote].Length/ww*w;
     if (br<1) then
       br := 1;
   end;
@@ -2283,29 +2328,29 @@ var
   i:          integer;
 begin
 
-  for i := 0 to high(InteractiveNoteId) do
+  for i := 0 to Length(TransparentNoteButtonId)-1 do
   begin
-    Button[i].SetX(0);
-    Button[i].SetY(0);
-    Button[i].SetW(0);
-    Button[i].SetH(0);
+    Button[TransparentNoteButtonId[i]].SetX(0);
+    Button[TransparentNoteButtonId[i]].SetY(0);
+    Button[TransparentNoteButtonId[i]].SetW(0);
+    Button[TransparentNoteButtonId[i]].SetH(0);
   end;
 
 // adding transparent buttons
-  while (high(InteractiveNoteId) < Lines[0].Line[Lines[0].Current].HighNote) do
+  while (Length(TransparentNoteButtonId)-1 < Lines[0].Line[Lines[0].Current].HighNote) do
   begin
-      SetLength(InteractiveNoteId, high(InteractiveNoteId)+2);
-      AddButton(0, 0, 0, 0,PATH_NONE);
-      InteractiveNoteId[high(InteractiveNoteId)] := Length(Interactions)-1;
+      SetLength(InteractiveNoteId, Length(InteractiveNoteId)+1);
+      SetLength(TransparentNoteButtonId, Length(TransparentNoteButtonId)+1);
+      TransparentNoteButtonId[Length(TransparentNoteButtonId)-1] := AddButton(0, 0, 0, 0,PATH_NONE);
+      InteractiveNoteId[Length(InteractiveNoteId)-1] := length(Interactions)-1;
   end;
-
   TempR := 720 / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
   for i := 0 to Lines[0].Line[Lines[0].Current].HighNote do
   begin
-    Button[i].SetX(40 + (Lines[0].Line[Lines[0].Current].Note[i].Start - Lines[0].Line[Lines[0].Current].Note[0].Start) * TempR + 0.5 + 10*ScreenX);
-    Button[i].SetY(410 - (Lines[0].Line[Lines[0].Current].Note[i].Tone - Lines[0].Line[Lines[0].Current].BaseNote)*15/2 - 9);
-    Button[i].SetW((Lines[0].Line[Lines[0].Current].Note[i].Length) * TempR - 0.5  + 10*(ScreenX));
-    Button[i].SetH(19);
+    Button[TransparentNoteButtonId[i]].SetX(40 + (Lines[0].Line[Lines[0].Current].Note[i].Start - Lines[0].Line[Lines[0].Current].Note[0].Start) * TempR + 0.5 + 10*ScreenX);
+    Button[TransparentNoteButtonId[i]].SetY(410 - (Lines[0].Line[Lines[0].Current].Note[i].Tone - Lines[0].Line[Lines[0].Current].BaseNote)*15/2 - 9);
+    Button[TransparentNoteButtonId[i]].SetW((Lines[0].Line[Lines[0].Current].Note[i].Length) * TempR - 0.5  + 10*(ScreenX));
+    Button[TransparentNoteButtonId[i]].SetH(19);
   end;
 end;
 
@@ -2364,6 +2409,12 @@ begin
   SetLength(VolumeAudio,0);
   SetLength(VolumeMidi,0);
   SetLength(VolumeClick,0);
+
+// interactive
+  SetLength(InteractiveNoteId, 0);
+  SetLength(TransparentNoteButtonId, 0);
+  SetLength(InteractiveLineId, 0);
+  SetLength(TransparentLineButtonId, 0);
 
   // line
   AddText(40, 11, 1, 30, 0, 0, 0, 'Line:');
@@ -2455,6 +2506,22 @@ begin
 //  TextNText :=    AddText(180, 265,  0, 24, 0, 0, 0, 'd');
 
   //TextVideoGap :=  AddText(600, 265,  0, 24, 0, 0, 0, 'e');
+    playerIconId[1] := AddStatic(Theme.Score.StaticPlayerIdBox[1]);
+//    (20, 460, 760, 15);
+    Statics[playerIconId[1]].Texture.X := 2;
+    Statics[playerIconId[1]].Texture.Y := 460;
+    Statics[playerIconId[1]].Texture.W := 14;
+    Statics[playerIconId[1]].Texture.H := 15;
+    Statics[playerIconId[1]].Reflection := false;
+    Statics[playerIconId[1]].Visible := false;
+
+    playerIconId[2] := AddStatic(Theme.Score.StaticPlayerIdBox[3]);
+    Statics[playerIconId[2]].Texture.X := 2;
+    Statics[playerIconId[2]].Texture.Y := 480;
+    Statics[playerIconId[2]].Texture.W := 14;
+    Statics[playerIconId[2]].Texture.H := 15;
+    Statics[playerIconId[2]].Reflection := false;
+    Statics[playerIconId[2]].Visible := false;
 
   // debug
   TextDebug :=  AddText(30, 550, 0, 27, 0, 0, 0, '');
@@ -2699,7 +2766,6 @@ begin
 
     if (Not (CurrentSong.Background = PATH_NONE) and CurrentSong.Path.Append(CurrentSong.Background).Exists) then
     begin
-      log.LogError('background:' + CurrentSong.Background.ToUTF8());
       Tex_PrevBackground := Texture.LoadTexture(CurrentSong.Path.Append(CurrentSong.Background));
       Texture.AddTexture(Tex_PrevBackground, TEXTURE_TYPE_PLAIN, true);
       Statics[BackgroundImageId].Texture := Tex_PrevBackground;
@@ -2882,7 +2948,9 @@ begin
   // draw static menu
   DrawBG;
   DrawStatics;
-  DrawInfoBar(20, 460, 760, 15);
+  DrawInfoBar(20, 460, 760, 15, 0);
+//  DrawInfoBar(20, 480, 760, 15, 1);  //for duet mode
+
   //inherited Draw;
   DrawFG;
   // draw notes
@@ -2927,6 +2995,8 @@ begin
 end;
 
 procedure TScreenEditSub.OnHide;
+var
+i: integer;
 begin
   {$IFDEF UseMIDIPort}
   MidiOut.Close;
@@ -2935,6 +3005,7 @@ begin
   Lyric.Free;
   //Music.SetVolume(1.0);
   AudioInput.CaptureStop;
+
 end;
 
 function TScreenEditSub.GetNoteName(Note: integer): string;
