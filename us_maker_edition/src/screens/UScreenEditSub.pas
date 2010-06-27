@@ -113,6 +113,8 @@ type
       TextEditMode:     boolean;
       TitleEditMode:    boolean;
       ArtistEditMode:   boolean;
+      // to interactive divide note
+      LastClickTime:      integer;
 
       BackupEditText:   UTF8String; //backup of current text in text-edit-mode
       CurrentEditText:  UTF8String; // current edit text
@@ -215,7 +217,7 @@ type
       procedure FixTimings;
       procedure DivideSentence;
       procedure JoinSentence;
-      procedure DivideNote;
+      procedure DivideNote(doubleclick: boolean);
       procedure DeleteNote;
       procedure TransposeNote(Transpose: integer);
       procedure ChangeWholeTone(Tone: integer);
@@ -355,7 +357,8 @@ begin
           Lyric.Free;
 
           onShow;
-          Text[TextDebug].Text := 'song reloaded'; //TODO: Language.Translate('SONG_RELOADED');
+//          Text[TextDebug].Text := 'song reloaded'; //TODO: Language.Translate('SONG_RELOADED');
+          Text[TextDebug].Text := Language.Translate('INFO_SONG_RELOADED');
         end;
 
       SDLK_D:
@@ -366,6 +369,7 @@ begin
             CopyToUndo;
             DivideBPM;
             ShowInteractiveBackground;
+            Text[TextDebug].Text := Language.Translate('INFO_DIVIDED_BPM');
             Exit;
           end;
         end;
@@ -377,6 +381,7 @@ begin
             CopyToUndo;
             MultiplyBPM;
             ShowInteractiveBackground;
+            Text[TextDebug].Text := Language.Translate('INFO_MULTIPLIED');
             Exit;
           end;
         end;
@@ -389,6 +394,7 @@ begin
             LyricsCapitalize;
             Lyric.AddLine(Lines[0].Current);
             Lyric.Selected := CurrentNote;
+            Text[TextDebug].Text := Language.Translate('INFO_CAPITALIZE');
             end;
 
           // Correct spaces
@@ -419,6 +425,7 @@ begin
               LastClick := -100;
               PlayVideo := true;
               StartVideoPreview();
+              Text[TextDebug].Text := Language.Translate('INFO_PLAY_SONG');
           end;
           // Paste text
           if SDL_ModState = KMOD_LCTRL then
@@ -442,6 +449,7 @@ begin
           // Fixes timings between sentences
           CopyToUndo;
           FixTimings;
+          Text[TextDebug].Text := Language.Translate('INFO_TIME_FIXED');
           Exit;
         end;
       SDLK_P:
@@ -465,6 +473,7 @@ begin
               AudioPlayback.Play;
               LastClick := -100;
             end;
+            Text[TextDebug].Text := Language.Translate('INFO_PLAY_SENTENCE');
           end
           else if SDL_ModState = KMOD_LSHIFT then
           begin
@@ -478,6 +487,7 @@ begin
             MidiStop := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_);
 
             LastClick := -100;
+            Text[TextDebug].Text := Language.Translate('INFO_PLAY_SENTENCE');
           end
           else if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL then
           begin
@@ -499,6 +509,7 @@ begin
             AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
             AudioPlayback.Play;
             LastClick := -100;
+            Text[TextDebug].Text := Language.Translate('INFO_PLAY_SENTENCE');
           end;
           Exit;
         end;
@@ -536,6 +547,7 @@ begin
           begin
               CopyFromUndo;
               GoldenRec.KillAll;
+              Text[TextDebug].Text := Language.Translate('INFO_UNDO');
           end;
           ShowInteractiveBackground;
         end;
@@ -547,7 +559,7 @@ begin
 //      SDLK_BACKSPACE : // disable to leave editor by backspace key
         begin
           if length(UndoLines) > 0 then
-          ScreenPopupcheck.CheckFadeTo(@ScreenSong,'Do you want leave editor without save ?')
+          ScreenPopupcheck.CheckFadeTo(@ScreenSong,Language.Translate('INFO_EXIT'))
           else
             FadeTo(@ScreenSong);
         end;
@@ -560,7 +572,7 @@ begin
           if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
             Inc(Lines[0].Line[Lines[0].Current].End_);
           GoldenRec.KillAll;
-        ShowInteractiveBackground;
+          ShowInteractiveBackground;
         end;
 
       SDLK_EQUALS:
@@ -714,7 +726,7 @@ begin
           if SDL_ModState = KMOD_LCTRL then
           begin
             // divide note
-            DivideNote;
+            DivideNote(false);
             Lyric.AddLine(Lines[0].Current);
             Lyric.Selected := CurrentNote;
             GoldenRec.KillAll;
@@ -804,6 +816,17 @@ begin
            begin
                 if Interaction = InteractiveNoteId[i] then
                 begin
+                  if (SDL_GetTicks() - LastClickTime < 250) and (SDL_ModState = 0) then
+                  begin
+                     CopyToUndo;
+                     GoldenRec.KillAll;
+                     DivideNote(true);
+                     ShowInteractiveBackground;
+                  end;
+
+                  // to check last click for divide note
+                  LastClickTime := SDL_GetTicks();
+
                   Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
                   currentnote := i;
                   Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
@@ -1163,7 +1186,10 @@ begin
             if (TextPosition >= 0) and (TextPosition < editLenghtText-1) then
                 TextPosition := TextPosition + 1
             else
+              begin
+              // todo change to next note
               TextPosition := 0;
+              end;
           end;
         end;
       SDLK_LEFT:
@@ -1174,7 +1200,10 @@ begin
             if TextPosition > 0 then
                 TextPosition := TextPosition - 1
             else
+              begin
+                // todo change to next note
                 TextPosition := editLenghtText-1;
+              end;
           end;
       end;
     end; //case
@@ -1193,7 +1222,7 @@ begin
   Y := Round((Y / ScreenH) * RenderH);
 
   CurrentX := X;
-  CurrentY := X;
+  CurrentY := Y;
 
   Result := true;
   nBut := InteractAt(X, Y);
@@ -1555,12 +1584,21 @@ begin
   Dec(Lines[0].High);
 end;
 
-procedure TScreenEditSub.DivideNote;
+procedure TScreenEditSub.DivideNote(doubleclick: boolean);
 var
   C:    integer;
   N:    integer;
+  wherecutting: integer;
+  tempR:  real;
 begin
   C := Lines[0].Current;
+
+  tempR := 720 / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
+
+  if doubleclick then
+      wherecutting := Round((currentX - button[Interactions[InteractAt(currentX, CurrentY)].Num].X) / tempR)
+  else
+      wherecutting := 1;
 
   with Lines[0].Line[C] do
   begin
@@ -1575,11 +1613,11 @@ begin
 
     // Note[Cur] and Note[Cur + 1] is identical at this point
     // modify first note
-    Note[CurrentNote].Length := Note[CurrentNote+1].Length div 2 + Note[CurrentNote+1].Length mod 2;
+    Note[CurrentNote].Length := wherecutting;
 
     // 2nd note
     Note[CurrentNote+1].Start := Note[CurrentNote].Start + Note[CurrentNote].Length;
-    Note[CurrentNote+1].Length := Note[CurrentNote + 1].Length div 2;
+    Note[CurrentNote+1].Length := Note[CurrentNote+1].Length - Note[CurrentNote].Length;
 
     Note[CurrentNote+1].Text := '~';
     Note[CurrentNote+1].Color := 1;
@@ -2141,6 +2179,7 @@ begin
     pos := (start - SongStart)/ww*w;
     br := (end_-start)/ww*w;
 
+    // todo: add transparent active button to change current line
     glbegin(gl_quads);
       glVertex2f(x+pos, y);
       glVertex2f(x+pos, y+h);
@@ -2257,7 +2296,6 @@ begin
   begin
       SetLength(InteractiveNoteId, high(InteractiveNoteId)+2);
       AddButton(0, 0, 0, 0,PATH_NONE);
-//      AddButton(0, 0, 0, 0,Skin.GetTextureFileName('ButtonF'));
       InteractiveNoteId[high(InteractiveNoteId)] := Length(Interactions)-1;
   end;
 
@@ -2844,7 +2882,7 @@ begin
   // draw static menu
   DrawBG;
   DrawStatics;
-  DrawInfoBar(20, 460, 760, 20);
+  DrawInfoBar(20, 460, 760, 15);
   //inherited Draw;
   DrawFG;
   // draw notes
