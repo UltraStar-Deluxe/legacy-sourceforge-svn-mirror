@@ -249,33 +249,6 @@ function ac_probe_input_buffer(buf: PChar; bufsize: Integer; filename: PChar;
  
 implementation
 
-{Connect the library memory management to the host application. This happens
- automatically when the application gets initialized and nobody has to care
- about it.}
-
-function ac_mem_mgr(
-  ptr_malloc: Pointer;
-  ptr_realloc: Pointer;
-  ptr_free: Pointer): PAc_instance; cdecl; external ac_dll;
-
-function malloc(size: integer): Pointer; cdecl;
-begin
-  result := GetMemory(size);
-end;
-
-function realloc(ptr: Pointer; size: integer): pointer; cdecl;
-begin
-  result := ReallocMemory(ptr, size);
-end;
-
-procedure free(ptr: Pointer); cdecl;
-begin
-  FreeMemory(ptr);
-end;
-
-initialization
-  ac_mem_mgr(@malloc, @realloc, @free);      
-
 end.
 
 

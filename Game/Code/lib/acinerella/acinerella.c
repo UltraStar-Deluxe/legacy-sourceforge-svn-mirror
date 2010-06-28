@@ -96,22 +96,6 @@ typedef struct _ac_package_data ac_package_data;
 typedef ac_package_data* lp_ac_package_data;
 
 //
-//--- Memory manager ---
-//
-
-ac_malloc_callback mgr_malloc = &malloc;
-ac_realloc_callback mgr_realloc =  &realloc;
-ac_free_callback mgr_free = &free;
-
-void CALL_CONVT ac_mem_mgr(ac_malloc_callback mc, ac_realloc_callback rc,
-  ac_free_callback fc)
-{
-  mgr_malloc = mc;
-  mgr_realloc = rc;
-  mgr_free = fc;
-}
-
-//
 //--- Initialization and Stream opening---
 //
 
@@ -132,7 +116,7 @@ void init_info(lp_ac_file_info info)
 lp_ac_instance CALL_CONVT ac_init(void) {  
   //Allocate a new instance of the videoplayer data and return it
   lp_ac_data ptmp;  
-  ptmp = (lp_ac_data)mgr_malloc(sizeof(ac_data));
+  ptmp = (lp_ac_data)av_malloc(sizeof(ac_data));
   
   //Initialize the created structure
   memset(ptmp, 0, sizeof(ac_data));
@@ -149,7 +133,7 @@ void CALL_CONVT ac_free(lp_ac_instance pacInstance) {
   ac_close(pacInstance);
   
   if (pacInstance != NULL) {
-    mgr_free((lp_ac_data)pacInstance);
+    av_free((lp_ac_data)pacInstance);
   }
 }
 
@@ -508,7 +492,7 @@ lp_ac_package CALL_CONVT ac_read_package(lp_ac_instance pacInstance) {
   AVPacket Package;  
   if (av_read_frame(((lp_ac_data)(pacInstance))->pFormatCtx, &Package) >= 0) {
     //Reserve memory
-    lp_ac_package_data pTmp = (lp_ac_package_data)(mgr_malloc(sizeof(ac_package_data)));
+    lp_ac_package_data pTmp = (lp_ac_package_data)(av_malloc(sizeof(ac_package_data)));
     
     //Set package data
     pTmp->package.stream_index = Package.stream_index;
@@ -532,7 +516,7 @@ void CALL_CONVT ac_free_package(lp_ac_package pPackage) {
       if (pkt->destruct) pkt->destruct(pkt);
       pkt->data = NULL; pkt->size = 0;
     }     
-    mgr_free((lp_ac_package_data)pPackage);
+    av_free((lp_ac_package_data)pPackage);
   }
 }
 
@@ -554,7 +538,7 @@ enum PixelFormat convert_pix_format(ac_output_format fmt) {
 void* ac_create_video_decoder(lp_ac_instance pacInstance, lp_ac_stream_info info, int nb) {
   //Allocate memory for a new decoder instance
   lp_ac_video_decoder pDecoder;  
-  pDecoder = (lp_ac_video_decoder)(mgr_malloc(sizeof(ac_video_decoder)));
+  pDecoder = (lp_ac_video_decoder)(av_malloc(sizeof(ac_video_decoder)));
   
   //Set a few properties
   pDecoder->decoder.pacInstance = pacInstance;
@@ -582,7 +566,7 @@ void* ac_create_video_decoder(lp_ac_instance pacInstance, lp_ac_stream_info info
   //Reserve buffer memory
   pDecoder->decoder.buffer_size = avpicture_get_size(convert_pix_format(pacInstance->output_format), 
     pDecoder->pCodecCtx->width, pDecoder->pCodecCtx->height);
-  pDecoder->decoder.pBuffer = (uint8_t*)mgr_malloc(pDecoder->decoder.buffer_size);
+  pDecoder->decoder.pBuffer = (uint8_t*)av_malloc(pDecoder->decoder.buffer_size);
 
   //Link decoder to buffer
   avpicture_fill(
@@ -597,7 +581,7 @@ void* ac_create_video_decoder(lp_ac_instance pacInstance, lp_ac_stream_info info
 void* ac_create_audio_decoder(lp_ac_instance pacInstance, lp_ac_stream_info info, int nb) {
   //Allocate memory for a new decoder instance
   lp_ac_audio_decoder pDecoder;
-  pDecoder = (lp_ac_audio_decoder)(mgr_malloc(sizeof(ac_audio_decoder)));
+  pDecoder = (lp_ac_audio_decoder)(av_malloc(sizeof(ac_audio_decoder)));
   
   //Set a few properties
   pDecoder->decoder.pacInstance = pacInstance;
@@ -621,7 +605,7 @@ void* ac_create_audio_decoder(lp_ac_instance pacInstance, lp_ac_stream_info info
 
   //Reserve a buffer
   pDecoder->max_buffer_size = AUDIO_BUFFER_BASE_SIZE;
-  pDecoder->decoder.pBuffer = (uint8_t*)(mgr_malloc(pDecoder->max_buffer_size));
+  pDecoder->decoder.pBuffer = av_malloc(AUDIO_BUFFER_BASE_SIZE);
   pDecoder->decoder.buffer_size = 0;
   
   return (void*)pDecoder;
@@ -717,22 +701,13 @@ int ac_decode_audio_package(lp_ac_package pPackage, lp_ac_audio_decoder pDecoder
   int dest_buffer_size = pDecoder->max_buffer_size;
   int dest_buffer_pos = 0;
   
-  //An dummy package representing the source buffer
-  AVPacket pkt_tmp;
-  pkt_tmp.data = ((lp_ac_package_data)pPackage)->ffpackage.data;
-  pkt_tmp.size = ((lp_ac_package_data)pPackage)->ffpackage.size;
-  
+  //Make a copy of the package read by avformat, so that we can move the data pointers around
+  AVPacket pkt_tmp = ((lp_ac_package_data)pPackage)->ffpackage;
+    
   //Initialize the buffer size
   pDecoder->decoder.buffer_size = 0;   
   
   while (pkt_tmp.size > 0) {  
-  
-    if (dest_buffer_size <= AUDIO_BUFFER_BASE_SIZE) {
-      pDecoder->decoder.pBuffer = mgr_realloc(pDecoder->decoder.pBuffer, pDecoder->max_buffer_size * 2);
-      dest_buffer_size += pDecoder->max_buffer_size;
-      pDecoder->max_buffer_size *= 2;
-    }
-    
     //Set the size of bytes that can be written to the current size of the destination buffer
     int size = dest_buffer_size;
     
@@ -836,10 +811,10 @@ void ac_free_video_decoder(lp_ac_video_decoder pDecoder) {
   
   
   //Free reserved memory for the buffer
-  mgr_free(pDecoder->decoder.pBuffer);  
+  av_free(pDecoder->decoder.pBuffer);
   
   //Free reserved memory for decoder record
-  mgr_free(pDecoder);
+  av_free(pDecoder);
 }
 
 //Free video decoder
@@ -848,10 +823,10 @@ void ac_free_audio_decoder(lp_ac_audio_decoder pDecoder) {
   avcodec_close(pDecoder->pCodecCtx);
   
   //Free reserved memory for the buffer
-  mgr_free(pDecoder->decoder.pBuffer);
+  av_free(pDecoder->decoder.pBuffer);
 
   //Free reserved memory for decoder record
-  mgr_free(pDecoder);
+  av_free(pDecoder);
 }
 
 void CALL_CONVT ac_free_decoder(lp_ac_decoder pDecoder) {

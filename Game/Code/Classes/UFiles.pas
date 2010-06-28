@@ -1368,10 +1368,13 @@ begin
       for note := 0 to Length(Czesci[pl].Czesc[line].Nuta) - 1 do
       begin
         if Czesci[pl].Czesc[line].Nuta[note].Start < start then      //check start
-          Czesci[pl].Czesc[line].Nuta[note].FreeStyle := true
-        else if Czesci[pl].Czesc[line].Nuta[note].Start>= end_ then  //check end
         begin
           Czesci[pl].Czesc[line].Nuta[note].FreeStyle := true;
+          Czesci[pl].Czesc[line].Nuta[note].Wartosc := 0;
+        end else if Czesci[pl].Czesc[line].Nuta[note].Start>= end_ then  //check end
+        begin
+          Czesci[pl].Czesc[line].Nuta[note].FreeStyle := true;
+          Czesci[pl].Czesc[line].Nuta[note].Wartosc := 0;
           if not foundcut[pl] then
           begin
             if (note=0) then
@@ -1396,7 +1399,8 @@ begin
     if (foundcut[pl]) and (Length(Czesci[pl].Czesc)>cut_line[pl]) then
     begin
       SetLength(Czesci[pl].Czesc, cut_line[pl]);
-      Czesci[pl].high := cut_line[pl]-1;
+      Czesci[pl].High := cut_line[pl]-1;
+      Czesci[pl].Ilosc := Czesci[pl].High+1;
     end;
   end;
 end;

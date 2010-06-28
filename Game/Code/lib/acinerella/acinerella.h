@@ -200,9 +200,6 @@ typedef void* CALL_CONVT (*ac_malloc_callback)(size_t size);
 typedef void* CALL_CONVT (*ac_realloc_callback)(void *ptr, size_t size);
 typedef void CALL_CONVT (*ac_free_callback)(void *ptr);
 
-//Memory manager function. This allows you to bind the library to your applications memory interface.
-extern void CALL_CONVT ac_mem_mgr(ac_malloc_callback, ac_realloc_callback, ac_free_callback);
-
 /*Initializes an Acinerella instance.*/
 extern lp_ac_instance CALL_CONVT ac_init(void);
 extern void CALL_CONVT ac_free(lp_ac_instance pacInstance);

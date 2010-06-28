@@ -316,7 +316,8 @@ begin
       end;
     3: // slide
       begin
-        for W := 0 to High(Word) do begin
+        for W := 0 to High(Word) do
+        begin
           if not Word[W].Selected then
             DrawNormal(W)
           else
@@ -329,12 +330,13 @@ begin
           DrawNormal(W);
 
         for W := 0 to High(Word) do
-          if Word[W].Selected then begin
+          if Word[W].Selected then
+          begin
             Tex_Ball.X := (Word[W].X - 10) + Word[W].Done * Word[W].Width;
             Tex_Ball.Y := YR -12 - 10*sin(Word[W].Done * pi);
             Tex_Ball.W := 20;
             Tex_Ball.H := 20;
-            DrawTexture(Tex_Ball);
+            DrawTexture(Tex_Ball, Alpha);
           end;
       end;
   end; // case

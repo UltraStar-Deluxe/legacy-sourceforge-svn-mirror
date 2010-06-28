@@ -2452,7 +2452,7 @@ begin
     try
       acGetFrame(Czas.Teraz);
 
-      Blend := (CoverTime-1.75)/Ini.PreviewFading;
+      Blend := (CoverTime-1.75)/2;
       if Blend<0 then
         Blend := 0
       else if Blend>1 then
@@ -2855,7 +2855,7 @@ end;
 procedure TScreenSong.ChangeMusic;
 begin
   //When Music Preview is avtivated -> then Change Music
-  if (Ini.PreviewVolume <> 0) then
+  if (Ini.PreviewVolume >= 0) then
   begin
     if (NOT CatSongs.Song[Interaction].Main) AND(CatSongs.VisibleSongs > 0) then
     begin
@@ -2929,7 +2929,7 @@ end;
 
 procedure TScreenSong.StartVideoPreview;
 begin
-  if (Ini.PreviewVolume <> 0) and (Ini.MovieSize < 3) then
+  if (Ini.PreviewVolume >= 0) and (Ini.MovieSize < 3) then
   begin
     if (NOT CatSongs.Song[Interaction].Main) AND (CatSongs.VisibleSongs > 0) then
     begin

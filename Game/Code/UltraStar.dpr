@@ -119,7 +119,7 @@ uses
   UVideo in 'Classes\UVideo.pas';
 
 const
-  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9 beta 2';
+  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9 beta 4';
 
 var
   WndTitle: string;
@@ -311,6 +311,9 @@ begin
 
   Log.BenchmarkEnd(0);
   Log.LogBenchmark('Loading Time', 0);
+
+  //Create/Save Ini
+  Ini.Save;
 
   //------------------------------
   //Start- Mainloop

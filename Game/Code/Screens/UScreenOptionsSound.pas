@@ -40,6 +40,7 @@ begin
         begin
           Ini.Save;
           Music.PlayBack;
+          ScreenSong.MP3Volume := Ini.PreviewVolume * 10;
           FadeTo(@ScreenOptions);
         end;
       SDLK_RETURN:
@@ -47,6 +48,7 @@ begin
           if SelInteraction = 6 then begin
             Ini.Save;
             Music.PlayBack;
+            ScreenSong.MP3Volume := Ini.PreviewVolume * 10;
             FadeTo(@ScreenOptions);
           end;
         end;

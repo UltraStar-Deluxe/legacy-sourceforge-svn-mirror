@@ -15,8 +15,8 @@ type
     protected
       paused: boolean; //Pause Mod
       PauseTime: Real;
-      NumEmptySentences: array [0..1] of integer;
     public
+      NumEmptySentences: array [0..1] of integer;
       //TextTime:           integer;
       MP3Volume:        integer;
       MP3VolumeHandler: THandler;
@@ -212,6 +212,12 @@ begin
       SDLK_P://Pause Mod
         begin
           Pause;
+        end;
+
+      SDLK_S:
+        begin
+          Ini.PossibleScore := (Ini.PossibleScore+1) mod 2;
+          Ini.Save;
         end;
         
       SDLK_RETURN:
@@ -1766,8 +1772,9 @@ begin
           Player[I].LineBonus_Text := Theme.Sing.LineBonusText[Floor(A)];
 
         //PhrasenBonus give Points
-        Player[I].ScoreLine := Player[I].ScoreLine +
-          (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8);
+        if (Length(Czesci[CP].Czesc) - NumEmptySentences[CP])>0 then
+          Player[I].ScoreLine := Player[I].ScoreLine +
+            (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8);
 
         Player[I].ScoreLineI := Round(Player[I].ScoreLine / 10) * 10;
         //Update Total Score

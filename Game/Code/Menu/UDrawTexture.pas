@@ -5,7 +5,9 @@ uses UTexture;
 
 procedure DrawLine(X1, Y1, X2, Y2, ColR, ColG, ColB: real);
 procedure DrawQuad(X, Y, W, H, ColR, ColG, ColB: real);
-procedure DrawTexture(Texture: TTexture);
+procedure DrawTexture(Texture: TTexture; Alph: real) overload;
+procedure DrawTexture(Texture: TTexture) overload;
+
 
 implementation
 uses gl;
@@ -30,16 +32,17 @@ begin
   glEnd;
 end;
 
-procedure DrawTexture(Texture: TTexture);
+procedure DrawTexture(Texture: TTexture; Alph: real);
 var
   x1, x2, x3, x4:       real;
   y1, y2, y3, y4:       real;
   xt1, xt2, xt3, xt4:   real;
   yt1, yt2, yt3, yt4:   real;
 begin
-  with Texture do begin
+  with Texture do
+  begin
     // rysuje paski gracza
-    glColor4f(ColR * Int, ColG * Int, ColB * Int, Alpha);
+    glColor4f(ColR * Int, ColG * Int, ColB * Int, Alpha*Alph);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glDepthRange(0, 10);
@@ -94,8 +97,13 @@ begin
       glTexCoord2f(TexX2*TexW, TexY1*TexH); glVertex3f(x4, y4, z);
     glEnd;
   end;
-  glDisable(GL_DEPTH_TEST); 
+  glDisable(GL_DEPTH_TEST);
   glDisable(GL_TEXTURE_2D);
+end;
+
+procedure DrawTexture(Texture: TTexture);
+begin
+  DrawTexture(Texture, 1);
 end;
 
 end.

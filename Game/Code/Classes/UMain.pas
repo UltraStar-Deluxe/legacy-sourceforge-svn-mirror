@@ -26,6 +26,8 @@ type
     ScorePercentTarget:  integer;//Target Fillstate of the SingBar
     //end Singbar Mod
 
+    ScoreMax:     integer; //max possible score (actual)
+
     //PhrasenBonus - Line Bonus Mod
     LineBonus_PosX:     Single;
     LineBonus_PosY:     Single;
@@ -112,7 +114,7 @@ function GetTimeFromBeat(Beat: integer): real;
 procedure ClearScores(PlayerNum: integer);
 
 implementation
-uses USongs, math, UCommandLine, UVideo;
+uses USongs, Math, UCommandLine, UVideo;
 
 procedure MainLoop;
 var
@@ -548,6 +550,9 @@ procedure NewNote(P: integer; Sender: TScreenSing);
 var
   CP:     integer; // current player
   S:      integer; // sentence
+  N:      integer;
+  SumN:   real;
+  NumS:   integer;
   SMin:   integer;
   SMax:   integer;
   SDet:   integer; // temporary: sentence of detected note
@@ -698,6 +703,39 @@ begin
           end;// else beep; // if S = SMax
         end; //for
       end; // if moze
+
+      //calc score last
+      SumN := 0;
+      NumS := 0;
+      for S := Czesci[P].Akt to Czesci[P].High do
+      begin
+        for N := 0 to Czesci[P].Czesc[S].HighNut do
+        begin
+          if (Czesci[P].Czesc[S].Nuta[N].Start+Czesci[P].Czesc[S].Nuta[N].Dlugosc
+            >= Czas.AktBeatD) then
+          begin
+            if (Ini.LineBonus = 0) then
+              // add points without LineBonus
+              SumN := SumN + 10000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
+                Czesci[P].Czesc[S].Nuta[N].Dlugosc
+            else
+              // add points with Line Bonus
+              SumN := SumN + 9000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
+                Czesci[P].Czesc[S].Nuta[N].Dlugosc;
+          end;
+        end;
+
+        if (Czesci[P].Czesc[S].TotalNotes>0) and
+          (Czesci[P].Czesc[S].Koniec > Czas.AktBeatD) then
+          Inc(NumS);
+      end;
+
+      N := (Czesci[P].Ilosc - ScreenSing.NumEmptySentences[P]);
+      if (N>0) and (Ini.LineBonus > 0) then
+        Player[CP].ScoreMax := Floor((SumN + NumS*1000 / N)/10)*10;
+
+      Player[CP].ScoreMax := Player[CP].ScoreTotalI + Player[CP].ScoreMax;
+
     end else
     begin     //############################ DUET #####################
       if (CP mod 2 = P) then
@@ -838,8 +876,41 @@ begin
           end;// else beep; // if S = SMax
         end; //for
       end; // if moze
+
+      //calc score last
+      SumN := 0;
+      NumS := 0;
+      for S := Czesci[P].Akt to Czesci[P].High do
+      begin
+        for N := 0 to Czesci[P].Czesc[S].HighNut do
+        begin
+          if (Czesci[P].Czesc[S].Nuta[N].Start+Czesci[P].Czesc[S].Nuta[N].Dlugosc
+            >=Czas.AktBeat) then
+          begin
+            if (Ini.LineBonus = 0) then
+              // add points without LineBonus
+              SumN := SumN + 10000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
+                Czesci[P].Czesc[S].Nuta[N].Dlugosc
+            else
+              // add points with Line Bonus
+              SumN := SumN + 9000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
+                Czesci[P].Czesc[S].Nuta[N].Dlugosc;
+          end;
+        end;
+
+        if (Czesci[P].Czesc[S].TotalNotes>0) and
+          (Czesci[P].Czesc[S].Koniec > Czas.AktBeatD) then
+          Inc(NumS);
+      end;
+
+      N := (Czesci[P].Ilosc - ScreenSing.NumEmptySentences[P]);
+      if (N>0) and (Ini.LineBonus > 0) then
+        Player[CP].ScoreMax := Floor((SumN + NumS*1000 / N)/10)*10;
+
+      Player[CP].ScoreMax := Player[CP].ScoreTotalI + Player[CP].ScoreMax;
       end; //if mod 2
     end;
+
   end; // for CP
 
   //On Sentence End -> For LineBonus + SingBar
@@ -870,6 +941,8 @@ begin
   Player[PlayerNum].ScorePercent := 50;// Sets to 50% when song starts
   Player[PlayerNum].ScorePercentTarget := 50;// Sets to 50% when song starts
   //end SingBar Mod
+
+  Player[PlayerNum].ScoreMax := 9990;
 
   //PhrasenBonus - Line Bonus Mod
   Player[PlayerNum].LineBonus_Visible := False; //Hide Line Bonus
