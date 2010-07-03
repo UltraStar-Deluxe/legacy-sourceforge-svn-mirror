@@ -820,7 +820,7 @@ begin
              ArtistEditMode := true;
            end;
 
-           if Interaction = 4 then //LyricSlideId
+           if Interaction = 12 then //LyricSlideId
            begin
              BackupEditText := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Text;
              CurrentEditText := BackupEditText;
