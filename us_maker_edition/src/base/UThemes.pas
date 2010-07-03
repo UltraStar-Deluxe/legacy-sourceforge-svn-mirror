@@ -508,6 +508,8 @@ type
   TThemeEditSub = class(TThemeBasic)
       //in editor - headers
       BackgroundImage:     TThemeStatic;
+      ButtonCurrentLine:   TThemeButton;
+      ButtonCurrentNote:   TThemeButton;
       SlideTitle:          TThemeSelectSlide;
       SlideArtist:         TThemeSelectSlide;
       SlideMP3:            TThemeSelectSlide;
@@ -1407,6 +1409,9 @@ begin
       // editor
       ThemeLoadBasic (EditSub,               'EditSub');
       ThemeLoadStatic(EditSub.BackgroundImage, 'EditSubBackgroundImage');
+      // current position in editor
+      ThemeLoadButton(EditSub.ButtonCurrentLine, 'EditSubButtonCurrentLine');
+      ThemeLoadButton(EditSub.ButtonCurrentNote, 'EditSubButtonCurrentNote');
       ThemeLoadSelectSlide(EditSub.SlideTitle, 'EditSubTitle');
       ThemeLoadSelectSlide(EditSub.SlideArtist, 'EditSubArtist');
       ThemeLoadSelectSlide(EditSub.SlideMP3, 'EditSubMP3');

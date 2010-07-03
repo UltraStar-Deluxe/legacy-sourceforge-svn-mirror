@@ -36,6 +36,8 @@ interface
 uses
   SysUtils,
   SDL;
+var
+  CheckMouseButton: boolean; // for checking mouse motion
 
 procedure Main;
 procedure MainLoop;
@@ -425,16 +427,12 @@ begin
         if (Ini.Mouse > 0) then
         begin
           case Event.type_ of
-            SDL_MOUSEMOTION:
-            begin
-              mouseDown := false;
-              mouseBtn  := 0;
-            end;
+
             SDL_MOUSEBUTTONDOWN:
             begin
               mouseDown := true;
               mouseBtn  := Event.button.button;
-              
+              CheckMouseButton := true;
               if (mouseBtn = SDL_BUTTON_LEFT) or (mouseBtn = SDL_BUTTON_RIGHT) then
                 Display.OnMouseButton(true);
             end;
@@ -442,9 +440,17 @@ begin
             begin
               mouseDown := false;
               mouseBtn  := Event.button.button;
-
+              CheckMouseButton := false;
               if (mouseBtn = SDL_BUTTON_LEFT) or (mouseBtn = SDL_BUTTON_RIGHT) then
                 Display.OnMouseButton(false);
+            end;
+            SDL_MOUSEMOTION:
+            begin
+              if (CheckMouseButton) then
+                mouseDown := true
+              else
+                mouseDown := false;
+              mouseBtn  := 0;
             end;
           end;
 
