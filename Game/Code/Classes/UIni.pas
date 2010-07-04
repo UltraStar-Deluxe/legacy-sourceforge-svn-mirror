@@ -83,6 +83,7 @@ type
     SumPlayers:     integer;
     DuelRatio:      integer;
     PossibleScore:  integer;
+    LogSession:     integer;
 
     // Soundcards
     SoundCard:      array[0..7, 1..2] of integer;
@@ -170,14 +171,15 @@ const
   // Advanced
   ILoadAnimation: array[0..1] of string = ('Off', 'On');
   IEffectSing:    array[0..1] of string = ('Off', 'On');
-  IScreenFade:    array[0..1] of String =('Off', 'On');
+  IScreenFade:    array[0..1] of String = ('Off', 'On');
   IAskbeforeDel:  array[0..1] of string = ('Off', 'On');
   IOnSongClick:   array[0..2] of string = ('Sing', 'Select Players', 'Open Menu');
   ILineBonus:     array[0..2] of string = ('Off', 'At Score', 'At Notes');
   IPartyPopup:    array[0..1] of string = ('Off', 'On');
   ISumPlayers:    array[0..2] of string = ('Never', 'Dynamic', 'Always');
   IDuelRatio:     array[0..9] of string = ('normal', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%');
-  IPossibleScore: array[0..1] of string = ('Off', 'On');
+  IPossibleScore: array[0..2] of string = ('Off', 'Bar', 'Numbers');
+  ILogSession:    array[0..1] of string = ('Off', 'On');
 
   IChannel:       array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
 
@@ -607,9 +609,14 @@ begin
     if Tekst = IDuelRatio[Pet] then Ini.DuelRatio := Pet;
 
   // PossibleScore
-  Tekst := IniFile.ReadString('Advanced', 'PossibleScore', IPossibleScore[0]);
+  Tekst := IniFile.ReadString('Advanced', 'PossibleScore', IPossibleScore[1]);
   for Pet := 0 to High(IPossibleScore) do
     if Tekst = IPossibleScore[Pet] then Ini.PossibleScore := Pet;
+
+  // LogSession
+  Tekst := IniFile.ReadString('Advanced', 'LogSession', ILogSession[0]);
+  for Pet := 0 to High(ILogSession) do
+    if Tekst = ILogSession[Pet] then Ini.LogSession := Pet;
 
   // SongPath
   if (Params.SongPath <> '') then
@@ -841,6 +848,10 @@ begin
     //PossibleScore
     Tekst := IPossibleScore[Ini.PossibleScore];
     IniFile.WriteString('Advanced', 'PossibleScore', Tekst);
+
+    //LogSession
+    Tekst := ILogSession[Ini.LogSession];
+    IniFile.WriteString('Advanced', 'LogSession', Tekst);
 
     IniFile.Free;
   end;

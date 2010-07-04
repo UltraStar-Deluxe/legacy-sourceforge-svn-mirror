@@ -553,6 +553,7 @@ var
   N:      integer;
   SumN:   real;
   NumS:   integer;
+  tap:    integer;
   SMin:   integer;
   SMax:   integer;
   SDet:   integer; // temporary: sentence of detected note
@@ -562,7 +563,6 @@ var
   Range:  integer;
   NoteHit:boolean;
 begin
-
   for CP := 0 to PlayersPlay-1 do
   begin
     if (not AktSong.isDuet) then
@@ -711,17 +711,18 @@ begin
       begin
         for N := 0 to Czesci[P].Czesc[S].HighNut do
         begin
-          if (Czesci[P].Czesc[S].Nuta[N].Start+Czesci[P].Czesc[S].Nuta[N].Dlugosc
-            >= Czas.AktBeatD) then
+          if (Czesci[P].Czesc[S].Nuta[N].Start > Czas.AktBeatD) then
           begin
+            tap := Czesci[P].Czesc[S].Nuta[N].Dlugosc;
+            if (Czesci[P].Czesc[S].Nuta[N].Start + tap < Czas.AktBeatD) then
+              tap := Czas.AktBeatD - Czesci[P].Czesc[S].Nuta[N].Start - tap;
+
             if (Ini.LineBonus = 0) then
               // add points without LineBonus
-              SumN := SumN + 10000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
-                Czesci[P].Czesc[S].Nuta[N].Dlugosc
+              SumN := SumN + 10000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc * tap
             else
               // add points with Line Bonus
-              SumN := SumN + 9000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
-                Czesci[P].Czesc[S].Nuta[N].Dlugosc;
+              SumN := SumN + 9000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc * tap;
           end;
         end;
 
@@ -884,17 +885,18 @@ begin
       begin
         for N := 0 to Czesci[P].Czesc[S].HighNut do
         begin
-          if (Czesci[P].Czesc[S].Nuta[N].Start+Czesci[P].Czesc[S].Nuta[N].Dlugosc
-            >=Czas.AktBeat) then
+          if (Czesci[P].Czesc[S].Nuta[N].Start > Czas.AktBeatD) then
           begin
+            tap := Czesci[P].Czesc[S].Nuta[N].Dlugosc;
+            if (Czesci[P].Czesc[S].Nuta[N].Start + tap < Czas.AktBeatD) then
+              tap := Czas.AktBeatD - Czesci[P].Czesc[S].Nuta[N].Start - tap;
+
             if (Ini.LineBonus = 0) then
               // add points without LineBonus
-              SumN := SumN + 10000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
-                Czesci[P].Czesc[S].Nuta[N].Dlugosc
+              SumN := SumN + 10000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc * tap
             else
               // add points with Line Bonus
-              SumN := SumN + 9000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc *
-                Czesci[P].Czesc[S].Nuta[N].Dlugosc;
+              SumN := SumN + 9000 / Czesci[P].Wartosc * Czesci[P].Czesc[S].Nuta[N].Wartosc * tap;
           end;
         end;
 

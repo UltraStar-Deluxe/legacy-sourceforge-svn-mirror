@@ -83,6 +83,7 @@ begin
           begin
             PlaylistMedley.CurrentMedleySong:=PlaylistMedley.NumMedleySongs+1;
             Finish;
+            FadeOut := true;
             Music.PlayBack;
 
             for I := 0 to PlayersPlay-1 do    //TODO: leave all this?
@@ -106,6 +107,7 @@ begin
           end else
           begin
             Finish;
+            FadeOut := true;
             Music.PlayBack;
 
             if (ScreenSong.Mode=smParty) then
@@ -624,21 +626,28 @@ end;
     end;
   end;
 
-  for I := 0 to Length(Czesci) - 1 do
+ for I := 0 to Length(Czesci) - 1 do
   begin
+    //init K ...
     K := Czesci[I].Akt;
+
+    //find actual line
     for J := 0 to Czesci[I].High do
     begin
       if Czas.AktBeat >= Czesci[I].Czesc[J].Start then
         K := J;
     end;
+
+    //time diff
     ab := GetTimeFromBeat(Czesci[I].Czesc[K].StartNote) - Czas.Teraz;
 
+    //last line
     if (K = Czesci[I].High) then
       ab := Czas.Teraz - GetTimeFromBeat(Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Start+
         Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Dlugosc);
 
-    if (ab>2*dt) then
+    //lyric main and other nice things
+    if (ab>2.5*dt) or ((K = Czesci[I].High) and (ab>dt)) then
     begin
       Alpha[I] := Alpha[I]-TimeSkip/dt;
       if (Alpha[I]<0) then
@@ -651,6 +660,7 @@ end;
     end else
       Alpha[I] := 1;
 
+    //lyric sub
     if (K < Czesci[I].High) then
     begin
       ab := GetTimeFromBeat(Czesci[I].Czesc[K+1].StartNote) - Czas.Teraz;
@@ -663,6 +673,7 @@ end;
         Alpha[I+2] := 1;
     end;
   end;
+
 
   if not AktSong.isDuet then
   begin

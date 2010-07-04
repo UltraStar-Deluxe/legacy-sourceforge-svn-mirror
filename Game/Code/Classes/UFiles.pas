@@ -41,6 +41,7 @@ var
   PluginPath:       string;
   PlayListPath:     string;
   RecordingsPath:   string;
+  SessionLogPath:   string;
 
   SongFile: TextFile;   // all procedures in this unit operates on this file
   FileLineNo: integer;  //Line which is readed at Last, for error reporting
@@ -74,6 +75,7 @@ begin
   PluginPath := GamePath + 'Plugins\';
   PlaylistPath := GamePath + 'Playlists\';
   RecordingsPath := GamePath + 'Recordings\';
+  SessionLogPath := GamePath + 'SessionLog\';
 
   Writeable := true;
 
@@ -104,6 +106,9 @@ begin
 
   If Writeable And (not DirectoryExists(RecordingsPath)) then
     Writeable := ForceDirectories(RecordingsPath);
+
+  If Writeable And (not DirectoryExists(SessionLogPath)) then
+    Writeable := ForceDirectories(SessionLogPath);
 
   if not Writeable then
     Log.LogError('Error: Dir is Readonly');

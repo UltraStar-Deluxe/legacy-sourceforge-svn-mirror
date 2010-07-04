@@ -14,7 +14,11 @@ type
     FileError:        TextFile;
     FileErrorO:       boolean; // opened
 
+    FileSession:      TextFile;
+    FileSessionO:     boolean; // opened
+
     NumErrors:        integer;
+    NumSungSongs:     integer;
 
     Title: String; //Application Title
 
@@ -38,6 +42,8 @@ type
     // voice
     function LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string): string;
 
+    procedure LogSession(names: array of string; points: array of string; Artist, Title, singmode: string);
+
     // compability
     procedure LogStatus(Log1, Log2: string);
     procedure LogError(Log1, Log2: string); overload;
@@ -54,6 +60,8 @@ begin
   if FileBenchmarkO then CloseFile(FileBenchmark);
 //  if FileAnalyzeO then CloseFile(FileAnalyze);
   if FileErrorO then CloseFile(FileError);
+  if FileSessionO then CloseFile(FileSession);
+
 end;
 
 procedure TLog.BenchmarkStart(Number: integer);
@@ -279,6 +287,65 @@ begin
 
   FS.Free;
   LogVoice := FileName;
+end;
+
+procedure TLog.LogSession(names: array of string; points: array of string; Artist, Title, singmode: string);
+var
+  Num:      integer;
+  FileName: string;
+  I:        integer;
+
+begin
+  if not FileSessionO then
+  begin
+    FileSessionO := false;
+    NumSungSongs := 0;
+
+    for Num := 1 to 99999 do
+    begin
+      FileName := IntToStr(Num);
+      while Length(FileName) < 5 do FileName := '0' + FileName;
+      FileName := SessionLogPath + 'Session_' + FileName + '.log';
+      if not FileExists(FileName) then break
+    end;
+
+    AssignFile(FileSession, FileName);
+    {$I-}
+    Rewrite(FileSession);
+    if IOResult = 0 then FileSessionO := true;
+    {$I+}
+
+    //If File is opened write Date to File
+    If (FileSessionO) then
+    begin
+      WriteLn(FileSession, 'Session Log');
+      WriteLn(FileSession, 'Date: ' + DatetoStr(Now) + ' Time: ' + TimetoStr(Now));
+
+      Flush(FileSession);
+    end;
+  end;
+
+  if FileSessionO then
+  begin
+    try
+      Inc(NumSungSongs);
+      WriteLn(FileSession, '');
+      WriteLn(FileSession, '');
+      WriteLn(FileSession, '#----------------------------------------------------------------');
+      WriteLn(FileSession, '# ' + IntToStr(NumSungSongs) + ') ' + 'Date: ' + DatetoStr(Now) + ' Time: ' + TimetoStr(Now));
+      WriteLn(FileSession, '# Sing mode: ' + singmode);
+      WriteLn(FileSession, '#----------------------------------------------------------------');
+      WriteLn(FileSession, '# Song: ' + Artist + ' - ' + Title + ':');
+      for I := 0 to Length(names) - 1 do
+      begin
+        WriteLn(FileSession, '# ' + names[I] + ' - ' + points[I]);
+      end;
+      WriteLn(FileSession, '#-----------------------------------------------------------------');
+      Flush(FileSession);
+    except
+      FileSessionO := false;
+    end;
+  end;
 end;
 
 procedure TLog.LogStatus(Log1, Log2: string);

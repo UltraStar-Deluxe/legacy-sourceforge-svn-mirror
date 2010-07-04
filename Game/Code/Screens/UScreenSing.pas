@@ -216,7 +216,7 @@ begin
 
       SDLK_S:
         begin
-          Ini.PossibleScore := (Ini.PossibleScore+1) mod 2;
+          Ini.PossibleScore := (Ini.PossibleScore+1) mod 3;
           Ini.Save;
         end;
         
@@ -1040,9 +1040,6 @@ begin
 end;
 
 procedure TScreenSing.onShowFinish;
-var
-  I:  integer;
-
 begin
   // play movie (II)
   if AktSong.VideoLoaded then
@@ -1414,20 +1411,26 @@ begin
 
   for I := 0 to Length(Czesci) - 1 do
   begin
+    //init K ...
     K := Czesci[I].Akt;
+
+    //find actual line
     for J := 0 to Czesci[I].High do
     begin
       if Czas.AktBeat >= Czesci[I].Czesc[J].Start then
         K := J;
     end;
 
+    //time diff
     ab := GetTimeFromBeat(Czesci[I].Czesc[K].StartNote) - Czas.Teraz;
 
+    //last line
     if (K = Czesci[I].High) then
       ab := Czas.Teraz - GetTimeFromBeat(Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Start+
         Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Dlugosc);
 
-    if (ab>2*dt) then
+    //lyric main and other nice things
+    if (ab>2.5*dt) or ((K = Czesci[I].High) and (ab>dt)) then
     begin
       Alpha[I] := Alpha[I]-TimeSkip/dt;
       if (Alpha[I]<0) then
@@ -1440,6 +1443,7 @@ begin
     end else
       Alpha[I] := 1;
 
+    //lyric sub
     if (K < Czesci[I].High) then
     begin
       ab := GetTimeFromBeat(Czesci[I].Czesc[K+1].StartNote) - Czas.Teraz;
@@ -1579,12 +1583,16 @@ var
   I, J:     integer;
   len, num: integer;
   points:   string;
+  scores:   array of string;
+  names:    array of string;
+  singmode: string;
 
 begin
   Music.CaptureStop;
   Music.Stop;
 
-  if Ini.SavePlayback = 1 then begin
+  if (Ini.SavePlayback = 1) and not FadeOut then
+  begin
     Log.BenchmarkStart(0);
 
     for I := 0 to PlayersPlay - 1 do
@@ -1600,7 +1608,46 @@ begin
     Log.LogBenchmark('Creating files', 0);
   end;
 
-  if AktSong.VideoLoaded then begin
+  if (Ini.LogSession=1) and not FadeOut then
+  begin
+    SetLength(scores, PlayersPlay);
+    SetLength(names, PlayersPlay);
+    for I := 0 to PlayersPlay - 1 do
+    begin
+      points := IntToStr(Player[I].ScoreTotalI);
+      while Length(points) < 5 do
+        points := '0'+points;
+
+      scores[I] := points;
+      names[I] := Ini.Name[I];
+    end;
+
+    if (ScreenSong.Mode = smParty) then
+      singmode := PartySession.Plugins[PartySession.Rounds[PartySession.CurRound].PluginNr].Name
+    else if (ScreenSong.Mode = smChallenge) then
+      singmode := PartySessionM2.Plugins[PartySessionM2.Rounds[PartySessionM2.CurRound].PluginNr].Name;
+
+    if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
+    begin
+      if (ScreenSong.Mode = smMedley) then
+        singmode := 'Medley';
+
+      if (PlaylistMedley.CurrentMedleySong<=PlaylistMedley.NumMedleySongs) then
+        singmode := singmode + ' (' + IntToStr(PlaylistMedley.CurrentMedleySong) +
+          '/' + IntToStr(PlaylistMedley.NumMedleySongs) + ')'
+      else
+        singmode := singmode + ' (' + IntToStr(PlaylistMedley.NumMedleySongs) +
+          '/' + IntToStr(PlaylistMedley.NumMedleySongs) + ')';
+          
+    end else if(ScreenSong.Mode = smNormal) then
+    begin
+      singmode := 'Normal';
+    end;
+    Log.LogSession(names, scores, AktSong.Artist, AktSong.Title, singmode);
+  end;
+
+  if AktSong.VideoLoaded then
+  begin
     acClose;
     AktSong.VideoLoaded := false; // to prevent drawing closed video
   end;

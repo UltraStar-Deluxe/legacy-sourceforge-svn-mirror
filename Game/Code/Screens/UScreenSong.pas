@@ -1118,7 +1118,7 @@ begin
               ChangeSorting(Ini.Tabs=1, Ini.Sorting+1)
             else
               ChangeSorting(Ini.Tabs=1, 0);
-          end else
+          end else if (SDL_ModState = KMOD_LCTRL) then
           begin
             //Change Tabs (on/off)
             if (Ini.Tabs=1) then
@@ -1413,7 +1413,6 @@ begin
     else
       Interaction := I - 1;
 
-    //Show Cat in Top Left Mod
     HideCatTL;
 
     //Show Wrong Song when Tabs on Fix
@@ -1444,6 +1443,9 @@ begin
     SongCurrent := SongTarget;
     ChangeMusic;
   end;
+
+  if (Ini.Tabs=0) then
+    HideCatTL;
 
   Ini.Save;
 
