@@ -1069,7 +1069,7 @@ begin
           end;
 
           // decrease tone
-          if SDL_ModState = KMOD_LCTRL then
+          if SDL_ModState = KMOD_LSHIFT then
           begin
             CopyToUndo;
             TransposeNote(-1);
@@ -1106,7 +1106,7 @@ begin
           end;
 
           // increase tone
-          if SDL_ModState = KMOD_LCTRL then
+          if SDL_ModState = KMOD_LSHIFT then
           begin
             CopyToUndo;
             TransposeNote(1);
