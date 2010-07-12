@@ -841,6 +841,8 @@ begin
                 ShowInteractiveBackground;
                 currentnote := 0;
                 Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
+                Lyric.AddLine(Lines[0].Current);
+                Lyric.Selected := CurrentNote;
               end;
 
            end;
@@ -1298,10 +1300,11 @@ begin
         LastX := CurrentX;
         LastY := CurrentY;
       end;
-     // move notes by mouse move
+     // move notes by mouse move (left-right)
      tempR := 720 / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
      if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_RIGHT) then
      begin
+        // left & right
         if (Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr)) or  (Floor((CurrentX-40)/tempr) < Floor((LastX-40)/tempr)) then
         begin
           CopyToUndo;
@@ -1310,6 +1313,16 @@ begin
           GoldenRec.KillAll;
           ShowInteractiveBackground;
         end;
+        // up & down
+        if (CurrentY - LastY < -6) or (CurrentY - LastY > 6) then
+        begin
+            CopyToUndo;
+            TransposeNote(-1* floor((CurrentY-LastY) div (6)));
+            LastY := CurrentY;
+            GoldenRec.KillAll;
+            ShowInteractiveBackground;
+        end;
+
      end;
      //move one note by mouse move
      if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_LEFT) then
@@ -1317,7 +1330,7 @@ begin
         if (Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr)) or  (Floor((CurrentX-40)/tempr) < Floor((LastX-40)/tempr)) then
         begin
           CopyToUndo;
-          // move
+          // move left & right
           if Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr) then
             begin
               Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
@@ -1340,7 +1353,15 @@ begin
           GoldenRec.KillAll;
           ShowInteractiveBackground;
         end;
-
+        // up & down
+        if (CurrentY - LastY < -6) or (CurrentY - LastY > 6) then
+        begin
+            CopyToUndo;
+            TransposeNote(-1* floor((CurrentY-LastY) div (6)));
+            LastY := CurrentY;
+            GoldenRec.KillAll;
+            ShowInteractiveBackground;
+        end;
      end;
 
   end;
@@ -3036,10 +3057,12 @@ begin
   //inherited Draw;
   DrawFG;
   // draw notes
+  // horizontal lines
   SingDrawNoteLines(20, 305, 780, 15);
   //Error Drawing when no Song is loaded
   if not Error then
   begin
+    // vertical lines
     SingDrawBeatDelimeters(40, 305, 760, 0);
     EditDrawLine(40, 410, 760, 0, 15);
     DrawText(40, 410, 760, 0, 15);
