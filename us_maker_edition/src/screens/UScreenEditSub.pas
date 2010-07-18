@@ -203,10 +203,14 @@ type
       // player static picture
       playerIconId:     array[1..2] of integer;
       //  currentX, CurrentY
-      CurrentX:   integer;
-      CurrentY:   integer;
-      LastX:   integer;
-      LastY:   integer;
+      CurrentX:           integer;
+      CurrentY:           integer;
+      LastX:              integer;
+      LastY:              integer;
+      resize_note_left:   boolean;
+      resize_note_right:  boolean;
+      move_note:          boolean;
+
 
       Lyric:            TEditorLyrics;
 
@@ -452,6 +456,7 @@ begin
               PasteText
             else
               Log.LogStatus('PasteText: invalid range', 'TScreenEditSub.ParseInput');
+            Lyric.AddLine(Lines[0].Current);
           end;
 
           if SDL_ModState = KMOD_LCTRL + KMOD_LSHIFT then
@@ -910,7 +915,7 @@ begin
             AudioPlayback.Stop;
             PlaySentence := false;
             PlayOne := false;
-            PlayVideo := false;            
+            PlayVideo := false;
             {$IFDEF UseMIDIPort}
             MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
             MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
@@ -1281,12 +1286,35 @@ begin
   if (BtnDown) then
   begin
 
-      if (MouseButton = SDL_BUTTON_RIGHT) then
+      if (MouseButton = SDL_BUTTON_RIGHT) or (MouseButton = SDL_BUTTON_LEFT) then
       begin
         LastPressedMouseType := MouseButton;
         LastX := CurrentX;
         LastY := CurrentY;
+
+        move_note := true;
+        resize_note_left := false;
+        resize_note_right := false;
+        // check current mouse position to resize note - 20% of left or right note to resize
+        if (Interactions[nBut].Typ = iButton) then
+        if CurrentX < Button[Interactions[nBut].Num].X + Button[Interactions[nBut].Num].W*0.2 then
+        begin
+          // selected left side note - 20%
+          resize_note_left := true;
+          resize_note_right := false;
+          move_note := false;
+        end;
+        if (Interactions[nBut].Typ = iButton) then
+        if CurrentX > Button[Interactions[nBut].Num].X + Button[Interactions[nBut].Num].W - Button[Interactions[nBut].Num].W*0.2 then
+        begin
+          // selected right side note - 20%
+          resize_note_left := false;
+          resize_note_right := true;
+          move_note := false;
+        end;
+
       end;
+
       if (MouseButton = SDL_BUTTON_LEFT) then
       begin
         //click button or SelectS
@@ -1296,9 +1324,6 @@ begin
           end
           else
             Action := maReturn;
-        LastPressedMouseType := MouseButton;
-        LastX := CurrentX;
-        LastY := CurrentY;
       end;
      // move notes by mouse move (left-right)
      tempR := 720 / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
@@ -1308,7 +1333,22 @@ begin
         if (Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr)) or  (Floor((CurrentX-40)/tempr) < Floor((LastX-40)/tempr)) then
         begin
           CopyToUndo;
-          MoveAllToEnd(floor((CurrentX-40)/(720 / (Lines[0].Line[Lines[0].Current].End_ + floor((CurrentX-40)/tempr - Floor((LastX-40)/tempr)) - Lines[0].Line[Lines[0].Current].Note[0].Start)) - Floor((LastX-40)/tempr)));
+          i := floor((currentx-40) / floor(tempr)) - floor((lastx-40) / floor(tempr));
+          if move_note then
+            MoveAllToEnd(i);
+          if (resize_note_right) and (Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length + i > 0) then
+          begin
+            MoveAllToEnd(i);
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start - i;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length + i;
+          end;
+          if (resize_note_left) and (Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length - i > 0) then
+          begin
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start + i;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length - i;
+            if CurrentNote = 0 then
+              Lines[0].Line[Lines[0].Current].Start := Lines[0].Line[Lines[0].Current].Start - i;
+          end;
           LastX := CurrentX;
           GoldenRec.KillAll;
           ShowInteractiveBackground;
@@ -1327,28 +1367,34 @@ begin
      //move one note by mouse move
      if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_LEFT) then
      begin
-        if (Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr)) or  (Floor((CurrentX-40)/tempr) < Floor((LastX-40)/tempr)) then
+        if (Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr)) or (Floor((CurrentX-40)/tempr) < Floor((LastX-40)/tempr)) then
         begin
           CopyToUndo;
           // move left & right
-          if Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr) then
-            begin
-              Inc(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+          i := floor((currentx-40) / floor(tempr)) - floor((lastx-40) / floor(tempr));
+          if move_note then
+          begin
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +i;
               if CurrentNote = 0 then
-              begin
-                Inc(Lines[0].Line[Lines[0].Current].Start);
-              end;
+                Lines[0].Line[Lines[0].Current].Start := Lines[0].Line[Lines[0].Current].Start - i;
               if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
-                Inc(Lines[0].Line[Lines[0].Current].End_);
-            end
-          else
-            begin
-              Dec(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
-              if CurrentNote = 0 then
-                Dec(Lines[0].Line[Lines[0].Current].Start);
-              if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
-                Dec(Lines[0].Line[Lines[0].Current].End_);
-            end;
+                Lines[0].Line[Lines[0].Current].End_ := Lines[0].Line[Lines[0].Current].End_ + i;
+          end;
+          // resize note
+          if (resize_note_right) and (Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length + i > 0) then
+          begin
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length + i;
+            if CurrentNote = Lines[0].Line[Lines[0].Current].HighNote then
+                Lines[0].Line[Lines[0].Current].End_ := Lines[0].Line[Lines[0].Current].End_ + i;
+          end;
+          if (resize_note_left) and (Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length - i > 0) then
+          begin
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start + i;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length := Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length - i;
+            if CurrentNote = 0 then
+                Lines[0].Line[Lines[0].Current].Start := Lines[0].Line[Lines[0].Current].Start + i;
+          end;
+
           LastX := CurrentX;
           GoldenRec.KillAll;
           ShowInteractiveBackground;
@@ -2852,6 +2898,9 @@ begin
 
     NotesH := 7;
     NotesW := 4;
+    resize_note_left := false;
+    resize_note_right := false;
+    move_note := false;
     //show transparent background for notes
     ShowInteractiveBackground;
     // user input tracking
