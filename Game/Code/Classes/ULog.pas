@@ -294,19 +294,44 @@ var
   Num:      integer;
   FileName: string;
   I:        integer;
+  Year, Month, Day:     word;
+  Hour, Min, Sec, MSec: word;
+  timestamp:  integer;
+  datestr:    string;
+  timestr:    string;
+
+  function Fill(w: word): string;
+  begin
+    Result := '';
+    if (w<10) then
+      Result := '0';
+
+    Result := Result + IntToStr(w);
+  end;
 
 begin
+  timestamp := DateTimeToUnix(Now());
+  DecodeDate(UnixToDateTime(timestamp), Year, Month, Day);
+  DecodeTime(UnixToDateTime(timestamp), Hour, Min, Sec, MSec);
+
+  datestr := IntToStr(Year) + Fill(Month) + Fill(Day);
+  timestr := Fill(Hour) + Fill(Min) + Fill(Sec);
+
   if not FileSessionO then
   begin
     FileSessionO := false;
     NumSungSongs := 0;
+    FileName := SessionLogPath + 'Session_' + datestr + '-' + timestr + '.log';
 
-    for Num := 1 to 99999 do
+    if FileExists(FileName) then
     begin
-      FileName := IntToStr(Num);
-      while Length(FileName) < 5 do FileName := '0' + FileName;
-      FileName := SessionLogPath + 'Session_' + FileName + '.log';
-      if not FileExists(FileName) then break
+      for Num := 1 to 9999 do
+      begin
+        FileName := IntToStr(Num);
+        while Length(FileName) < 4 do FileName := '0' + FileName;
+        FileName := SessionLogPath + 'Session_' + datestr + '-' + timestr + '_' + FileName + '.log';
+        if not FileExists(FileName) then break
+      end;
     end;
 
     AssignFile(FileSession, FileName);
@@ -319,7 +344,8 @@ begin
     If (FileSessionO) then
     begin
       WriteLn(FileSession, 'Session Log');
-      WriteLn(FileSession, 'Date: ' + DatetoStr(Now) + ' Time: ' + TimetoStr(Now));
+      WriteLn(FileSession, 'Date: ' + IntToStr(Year) + '-' + Fill(Month) + '-' + Fill(Day) +
+         ' Time: ' + Fill(Hour) + ':' + Fill(Min) + ':' + Fill(Sec));
 
       Flush(FileSession);
     end;
@@ -332,7 +358,8 @@ begin
       WriteLn(FileSession, '');
       WriteLn(FileSession, '');
       WriteLn(FileSession, '#----------------------------------------------------------------');
-      WriteLn(FileSession, '# ' + IntToStr(NumSungSongs) + ') ' + 'Date: ' + DatetoStr(Now) + ' Time: ' + TimetoStr(Now));
+      WriteLn(FileSession, '# ' + IntToStr(NumSungSongs) + ') ' + 'Date: ' + IntToStr(Year) + '-' + Fill(Month) + '-' + Fill(Day) +
+        ' Time: ' + Fill(Hour) + ':' + Fill(Min) + ':' + Fill(Sec));
       WriteLn(FileSession, '# Sing mode: ' + singmode);
       WriteLn(FileSession, '#----------------------------------------------------------------');
       WriteLn(FileSession, '# Song: ' + Artist + ' - ' + Title + ':');

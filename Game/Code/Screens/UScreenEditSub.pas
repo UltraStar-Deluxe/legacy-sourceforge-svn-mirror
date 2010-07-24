@@ -2061,7 +2061,7 @@ end;
 
 procedure TScreenEditSub.MarkSrc;
 begin
-  CopySrc := Czesci[0].Akt;
+  CopySrc := Czesci[CP].Akt;
 end;
 
 procedure TScreenEditSub.PasteText;
@@ -2069,11 +2069,11 @@ var
   C:    integer;
   N:    integer;
 begin
-  C := Czesci[0].Akt;
+  C := Czesci[CP].Akt;
 
-  for N := 0 to Czesci[0].Czesc[CopySrc].HighNut do
-    Czesci[0].Czesc[C].Nuta[N].Tekst := Czesci[0].Czesc[CopySrc].Nuta[N].Tekst;
-  EditorLyric[0].AddCzesc(0, Czesci[0].Akt);
+  for N := 0 to Czesci[CP].Czesc[CopySrc].HighNut do
+    Czesci[CP].Czesc[C].Nuta[N].Tekst := Czesci[CP].Czesc[CopySrc].Nuta[N].Tekst;
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
 end;
 
 procedure TScreenEditSub.CopySentence(Src, Dst: integer);

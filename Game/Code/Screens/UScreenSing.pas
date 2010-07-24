@@ -845,8 +845,15 @@ begin
   PlaylistMedley.ApplausePlayed := false;
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
   begin
-    CatSongs.Selected := PlaylistMedley.Song[PlaylistMedley.CurrentMedleySong-1];
-    Music.Open(CatSongs.Song[CatSongs.Selected].Path + CatSongs.Song[CatSongs.Selected].Mp3);
+    if (length(PlaylistMedley.Song)>=PlaylistMedley.CurrentMedleySong) then
+    begin
+      CatSongs.Selected := PlaylistMedley.Song[PlaylistMedley.CurrentMedleySong-1];
+      Music.Open(CatSongs.Song[CatSongs.Selected].Path + CatSongs.Song[CatSongs.Selected].Mp3);
+    end else
+    begin
+      SongError;
+      Exit;
+    end;
   end else
   begin
     for I := 0 to PlayersPlay - 1 do
@@ -1079,6 +1086,7 @@ var
   Min:    integer;
   Sec:    integer;
   Tekst:  string;
+  sung:   boolean;
   Flash:  real;
   S:      integer;
   T:      integer;
@@ -1232,19 +1240,21 @@ begin
   if Sec < 10 then Text[TextTimeText].Text := Text[TextTimeText].Text + '0';
   Text[TextTimeText].Text := Text[TextTimeText].Text + IntToStr(Sec);
 
-  if not AktSong.isDuet then
+  sung := true;
+  for I := 0 to Length(Czesci) - 1 do
   begin
-    lastLine := Length(Czesci[0].Czesc)-1;
-    lastWord := Length(Czesci[0].Czesc[lastLine].Nuta)-1;
+    lastLine := Length(Czesci[I].Czesc)-1;
+    lastWord := Length(Czesci[I].Czesc[lastLine].Nuta)-1;
 
     if (lastLine>=0) and (lastWord>=0) then
     begin
-      if (Czas.AktBeat>(Czesci[0].Czesc[lastLine].Nuta[lastWord].Start+
-        Czesci[0].Czesc[lastLine].Nuta[lastWord].Dlugosc)) then
-        ScreenSong.SungToEnd := true;
+      if (Czas.AktBeatD<(Czesci[I].Czesc[lastLine].Nuta[lastWord].Start+
+        Czesci[I].Czesc[lastLine].Nuta[lastWord].Dlugosc)) then
+        sung := false;
     end;
-  end else
-    ScreenSong.SungToEnd := false;  //do not save duet stats TODO: how to save duet stats?
+  end;
+
+  ScreenSong.SungToEnd := sung;
 
   // for medley-mode:
   CurTime := Czas.Teraz;
@@ -1397,7 +1407,7 @@ begin
       end;
     end else
     begin
-      if not FadeOut then
+      if not FadeOut and ((Screens=1) or (ScreenAct = 2)) then
       begin
         Finish;
         if ScreenSong.Mode = smNormal then
@@ -1586,6 +1596,8 @@ var
   scores:   array of string;
   names:    array of string;
   singmode: string;
+  Min, Sec: integer;
+  CurTime:  real;
 
 begin
   Music.CaptureStop;
@@ -1643,6 +1655,25 @@ begin
     begin
       singmode := 'Normal';
     end;
+
+    if not ScreenSong.SungToEnd then
+    begin
+      singmode := singmode + ', abort at: ';
+
+      if ScreenSong.Mode <> smMedley then
+        CurTime := Czas.Teraz
+      else
+        CurTime := Czas.Teraz - MedleyStart;
+
+      Min := Round(CurTime) div 60;
+      Sec := Round(CurTime) mod 60;
+
+      if Min < 10 then singmode := singmode + '0';
+      singmode := singmode + IntToStr(Min) + ':';
+      if Sec < 10 then singmode := singmode + '0';
+      singmode := singmode + IntToStr(Sec);
+    end;
+
     Log.LogSession(names, scores, AktSong.Artist, AktSong.Title, singmode);
   end;
 
