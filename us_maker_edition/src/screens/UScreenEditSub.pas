@@ -93,7 +93,9 @@ type
       CurrentNote:      integer;
       PlaySentence:     boolean;
       PlayOne:          boolean;
+      PlayOneMidi:      boolean;
       PlaySentenceMidi: boolean;
+      midinotefound:    boolean; // if one note was found
       PlayVideo:        boolean;
       PlayStopTime:     real;
       LastClick:        integer;
@@ -114,6 +116,7 @@ type
       LastPressedMouseButton:  boolean;
       LastPressedMouseType:   integer;
       LastPressedNote:        integer;
+      PressedNoteId:          integer;
             
       TextPosition:     integer;
       TextEditMode:     boolean;
@@ -207,6 +210,8 @@ type
       CurrentY:           integer;
       LastX:              integer;
       LastY:              integer;
+      Xmouse:             integer;
+      
       resize_note_left:   boolean;
       resize_note_right:  boolean;
       move_note:          boolean;
@@ -239,6 +244,8 @@ type
       procedure FixTimings;
       procedure DivideSentence;
       procedure JoinSentence;
+      procedure NextSentence;
+      procedure PreviousSentence;
       procedure DivideNote(doubleclick: boolean);
       procedure DeleteNote;
       procedure TransposeNote(Transpose: integer);
@@ -252,7 +259,9 @@ type
       procedure CopyToUndo; //copy current Lines,mouse position and headers
       procedure CopyFromUndo; //undo last Lines,mouse position and headers
       procedure DrawPlayerTrack(X, Y, W: real; Space: integer; CurrentTone: integer; Count: integer; CurrentNote: integer);
-      procedure DrawStatics;
+      procedure DrawStatics_UP(X, Y, W, H: integer);
+      procedure DrawStatics_Sentences(X, Y, W, H: integer);
+      procedure DrawStatics_Notes(X, Y, W, H: integer);
       procedure DrawInfoBar(x, y, w, h: integer; currentLines: integer);
       procedure DrawText(Left, Top, Right: real; NrLines: integer; Space: integer);
       //video view
@@ -775,7 +784,9 @@ begin
             // Play Sentence
             PlaySentenceMidi := false; // stop midi
             PlaySentence := false;
+            midinotefound := false;
             PlayOne := true;
+            PlayOneMidi := false;
             PlayVideo := false;
             StopVideoPreview;
             Click := false;
@@ -793,7 +804,9 @@ begin
           begin
             // Play Midi
             PlaySentenceMidi := false;
+            midinotefound := false;
             PlayOne := true;
+            PlayOneMidi := true;
             MidiTime := USTime.GetTime;
             MidiStart := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
             MidiStop := GetTimeFromBeat(
@@ -872,17 +885,30 @@ begin
                   currentnote := i;
                   Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
                   Lyric.Selected := CurrentNote;
-                  //play current note
-                  PlaySentence := false;
+                  //play current note playonewithmidi
+                  PlaySentenceMidi := false;
+                  midinotefound := false;
                   PlayOne := true;
-                  Click := false;
-                  AudioPlayback.Stop;
-                  AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
-                  PlayStopTime := (GetTimeFromBeat(
+                  PlayOneMidi := true;
+                  MidiTime := USTime.GetTime;
+                  MidiStart := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+                  MidiStop := GetTimeFromBeat(
                     Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
-                    Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length));
-                  AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
-                  AudioPlayback.Play;
+                    Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length);
+
+                  // playone
+                  PlayVideo := false;
+                StopVideoPreview;
+                Click := false;
+                AudioPlayback.Stop;
+                AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start);
+                  PlayStopTime := (GetTimeFromBeat(
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].Start +
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].Length));
+                AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
+                AudioPlayback.Play;
+
+                  LastClick := -100;
                 end;
            end;
         end;
@@ -1053,26 +1079,7 @@ begin
           // skip to next sentence
           if SDL_ModState = 0 then
           begin
-            {$IFDEF UseMIDIPort}
-            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
-            MidiOut.PutShort(MIDI_NOTEOFF or 1, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
-            PlaySentenceMidi := false;
-            PlayOne := false;
-            {$ENDIF}
-
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
-            Inc(Lines[0].Current);
-            CurrentNote := 0;
-            if Lines[0].Current > Lines[0].High then
-              Lines[0].Current := 0;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
-
-            Lyric.AddLine(Lines[0].Current);
-            Lyric.Selected := 0;
-            AudioPlayback.Stop;
-            PlaySentence := false;
-            PlayVideo := false;
-            GoldenRec.KillAll;
+            NextSentence;
           end;
 
           // decrease tone
@@ -1090,26 +1097,7 @@ begin
           // skip to previous sentence
           if SDL_ModState = 0 then
           begin
-            AudioPlayback.Stop;
-            PlayVideo := false;
-            PlaySentence := false;
-            PlayOne := false;
-            {$IFDEF UseMIDIPort}
-            MidiOut.PutShort(MIDI_NOTEOFF or 1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
-            MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
-            PlaySentenceMidi := false;
-            {$endif}
-
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
-            Dec(Lines[0].Current);
-            CurrentNote := 0;
-            if Lines[0].Current = -1 then
-              Lines[0].Current := Lines[0].High;
-            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
-
-            Lyric.AddLine(Lines[0].Current);
-            Lyric.Selected := 0;
-            GoldenRec.KillAll;
+            PreviousSentence;
           end;
 
           // increase tone
@@ -1251,7 +1239,22 @@ begin
                 TextPosition := editLenghtText-1;
               end;
           end;
-      end;
+        end;
+      SDLK_SLASH:
+        begin
+          CopyToUndo;
+          if SDL_ModState = KMOD_LCTRL then
+          begin
+            // divide note
+            DivideNote(false);
+            TextEditMode := false;
+            Lyric.AddLine(Lines[0].Current);
+            Lyric.Selected := CurrentNote;
+            GoldenRec.KillAll;
+          end;
+          ShowInteractiveBackground;
+        end;
+
     end; //case
   end; //if (PressedDown)
 end;
@@ -1282,6 +1285,11 @@ begin
     if nBut <> Interaction then
       SetInteraction(nBut);
   end;
+  if Not BtnDown then
+  begin
+    PressedNoteId := -1;
+    Xmouse := 0;
+  end;
 
   if (BtnDown) then
   begin
@@ -1297,22 +1305,24 @@ begin
         resize_note_right := false;
         // check current mouse position to resize note - 20% of left or right note to resize
         if (Interactions[nBut].Typ = iButton) then
-        if CurrentX < Button[Interactions[nBut].Num].X + Button[Interactions[nBut].Num].W*0.2 then
         begin
-          // selected left side note - 20%
-          resize_note_left := true;
-          resize_note_right := false;
-          move_note := false;
-        end;
-        if (Interactions[nBut].Typ = iButton) then
-        if CurrentX > Button[Interactions[nBut].Num].X + Button[Interactions[nBut].Num].W - Button[Interactions[nBut].Num].W*0.2 then
-        begin
-          // selected right side note - 20%
-          resize_note_left := false;
-          resize_note_right := true;
-          move_note := false;
-        end;
+          if CurrentX < Button[Interactions[nBut].Num].X + Button[Interactions[nBut].Num].W*0.2 then
+          begin
+            // selected left side note - 20%
+            resize_note_left := true;
+            resize_note_right := false;
+            move_note := false;
+          end;
 
+          if CurrentX > Button[Interactions[nBut].Num].X + Button[Interactions[nBut].Num].W - Button[Interactions[nBut].Num].W*0.2 then
+          begin
+            // selected right side note - 20%
+            resize_note_left := false;
+            resize_note_right := true;
+            move_note := false;
+          end;
+          PressedNoteId :=  Interactions[nBut].Num;
+        end;
       end;
 
       if (MouseButton = SDL_BUTTON_LEFT) then
@@ -1327,7 +1337,7 @@ begin
       end;
      // move notes by mouse move (left-right)
      tempR := 720 / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
-     if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_RIGHT) then
+     if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_RIGHT) and (PressedNoteId >=0) then
      begin
         // left & right
         if (Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr)) or  (Floor((CurrentX-40)/tempr) < Floor((LastX-40)/tempr)) then
@@ -1365,7 +1375,7 @@ begin
 
      end;
      //move one note by mouse move
-     if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_LEFT) then
+     if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_LEFT) and (PressedNoteId >=0) then
      begin
         if (Floor((CurrentX-40)/tempr) > Floor((LastX-40)/tempr)) or (Floor((CurrentX-40)/tempr) < Floor((LastX-40)/tempr)) then
         begin
@@ -1408,6 +1418,25 @@ begin
             GoldenRec.KillAll;
             ShowInteractiveBackground;
         end;
+     end;
+     // change to next sequense
+     if (MouseButton = 0) and (LastPressedMouseType = SDL_BUTTON_LEFT) and (Interactions[nBut].Typ <> iButton) and (Interactions[nBut].Typ <> iText) and (Interactions[nBut].Typ <>  iSelectS) and (Interactions[nBut].Typ <> iBCollectionChild) and (PressedNoteId = -1) then
+     begin
+          if CurrentX - LastX > 120 then
+          begin
+              PreviousSentence;
+              LastX := CurrentX;
+              showInteractiveBackground;
+          end;
+          if CurrentX - LastX < -120 then
+          begin
+              NextSentence;
+              LastX := CurrentX;
+              showInteractiveBackground;
+          end;
+          if (CurrentX - LastX < 120) and (CurrentX - LastX > -120) then
+              Xmouse := CurrentX - LastX;
+//          log.LogError('beside notes');
      end;
 
   end;
@@ -1747,12 +1776,61 @@ begin
   Dec(Lines[0].High);
 end;
 
+procedure TScreenEditSub.NextSentence;
+begin
+            {$IFDEF UseMIDIPort}
+            MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
+            MidiOut.PutShort(MIDI_NOTEOFF or 1, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
+            PlaySentenceMidi := false;
+            PlayOne := false;
+            {$ENDIF}
+
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Inc(Lines[0].Current);
+            CurrentNote := 0;
+            if Lines[0].Current > Lines[0].High then
+              Lines[0].Current := 0;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
+
+            Lyric.AddLine(Lines[0].Current);
+            Lyric.Selected := 0;
+            AudioPlayback.Stop;
+            PlaySentence := false;
+            PlayVideo := false;
+            GoldenRec.KillAll;
+end;
+
+procedure TScreenEditSub.PreviousSentence;
+begin
+            AudioPlayback.Stop;
+            PlayVideo := false;
+            PlaySentence := false;
+            PlayOne := false;
+            {$IFDEF UseMIDIPort}
+            MidiOut.PutShort(MIDI_NOTEOFF or 1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
+            MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[MidiLastNote].Tone + 60, 127);
+            PlaySentenceMidi := false;
+            {$endif}
+
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+            Dec(Lines[0].Current);
+            CurrentNote := 0;
+            if Lines[0].Current = -1 then
+              Lines[0].Current := Lines[0].High;
+            Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 2;
+
+            Lyric.AddLine(Lines[0].Current);
+            Lyric.Selected := 0;
+            GoldenRec.KillAll;
+end;
+
 procedure TScreenEditSub.DivideNote(doubleclick: boolean);
 var
   C:    integer;
   N:    integer;
-  wherecutting: integer;
+  wherecutting, spacepos: integer;
   tempR:  real;
+  tempstr : UCS4String;
 begin
   C := Lines[0].Current;
   tempR := 720 / (Lines[0].Line[Lines[0].Current].End_ - Lines[0].Line[Lines[0].Current].Note[0].Start);
@@ -1781,7 +1859,31 @@ begin
     Note[CurrentNote+1].Start := Note[CurrentNote].Start + Note[CurrentNote].Length;
     Note[CurrentNote+1].Length := Note[CurrentNote+1].Length - Note[CurrentNote].Length;
 
-    Note[CurrentNote+1].Text := '~';
+    // find space in text
+    spacepos := -1;
+    for  N:=0 to LengthUTF8(Note[CurrentNote].Text) do
+    begin
+
+      tempstr := UTF8ToUCS4String(Note[CurrentNote].Text);
+      if ((UCS4ToUTF8String(tempstr[N]) = ' ') and (spacepos < 0)) then
+         spacepos := N;
+
+    end;
+    if ((TextPosition < 0) and (ansipos(' ', Note[CurrentNote].Text) > 1) and (ansipos(' ', Note[CurrentNote].Text) < Length(Note[CurrentNote].Text)  )) then
+    begin
+        Note[CurrentNote+1].Text := UTF8Copy(Note[CurrentNote].Text,spacepos + 2,LengthUTF8(Note[CurrentNote].Text));
+        Note[CurrentNote].Text := UTF8Copy(Note[CurrentNote].Text, 1,spacepos+1)
+    end
+    else
+    if ((TextPosition >= 0) and (TextPosition < Length(Note[CurrentNote].Text))) then
+    begin
+        Note[CurrentNote+1].Text := UTF8Copy(SelectsS[LyricSlideId].TextOpt[0].Text, TextPosition+2, LengthUTF8(SelectsS[LyricSlideId].TextOpt[0].Text));
+        Note[CurrentNote].Text := UTF8Copy(SelectsS[LyricSlideId].TextOpt[0].Text, 1, TextPosition);
+        SelectsS[LyricSlideId].TextOpt[0].Text := Note[CurrentNote].Text;
+        TextPosition := -1;
+    end
+    else
+        Note[CurrentNote+1].Text := '~';
     Note[CurrentNote+1].Color := 1;
   end;
 
@@ -2172,9 +2274,7 @@ begin
         glEnd;
 end;
 
-procedure TScreenEditSub.DrawStatics;
-var
-  x, y, w, h: Integer;
+procedure TScreenEditSub.DrawStatics_UP(X, Y, W, H: integer);
 begin
   //Theme:
   //bg
@@ -2218,10 +2318,7 @@ begin
   glEnd;}
 
   // some borders
-  x := 20;
-  y := 55;
-  w := 760;
-  h := 236;
+
   glColor4f(0.9, 0.9, 0.9, 1);
   glbegin(gl_quads);
    glVertex2f(x, y);
@@ -2238,11 +2335,13 @@ begin
     glVertex2f(x+w+1, y+h+1);
     glVertex2f(x-1, y+h+1);
   glEnd;
-
-  x := 20;
+end;
+procedure TScreenEditSub.DrawStatics_Notes(X, Y, W, H: integer);
+begin
+{  x := 20;
   y := 305;
   w := 760;
-  h := 135;
+  h := 135;}
   glColor4f(0.9, 0.9, 0.9, 1);
   glbegin(gl_quads);
    glVertex2f(x, y);
@@ -2259,11 +2358,17 @@ begin
     glVertex2f(x+w+1, y+h+1);
     glVertex2f(x-1, y+h+1);
   glEnd;
+end;
 
-  x := 20;
+procedure TScreenEditSub.DrawStatics_Sentences(X, Y, W, H: integer);
+begin
+  //Theme:
+  //bg
+  glDisable(GL_BLEND);
+{  x := 20;
   y := 500;
   w := 760;
-  h := 40;
+  h := 40;}
   glColor4f(0.9, 0.9, 0.9, 1);
   glbegin(gl_quads);
    glVertex2f(x, y);
@@ -2691,6 +2796,7 @@ begin
   Text[TextDebug].Text := '';
   Log.LogStatus('Initializing', 'TEditScreen.OnShow');
   Lyric := TEditorLyrics.Create;
+  Xmouse := 0;
 
   ResetSingTemp;
   GoldenRec.KillAll;
@@ -2951,7 +3057,7 @@ begin
   //glClearColor(1,1,1,1);
 
   // midi music
-  if PlaySentenceMidi then
+  if PlaySentenceMidi and Not (PlayOneMidi) then
   begin
    {$IFDEF UseMIDIPort}
     MidiPos := USTime.GetTime - MidiTime + MidiStart;
@@ -3056,6 +3162,41 @@ begin
     end; // click
   end; // if PlaySentence
 
+  if PlayOneMidi then
+  begin
+    MidiPos := USTime.GetTime - MidiTime + MidiStart;
+    // stop the music
+    if ((MidiPos > MidiStop))  then // and (midinotefound)
+    begin
+      MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
+      MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[currentnote].Tone + 60, 127);
+      MidiOut.PutShort(MIDI_STOP, 0, 0);
+      PlayOneMidi := false;
+    end;
+
+    // click
+    AktBeat := Floor(GetMidBeat(MidiPos - CurrentSong.GAP / 1000));
+    Text[TextDebug].Text := IntToStr(AktBeat);
+
+    if ((AktBeat <> LastClick) and Not (midinotefound)) then
+    begin
+//      for i := 0 to Lines[0].Line[Lines[0].Current].HighNote do
+//      begin
+        if ((Lines[0].Line[Lines[0].Current].Note[currentnote].Start <= AktBeat) and
+        ((Lines[0].Line[Lines[0].Current].Note[currentnote].Start + Lines[0].Line[Lines[0].Current].Note[currentnote].Length) > AktBeat)) then
+        begin
+          LastClick := AktBeat;
+          midinotefound := true;
+          MidiOut.PutShort($B1, $7, floor(1.27*SelectsS[VolumeMidiSlideId].SelectedOption));
+//          if i > 0 then
+            MidiOut.PutShort($81, Lines[0].Line[Lines[0].Current].Note[currentnote-1].Tone + 60, 127);
+          MidiOut.PutShort($91, Lines[0].Line[Lines[0].Current].Note[currentnote].Tone + 60, 127);
+
+          MidiLastNote := i;
+        end;
+//      end;
+    end;
+  end; // if PlayOneNoteMidi
 
   Button[TextSentence].Text[0].Text := Language.Translate('INFO_CURRENT_LINE') + ' ' + IntToStr(Lines[0].Current + 1) + ' / ' + IntToStr(Lines[0].Number);
   Button[TextNote].Text[0].Text :=  Language.Translate('INFO_CURRENT_NOTE') + ' ' + IntToStr(CurrentNote + 1) + ' / ' + IntToStr(Lines[0].Line[Lines[0].Current].HighNote + 1);
@@ -3099,22 +3240,46 @@ begin
 
   // draw static menu
   DrawBG;
-  DrawStatics;
+  DrawStatics_UP(20, 55, 760, 236);
+  DrawStatics_Sentences(20, 500, 760, 40);
   DrawInfoBar(20, 460, 760, 15, 0);
 //  DrawInfoBar(20, 480, 760, 15, 1);  //for duet mode
 
   //inherited Draw;
   DrawFG;
   // draw notes
-  // horizontal lines
-  SingDrawNoteLines(20, 305, 780, 15);
   //Error Drawing when no Song is loaded
   if not Error then
   begin
-    // vertical lines
-    SingDrawBeatDelimeters(40, 305, 760, 0);
-    EditDrawLine(40, 410, 760, 0, 15);
-    DrawText(40, 410, 760, 0, 15);
+    if Xmouse < 0 then
+    begin
+      // notes table
+      DrawStatics_Notes(20, 305, 760+Xmouse, 135);
+      // horizontal lines
+      SingDrawNoteLines(20, 305, 780+Xmouse, 15);
+      // vertical lines
+      SingDrawBeatDelimeters(40, 305, 760+Xmouse, 0);
+      // draw notes
+      EditDrawLine(40, 410, 760+Xmouse, 0, 15);
+      // draw text on notes
+      DrawText(40, 410, 760+Xmouse, 0, 15);
+    end
+    else
+    begin
+      // notes table
+      DrawStatics_Notes(20+Xmouse, 305, 760-Xmouse, 135);
+      // horizontal lines
+      SingDrawNoteLines(20+Xmouse, 305, 780, 15);
+      // vertical lines
+      SingDrawBeatDelimeters(40+Xmouse, 305, 760, 0);
+      // draw notes
+      EditDrawLine(40+Xmouse, 410, 760, 0, 15);
+      // draw text on notes
+      DrawText(40+Xmouse, 410, 760, 0, 15);
+    end;
+
+    if Xmouse <> 0 then
+       GoldenRec.KillAll;
   end;
 
   CurrentSound := AudioInputProcessor.Sound[0];
