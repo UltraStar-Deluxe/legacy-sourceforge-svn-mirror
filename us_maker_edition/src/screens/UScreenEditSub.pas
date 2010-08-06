@@ -117,7 +117,7 @@ type
       LastPressedMouseType:   integer;
       LastPressedNote:        integer;
       PressedNoteId:          integer;
-            
+
       TextPosition:     integer;
       TextEditMode:     boolean;
       TitleEditMode:    boolean;
@@ -198,6 +198,8 @@ type
       VolumeAudio:    array of UTF8String;
       VolumeMidi:    array of UTF8String;
       VolumeClick:    array of UTF8String;
+      // control buttons
+      UndoButtonId:       integer;
       // background image & video preview
       BackgroundImageId:  integer;
       Empty:         array of UTF8String;   //temporary variable to initialize slide - todo change
@@ -211,7 +213,7 @@ type
       LastX:              integer;
       LastY:              integer;
       Xmouse:             integer;
-      
+
       resize_note_left:   boolean;
       resize_note_right:  boolean;
       move_note:          boolean;
@@ -846,6 +848,110 @@ begin
              CurrentSlideId := LyricSlideId;
              TextPosition := LengthUTF8(BackupEditText);
              TextEditMode := true;
+           end;
+
+           if Interaction = 17 then //Only Play
+           begin
+              // Play Sentence
+              Click := true;
+              AudioPlayback.Stop;
+              PlayVideo := false;
+              StopVideoPreview;
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              CurrentNote := 0;
+              R := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start);
+              if R <= AudioPlayback.Length then
+              begin
+                AudioPlayback.Position := R;
+                PlayStopTime := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_);
+                PlaySentence := true;
+                AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
+                AudioPlayback.Play;
+                LastClick := -100;
+              end;
+              Text[TextDebug].Text := Language.Translate('INFO_PLAY_SENTENCE');
+           end;
+
+           if Interaction = 18 then //Play with midi
+           begin
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              CurrentNote := 0;
+              PlaySentenceMidi := true;
+              PlayVideo := false;
+              StopVideoPreview;
+              MidiTime  := USTime.GetTime;
+              MidiStart := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start);
+              MidiStop  := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_);
+              LastClick := -100;
+
+              PlaySentence := true;
+              Click := true;
+              AudioPlayback.Stop;
+              AudioPlayback.Position := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start)+0{-0.10};
+              PlayStopTime := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_)+0;
+              AudioPlayback.SetVolume(SelectsS[VolumeAudioSlideId].SelectedOption / 100);
+              AudioPlayback.Play;
+              LastClick := -100;
+              Text[TextDebug].Text := Language.Translate('INFO_PLAY_SENTENCE');
+           end;
+
+           if Interaction = 19 then //Play midi
+           begin
+              Lines[0].Line[Lines[0].Current].Note[CurrentNote].Color := 1;
+              CurrentNote := 0;
+              PlaySentenceMidi := true;
+              PlayVideo := false;
+              StopVideoPreview;
+              MidiTime := USTime.GetTime;
+              MidiStart := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].Note[0].Start);
+              MidiStop := GetTimeFromBeat(Lines[0].Line[Lines[0].Current].End_);
+
+              LastClick := -100;
+              Text[TextDebug].Text := Language.Translate('INFO_PLAY_SENTENCE');
+           end;
+
+           if Interaction = 20 then //previous sequence
+           begin
+              PreviousSentence;
+           end;
+
+           if Interaction = 21 then //next sequence
+           begin
+              NextSentence;
+           end;
+
+           if Interaction = 22 then //undo
+           begin
+              CopyFromUndo;
+              GoldenRec.KillAll;
+              Text[TextDebug].Text := Language.Translate('INFO_UNDO');
+              ShowInteractiveBackground;
+           end;
+
+           if Interaction = 23 then //golden note
+           begin
+              CopyToUndo;
+              if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntGolden) then
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
+              else
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntGolden;
+              GoldenRec.KillAll;
+              Exit;
+           end;
+
+           if Interaction = 24 then //freestyle note
+           begin
+              CopyToUndo;
+              if (Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType = ntFreestyle) then
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntNormal
+              else
+                Lines[0].Line[Lines[0].Current].Note[CurrentNote].NoteType := ntFreestyle;
+          	  GoldenRec.KillAll;
+
+              // update lyrics
+              Lyric.AddLine(Lines[0].Current);
+              Lyric.Selected := CurrentNote;
+              Exit;
            end;
 
            for i := 0 to Lines[0].High do
@@ -2772,6 +2878,16 @@ begin
     Statics[playerIconId[2]].Texture.H := 15;
     Statics[playerIconId[2]].Reflection := false;
     Statics[playerIconId[2]].Visible := false;
+
+    // control buttons
+    AddButton(Theme.EditSub.PlayOnly);
+    AddButton(Theme.EditSub.PlayWithNote);
+    AddButton(Theme.EditSub.PlayNote);
+    AddButton(Theme.EditSub.previousseq);
+    AddButton(Theme.EditSub.nextseq);
+    UndoButtonId := AddButton(Theme.EditSub.undo);
+    AddButton(Theme.EditSub.gold);
+    AddButton(Theme.EditSub.freestyle);
 
   // debug
   TextDebug :=  AddText(30, 550, 0, 27, 0, 0, 0, '');

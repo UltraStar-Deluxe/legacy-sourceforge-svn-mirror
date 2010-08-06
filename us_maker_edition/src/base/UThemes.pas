@@ -510,6 +510,16 @@ type
       BackgroundImage:     TThemeStatic;
       ButtonCurrentLine:   TThemeButton;
       ButtonCurrentNote:   TThemeButton;
+      // buttons
+      PlayOnly:             TThemeButton;
+      PlayWithNote:         TThemeButton;
+      PlayNote:             TThemeButton;
+      previousseq:          TThemeButton;
+      nextseq:              TThemeButton;
+      undo:                 TThemeButton;
+      gold:                 TThemeButton;
+      freestyle:            TThemeButton;
+
       SlideTitle:          TThemeSelectSlide;
       SlideArtist:         TThemeSelectSlide;
       SlideMP3:            TThemeSelectSlide;
@@ -1412,6 +1422,14 @@ begin
       // current position in editor
       ThemeLoadButton(EditSub.ButtonCurrentLine, 'EditSubButtonCurrentLine');
       ThemeLoadButton(EditSub.ButtonCurrentNote, 'EditSubButtonCurrentNote');
+      ThemeLoadButton(EditSub.PlayOnly,    'EditSubBarStatic1');
+      ThemeLoadButton(EditSub.PlayWithNote,    'EditSubBarStatic2');
+      ThemeLoadButton(EditSub.PlayNote,    'EditSubBarStatic3');
+      ThemeLoadButton(EditSub.previousseq,    'EditSubBarStatic4');
+      ThemeLoadButton(EditSub.nextseq,    'EditSubBarStatic5');
+      ThemeLoadButton(EditSub.gold,    'EditSubBarStatic6');
+      ThemeLoadButton(EditSub.freestyle,    'EditSubBarStatic7');
+      ThemeLoadButton(EditSub.undo,    'EditSubBarStatic8');
       ThemeLoadSelectSlide(EditSub.SlideTitle, 'EditSubTitle');
       ThemeLoadSelectSlide(EditSub.SlideArtist, 'EditSubArtist');
       ThemeLoadSelectSlide(EditSub.SlideMP3, 'EditSubMP3');
