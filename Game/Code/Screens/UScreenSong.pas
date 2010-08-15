@@ -3639,7 +3639,8 @@ procedure TScreenSong.StartSong;
 begin
   WaitHandler.changed := false;
   CatSongs.Selected := Interaction;
-  Music.Stop;
+  if (Music.isOpen) then
+    Music.Stop;
   //Party Mode
   if (Mode = smParty) or (Mode = smChallenge) then
   begin

@@ -1344,6 +1344,9 @@ begin
       Player[I].VoiceFile := '';
   end;
 
+  if not Music.isOpen then
+    Music.Open(CatSongs.Song[CatSongs.Selected].Path + CatSongs.Song[CatSongs.Selected].Mp3);
+
   AktSong := CatSongs.Song[CatSongs.Selected];
   try
     if not LoadSong(CatSongs.Song[CatSongs.Selected].Path + CatSongs.Song[CatSongs.Selected].FileName, SONG_LOAD_COMPLETE) then
