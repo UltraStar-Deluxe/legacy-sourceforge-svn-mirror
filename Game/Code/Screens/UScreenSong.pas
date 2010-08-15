@@ -36,8 +36,9 @@ type
 
   TScreenSong = class(TMenu)
     private
-      SkippedSongs: array of integer;
+      SkippedSongs:     array of integer;
       ChooseableSongs:  integer;
+      isScrolling:      boolean;
 
     public
       MP3Volume:        integer;
@@ -54,7 +55,7 @@ type
       TextTop:      array[0..2] of integer;
       StaticTop:    integer;
 
-      FoundCAT: boolean;      //for M2-MOD: a cat is chosen, see whats next...
+      FoundCAT:     boolean;      //for M2-MOD: a cat is chosen, see whats next...
 
       SongIndex:    integer; //Index of Song that is playing since UScreenScore...
 
@@ -76,7 +77,7 @@ type
       MakeMedley:   boolean;
 
       //InfoHandler
-      InfoHandler: THandler;
+      InfoHandler:  THandler;
 
       //AspectHandler
       AspectHandler: THandler;
@@ -104,7 +105,7 @@ type
       is_jump_title:boolean; //Jump to SOng MOd-YTrue if search for Title
 
       EqualizerBands: array of Byte;
-      EqualizerTime: Cardinal;
+      EqualizerTime:  Cardinal;
       EqualizerTime2: Byte;
 
       ID:           string; //for help-system
@@ -174,6 +175,7 @@ type
       procedure Refresh(GiveStats: boolean); //Refresh Song Sorting
       procedure DrawEqualizer;
       procedure ChangeMusic;
+      procedure StartPreview;
       procedure LoadTop;
       procedure StartVideoPreview;
       //Party Mode
@@ -2081,6 +2083,7 @@ begin
     Mode := smNormal;
 
   MakeMedley := false;
+  isScrolling := false;
 
   StartTry := false;
   AspectHandler.changed := false;
@@ -2356,6 +2359,11 @@ var
 
 begin
   dx := SongTarget-SongCurrent;
+  if SameValue(SongTarget, SongCurrent, 0.002) then
+    isScrolling := false
+  else
+    isScrolling := true;
+
   dt := TimeSkip*7;
   if dt > 1 then dt := 1;
   SongCurrent := SongCurrent + dx*dt;
@@ -2371,10 +2379,11 @@ begin
 //  Log.LogBenchmark('SetScroll4', 5);
 
   //Fading Functions, Only if Covertime is under 10 Seconds
-  If (CoverTime < 10) then
+  If (CoverTime < 10) and not isScrolling then
   begin
     // 0.5.0: cover fade
-    if (CoverTime < 1) and (CoverTime + TimeSkip >= 1) then begin
+    if (CoverTime < 1) and (CoverTime + TimeSkip >= 1) then
+    begin
       // load new texture
       Texture.GetTexture(Button[Interaction].Texture.Name, 'Plain', false);
       Button[Interaction].Texture.Alpha := 1;
@@ -2719,6 +2728,8 @@ begin
   end;
 
   DrawExtensions;
+
+  StartPreview;
 end;
 
 procedure TScreenSong.DrawInfo(text: string);
@@ -2758,7 +2769,8 @@ begin
 
   if VS > 0 then
   begin
-    UnLoadDetailedCover;
+    if (not isScrolling) and (VS>1) then
+      UnLoadDetailedCover;
 
     Skip := 1;
     Skip2:= 0;
@@ -2834,7 +2846,8 @@ begin
 
   if VS > 0 then
   begin
-    UnLoadDetailedCover;
+    if (not isScrolling) and (VS>1) then
+      UnLoadDetailedCover;
 
     Skip := 1;
 
@@ -2863,6 +2876,7 @@ begin
     begin
       Music.Close;
       acClose;
+      {
       if Music.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3) then
       begin
         if (CatSongs.Song[Interaction].PreviewStart>0) then
@@ -2881,53 +2895,43 @@ begin
           Music.Fade(0, MP3Volume, Ini.PreviewFading);
           Music.Play;
         end;
-      end;
+      end; }
     end else
+    begin
       Music.Stop;
+      acClose;
+    end;
   end;
 
   LoadTop;
 end;
 
-procedure TScreenSong.LoadTop;
-var
-  I: integer;
+procedure TScreenSong.StartPreview;
 begin
-  //Load Top 3
-  if (NOT CatSongs.Song[Interaction].Main) AND (CatSongs.VisibleSongs > 0) and
-    not MakeMedley and not PartyMedley then
+  if (Ini.PreviewVolume >= 0) and not isScrolling and not Music.isOpen then
   begin
-    AktSong := CatSongs.Song[Interaction];
-    DataBase.ReadScore(AktSong, 3, {Ini.SumPlayers}0);
-
-    for I := 0 to 2 do
+    if Music.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3) then
     begin
-      Text[TextTop[I]].Text := IntToStr(I+1)+'. ';
+      if (CatSongs.Song[Interaction].PreviewStart>0) then
+        Music.MoveTo(CatSongs.Song[Interaction].PreviewStart)
+      else
+        Music.MoveTo(Music.Length / 4);
+
+      StartVideoPreview;
+      //If Song Fading is activated then don't Play directly, and Set Volume to Null, else Play normal
+      if (Ini.PreviewFading = 0) then
+      begin
+        Music.SetMusicVolume (MP3Volume);
+        Music.Play;
+      end else
+      begin
+        Music.Fade(0, MP3Volume, Ini.PreviewFading);
+        Music.Play;
+      end;
     end;
-
-    if Length(AktSong.Score[Ini.Difficulty])>0 then
-      Static[StaticTop].Visible := true
-    else
-      Static[StaticTop].Visible := false;
-
-    for I := 0 to Length(AktSong.Score[Ini.Difficulty])-1 do
-    begin
-      Text[TextTop[I]].Visible := true;
-
-      Text[TextTop[I]].Text := Text[TextTop[I]].Text + AktSong.Score[Ini.Difficulty, I].Name + '\n' +
-        AktSong.Score[Ini.Difficulty, I].Date + ' (' + IntToStr(AktSong.Score[Ini.Difficulty, I].Score) + ')';
-    end;
-
-    for I := Length(AktSong.Score[Ini.Difficulty]) to 2 do
-      Text[TextTop[I]].Visible := false;
-  end else
-  begin
-    for I := 0 to 2 do
-      Text[TextTop[I]].Visible := false;
-
-    Static[StaticTop].Visible := false;
   end;
 end;
+
 
 procedure TScreenSong.StartVideoPreview;
 begin
@@ -2988,6 +2992,46 @@ begin
         end;
       end;
     end;
+  end;
+end;
+
+procedure TScreenSong.LoadTop;
+var
+  I: integer;
+begin
+  //Load Top 3
+  if (NOT CatSongs.Song[Interaction].Main) AND (CatSongs.VisibleSongs > 0) and
+    not MakeMedley and not PartyMedley then
+  begin
+    AktSong := CatSongs.Song[Interaction];
+    DataBase.ReadScore(AktSong, 3, {Ini.SumPlayers}0);
+
+    for I := 0 to 2 do
+    begin
+      Text[TextTop[I]].Text := IntToStr(I+1)+'. ';
+    end;
+
+    if Length(AktSong.Score[Ini.Difficulty])>0 then
+      Static[StaticTop].Visible := true
+    else
+      Static[StaticTop].Visible := false;
+
+    for I := 0 to Length(AktSong.Score[Ini.Difficulty])-1 do
+    begin
+      Text[TextTop[I]].Visible := true;
+
+      Text[TextTop[I]].Text := Text[TextTop[I]].Text + AktSong.Score[Ini.Difficulty, I].Name + '\n' +
+        AktSong.Score[Ini.Difficulty, I].Date + ' (' + IntToStr(AktSong.Score[Ini.Difficulty, I].Score) + ')';
+    end;
+
+    for I := Length(AktSong.Score[Ini.Difficulty]) to 2 do
+      Text[TextTop[I]].Visible := false;
+  end else
+  begin
+    for I := 0 to 2 do
+      Text[TextTop[I]].Visible := false;
+
+    Static[StaticTop].Visible := false;
   end;
 end;
 

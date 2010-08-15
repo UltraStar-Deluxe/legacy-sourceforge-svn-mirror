@@ -31,7 +31,6 @@ type
     Depth:          integer;
     FullScreen:     integer;
     TextureSize:    integer;
-    SingWindow:     integer;
     Oscilloscope:   integer;
     Spectrum:       integer;
     Spectrograph:   integer;
@@ -138,7 +137,6 @@ const
   IFullScreen:    array[0..1] of string = ('Off', 'On');
   IDepth:         array[0..1] of string = ('16 bit', '32 bit');
   ITextureSize:   array[0..2] of string = ('128', '256', '512');
-  ISingWindow:    array[0..1] of string = ('Small', 'Big');
 
   //SingBar Mod
   IOscilloscope:  array[0..2] of string = ('Off', 'Osci', 'Bar');
@@ -339,11 +337,6 @@ begin
   Tekst := IniFile.ReadString('Graphics', 'TextureSize', ITextureSize[1]);
   for Pet := 0 to High(ITextureSize) do
     if Tekst = ITextureSize[Pet] then Ini.TextureSize := Pet;
-
-  // SingWindow
-  Tekst := IniFile.ReadString('Graphics', 'SingWindow', 'Big');
-  for Pet := 0 to High(ISingWindow) do
-    if Tekst = ISingWindow[Pet] then Ini.SingWindow := Pet;
 
   // Oscilloscope
   Tekst := IniFile.ReadString('Graphics', 'Oscilloscope', 'Bar');
@@ -700,10 +693,6 @@ begin
     // Resolution
     Tekst := ITextureSize[Ini.TextureSize];
     IniFile.WriteString('Graphics', 'TextureSize', Tekst);
-
-    // Sing Window
-    Tekst := ISingWindow[Ini.SingWindow];
-    IniFile.WriteString('Graphics', 'SingWindow', Tekst);
 
     // Oscilloscope
     Tekst := IOscilloscope[Ini.Oscilloscope];

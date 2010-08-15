@@ -602,12 +602,17 @@ begin
 // calculation of coordinates done with hardcoded values like in UDraw.pas
 // might need to be adjusted if drawing of SingScreen is modified
 // coordinates may still be a bit weird and need adjustment
-  if Ini.SingWindow = 0 then begin
-    Left := 130;
-  end else begin
+
+  if ((Screens = 1) and (PlayersPlay <= 3)) or (Screens = 2) then
+  begin
     Left := 30;
+    Right := 770;
+  end else
+  begin
+    Left := 15;
+    Right := 385;
   end;
-  Right := 770;
+
   // spawn effect for every player with a perfect line
   for P:=0 to PlayersPlay-1 do
     if Player[P].LastSentencePerfect then

@@ -154,8 +154,12 @@ begin
   SkipLines := 0;
   LastSkipLines := 0;
   Counter := 0;
-  PIXEL_FORMAT := GL_RGB;
-  numBytes := 3;
+  numBytes := 4;
+  if (numBytes=3) then
+    PIXEL_FORMAT := GL_BGR
+  else
+    PIXEL_FORMAT := GL_RGBA;
+
   EnableVideoDraw := true;
 end;
 
@@ -201,7 +205,11 @@ begin
         if videodecoder = nil then
         begin
           VideoStreamIndex:=I;
-          inst^.output_format := AC_OUTPUT_RGB24;
+          if (numBytes=3) then
+            inst^.output_format := AC_OUTPUT_BGR24
+          else
+            inst^.output_format := AC_OUTPUT_BGRA32;
+            
           videodecoder := ac_create_decoder(inst, I);
         end;
       end;
@@ -921,7 +929,7 @@ begin
   end;
 {$endif}
 
-  if Ini.Debug = 1 then
+  if (Ini.Debug = 1) then
   begin
     glColor4f(0, 0, 0, 0.2);
     glbegin(gl_quads);

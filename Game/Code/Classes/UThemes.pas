@@ -346,11 +346,6 @@ type
     TextTimeText    :   TThemeText;
     //eoa TimeBar mod
 
-    StaticP1:         TThemeStatic;
-    TextP1:           TThemeText;
-    StaticP1ScoreBG:  TThemeStatic; //Static for ScoreBG
-    TextP1Score:      TThemeText;
-
     //moveable singbar mod
     StaticP1SingBar:         TThemeStatic;
     StaticP1ThreePSingBar:   TThemeStatic;
@@ -358,7 +353,18 @@ type
     StaticP2RSingBar:        TThemeStatic;
     StaticP2MSingBar:        TThemeStatic;
     StaticP3SingBar:         TThemeStatic;
+
+    StaticP3FourPSingbar:    TThemeStatic;
+    StaticP4FourPSingbar:    TThemeStatic;
+    StaticP4SixPSingbar:     TThemeStatic;
+    StaticP5Singbar:         TThemeStatic;
+    StaticP6Singbar:         TThemeStatic;
     //eoa moveable singbar
+
+    StaticP1:         TThemeStatic;
+    TextP1:           TThemeText;
+    StaticP1ScoreBG:  TThemeStatic; //Static for ScoreBG
+    TextP1Score:      TThemeText;
 
     //added for ps3 skin
     //game in 2/4 player modi
@@ -387,6 +393,39 @@ type
     StaticP3RScoreBG: TThemeStatic; //Static for ScoreBG
     TextP3R:          TThemeText;
     TextP3RScore:     TThemeText;
+
+    // 4 and 6 player on one screen:
+    StaticP3FourP:        TThemeStatic;
+    StaticP3FourPScoreBG: TThemeStatic; //Static for ScoreBG
+    TextP3FourP:          TThemeText;
+    TextP3FourPScore:     TThemeText;
+
+    StaticP4FourP:        TThemeStatic;
+    StaticP4FourPScoreBG: TThemeStatic; //Static for ScoreBG
+    TextP4FourP:          TThemeText;
+    TextP4FourPScore:     TThemeText;
+
+    StaticP4SixP:         TThemeStatic;
+    StaticP4SixPScoreBG:  TThemeStatic; //Static for ScoreBG
+    TextP4SixP:           TThemeText;
+    TextP4SixPScore:      TThemeText;
+
+    StaticP5:             TThemeStatic;
+    StaticP5ScoreBG:      TThemeStatic; //Static for ScoreBG
+    TextP5:               TThemeText;
+    TextP5Score:          TThemeText;
+
+    StaticP6:             TThemeStatic;
+    StaticP6ScoreBG:      TThemeStatic; //Static for ScoreBG
+    TextP6:               TThemeText;
+    TextP6Score:          TThemeText;
+
+    OFF_P1:   integer;
+    OFF_P2:   integer;
+    OFF_P3:   integer;
+    OFF_P4:   integer;
+    OFF_P5:   integer;
+    OFF_P6:   integer;
 
     //Linebonus Translations
     LineBonusText:    Array [0..8] of String;
@@ -1205,6 +1244,29 @@ begin
       ThemeLoadStatic(Sing.StaticP2RSingBar, 'SingP2RSingBar');
       ThemeLoadStatic(Sing.StaticP2MSingBar, 'SingP2MSingBar');
       ThemeLoadStatic(Sing.StaticP3SingBar, 'SingP3SingBar');
+
+      ThemeLoadStatic(Sing.StaticP3FourPSingbar, 'SingP1TwoPSingBar');
+      ThemeLoadStatic(Sing.StaticP4FourPSingbar, 'SingP2RSingBar');
+      ThemeLoadStatic(Sing.StaticP4SixPSingbar, 'SingP1ThreePSingBar');
+      ThemeLoadStatic(Sing.StaticP5Singbar, 'SingP2MSingBar');
+      ThemeLoadStatic(Sing.StaticP6Singbar, 'SingP3SingBar');
+
+      Sing.OFF_P1 := -20;
+      Sing.OFF_P2 := -180;
+      Sing.OFF_P3 := -380;
+      Sing.OFF_P4 := 380;
+      Sing.OFF_P5 := 180;
+      Sing.OFF_P6 := 20;
+
+      {Sing.StaticP3FourPSingbar.X := Sing.StaticP3FourPSingbar.X +
+        (800-Sing.StaticP3FourPSingbar.X) div 2;
+      Sing.StaticP4FourPSingbar.X := Sing.StaticP4FourPSingbar.X +
+        (800-Sing.StaticP4FourPSingbar.X) div 2;}
+
+      Sing.StaticP4SixPSingbar.X := Sing.StaticP4SixPSingbar.X + Sing.OFF_P4;
+      Sing.StaticP5Singbar.X := Sing.StaticP5Singbar.X + Sing.OFF_P5;
+      Sing.StaticP6Singbar.X := Sing.StaticP6Singbar.X + Sing.OFF_P6;
+
     //eoa moveable singbar
 
       ThemeLoadStatic(Sing.StaticP1, 'SingP1Static');
@@ -1213,7 +1275,7 @@ begin
       ThemeLoadText(Sing.TextP1Score, 'SingP1TextScore');
   //Added for ps3 skin
   //This one is shown in 2/4P mode
-  //if it exists, otherwise the one Player equivaltents are used
+  //if it exists, otherwise the one Player equivalents are used
       if (ThemeIni.SectionExists('SingP1TwoPTextScore')) then
       begin
         ThemeLoadStatic(Sing.StaticP1TwoP, 'SingP1TwoPStatic');
@@ -1260,6 +1322,53 @@ begin
       ThemeLoadText(Sing.TextP3R, 'SingP3RText');
       ThemeLoadStatic(Sing.StaticP3RScoreBG, 'SingP3RStatic2');
       ThemeLoadText(Sing.TextP3RScore, 'SingP3RTextScore');
+
+      // 4 and 6 player on one screen:
+      ThemeLoadStatic(Sing.StaticP3FourP, 'SingP1TwoPStatic');
+      ThemeLoadText(Sing.TextP3FourP, 'SingP1TwoPText');
+      ThemeLoadStatic(Sing.StaticP3FourPScoreBG, 'SingP1TwoPStatic2');
+      ThemeLoadText(Sing.TextP3FourPScore, 'SingP1TwoPTextScore');
+
+      ThemeLoadStatic(Sing.StaticP4FourP, 'SingP2RStatic');
+      ThemeLoadText(Sing.TextP4FourP, 'SingP2RText');
+      ThemeLoadStatic(Sing.StaticP4FourPScoreBG, 'SingP2RStatic2');
+      ThemeLoadText(Sing.TextP4FourPScore, 'SingP2RTextScore');
+
+      ThemeLoadStatic(Sing.StaticP4SixP, 'SingP1ThreePStatic');
+      ThemeLoadText(Sing.TextP4SixP, 'SingP1ThreePText');
+      ThemeLoadStatic(Sing.StaticP4SixPScoreBG, 'SingP1ThreePStatic2');
+      ThemeLoadText(Sing.TextP4SixPScore, 'SingP1ThreePTextScore');
+
+      ThemeLoadStatic(Sing.StaticP5, 'SingP2MStatic');
+      ThemeLoadText(Sing.TextP5, 'SingP2MText');
+      ThemeLoadStatic(Sing.StaticP5ScoreBG, 'SingP2MStatic2');
+      ThemeLoadText(Sing.TextP5Score, 'SingP2MTextScore');
+
+      ThemeLoadStatic(Sing.StaticP6, 'SingP3RStatic');
+      ThemeLoadText(Sing.TextP6, 'SingP3RText');
+      ThemeLoadStatic(Sing.StaticP6ScoreBG, 'SingP3RStatic2');
+      ThemeLoadText(Sing.TextP6Score, 'SingP3RTextScore');
+
+      Sing.StaticP3FourP.X := Sing.StaticP3FourP.X + 400;
+      Sing.StaticP4FourP.X := Sing.StaticP4FourP.X + 400;
+      Sing.TextP3FourP.X := Sing.TextP3FourP.X + 400;
+      Sing.TextP4FourP.X := Sing.TextP4FourP.X + 400;
+
+      Sing.StaticP4SixP.X := Sing.StaticP4SixP.X + Sing.OFF_P4;
+      Sing.StaticP5.X := Sing.StaticP5.X + Sing.OFF_P5;
+      Sing.StaticP6.X := Sing.StaticP6.X + Sing.OFF_P6;
+
+      Sing.StaticP4SixPScoreBG.X := Sing.StaticP4SixPScoreBG.X + Sing.OFF_P4;
+      Sing.StaticP5ScoreBG.X := Sing.StaticP5ScoreBG.X + Sing.OFF_P5;
+      Sing.StaticP6ScoreBG.X := Sing.StaticP6ScoreBG.X + Sing.OFF_P6;
+
+      Sing.TextP4SixP.X := Sing.TextP4SixP.X + Sing.OFF_P4;
+      Sing.TextP5.X := Sing.TextP5.X + Sing.OFF_P5;
+      Sing.TextP6.X := Sing.TextP6.X + Sing.OFF_P6;
+
+      Sing.TextP4SixPScore.X := Sing.TextP4SixPScore.X + Sing.OFF_P4;
+      Sing.TextP5Score.X := Sing.TextP5Score.X + Sing.OFF_P5;
+      Sing.TextP6Score.X := Sing.TextP6Score.X + Sing.OFF_P6;
 
       //Line Bonus Texts
       Sing.LineBonusText[0] := Language.Translate('POPUP_AWFUL');

@@ -539,12 +539,11 @@ begin
 {    MediaPlayer.FileName := Name;
     MediaPlayer.Open;}
 
-    Bass := Bass_StreamCreateFile(false, PChar(Name), 0, 0, 0);
+    Bass := Bass_StreamCreateFile(false, PChar(Name), 0, 0, BASS_STREAM_PRESCAN);
     if (Bass>0) then
       Loaded := true
     else
     begin
-      Loaded := false;
       errorCode := BASS_ErrorGetCode();
       Log.LogError('Error (' + IntToStr(errorCode) + ') on open File: ' + Name);
     end;
@@ -580,7 +579,8 @@ end;
 
 procedure TMusic.Play;
 begin
-  if Loaded then begin
+  if Loaded then
+  begin
 //    MediaPlayer.Play;
     if Loop then BASS_ChannelPlay(Bass, True); // start from beginning... actually bass itself does not loop, nor does this TMusic Class
     BASS_ChannelPlay(Bass, False); // for setting position before playing
@@ -589,7 +589,8 @@ end;
 
 procedure TMusic.Pause; //Pause Mod
 begin
-  if Loaded then begin
+  if Loaded then
+  begin
     BASS_ChannelPause(Bass); // Pauses Song
   end;
 end;
@@ -607,6 +608,7 @@ procedure TMusic.Close;
 begin
   Bass_StreamFree(Bass);
   DSP_VocalRemover:=0;
+  Loaded := false;
 //  Player.Free;
 //  MediaPlayer.Close;
 end;
@@ -645,7 +647,8 @@ function TMusic.Finished: boolean;
 begin
   Result := false;
 //  if ModeStr[MediaPlayer.Mode] = 'Stopped' then Result := true;
-  if BASS_ChannelIsActive(BASS) = BASS_ACTIVE_STOPPED then begin
+  if BASS_ChannelIsActive(BASS) = BASS_ACTIVE_STOPPED then
+  begin
 //    beep;
     Result := true;
   end;

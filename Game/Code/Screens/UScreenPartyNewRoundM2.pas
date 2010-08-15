@@ -194,7 +194,7 @@ begin
     if PartySessionM2.Option_Plugins then
     begin
       Text[TextNextRound].Text := Language.Translate('PARTY_ROUND') + ' ' + IntToStr(PartySessionM2.CurRound + 1) +
-        ': ' + PartySessionM2.Plugins[PartySessionM2.Rounds[PartySessionM2.CurRound].PluginNr].Name;
+        ': ' + PartySessionM2.Plugins[PartySessionM2.Rounds[PartySessionM2.CurRound].PluginNr].Desc;
     end else
       Text[TextNextRound].Text := Language.Translate('PARTY_ROUND') + ' ' + IntToStr(PartySessionM2.CurRound + 1);
 

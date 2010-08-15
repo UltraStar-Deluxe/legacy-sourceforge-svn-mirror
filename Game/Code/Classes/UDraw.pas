@@ -20,8 +20,8 @@ type
 
 procedure SingDraw(Alpha: TAlpha);
 procedure SingDrawLyricHelper(CP: integer; NR: TRecR);
-procedure SingDrawNotes(NR: TRecR; Alpha: TAlpha);
-procedure SingDrawNotesDuet(NR: TRecR; Alpha: TAlpha);
+procedure SingDrawNotes(P4Mode: boolean; NR: TRecR; Alpha: TAlpha);
+procedure SingDrawNotesDuet(P4Mode: boolean; NR: TRecR; Alpha: TAlpha);
 procedure SingModiDraw(PlayerInfo: TPlayerInfo; Alpha: TAlpha);
 procedure SingDrawBackground;
 procedure SingDrawOscilloscope(X, Y, W, H: real; NrSound: integer);
@@ -645,12 +645,12 @@ var
   ab:       real;
   //FS:       real;
 
-  BarAlpha: real;
+  BarAlpha:   real;
 
-  TempCol:  real;
-  Tekst:    string;
+  TempCol:    real;
+  Tekst:      string;
   LyricTemp:  string;
-  PetCz:    integer;
+  PetCz:      integer;
 
   //SingBar Mod
   A: Cardinal;
@@ -658,14 +658,21 @@ var
   I: Integer;
   //end Singbar Mod
 
+  P4Mode:   boolean;
+
 begin
   // positions
-  if Ini.SingWindow = 0 then begin
-    NR.Left := 120;
-  end else begin
+  if ((Screens = 1) and (PlayersPlay <= 3)) or (Screens = 2) then
+  begin
     NR.Left := 20;
+    NR.Right := 780;
+    P4Mode := false;
+  end else
+  begin
+    NR.Left := 10;
+    NR.Right := 390;
+    P4Mode := true;
   end;
-  NR.Right := 780;
 
   NR.Width := NR.Right - NR.Left;
   NR.WMid := NR.Width / 2;
@@ -685,6 +692,11 @@ begin
   begin
     SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P1_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[0]);
     SingDrawNoteLines(Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, Nr.Right + 10*ScreenX, 15, Alpha[1]);
+    if P4Mode then
+    begin
+      SingDrawNoteLines(400+Nr.Left + 10*ScreenX, Skin_P1_NotesB - 105, 400+Nr.Right + 10*ScreenX, 15, Alpha[0]);
+      SingDrawNoteLines(400+Nr.Left + 10*ScreenX, Skin_P2_NotesB - 105, 400+Nr.Right + 10*ScreenX, 15, Alpha[1]);
+    end;
   end;
 
   if (PlayersPlay = 3) or (PlayersPlay = 6) then
@@ -692,6 +704,12 @@ begin
     SingDrawNoteLines(Nr.Left + 10*ScreenX, 120, Nr.Right + 10*ScreenX, 12, Alpha[0]);
     SingDrawNoteLines(Nr.Left + 10*ScreenX, 245, Nr.Right + 10*ScreenX, 12, Alpha[1]);
     SingDrawNoteLines(Nr.Left + 10*ScreenX, 370, Nr.Right + 10*ScreenX, 12, Alpha[0]);
+    if P4Mode then
+    begin
+      SingDrawNoteLines(400+Nr.Left + 10*ScreenX, 120, 400+Nr.Right + 10*ScreenX, 12, Alpha[0]);
+      SingDrawNoteLines(400+Nr.Left + 10*ScreenX, 245, 400+Nr.Right + 10*ScreenX, 12, Alpha[1]);
+      SingDrawNoteLines(400+Nr.Left + 10*ScreenX, 370, 400+Nr.Right + 10*ScreenX, 12, Alpha[0]);
+    end;
   end;
 
   // rysuje tekst - new Lyric engine
@@ -772,21 +790,15 @@ begin
     end; //if
     if PlayersPlay = 1 then
     begin
-      //SingDrawSingbar( 75 + 10*ScreenX, 95, 100, 8, Player[0].ScorePercent);
       SingDrawSingbar(Theme.Sing.StaticP1SingBar.x, Theme.Sing.StaticP1SingBar.y, Theme.Sing.StaticP1SingBar.w, Theme.Sing.StaticP1SingBar.h , Player[0].ScorePercent, Player[0].ScoreMax, Player[0].ScoreTotalI);
    end;
     if PlayersPlay = 2 then
     begin
-      //SingDrawSingbar( 75 + 10*ScreenX, 95, 100, 8, Player[0].ScorePercent);
-      //SingDrawSingbar(620 + 10*ScreenX, 95, 100, 8, Player[1].ScorePercent);
       SingDrawSingbar(Theme.Sing.StaticP1TwoPSingBar.x, Theme.Sing.StaticP1TwoPSingBar.y, Theme.Sing.StaticP1TwoPSingBar.w, Theme.Sing.StaticP1TwoPSingBar.h , Player[0].ScorePercent, Player[0].ScoreMax, Player[0].ScoreTotalI);
       SingDrawSingbar(Theme.Sing.StaticP2RSingBar.x, Theme.Sing.StaticP2RSingBar.y, Theme.Sing.StaticP2RSingBar.w, Theme.Sing.StaticP2RSingBar.h , Player[1].ScorePercent, Player[1].ScoreMax, Player[1].ScoreTotalI);
    end;
     if PlayersPlay = 3 then
     begin
-      //SingDrawSingbar( 75 + 10*ScreenX, 95, 100, 8, Player[0].ScorePercent);
-      //SingDrawSingbar(370 + 10*ScreenX, 95, 100, 8, Player[1].ScorePercent);
-      //SingDrawSingbar(670 + 10*ScreenX, 95, 100, 8, Player[2].ScorePercent);
       SingDrawSingbar(Theme.Sing.StaticP1ThreePSingBar.x, Theme.Sing.StaticP1ThreePSingBar.y, Theme.Sing.StaticP1ThreePSingBar.w, Theme.Sing.StaticP1ThreePSingBar.h , Player[0].ScorePercent, Player[0].ScoreMax, Player[0].ScoreTotalI);
       SingDrawSingbar(Theme.Sing.StaticP2MSingBar.x, Theme.Sing.StaticP2MSingBar.y, Theme.Sing.StaticP2MSingBar.w, Theme.Sing.StaticP2MSingBar.h , Player[1].ScorePercent, Player[1].ScoreMax, Player[1].ScoreTotalI);
       SingDrawSingbar(Theme.Sing.StaticP3SingBar.x, Theme.Sing.StaticP3SingBar.y, Theme.Sing.StaticP3SingBar.w, Theme.Sing.StaticP3SingBar.h , Player[2].ScorePercent, Player[2].ScoreMax, Player[2].ScoreTotalI);
@@ -795,35 +807,36 @@ begin
     begin
       if ScreenAct = 1 then
       begin
-      //SingDrawSingbar( 75 + 10*ScreenX, 95, 100, 8, Player[0].ScorePercent);
-      //SingDrawSingbar(620 + 10*ScreenX, 95, 100, 8, Player[1].ScorePercent);
-      SingDrawSingbar(Theme.Sing.StaticP1TwoPSingBar.x, Theme.Sing.StaticP1TwoPSingBar.y, Theme.Sing.StaticP1TwoPSingBar.w, Theme.Sing.StaticP1TwoPSingBar.h , Player[0].ScorePercent, Player[0].ScoreMax, Player[0].ScoreTotalI);
-      SingDrawSingbar(Theme.Sing.StaticP2RSingBar.x, Theme.Sing.StaticP2RSingBar.y, Theme.Sing.StaticP2RSingBar.w, Theme.Sing.StaticP2RSingBar.h , Player[1].ScorePercent, Player[1].ScoreMax, Player[1].ScoreTotalI);
+        SingDrawSingbar(Theme.Sing.StaticP1TwoPSingBar.x, Theme.Sing.StaticP1TwoPSingBar.y, Theme.Sing.StaticP1TwoPSingBar.w, Theme.Sing.StaticP1TwoPSingBar.h , Player[0].ScorePercent, Player[0].ScoreMax, Player[0].ScoreTotalI);
+        SingDrawSingbar(Theme.Sing.StaticP2RSingBar.x, Theme.Sing.StaticP2RSingBar.y, Theme.Sing.StaticP2RSingBar.w, Theme.Sing.StaticP2RSingBar.h , Player[1].ScorePercent, Player[1].ScoreMax, Player[1].ScoreTotalI);
+        if P4Mode then
+        begin
+          SingDrawSingbar(Theme.Sing.StaticP3FourPSingBar.x, Theme.Sing.StaticP3FourPSingBar.y, Theme.Sing.StaticP3FourPSingBar.w, Theme.Sing.StaticP3FourPSingBar.h , Player[2].ScorePercent, Player[2].ScoreMax, Player[2].ScoreTotalI);
+          SingDrawSingbar(Theme.Sing.StaticP4FourPSingBar.x, Theme.Sing.StaticP4FourPSingBar.y, Theme.Sing.StaticP4FourPSingBar.w, Theme.Sing.StaticP4FourPSingBar.h , Player[3].ScorePercent, Player[3].ScoreMax, Player[3].ScoreTotalI);
+        end;
       end;
       if ScreenAct = 2 then
       begin
-      //SingDrawSingbar( 75 + 10*ScreenX, 95, 100, 8, Player[2].ScorePercent);
-      //SingDrawSingbar(620 + 10*ScreenX, 95, 100, 8, Player[3].ScorePercent);
-      SingDrawSingbar(Theme.Sing.StaticP1TwoPSingBar.x, Theme.Sing.StaticP1TwoPSingBar.y, Theme.Sing.StaticP1TwoPSingBar.w, Theme.Sing.StaticP1TwoPSingBar.h , Player[2].ScorePercent, Player[2].ScoreMax, Player[2].ScoreTotalI);
-      SingDrawSingbar(Theme.Sing.StaticP2RSingBar.x, Theme.Sing.StaticP2RSingBar.y, Theme.Sing.StaticP2RSingBar.w, Theme.Sing.StaticP2RSingBar.h , Player[3].ScorePercent, Player[3].ScoreMax, Player[3].ScoreTotalI);
+        SingDrawSingbar(Theme.Sing.StaticP1TwoPSingBar.x, Theme.Sing.StaticP1TwoPSingBar.y, Theme.Sing.StaticP1TwoPSingBar.w, Theme.Sing.StaticP1TwoPSingBar.h , Player[2].ScorePercent, Player[2].ScoreMax, Player[2].ScoreTotalI);
+        SingDrawSingbar(Theme.Sing.StaticP2RSingBar.x, Theme.Sing.StaticP2RSingBar.y, Theme.Sing.StaticP2RSingBar.w, Theme.Sing.StaticP2RSingBar.h , Player[3].ScorePercent, Player[3].ScoreMax, Player[3].ScoreTotalI);
       end;
     end;
     if PlayersPlay = 6 then
     begin
       if ScreenAct = 1 then
       begin
-        //SingDrawSingbar( 75 + 10*ScreenX, 95, 100, 8, Player[0].ScorePercent);
-        //SingDrawSingbar(370 + 10*ScreenX, 95, 100, 8, Player[1].ScorePercent);
-        //SingDrawSingbar(670 + 10*ScreenX, 95, 100, 8, Player[2].ScorePercent);
         SingDrawSingbar(Theme.Sing.StaticP1ThreePSingBar.x, Theme.Sing.StaticP1ThreePSingBar.y, Theme.Sing.StaticP1ThreePSingBar.w, Theme.Sing.StaticP1ThreePSingBar.h , Player[0].ScorePercent, Player[0].ScoreMax, Player[0].ScoreTotalI);
         SingDrawSingbar(Theme.Sing.StaticP2MSingBar.x, Theme.Sing.StaticP2MSingBar.y, Theme.Sing.StaticP2MSingBar.w, Theme.Sing.StaticP2MSingBar.h , Player[1].ScorePercent, Player[1].ScoreMax, Player[1].ScoreTotalI);
         SingDrawSingbar(Theme.Sing.StaticP3SingBar.x, Theme.Sing.StaticP3SingBar.y, Theme.Sing.StaticP3SingBar.w, Theme.Sing.StaticP3SingBar.h , Player[2].ScorePercent, Player[2].ScoreMax, Player[2].ScoreTotalI);
-     end;
+        if P4Mode then
+        begin
+          SingDrawSingbar(Theme.Sing.StaticP4SixPSingBar.x, Theme.Sing.StaticP4SixPSingBar.y, Theme.Sing.StaticP4SixPSingBar.w, Theme.Sing.StaticP4SixPSingBar.h , Player[3].ScorePercent, Player[3].ScoreMax, Player[3].ScoreTotalI);
+          SingDrawSingbar(Theme.Sing.StaticP5SingBar.x, Theme.Sing.StaticP5SingBar.y, Theme.Sing.StaticP5SingBar.w, Theme.Sing.StaticP5SingBar.h , Player[4].ScorePercent, Player[4].ScoreMax, Player[4].ScoreTotalI);
+          SingDrawSingbar(Theme.Sing.StaticP6SingBar.x, Theme.Sing.StaticP6SingBar.y, Theme.Sing.StaticP6SingBar.w, Theme.Sing.StaticP6SingBar.h , Player[5].ScorePercent, Player[5].ScoreMax, Player[5].ScoreTotalI);
+        end;
+      end;
       if ScreenAct = 2 then
       begin
-        //SingDrawSingbar( 75 + 10*ScreenX, 95, 100, 8, Player[3].ScorePercent);
-        //SingDrawSingbar(370 + 10*ScreenX, 95, 100, 8, Player[4].ScorePercent);
-        //SingDrawSingbar(670 + 10*ScreenX, 95, 100, 8, Player[5].ScorePercent);
         SingDrawSingbar(Theme.Sing.StaticP1ThreePSingBar.x, Theme.Sing.StaticP1ThreePSingBar.y, Theme.Sing.StaticP1ThreePSingBar.w, Theme.Sing.StaticP1ThreePSingBar.h , Player[3].ScorePercent, Player[3].ScoreMax, Player[3].ScoreTotalI);
         SingDrawSingbar(Theme.Sing.StaticP2MSingBar.x, Theme.Sing.StaticP2MSingBar.y, Theme.Sing.StaticP2MSingBar.w, Theme.Sing.StaticP2MSingBar.h , Player[4].ScorePercent, Player[4].ScoreMax, Player[4].ScoreTotalI);
         SingDrawSingbar(Theme.Sing.StaticP3SingBar.x, Theme.Sing.StaticP3SingBar.y, Theme.Sing.StaticP3SingBar.w, Theme.Sing.StaticP3SingBar.h , Player[5].ScorePercent, Player[5].ScoreMax, Player[5].ScoreTotalI);
@@ -883,7 +896,7 @@ begin
         SingDrawLineBonus( Player[0].LineBonus_PosX, Player[0].LineBonus_PosY, Player[0].LineBonus_Color, Player[0].LineBonus_Alpha, Player[0].LineBonus_Text, Player[0].LineBonus_Age);
         SingDrawLineBonus( Player[1].LineBonus_PosX, Player[1].LineBonus_PosY, Player[1].LineBonus_Color, Player[1].LineBonus_Alpha, Player[1].LineBonus_Text, Player[1].LineBonus_Age);
       end;
-      if ScreenAct = 2 then
+      if P4Mode or (ScreenAct = 2) then
       begin
         SingDrawLineBonus( Player[2].LineBonus_PosX, Player[2].LineBonus_PosY, Player[2].LineBonus_Color, Player[2].LineBonus_Alpha, Player[2].LineBonus_Text, Player[2].LineBonus_Age);
         SingDrawLineBonus( Player[3].LineBonus_PosX, Player[3].LineBonus_PosY, Player[3].LineBonus_Color, Player[3].LineBonus_Alpha, Player[3].LineBonus_Text, Player[3].LineBonus_Age);
@@ -897,7 +910,7 @@ begin
         SingDrawLineBonus( Player[1].LineBonus_PosX, Player[1].LineBonus_PosY, Player[1].LineBonus_Color, Player[1].LineBonus_Alpha, Player[1].LineBonus_Text, Player[1].LineBonus_Age);
         SingDrawLineBonus( Player[2].LineBonus_PosX, Player[2].LineBonus_PosY, Player[2].LineBonus_Color, Player[2].LineBonus_Alpha, Player[2].LineBonus_Text, Player[2].LineBonus_Age);
       end;
-      if ScreenAct = 2 then
+      if P4Mode or (ScreenAct = 2) then
       begin
         SingDrawLineBonus( Player[3].LineBonus_PosX, Player[3].LineBonus_PosY, Player[3].LineBonus_Color, Player[3].LineBonus_Alpha, Player[3].LineBonus_Text, Player[3].LineBonus_Age);
         SingDrawLineBonus( Player[4].LineBonus_PosX, Player[4].LineBonus_PosY, Player[4].LineBonus_Color, Player[4].LineBonus_Alpha, Player[4].LineBonus_Text, Player[4].LineBonus_Age);
@@ -926,15 +939,15 @@ begin
   end;
 
   if AktSong.isDuet then
-    SingDrawNotesDuet(NR, Alpha)
+    SingDrawNotesDuet(P4Mode, NR, Alpha)
   else
-    SingDrawNotes(NR, Alpha);
+    SingDrawNotes(P4Mode, NR, Alpha);
 
   glDisable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
 end;
 
-procedure SingDrawNotes(NR: TRecR; Alpha: TAlpha);
+procedure SingDrawNotes(P4Mode: boolean; NR: TRecR; Alpha: TAlpha);
 begin
   if PlayersPlay = 1 then
   begin
@@ -975,11 +988,13 @@ begin
 
   if PlayersPlay = 4 then
   begin
-    if ScreenAct = 1 then begin
+    if ScreenAct = 1 then
+    begin
       SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 0, 15, Alpha[0]);
       SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 1, 15, Alpha[0]);
     end;
-    if ScreenAct = 2 then begin
+    if ScreenAct = 2 then
+    begin
       SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Right - 20, 0, 2, 15, Alpha[0]);
       SingDrawPlayerBGCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Right - 20, 0, 3, 15, Alpha[0]);
     end;
@@ -987,26 +1002,43 @@ begin
     SingDrawCzesc(NR.Left + 20, Skin_P1_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
     SingDrawCzesc(NR.Left + 20, Skin_P2_NotesB, NR.Right - 20, 0, 15, Alpha[0]);
 
-    if ScreenAct = 1 then begin
+    if ScreenAct = 1 then
+    begin
       SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 0, 15, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 1, 15, Alpha[0]);
     end;
-    if ScreenAct = 2 then begin
+    if ScreenAct = 2 then
+    begin
       SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 3, 15, Alpha[0]);
     end;
+
+    if P4Mode then
+    begin
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, Skin_P1_NotesB, 400+Nr.Right - 20, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, Skin_P2_NotesB, 400+Nr.Right - 20, 0, 3, 15, Alpha[0]);
+
+      SingDrawCzesc(400+NR.Left + 20, Skin_P1_NotesB, 400+NR.Right - 20, 0, 15, Alpha[0]);
+      SingDrawCzesc(400+NR.Left + 20, Skin_P2_NotesB, 400+NR.Right - 20, 0, 15, Alpha[0]);
+
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P1_NotesB, 400+Nr.Width - 40, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P2_NotesB, 400+Nr.Width - 40, 0, 3, 15, Alpha[0]);
+    end;
   end;
 
-  if PlayersPlay = 6 then begin
+  if PlayersPlay = 6 then
+  begin
     NotesW := NotesW * 0.8;
     NotesH := NotesH * 0.8;
 
-    if ScreenAct = 1 then begin
+    if ScreenAct = 1 then
+    begin
       SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 0, 12, Alpha[0]);
       SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 1, 12, Alpha[0]);
       SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 2, 12, Alpha[0]);
     end;
-    if ScreenAct = 2 then begin
+    if ScreenAct = 2 then
+    begin
       SingDrawPlayerBGCzesc(Nr.Left + 20, 120+95, Nr.Right - 20, 0, 3, 12, Alpha[0]);
       SingDrawPlayerBGCzesc(Nr.Left + 20, 245+95, Nr.Right - 20, 0, 4, 12, Alpha[0]);
       SingDrawPlayerBGCzesc(Nr.Left + 20, 370+95, Nr.Right - 20, 0, 5, 12, Alpha[0]);
@@ -1016,20 +1048,37 @@ begin
     SingDrawCzesc(NR.Left + 20, 245+95, NR.Right - 20, 0, 12, Alpha[0]);
     SingDrawCzesc(NR.Left + 20, 370+95, NR.Right - 20, 0, 12, Alpha[0]);
 
-    if ScreenAct = 1 then begin
+    if ScreenAct = 1 then
+    begin
       SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 0, 12, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 1, 12, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 2, 12, Alpha[0]);
     end;
-    if ScreenAct = 2 then begin
+    if ScreenAct = 2 then
+    begin
       SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 0, 4, 12, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12, Alpha[0]);
     end;
+
+    if P4Mode then
+    begin
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, 120+95, 400+Nr.Right - 20, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, 245+95, 400+Nr.Right - 20, 0, 4, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, 370+95, 400+Nr.Right - 20, 0, 5, 12, Alpha[0]);
+
+      SingDrawCzesc(400+NR.Left + 20, 120+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
+      SingDrawCzesc(400+NR.Left + 20, 245+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
+      SingDrawCzesc(400+NR.Left + 20, 370+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
+
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 120+95, 400+Nr.Width - 40, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 245+95, 400+Nr.Width - 40, 0, 4, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 370+95, 400+Nr.Width - 40, 0, 5, 12, Alpha[0]);
+    end;
   end;
 end;
 
-procedure SingDrawNotesDuet(NR: TRecR; Alpha: TAlpha);
+procedure SingDrawNotesDuet(P4Mode: boolean; NR: TRecR; Alpha: TAlpha);
 begin
   if PlayersPlay = 1 then
   begin
@@ -1090,6 +1139,18 @@ begin
       SingDrawPlayerCzesc(Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 3, 15, Alpha[1]);
     end;
+
+    if P4Mode then
+    begin
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, Skin_P1_NotesB, 400+Nr.Right - 20, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, Skin_P2_NotesB, 400+Nr.Right - 20, 1, 3, 15, Alpha[1]);
+
+      SingDrawCzesc(400+NR.Left + 20, Skin_P1_NotesB, 400+NR.Right - 20, 0, 15, Alpha[0]);
+      SingDrawCzesc(400+NR.Left + 20, Skin_P2_NotesB, 400+NR.Right - 20, 1, 15, Alpha[1]);
+
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P1_NotesB, 400+Nr.Width - 40, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P2_NotesB, 400+Nr.Width - 40, 1, 3, 15, Alpha[1]);
+    end;
   end;
 
   if PlayersPlay = 6 then begin
@@ -1120,6 +1181,21 @@ begin
       SingDrawPlayerCzesc(Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12, Alpha[0]);
       SingDrawPlayerCzesc(Nr.Left + 20, 245+95, Nr.Width - 40, 1, 4, 12, Alpha[1]);
       SingDrawPlayerCzesc(Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12, Alpha[0]);
+    end;
+
+    if P4Mode then
+    begin
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, 120+95, 400+Nr.Right - 20, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, 245+95, 400+Nr.Right - 20, 1, 4, 12, Alpha[1]);
+      SingDrawPlayerBGCzesc(400+Nr.Left + 20, 370+95, 400+Nr.Right - 20, 0, 5, 12, Alpha[0]);
+
+      SingDrawCzesc(400+NR.Left + 20, 120+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
+      SingDrawCzesc(400+NR.Left + 20, 245+95, 400+NR.Right - 20, 1, 12, Alpha[1]);
+      SingDrawCzesc(400+NR.Left + 20, 370+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
+
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 120+95, 400+Nr.Width - 40, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 245+95, 400+Nr.Width - 40, 1, 4, 12, Alpha[1]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 370+95, 400+Nr.Width - 40, 0, 5, 12, Alpha[0]);
     end;
   end;
 end;
@@ -1155,14 +1231,15 @@ var
 
 begin
   // positions
-  if Ini.SingWindow = 0 then
-  begin
-    NR.Left := 120;
-  end else
+  if ((Screens = 1) and (PlayersPlay <= 3)) or (Screens = 2) then
   begin
     NR.Left := 20;
+    NR.Right := 780;
+  end else
+  begin
+    NR.Left := 10;
+    NR.Right := 390;
   end;
-  NR.Right := 780;
 
   NR.Width := NR.Right - NR.Left;
   NR.WMid := NR.Width / 2;
@@ -1949,45 +2026,19 @@ begin
   for I := 1 to num do
   begin
     if (I<=round(Volume/step)) then
-    begin
-      glColor4f(0.0, 0.8, 0.0, 0.8);
-      glEnable(GL_BLEND);
-      glbegin(gl_quads);
-        glVertex2f(x+(I-1)*(w/num), y);
-        glVertex2f(x+(I-1)*(w/num), y+h);
-        glVertex2f(x+(I)*(w/num)-2, y+h);
-        glVertex2f(x+(I)*(w/num)-2, y);
-      glEnd;
-      glDisable(GL_BLEND);
-    end else
-    begin
+      glColor4f(0.0, 0.8, 0.0, 0.8)
+    else
       glColor4f(0.7, 0.7, 0.7, 0.6);
-      glEnable(GL_BLEND);
-      glbegin(gl_quads);
-        glVertex2f(x+(I-1)*(w/num), y);
-        glVertex2f(x+(I-1)*(w/num), y+h);
-        glVertex2f(x+(I)*(w/num)-2, y+h);
-        glVertex2f(x+(I)*(w/num)-2, y);
-      glEnd;
-      glDisable(GL_BLEND);
-    end;
+
+    glEnable(GL_BLEND);
+    glbegin(gl_quads);
+      glVertex2f(x+(I-1)*(w/num), y);
+      glVertex2f(x+(I-1)*(w/num), y+h);
+      glVertex2f(x+(I)*(w/num)-2, y+h);
+      glVertex2f(x+(I)*(w/num)-2, y);
+    glEnd;
+    glDisable(GL_BLEND);
   end;
-
-  {
-  //print Text
-  str := IntToStr(MP3Volume)+ '%';
-
-  glColor4f(1, 1, 1, 1);
-
-  h := 8;
-  SetFontStyle(1);
-  SetFontItalic(false);
-  SetFontSize(h);
-  w := glTextWidth(PChar(str));
-
-  SetFontPos (x+2, y+2);
-  txt := Addr(str[1]);
-  glPrint(txt); }
 end;
 
 end.
