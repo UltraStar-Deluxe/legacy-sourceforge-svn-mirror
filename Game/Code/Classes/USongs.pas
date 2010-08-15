@@ -92,6 +92,7 @@ type
     Song:       array of TSong; // array of songs
     SongSort:   array of TSong;
     Selected:   integer; // selected song index
+    NumFaultySongs: integer;
     procedure LoadSongList; // load all songs
     procedure BrowseDir(Dir: string); // should return number of songs in the future
     procedure Sort(Order: integer);
@@ -135,6 +136,7 @@ begin
 
   // clear
   Setlength(Song, 50);
+  NumFaultySongs := 0;
 
   BrowsePos := 0;
   // browse directories
@@ -179,9 +181,13 @@ begin
         AktSong := Song[SLen];
         res := LoadSong(Song[SLen].Path + Song[SLen].FileName, SONG_LOAD_NOTES); //TODO Hash?
 
+        if not CheckOK then
+          inc(NumFaultySongs);
+          
         if res then
         begin
           Song[SLen]:=AktSong;
+
           //Medley and Duet - is it possible? Perhaps later...
           if not AktSong.isDuet then
             FindRefrainStart(Song[SLen])

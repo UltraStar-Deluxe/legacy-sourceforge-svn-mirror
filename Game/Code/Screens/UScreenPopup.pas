@@ -85,7 +85,7 @@ var
 
 implementation
 
-uses Classes, TextGL, UGraphic, UMain, UIni, UTexture, ULanguage, UParty, UPlaylist, UDisplay;
+uses Classes, TextGL, UGraphic, USongs, UMain, UIni, UTexture, ULanguage, UParty, UPlaylist, UDisplay;
 
 function TScreenPopupCheck.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
@@ -121,11 +121,31 @@ begin
                    ScreenSingModi.Finish;
                end;
 
-               Display.CheckOK:=True;
+               //Hack to load faulty songs in main screen
+               if (Display.NextScreenWithCheck = NIL) then
+               begin
+                 if (Display.ActualScreen = @ScreenMain) and (ScreenMain.ShowNumErrors) then
+                 begin
+                   Ini.LoadFaultySongs := 1;
+                   Songs.LoadSongList();
+                   UGraphic.UnLoadScreens();
+                   UGraphic.LoadScreens( true );
+                   ScreenSong.Refresh(true);
+                   PlaylistMan.LoadPlayLists;
+                   Ini.LoadFaultySongs := 0;
+                   ScreenMain.ShowNumErrors := false;
+                   FadeTo(@ScreenMain);
+                 end else
+                   Display.CheckOK:=True;
+               end else
+                Display.CheckOK:=True;
              end;
           1: begin
                Display.CheckOK:=False;
                Display.NextScreenWithCheck:=NIL;
+
+               if (Display.ActualScreen = @ScreenMain) and (ScreenMain.ShowNumErrors) then
+                 ScreenMain.ShowNumErrors := false;
              end;
           end;
           Visible:=False;

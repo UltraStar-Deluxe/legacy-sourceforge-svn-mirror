@@ -261,7 +261,7 @@ begin
   AddButton(Theme.Main.ButtonExit);
 
   Interaction := 0;
-  ShowNumErrors := false;
+  ShowNumErrors := true;
 end;
 
 procedure TScreenMain.onShow;
@@ -274,10 +274,9 @@ begin
   if not Help.SetHelpID(ID) then
       Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenMain)');
 
-  if ShowNumErrors then
+  if (Ini.LoadFaultySongs=0) and ShowNumErrors and (Songs.NumFaultySongs>0) then
   begin
-    ShowNumErrors := false;
-    ScreenPopupError.ShowPopup(IntToStr(Log.NumErrors) + ' errors on loading, see Error.log for details');
+    ScreenPopupCheck.ShowPopup(Format(Language.Translate('MSG_ERROR_SONGLOADING'), [Songs.NumFaultySongs]));
   end;
 end;
 

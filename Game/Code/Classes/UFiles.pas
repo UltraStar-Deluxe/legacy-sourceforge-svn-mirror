@@ -49,8 +49,10 @@ var
   // variables available for all procedures
   Base:       array[0..1] of integer;
   Rel:        array[0..1] of integer;
-  Mult:     integer = 1;
-  MultBPM:  integer = 4;
+  Mult:       integer = 1;
+  MultBPM:    integer = 4;
+
+  CheckOK:    boolean;
 
 implementation
 uses TextGL, UIni, UMain;
@@ -805,6 +807,7 @@ var
   isNewSentence: boolean;
 begin
   Result := false;
+  CheckOK := true;
 
   if not FileExists(Name) then begin
     Log.LogError('File not found: "' + Name + '"', 'LoadSong');
@@ -1028,7 +1031,8 @@ begin
     exit;
   end;
 
-  Result := CheckSong;
+  CheckOK := CheckSong;
+  Result := CheckOK;
 end;
 
 //--------------------
