@@ -37,10 +37,11 @@ type
     function IsWinner(Player, Winner: Byte): boolean;
     procedure GenScores;
   public
-    Plugins: array of TPartyPlugin;
-    Teams: TTeamInfo;
-    Rounds: array of TRoundInfo;
+    Plugins:  array of TPartyPlugin;
+    Teams:    TTeamInfo;
+    Rounds:   array of TRoundInfo;
     CurRound: Byte;
+    Rand3:    boolean;
 
     constructor Create;
 
@@ -130,6 +131,8 @@ var
 begin
   //Set cur Round to Round 1
   CurRound := 255;
+
+  Rand3 := true;
 
   //Set Rounds
   NumMedleys := 0;

@@ -76,8 +76,7 @@ begin
   If (PressedDown) Then
   begin // Key Down
     case PressedKey of
-      SDLK_ESCAPE,
-      SDLK_BACKSPACE :
+      SDLK_ESCAPE:
         begin
           if ScreenSong.PartyMedley then
           begin

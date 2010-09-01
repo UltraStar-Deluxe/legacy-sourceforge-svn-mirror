@@ -19,7 +19,9 @@ type
     Difficulty:     integer;
     Language:       integer;
     Tabs:           integer;
+    tabs_temp:      integer;
     Sorting:        integer;
+    sorting_temp:   integer;
     ShuffleTime:    integer;
     Debug:          integer;
     LoadFaultySongs:integer;
@@ -108,7 +110,7 @@ const
   IDifficulty:    array[0..2] of string = ('Easy', 'Medium', 'Hard');
   ITabs:          array[0..1] of string = ('Off', 'On');
 
-  ISorting:       array[0..7] of string = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2');
+  ISorting:       array[0..8] of string = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2', 'Random');
   sEdition = 0;
   sGenre = 1;
   sLanguage = 2;
@@ -117,8 +119,9 @@ const
   sArtist = 5;
   sTitle2 = 6;
   sArtist2 = 7;
+  sRandom = 8;
 
-  IShuffleTime:   array[0..9] of string = ('Off',
+  IShuffleTime:   array[0..10] of string = ('Off',
                                           '15 Sec',
                                           '30 Sec',
                                           '45 Sec',
@@ -127,7 +130,8 @@ const
                                           '90 Sec',
                                           '105 Sec',
                                           '120 Sec',
-                                          'MAX');
+                                          'MAX',
+                                          'FULL');
 
   IDebug:         array[0..1] of string = ('Off', 'On');
   ILoadFaultySongs: array[0..1] of string = ('Off', 'On');
@@ -248,11 +252,13 @@ begin
   Tekst := IniFile.ReadString('Game', 'Tabs', ITabs[0]);
   for Pet := 0 to High(ITabs) do
     if Tekst = ITabs[Pet] then Ini.Tabs := Pet;
+  tabs_temp := Tabs;
 
   // Sorting
   Tekst := IniFile.ReadString('Game', 'Sorting', ISorting[0]);
   for Pet := 0 to High(ISorting) do
     if Tekst = ISorting[Pet] then Ini.Sorting := Pet;
+  sorting_temp := Sorting;
 
   // ShuffleTime
   Tekst := IniFile.ReadString('Game', 'ShuffleTime', 'Off');
@@ -653,10 +659,12 @@ begin
     // Tabs
     Tekst := ITabs[Ini.Tabs];
     IniFile.WriteString('Game',     'Tabs',   Tekst);
+    tabs_temp := Tabs;
 
     // Sorting
     Tekst := ISorting[Ini.Sorting];
     IniFile.WriteString('Game',     'Sorting',   Tekst);
+    sorting_temp := Sorting;
 
     //ShuffleTime
     Tekst := IShuffleTime[Ini.ShuffleTime];

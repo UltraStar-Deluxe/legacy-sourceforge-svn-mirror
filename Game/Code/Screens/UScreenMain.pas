@@ -277,6 +277,15 @@ begin
   if (Ini.LoadFaultySongs=0) and ShowNumErrors and (Songs.NumFaultySongs>0) then
   begin
     ScreenPopupCheck.ShowPopup(Format(Language.Translate('MSG_ERROR_SONGLOADING'), [Songs.NumFaultySongs]));
+  end else
+    ShowNumErrors := false;
+
+  if (Ini.tabs_temp <> Ini.tabs) or (Ini.sorting_temp <> Ini.Sorting)then
+  begin
+    Ini.Tabs := Ini.tabs_temp;
+    Ini.Sorting := Ini.sorting_temp;
+    ScreenSong.Refresh(true);
+    PlaylistMan.LoadPlayLists;
   end;
 end;
 

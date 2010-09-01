@@ -240,8 +240,7 @@ begin
           
           Result := false;
         end;
-      SDLK_ESCAPE,
-      SDLK_BACKSPACE :
+      SDLK_ESCAPE:
         begin
           //Record Sound Hack:
           //Sound[0].BufferLong

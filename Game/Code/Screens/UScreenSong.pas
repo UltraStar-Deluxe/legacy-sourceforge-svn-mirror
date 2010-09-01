@@ -41,6 +41,7 @@ type
       isScrolling:      boolean;
 
     public
+      Sel3:             integer; //Selection in party mode (0=current, -1=left, 1=right)
       MP3Volume:        integer;
       MP3VolumeHandler: THandler;
       TextArtist:   integer;
@@ -618,87 +619,100 @@ begin
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
-        WaitHandler.change_time := 0;
-        if (Mode = smNormal) or ((Mode = smChallenge) and not PartyMedley and not FoundCAT) then
-        begin
-          //On Escape goto Cat-List Hack
-          if (Ini.Tabs = 1) AND (CatSongs.CatNumShow <> -1) then
-            begin
-            //Find Category
-            I := Interaction;
-            while not catsongs.Song[I].Main  do
-              begin
-              Dec (I);
-              if (I < low(catsongs.Song)) then
-                break;
-              end;
-            if (I<= 1) then
-            Interaction := high(catsongs.Song)
-            else
-            Interaction := I - 1;
-
-            //Stop Music
-            Music.Stop;
-
-            //Stop Video
-            acClose;
-
-            CatSongs.ShowCategoryList;
-
-            //Show Cat in Top Left Mod
-            HideCatTL;
-
-
-            //Show Wrong Song when Tabs on Fix
-            SelectNext;
-            FixSelected;
-            //SelectPrev;
-            //CatSongs.Song[0].Visible := False;
-            end
-          else
+          if UVideo.VideoOpened then
           begin
-          //On Escape goto Cat-List Hack End
-            //Tabs off and in Search or Playlist -> Go back to Song view
-            if (CatSongs.CatNumShow < -1) then
+            if TargetVidVis=full then
             begin
-              //Atm: Set Empty Filter
-              CatSongs.SetFilter('', 0);
+              TargetVidVis:=windowed;
+              TargetAspect := acoCrop;
+              if not VidVisHandler.changed then
+              begin
+                VidVisHandler.changed := true;
+                VidVisHandler.change_time := 0;
+              end;
+              Exit;
+            end;
+          end;
+
+          WaitHandler.change_time := 0;
+          if (Mode = smNormal) or ((Mode = smChallenge) and not PartyMedley and not FoundCAT) then
+          begin
+            //On Escape goto Cat-List Hack
+            if (Ini.Tabs = 1) AND (CatSongs.CatNumShow <> -1) then
+            begin
+              //Find Category
+              I := Interaction;
+              while not catsongs.Song[I].Main  do
+              begin
+                Dec (I);
+                if (I < low(catsongs.Song)) then
+                  break;
+              end;
+
+              if (I<= 1) then
+                Interaction := high(catsongs.Song)
+              else
+                Interaction := I - 1;
+
+              //Stop Music
+              Music.Stop;
+
+              //Stop Video
+              acClose;
+
+              CatSongs.ShowCategoryList;
 
               //Show Cat in Top Left Mod
               HideCatTL;
-              Interaction := 0;
+
 
               //Show Wrong Song when Tabs on Fix
               SelectNext;
               FixSelected;
-
-              ChangeMusic;
-            end
-            else if (Mode = smNormal) then
+              //SelectPrev;
+              //CatSongs.Song[0].Visible := False;
+            end else
             begin
-              Music.Stop;
-              Music.PlayBack;
-              acClose;
+              //On Escape goto Cat-List Hack End
+              //Tabs off and in Search or Playlist -> Go back to Song view
+              if (CatSongs.CatNumShow < -1) then
+              begin
+                //Atm: Set Empty Filter
+                CatSongs.SetFilter('', 0);
 
-              FadeTo(@ScreenMain);
-            end else if (Mode = smChallenge) then
-            begin
-              Music.PlayBack;
-              CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
+                //Show Cat in Top Left Mod
+                HideCatTL;
+                Interaction := 0;
+
+                //Show Wrong Song when Tabs on Fix
+                SelectNext;
+                FixSelected;
+
+                ChangeMusic;
+              end else if (Mode = smNormal) then
+              begin
+                Music.Stop;
+                Music.PlayBack;
+                acClose;
+
+                FadeTo(@ScreenMain);
+              end else if (Mode = smChallenge) then
+              begin
+                Music.PlayBack;
+                CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
+              end;
             end;
+          end else if (Mode = smChallenge) then
+          begin
+            Music.PlayBack;
+            CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
+          end
+          //When in party Mode then Ask before Close
+          else if (Mode = smParty) then
+          begin
+            Music.PlayBack;
+            CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
           end;
-        end
-        else if (Mode = smChallenge) then
-        begin
-          Music.PlayBack;
-          CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
-        end
-        //When in party Mode then Ask before Close
-        else if (Mode = smParty) then
-        begin
-          Music.PlayBack;
-          CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
-        end;
         end;
       SDLK_RETURN:
         begin
@@ -955,8 +969,12 @@ begin
       SDLK_RIGHT:
         begin
           if (Length(Songs.Song) > 0) AND
-            ((Mode = smNormal) or ((Mode = smChallenge) and CatSongs.Song[Interaction].Main)) then
+            (((Mode = smNormal) or ((Mode = smChallenge) and CatSongs.Song[Interaction].Main)) or
+            ((Mode = smParty) and (PartySession.Rand3) and (Sel3<=0))) then
           begin
+            if (Mode = smParty) then
+              Inc(Sel3);
+
             Music.PlayChange;
             SelectNext;
             ChangeMusic;
@@ -967,8 +985,12 @@ begin
       SDLK_LEFT:
         begin
           if (Length(Songs.Song) > 0) AND
-            ((Mode = smNormal) or ((Mode = smChallenge) and CatSongs.Song[Interaction].Main)) then
+            (((Mode = smNormal) or ((Mode = smChallenge) and CatSongs.Song[Interaction].Main)) or
+            ((Mode = smParty) and (PartySession.Rand3) and (Sel3>=0))) then
           begin
+            if (Mode = smParty) then
+              Dec(Sel3);
+
             Music.PlayChange;
             SelectPrev;
             ChangeMusic;
@@ -2085,6 +2107,8 @@ begin
   MakeMedley := false;
   isScrolling := false;
 
+  Sel3 := 0;
+
   StartTry := false;
   AspectHandler.changed := false;
   InfoHandler.changed := false;
@@ -2104,7 +2128,7 @@ begin
     Text[TextTop[I]].Visible := false;
 
   Static[StaticTop].Visible := false;
-
+  HideCatTL;
   //Cat Mod etc
   if (Ini.Tabs = 1) AND (CatSongs.CatNumShow = -1) AND
     (PlaylistMan.Mode=0) then
@@ -2659,6 +2683,9 @@ begin
         WaitHandler.active := true;
         WaitHandler.lastIndex := Interaction;
         WaitHandler.lastCat := CatSongs.CatNumShow;
+
+        if (Ini.ShuffleTime=10) and (VidVis<>full) then
+          VidVis := full;
       end;
 
       if(Ini.Tabs<>1) or (CatSongs.CatNumShow < -1) then
@@ -2720,7 +2747,7 @@ begin
         end;
       end;
 
-      Music.PlayChange;
+      //Music.PlayChange;
       ChangeMusic;
       SetScroll4;
     end else if (Ini.ShuffleTime>0) then
@@ -2912,10 +2939,13 @@ begin
   begin
     if Music.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3) then
     begin
-      if (CatSongs.Song[Interaction].PreviewStart>0) then
-        Music.MoveTo(CatSongs.Song[Interaction].PreviewStart)
-      else
-        Music.MoveTo(Music.Length / 4);
+      if not (Ini.ShuffleTime>9) or not WaitHandler.active then
+      begin
+        if (CatSongs.Song[Interaction].PreviewStart>0) then
+          Music.MoveTo(CatSongs.Song[Interaction].PreviewStart)
+        else
+          Music.MoveTo(Music.Length / 4);
+      end;
 
       StartVideoPreview;
       //If Song Fading is activated then don't Play directly, and Set Volume to Null, else Play normal
@@ -3679,6 +3709,7 @@ end;
 //Team No of Team (0-5)
 procedure TScreenSong.DoJoker (Team: Byte; SDL_ModState: Word);
 begin
+  Sel3 := 0;
   if not PartyMedley and (ChooseableSongs>1) and
     (Mode = smParty) AND (PartySession.Teams.NumTeams >= Team + 1) AND (PartySession.Teams.Teaminfo[Team].Joker > 0) then
   begin

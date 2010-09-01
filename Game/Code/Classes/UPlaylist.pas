@@ -47,7 +47,9 @@ type
       Procedure   DelItem(const iItem: Cardinal; const iPlaylist: Integer = -1);
 
       Procedure   GetNames(var PLNames: array of String);
+      Procedure   GetNamesAndNumSongs(var PLNames: array of String);
       Function    GetIndexbySongID(const SongID: Cardinal; const iPlaylist: Integer = -1): Integer;
+      Function    GetNumSongs(Index: Cardinal): integer;
     end;
 
     {Modes:
@@ -414,18 +416,35 @@ end;
 //----------
 //GetNames - Writes Playlist Names in a Array
 //----------
-Procedure    TPlayListManager.GetNames(var PLNames: array of String);
+Procedure TPlayListManager.GetNames(var PLNames: array of String);
 var
   I: Integer;
   Len: Integer;
 begin
   Len := High(Playlists);
-  
+
   if (Length(PLNames) <> Len + 1) then
     exit;
 
   For I := 0 to Len do
     PLNames[I] := Playlists[I].Name;
+end;
+
+//----------
+//GetNamesAndNumSongs - Writes Playlist Names + Num Songs in an Array
+//----------
+Procedure TPlayListManager.GetNamesAndNumSongs(var PLNames: array of String);
+var
+  I: Integer;
+  Len: Integer;
+begin
+  Len := High(Playlists);
+
+  if (Length(PLNames) <> Len + 1) then
+    exit;
+
+  For I := 0 to Len do
+    PLNames[I] := Playlists[I].Name + ' ( ' + IntToStr(GetNumSongs(I)) + ' Songs)';
 end;
 
 //----------
@@ -452,6 +471,21 @@ begin
       Result := I;
       Break;
     end;
+  end;
+end;
+
+function    TPlayListManager.GetNumSongs(Index: Cardinal): integer;
+var
+  I:  integer;
+
+begin
+  Result := 0;
+
+  //Count Songs in Playlist
+  For I := 0 to high(PlayLists[Index].Items) do
+  begin
+    if (ScreenSong.Mode=smNormal) or not CatSongs.Song[PlayLists[Index].Items[I].SongID].isDuet then
+      Inc(Result);
   end;
 end;
 

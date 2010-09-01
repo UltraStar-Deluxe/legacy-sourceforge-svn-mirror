@@ -6,6 +6,11 @@ uses
   UMenu, SDL, UDisplay, UMusic, SysUtils, UThemes;
 
 type
+  THandler = record
+    changed:  boolean;
+    change_time:  real;
+  end;
+  
   TScreenPartyScore = class(TMenu)
     public
       TextScoreTeam1:    Cardinal;
@@ -30,12 +35,21 @@ type
                                         R, G, B: Real;
                         end;
 
-      MaxScore:          Word;
+      MaxScore:         Word;
+
+      ActualRound:      integer;
+      Voice:            integer;
+      Fadeout:          boolean;
+
+      MP3VolumeHandler: THandler;
       
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
+      function Draw: boolean; override;
       procedure SetAnimationProgress(Progress: real); override;
+      procedure StartPreview;
+      procedure StartVoice;
   end;
 
 const
@@ -43,7 +57,7 @@ const
 
 implementation
 
-uses UGraphic, UMain, UParty, UScreenSingModi, ULanguage, UTexture, USkins, UHelp, ULog;
+uses UGraphic, UDraw, UTime, UMain, UParty, USongs, UScreenSingModi, ULanguage, UTexture, UIni, USkins, UHelp, ULog;
 
 function TScreenPartyScore.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
@@ -61,26 +75,81 @@ begin
           Result := false;
         end;
 
-      SDLK_ESCAPE,
-      SDLK_BACKSPACE :
+      //MP3-Volume Up
+      SDLK_PAGEUP:
         begin
-          Music.PlayStart;
-          if (PartySession.CurRound < High(PartySession.Rounds)) then
-            FadeTo(@ScreenPartyNewRound)
-          else
+          if (ScreenSong.MP3Volume<100) then
           begin
-            PartySession.EndRound;
-            FadeTo(@ScreenPartyWin);
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume+5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
+      //MP3-Volume Down
+      SDLK_PAGEDOWN:
+        begin
+          if (ScreenSong.MP3Volume>0) then
+          begin
+            ScreenSong.MP3Volume := ScreenSong.MP3Volume-5;
+            Music.SetMusicVolume(ScreenSong.MP3Volume);
+          end;
+          MP3VolumeHandler.changed := true;
+          MP3VolumeHandler.change_time := 0;
+        end;
+
+      SDLK_ESCAPE,
+      SDLK_BACKSPACE,
+      SDLK_RETURN :
+        begin
+          if (not Fadeout) then
+          begin
+            Music.PlayStart;
+
+            if (Ini.SavePlayback=1) then
+              Music.VoicesClose;
+
+            ScreenSong.SongIndex := -1;
+            Music.FadeStop(Ini.PreviewFading);
+
+            if (PartySession.CurRound < High(PartySession.Rounds)) then
+              FadeTo(@ScreenPartyNewRound)
+            else
+            begin
+              PartySession.EndRound;
+              FadeTo(@ScreenPartyWin);
+            end;
+            Fadeout := true;
           end;
         end;
 
-      SDLK_RETURN:
+      SDLK_RIGHT:
         begin
-          Music.PlayStart;
-          if (PartySession.CurRound < High(PartySession.Rounds)) then
-            FadeTo(@ScreenPartyNewRound)
-          else
-            FadeTo(@ScreenPartyWin);
+          if ActualRound<Length(PlaylistMedley.Stats)-1 then
+          begin
+            Music.PlayChange;
+            inc(ActualRound);
+            //RefreshTexts;
+            if not (Ini.SavePlayback=1) then
+              StartPreview
+            else
+              StartVoice;
+          end;
+        end;
+
+      SDLK_LEFT:
+        begin
+          if ActualRound>0 then
+          begin
+            Music.PlayChange;
+            dec(ActualRound);
+            //RefreshTexts;
+            if not (Ini.SavePlayback=1) then
+              StartPreview
+            else
+              StartVoice;
+          end;
         end;
     end;
   end;
@@ -164,6 +233,9 @@ begin
 
   if Music.VocalRemoverActivated() then
     Music.DisableVocalRemover;
+
+  ActualRound := 0;
+  Fadeout := false;
     
   //Get Maxscore
   MaxScore := 0;
@@ -284,6 +356,113 @@ begin
     Static[StaticTeam3].Visible := False;
     Static[StaticTeam3BG].Visible := False;
     Static[StaticTeam3Deco].Visible := False;
+  end;
+
+  MP3VolumeHandler.changed := false;
+  if not (Ini.SavePlayback=1) then
+    StartPreview
+  else
+  begin
+    Voice := -1;
+    StartVoice;
+  end;
+end;
+
+function TScreenPartyScore.Draw: boolean;
+begin
+  inherited Draw;
+
+  if MP3VolumeHandler.changed and (MP3VolumeHandler.change_time+TimeSkip<3) then
+  begin
+    MP3VolumeHandler.change_time := MP3VolumeHandler.change_time + TimeSkip;
+    DrawVolumeBar(10, 530, 780, 12, ScreenSong.MP3Volume);
+  end else
+    MP3VolumeHandler.changed := false;
+end;
+
+procedure TScreenPartyScore.StartPreview;
+var
+  select:   integer;
+  changed:  boolean;
+begin
+  //When Music Preview is avtivated -> then Change Music
+  if (Ini.PreviewVolume <> 0) then
+  begin
+    changed := false;
+    if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
+    begin
+      if (ActualRound<Length(PlaylistMedley.Stats)-1) and (ScreenSong.SongIndex <> PlaylistMedley.Song[ActualRound])  then
+      begin
+        select := PlaylistMedley.Song[ActualRound];
+        changed := true;
+        ScreenSong.SongIndex := select;
+      end;
+    end else
+    begin
+      select := ScreenSong.Interaction;
+      ScreenSong.SongIndex := select;
+      changed := true;
+    end;
+
+    if changed then
+    begin
+      Music.Close;
+      if Music.Open(CatSongs.Song[select].Path + CatSongs.Song[select].Mp3) then
+      begin
+        if (CatSongs.Song[select].PreviewStart>0) then
+          Music.MoveTo(CatSongs.Song[select].PreviewStart)
+        else
+          Music.MoveTo(Music.Length / 4);
+
+        //If Song Fading is activated then don't Play directly, and Set Volume to Null, else Play normal
+        if (Ini.PreviewFading = 0) then
+        begin
+          Music.SetMusicVolume (ScreenSong.MP3Volume);
+          Music.Play;
+        end else
+        begin
+          Music.Fade(0, ScreenSong.MP3Volume, Ini.PreviewFading);
+          Music.Play;
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure TScreenPartyScore.StartVoice;
+var
+  changed:  boolean;
+  files:    array of string;
+  I:        integer;
+
+begin
+  //Music.Close;
+  //ScreenSong.SongIndex := -1;
+  changed := false;
+  if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
+  begin
+    if (ActualRound<Length(PlaylistMedley.Stats)-1) and (Voice <> ActualRound)  then
+    begin
+      Voice := ActualRound;
+      changed := true;
+      SetLength(files, PlaylistMedley.NumPlayer);
+      for I := 0 to Length(files) - 1 do
+        files[I] := PlaylistMedley.Stats[Voice].Player[I].VoiceFile;
+    end;
+  end else
+  begin
+    Voice := 0;
+    changed := true;
+    SetLength(files, PlayersPlay);
+    for I := 0 to Length(files) - 1 do
+      files[I] := Player[I].VoiceFile;
+  end;
+
+  if changed then
+  begin
+    Music.VoicesClose;
+    if (Music.VoicesOpen(files)>0) then
+      Music.VoicesPlay;
   end;
 end;
 

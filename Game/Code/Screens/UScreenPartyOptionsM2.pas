@@ -179,7 +179,7 @@ begin
               J := -1;
               For I := 0 to high(CatSongs.Song) do
               begin
-                if CatSongs.Song[I].Main then
+                if CatSongs.Song[I].Main and (CatSongs.NumCatSongs(CatSongs.Song[I].OrderNum)>0) then
                   Inc(J);
 
                 if J = Playlist2 then
@@ -642,7 +642,7 @@ begin
     0:
       begin
         SetLength(IPlaylist2, 1);
-        IPlaylist2[0] := '---';
+        IPlaylist2[0] := '(' + IntToStr(CatSongs.NumSongs()) + ' Songs)';
       end;
     1:
       begin
@@ -652,7 +652,8 @@ begin
           if CatSongs.Song[I].Main and (CatSongs.NumCatSongs(CatSongs.Song[I].OrderNum)>0) then
           begin
             SetLength(IPlaylist2, Length(IPlaylist2) + 1);
-            IPlaylist2[high(IPlaylist2)] := CatSongs.Song[I].Artist;
+            IPlaylist2[high(IPlaylist2)] := CatSongs.Song[I].Artist +
+              ' (' + IntToStr(CatSongs.NumCatSongs(CatSongs.Song[I].OrderNum)) + ' Songs)';
           end;
         end;
 
@@ -667,7 +668,7 @@ begin
         if (Length(PlaylistMan.Playlists) > 0) then
         begin
           SetLength(IPlaylist2, Length(PlaylistMan.Playlists));
-          PlaylistMan.GetNames(IPlaylist2);
+          PlaylistMan.GetNamesAndNumSongs(IPlaylist2);
         end
         else
         begin
@@ -798,6 +799,7 @@ begin
 
   SelectedPlugin := 0;
   ScreenSong.Mode := smChallenge;
+  SetPlaylist2;
 end;
 
 function TScreenPartyOptionsM2.Draw: boolean;

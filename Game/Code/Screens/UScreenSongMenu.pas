@@ -179,6 +179,15 @@ begin
 
           if (CurMenu = SM_Sort) then
             Button[3].Visible := (Ini.Sorting <> SelectValue);
+
+          if (ScreenSong.Mode = smParty) and (ScreenSong.Sel3<=0) then
+          begin
+            Inc(ScreenSong.Sel3);
+            Music.PlayChange;
+            ScreenSong.SelectNext;
+            ScreenSong.ChangeMusic;
+            ScreenSong.SetScroll4;
+          end;
         end;
       SDLK_LEFT:
         begin
@@ -187,6 +196,15 @@ begin
 
           if (CurMenu = SM_Sort) then
             Button[3].Visible := (Ini.Sorting <> SelectValue);
+
+          if (ScreenSong.Mode = smParty) and (ScreenSong.Sel3>=0) then
+          begin
+            Dec(ScreenSong.Sel3);
+            Music.PlayChange;
+            ScreenSong.SelectPrev;
+            ScreenSong.ChangeMusic;
+            ScreenSong.SetScroll4;
+          end;
         end;
 
       SDLK_1:

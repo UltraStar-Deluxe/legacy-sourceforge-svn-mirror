@@ -23,30 +23,30 @@ type
       StaticMedleyNav:  integer;
       TextMedleyNav:    integer;
       
-      TextName:             array[1..6] of integer;
-      TextScore:            array[1..6] of integer;
+      TextName:             array[1..10] of integer;
+      TextScore:            array[1..10] of integer;
 
-      TextNotes:            array[1..6] of integer;
-      TextNotesScore:       array[1..6] of integer;
-      TextLineBonus:        array[1..6] of integer;
-      TextLineBonusScore:   array[1..6] of integer;
-      TextGoldenNotes:      array[1..6] of integer;
-      TextGoldenNotesScore: array[1..6] of integer;
-      TextTotal:            array[1..6] of integer;
-      TextTotalScore:       array[1..6] of integer;
+      TextNotes:            array[1..10] of integer;
+      TextNotesScore:       array[1..10] of integer;
+      TextLineBonus:        array[1..10] of integer;
+      TextLineBonusScore:   array[1..10] of integer;
+      TextGoldenNotes:      array[1..10] of integer;
+      TextGoldenNotesScore: array[1..10] of integer;
+      TextTotal:            array[1..10] of integer;
+      TextTotalScore:       array[1..10] of integer;
 
-      PlayerStatic:         array[1..6] of array of integer;
-      PlayerTexts :         array[1..6] of array of integer;
+      PlayerStatic:         array[1..10] of array of integer;
+      PlayerTexts :         array[1..10] of array of integer;
 
 
-      StaticBoxLightest:    array[1..6] of integer;
-      StaticBoxLight:       array[1..6] of integer;
-      StaticBoxDark:        array[1..6] of integer;
+      StaticBoxLightest:    array[1..10] of integer;
+      StaticBoxLight:       array[1..10] of integer;
+      StaticBoxDark:        array[1..10] of integer;
 
-      StaticBackLevel:        array[1..6] of integer;
-      StaticBackLevelRound:   array[1..6] of integer;
-      StaticLevel:            array[1..6] of integer;
-      StaticLevelRound:       array[1..6] of integer;
+      StaticBackLevel:        array[1..10] of integer;
+      StaticBackLevelRound:   array[1..10] of integer;
+      StaticLevel:            array[1..10] of integer;
+      StaticLevelRound:       array[1..10] of integer;
 
       Animation:    real;
       Fadeout:      boolean;
@@ -227,7 +227,8 @@ begin
   StaticMedleyNav := AddStatic(Theme.Score.StaticMedleyNav);
   TextMedleyNav := AddText(Theme.Score.TextMedleyNav);
 
-  for P := 1 to 6 do begin
+  for P := 1 to 10 do
+  begin
     TextName[P] := AddText(Theme.Score.TextName[P]);
     TextScore[P] := AddText(Theme.Score.TextScore[P]);
 
@@ -268,7 +269,7 @@ procedure TScreenScore.onShow;
 var
   P:    integer;  // player
   I:    integer;
-  V:    array[1..6] of boolean; // visibility array
+  V:    array[1..10] of boolean; // visibility array
 begin
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenScore)');
@@ -284,34 +285,78 @@ begin
   Text[TextArtistTitle].Text := AktSong.Artist + ' - ' + AktSong.Title;
 
   // set visibility
-  case PlayersPlay of
-    1:  begin
+  if (not ScreenSing.P4Mode) then
+  begin
+    case PlayersPlay of
+      1:  begin
           V[1] := true;
           V[2] := false;
           V[3] := false;
           V[4] := false;
           V[5] := false;
           V[6] := false;
-        end;
-    2, 4:  begin
+          V[7] := false;
+          V[8] := false;
+          V[9] := false;
+          V[10] := false;
+          end;
+      2, 4:  begin
           V[1] := false;
           V[2] := true;
           V[3] := true;
           V[4] := false;
           V[5] := false;
           V[6] := false;
-        end;
-    3, 6:  begin
+          V[7] := false;
+          V[8] := false;
+          V[9] := false;
+          V[10] := false;
+          end;
+      3, 6:  begin
           V[1] := false;
           V[2] := false;
           V[3] := false;
           V[4] := true;
           V[5] := true;
           V[6] := true;
-        end;
+          V[7] := false;
+          V[8] := false;
+          V[9] := false;
+          V[10] := false;
+          end;
+    end;
+  end else
+  begin
+    case PlayersPlay of
+      4:  begin
+          V[1] := false;
+          V[2] := false;
+          V[3] := false;
+          V[4] := false;
+          V[5] := false;
+          V[6] := false;
+          V[7] := true;
+          V[8] := true;
+          V[9] := true;
+          V[10] := true;
+          end;
+      6:  begin   //not finished yet!
+          V[1] := false;
+          V[2] := false;
+          V[3] := false;
+          V[4] := true;
+          V[5] := true;
+          V[6] := true;
+          V[7] := false;
+          V[8] := false;
+          V[9] := false;
+          V[10] := false;
+          end;
+    end;
+
   end;
 
-  for P := 1 to 6 do
+  for P := 1 to 10 do
   begin
     Text[TextName[P]].Visible := V[P];
     Text[TextScore[P]].Visible := V[P];
@@ -324,6 +369,15 @@ begin
     Text[TextGoldenNotesScore[P]].Visible := V[P];
     Text[TextTotal[P]].Visible := V[P];
     Text[TextTotalScore[P]].Visible := V[P];
+
+    //4P-hack:
+    if (P>7) then
+    begin
+      Text[TextNotes[P]].Visible := false;
+      Text[TextLineBonus[P]].Visible := false;
+      Text[TextGoldenNotes[P]].Visible := false;
+      Text[TextTotal[P]].Visible := false;
+    end;
 
     for I := 0 to high(PlayerStatic[P]) do
       Static[PlayerStatic[P, I]].Visible := V[P];
@@ -340,21 +394,6 @@ begin
     Static[StaticLevel[P]].Visible := V[P];
     Static[StaticLevelRound[P]].Visible := V[P];
   end;
-
-  {
-  if PlayersPlay <= 3 then begin // only for 1 screen mode
-    for P := 0 to PlayersPlay-1 do begin
-      case PlayersPlay of
-        1:  PP := 1;
-        2:  PP := P + 2;
-        3:  PP := P + 4;
-      end;
-
-      //Replaced this whole thing with one Procedure call
-      FillPlayer(PP, P);
-
-    end; // for
-  end; // if  }
 
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
   begin
@@ -380,19 +419,15 @@ end;
 
 function TScreenScore.Draw: boolean;
 var
-{  Min:    real;
-  Max:    real;
-  Wsp:    real;
-  Wsp2:   real;
-  Pet:    integer;}
-
   Item:   integer;
   P:      integer;
 begin
   Item := 0;
   P := 0;
-  if PlayersPlay <= 3 then begin // only for 1 screen mode
-    for P := 0 to PlayersPlay-1 do begin
+  if PlayersPlay <= 3 then
+  begin // only for 1 screen mode
+    for P := 0 to PlayersPlay-1 do
+    begin
       case PlayersPlay of
         1:  Item := 1;
         2:  Item := P + 2;
@@ -406,8 +441,10 @@ begin
   end; // if
 
   // 0.5.0: try also use 4 players screen with nicks
-  if PlayersPlay = 4 then begin
-    for Item := 2 to 3 do begin
+  if (not ScreenSing.P4Mode) and (PlayersPlay = 4) then
+  begin
+    for Item := 2 to 3 do
+    begin
       if ScreenAct = 1 then P := Item-2;
       if ScreenAct = 2 then P := Item;
 
@@ -415,10 +452,21 @@ begin
     end;
   end;
 
+  if (ScreenSing.P4Mode) and (PlayersPlay = 4) then
+  begin
+    for Item := 7 to 10 do
+    begin
+      P := Item-7;
+      FillPlayer(Item, P);
+    end;
+  end;
+
 
   // Singstar - let it be...... with 6 statics
-  if PlayersPlay = 6 then begin
-    for Item := 4 to 6 do begin
+  if PlayersPlay = 6 then
+  begin
+    for Item := 4 to 6 do
+    begin
       if ScreenAct = 1 then P := Item-4;
       if ScreenAct = 2 then P := Item-1;
 
@@ -501,7 +549,8 @@ begin
   Static[StaticLevel[Item]].Texture.Y := Static[StaticBackLevel[Item]].Texture.Y + Static[StaticBackLevel[Item]].Texture.H  - Static[StaticLevel[Item]].Texture.H;
 
   // we modify LevelRound texture by changing it's Y. TexY1 and TexY2 change when the height to draw is lower than 20
-  if Lev * MaxH < Static[StaticBackLevelRound[Item]].Texture.H / 2 then begin
+  if Lev * MaxH < Static[StaticBackLevelRound[Item]].Texture.H / 2 then
+  begin
     // when it's lower than 20 => we move TexY1 and TexY2 higher to show only part of this texture
     Static[StaticLevelRound[Item]].Texture.Y := Static[StaticBackLevel[Item]].Texture.Y + Static[StaticBackLevel[Item]].Texture.H - Static[StaticBackLevelRound[Item]].Texture.H;
     // - 0.25 when points = 0
@@ -512,7 +561,8 @@ begin
     Wsp := Lev * MaxH / (Static[StaticBackLevelRound[Item]].Texture.H / 2);
     Static[StaticLevelRound[Item]].Texture.TexY1 := Static[StaticBackLevelRound[Item]].Texture.TexY1 - 0.25 + 0.25 * Wsp;
     Static[StaticLevelRound[Item]].Texture.TexY2 := Static[StaticBackLevelRound[Item]].Texture.TexY2 - 0.25 + 0.25 * Wsp;
-  end else begin
+  end else
+  begin
     // when it's higher or equal 20 => full texture is being shown
     Static[StaticLevelRound[Item]].Texture.TexY1 := Static[StaticBackLevelRound[Item]].Texture.TexY1;
     Static[StaticLevelRound[Item]].Texture.TexY2 := Static[StaticBackLevelRound[Item]].Texture.TexY2;
@@ -600,7 +650,7 @@ begin
   end;
 end;
 
-procedure TScreenSCore.StartVoice;
+procedure TScreenScore.StartVoice;
 var
   changed:  boolean;
   files:    array of string;

@@ -44,7 +44,9 @@ type
     FileName:   string;
 
     isDuet:     boolean;
+    DuetNames:  array of string;
     Medley:     TMedley;
+    CalcMedley: boolean;
     PreviewStart: real; //in seconds
     CustomTags: array of TCustomHeaderTag; // from 1.1
 
@@ -53,6 +55,7 @@ type
     Genre:      array of string;
     Edition:    array of string;
     Language:   string; // 0.5.0: new
+    Year:       string;
 
     Title:      string;
     Artist:     string;
@@ -118,6 +121,7 @@ type
 
     function SetFilter(FilterStr: String; const fType: Byte): Cardinal;
     function NumCatSongs(Cat: integer): integer;
+    function NumSongs(): integer;
     function NumVisibleCats(): integer;
   end;
 
@@ -319,6 +323,21 @@ begin
               SongSort[S] := TempSong;
             end;
       end;
+    sRandom:
+      begin
+        for S2 := 0 to Length(SongSort)-1 do
+        begin
+          for S := 1 to Length(SongSort)-1 do
+          begin
+            if (Random(2) = 0) then
+            begin
+              TempSong := SongSort[S-1];
+              SongSort[S-1] := SongSort[S];
+              SongSort[S] := TempSong;
+            end;
+          end;
+        end;
+      end;
 
   end; // case
 end;
@@ -441,6 +460,7 @@ begin
     sArtist:  Songs.Sort(sArtist);
     sTitle2:  Songs.Sort(sTitle2); // by title2 ???
     sArtist2:  Songs.Sort(sArtist2); // by artist2 ???
+    sRandom:  Songs.Sort(sRandom);
 
   end; // case
 
@@ -670,7 +690,32 @@ begin
 
           CatSongs.Song[CatLen].Visible := true;
         end;
-      end;
+      end else if (Ini.Sorting = sRandom) and
+        (Length(Songs.SongSort[S].Artist)>=1) and
+        (Letter <> 'R') then
+      begin
+        // add a letter Category Button
+        Inc(Order);
+        Letter := 'R';
+        CatLen := Length(CatSongs.Song);
+        SetLength(CatSongs.Song, CatLen+1);
+        CatSongs.Song[CatLen].Artist := '[RANDOM]';
+        CatSongs.Song[CatLen].Main := true;
+        CatSongs.Song[CatLen].OrderTyp := 0;
+        CatSongs.Song[CatLen].OrderNum := Order;
+
+        CatSongs.Song[CatLen].Cover := CatCovers.GetCover(Ini.Sorting, Letter);
+
+        //CatNumber Patch
+        if (Letter <> ' ') then
+        begin
+          if (CatLen - CatNumber - 1>=0) then
+            Song[CatLen - CatNumber - 1].CatNumber := CatNumber;//Set CatNumber of Categroy
+          CatNumber := 0;
+        end;
+
+        CatSongs.Song[CatLen].Visible := true;
+      end
     end;
 
     CatLen := Length(CatSongs.Song);
@@ -749,6 +794,22 @@ begin
   for I := 0 to Length(CatSongs.Song)-1 do
   begin
     if (CatSongs.Song[I].OrderNum = Cat) AND (Not CatSongs.Song[I].Main) then
+    begin
+      if ((ScreenSong.Mode<>smNormal) and (not CatSongs.Song[I].isDuet)) or
+         (ScreenSong.Mode=smNormal) then
+        inc(Result);
+    end;
+  end;
+end;
+
+function TCatSongs.NumSongs(): integer;
+var
+  I: integer;
+begin
+  Result := 0;
+  for I := 0 to Length(CatSongs.Song)-1 do
+  begin
+    if (Not CatSongs.Song[I].Main) then
     begin
       if ((ScreenSong.Mode<>smNormal) and (not CatSongs.Song[I].isDuet)) or
          (ScreenSong.Mode=smNormal) then

@@ -156,6 +156,14 @@ begin
 
       SDLK_RETURN:
         begin
+          if (Playlist = 0) and ((Ini.Tabs = 1) or (Ini.Sorting <> sRandom)) then
+          begin
+            Ini.Tabs := 0;
+            Ini.Sorting := sRandom;
+            ScreenSong.Refresh(true);
+            PlaylistMan.LoadPlayLists;
+          end;
+
           MenuPluginOpen := false;
           if not Help.SetHelpID(ID) then
             Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenPartyOptions)');
@@ -214,7 +222,7 @@ begin
             J := -1;
             For I := 0 to high(CatSongs.Song) do
             begin
-              if CatSongs.Song[I].Main then
+              if CatSongs.Song[I].Main and (CatSongs.NumCatSongs(CatSongs.Song[I].OrderNum)>0) then
                 Inc(J);
 
               if J = Playlist2 then
@@ -479,13 +487,15 @@ begin
 end;
 
 procedure TScreenPartyOptions.SetPlaylist2;
-var I: Integer;
+var
+  I: Integer;
+
 begin
   Case Playlist of
     0:
       begin
         SetLength(IPlaylist2, 1);
-        IPlaylist2[0] := '---';
+        IPlaylist2[0] := '(' + IntToStr(CatSongs.NumSongs()) + ' Songs)';
       end;
     1:
       begin
@@ -495,7 +505,8 @@ begin
           If CatSongs.Song[I].Main and (CatSongs.NumCatSongs(CatSongs.Song[I].OrderNum)>0) then
           begin
             SetLength(IPlaylist2, Length(IPlaylist2) + 1);
-            IPlaylist2[high(IPlaylist2)] := CatSongs.Song[I].Artist;
+            IPlaylist2[high(IPlaylist2)] := CatSongs.Song[I].Artist +
+              ' (' + IntToStr(CatSongs.NumCatSongs(CatSongs.Song[I].OrderNum)) + ' Songs)';
           end;
         end;
 
@@ -510,7 +521,7 @@ begin
         if (Length(PlaylistMan.Playlists) > 0) then
         begin
           SetLength(IPlaylist2, Length(PlaylistMan.Playlists));
-          PlaylistMan.GetNames(IPlaylist2);
+          PlaylistMan.GetNamesAndNumSongs(IPlaylist2);
         end
         else
         begin
@@ -638,6 +649,7 @@ begin
 
   SelectedPlugin := 0;
   ScreenSong.Mode := smParty;
+  SetPlaylist2;
 end;
 
 procedure TScreenPartyOptions.SetAnimationProgress(Progress: real);

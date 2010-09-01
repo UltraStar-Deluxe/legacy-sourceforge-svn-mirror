@@ -443,29 +443,29 @@ type
     StaticMedleyNav:  TThemeStatic;
     TextMedleyNav:    TThemeText;
 
-    PlayerStatic:     array[1..6] of AThemeStatic;
-    PlayerTexts:      array[1..6] of AThemeText;
+    PlayerStatic:     array[1..10] of AThemeStatic;
+    PlayerTexts:      array[1..10] of AThemeText;
 
-    TextName:         array[1..6] of TThemeText;
-    TextScore:        array[1..6] of TThemeText;
+    TextName:         array[1..10] of TThemeText;
+    TextScore:        array[1..10] of TThemeText;
 
-    TextNotes:            array[1..6] of TThemeText;
-    TextNotesScore:       array[1..6] of TThemeText;
-    TextLineBonus:        array[1..6] of TThemeText;
-    TextLineBonusScore:   array[1..6] of TThemeText;
-    TextGoldenNotes:      array[1..6] of TThemeText;
-    TextGoldenNotesScore: array[1..6] of TThemeText;
-    TextTotal:            array[1..6] of TThemeText;
-    TextTotalScore:       array[1..6] of TThemeText;
+    TextNotes:            array[1..10] of TThemeText;
+    TextNotesScore:       array[1..10] of TThemeText;
+    TextLineBonus:        array[1..10] of TThemeText;
+    TextLineBonusScore:   array[1..10] of TThemeText;
+    TextGoldenNotes:      array[1..10] of TThemeText;
+    TextGoldenNotesScore: array[1..10] of TThemeText;
+    TextTotal:            array[1..10] of TThemeText;
+    TextTotalScore:       array[1..10] of TThemeText;
 
-    StaticBoxLightest:    array[1..6] of TThemeStatic;
-    StaticBoxLight:       array[1..6] of TThemeStatic;
-    StaticBoxDark:        array[1..6] of TThemeStatic;
+    StaticBoxLightest:    array[1..10] of TThemeStatic;
+    StaticBoxLight:       array[1..10] of TThemeStatic;
+    StaticBoxDark:        array[1..10] of TThemeStatic;
 
-    StaticBackLevel:        array[1..6] of TThemeStatic;
-    StaticBackLevelRound:   array[1..6] of TThemeStatic;
-    StaticLevel:            array[1..6] of TThemeStatic;
-    StaticLevelRound:       array[1..6] of TThemeStatic;
+    StaticBackLevel:        array[1..10] of TThemeStatic;
+    StaticBackLevelRound:   array[1..10] of TThemeStatic;
+    StaticLevel:            array[1..10] of TThemeStatic;
+    StaticLevelRound:       array[1..10] of TThemeStatic;
 
 //    Description:          array[0..5] of string;}
   end;
@@ -1396,7 +1396,8 @@ begin
       ThemeLoadStatic(Score.StaticMedleyNav, 'ScoreMedleyNavStatic');
       ThemeLoadText(Score.TextMedleyNav, 'ScoreMedleyNavText');
 
-      for I := 1 to 6 do begin
+      for I := 1 to 10 do
+      begin
         ThemeLoadStatics(Score.PlayerStatic[I], 'ScorePlayer' + IntToStr(I) + 'Static');
         ThemeLoadTexts(Score.PlayerTexts[I],     'ScorePlayer' + IntToStr(I) + 'Text');
 

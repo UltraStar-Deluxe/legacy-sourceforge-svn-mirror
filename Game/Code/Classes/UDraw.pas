@@ -1021,8 +1021,8 @@ begin
       SingDrawCzesc(400+NR.Left + 20, Skin_P1_NotesB, 400+NR.Right - 20, 0, 15, Alpha[0]);
       SingDrawCzesc(400+NR.Left + 20, Skin_P2_NotesB, 400+NR.Right - 20, 0, 15, Alpha[0]);
 
-      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P1_NotesB, 400+Nr.Width - 40, 0, 2, 15, Alpha[0]);
-      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P2_NotesB, 400+Nr.Width - 40, 0, 3, 15, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 0, 3, 15, Alpha[0]);
     end;
   end;
 
@@ -1071,9 +1071,9 @@ begin
       SingDrawCzesc(400+NR.Left + 20, 245+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
       SingDrawCzesc(400+NR.Left + 20, 370+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
 
-      SingDrawPlayerCzesc(400+Nr.Left + 20, 120+95, 400+Nr.Width - 40, 0, 3, 12, Alpha[0]);
-      SingDrawPlayerCzesc(400+Nr.Left + 20, 245+95, 400+Nr.Width - 40, 0, 4, 12, Alpha[0]);
-      SingDrawPlayerCzesc(400+Nr.Left + 20, 370+95, 400+Nr.Width - 40, 0, 5, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 245+95, Nr.Width - 40, 0, 4, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12, Alpha[0]);
     end;
   end;
 end;
@@ -1148,8 +1148,8 @@ begin
       SingDrawCzesc(400+NR.Left + 20, Skin_P1_NotesB, 400+NR.Right - 20, 0, 15, Alpha[0]);
       SingDrawCzesc(400+NR.Left + 20, Skin_P2_NotesB, 400+NR.Right - 20, 1, 15, Alpha[1]);
 
-      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P1_NotesB, 400+Nr.Width - 40, 0, 2, 15, Alpha[0]);
-      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P2_NotesB, 400+Nr.Width - 40, 1, 3, 15, Alpha[1]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P1_NotesB, Nr.Width - 40, 0, 2, 15, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, Skin_P2_NotesB, Nr.Width - 40, 1, 3, 15, Alpha[1]);
     end;
   end;
 
@@ -1193,9 +1193,9 @@ begin
       SingDrawCzesc(400+NR.Left + 20, 245+95, 400+NR.Right - 20, 1, 12, Alpha[1]);
       SingDrawCzesc(400+NR.Left + 20, 370+95, 400+NR.Right - 20, 0, 12, Alpha[0]);
 
-      SingDrawPlayerCzesc(400+Nr.Left + 20, 120+95, 400+Nr.Width - 40, 0, 3, 12, Alpha[0]);
-      SingDrawPlayerCzesc(400+Nr.Left + 20, 245+95, 400+Nr.Width - 40, 1, 4, 12, Alpha[1]);
-      SingDrawPlayerCzesc(400+Nr.Left + 20, 370+95, 400+Nr.Width - 40, 0, 5, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 120+95, Nr.Width - 40, 0, 3, 12, Alpha[0]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 245+95, Nr.Width - 40, 1, 4, 12, Alpha[1]);
+      SingDrawPlayerCzesc(400+Nr.Left + 20, 370+95, Nr.Width - 40, 0, 5, 12, Alpha[0]);
     end;
   end;
 end;

@@ -133,6 +133,7 @@ begin
   SetLength(Song.Edition, 1);
   Song.Edition[0] := 'Unknown';
   Song.Language := 'Unknown'; //Language Patch
+  Song.Year := '';
 
   //Required Information
   Song.Mp3 := '';
@@ -152,8 +153,12 @@ begin
   Song.Resolution := 4;
   Song.Creator := '';
   Song.Medley.Source:=msNone;
+  Song.CalcMedley := true;
   Song.PreviewStart := 0;
   SetLength(Song.CustomTags, 0);
+  SetLength(Song.DuetNames, 2);
+  Song.DuetNames[0] := 'P1';
+  Song.DuetNames[1] := 'P2';
 end;
 
 //--------------------
@@ -350,6 +355,12 @@ begin
           Song.Language := Value;
         end
 
+        //Year Sorting
+        else if (Identifier = 'YEAR') then
+        begin
+          Song.Year := Value;
+        end
+
         // Song Start
         else if (Identifier = 'START') then
         begin
@@ -404,6 +415,25 @@ begin
         begin
           if TryStrtoInt(Value, Song.Medley.EndBeat) then
             MedleyFlags := MedleyFlags or 4;
+        end
+
+        // Medley
+        else if (Identifier = 'CALCMEDLEY') then
+        begin
+          if (Uppercase(Value) = 'OFF') then
+            Song.CalcMedley := false;
+        end
+
+        // Duet Singer Name P1
+        else if (Identifier = 'DUETSINGERP1') then
+        begin
+          Song.DuetNames[0] := Value;
+        end
+
+        // Duet Singer Name P2
+        else if (Identifier = 'DUETSINGERP2') then
+        begin
+          Song.DuetNames[1] := Value;
         end
 
         // unsupported tag
@@ -1128,13 +1158,17 @@ begin
 
   if Song.Creator     <> '' then    WriteLn(SongFile, '#CREATOR:'     + Song.Creator);
 
+  if Song.Language    <> 'Unknown' then    WriteLn(SongFile, '#LANGUAGE:'    + Song.Language);
+
   for C := 0 to Length(Song.Edition)-1 do
     if Song.Edition[C]  <> 'Unknown' then WriteLn(SongFile, '#EDITION:' + Song.Edition[C]);
 
   for C := 0 to Length(Song.Genre) - 1 do
     if Song.Genre[C] <> 'Unknown' then   WriteLn(SongFile, '#GENRE:' + Song.Genre[C]);
-    
-  if Song.Language    <> 'Unknown' then    WriteLn(SongFile, '#LANGUAGE:'    + Song.Language);
+
+  if Song.Year    <> '' then    WriteLn(SongFile, '#YEAR:'    + Song.Year);
+
+
 
   WriteLn(SongFile, '#MP3:' + Song.Mp3);
 
@@ -1153,6 +1187,15 @@ begin
     WriteLn(SongFile, '#MedleyStartBeat:' + IntToStr(Song.Medley.StartBeat));
     WriteLn(SongFile, '#MedleyEndBeat:' + IntToStr(Song.Medley.EndBeat));
   end;
+
+  if (not Song.CalcMedley) then
+    WriteLn(SongFile, '#CalcMedley:Off');
+
+  {if (Song.isDuet) then
+  begin
+    WriteLn(SongFile, '#DuetSingerP1:' + Song.DuetNames[0]);
+    WriteLn(SongFile, '#DuetSingerP2:' + Song.DuetNames[1]);
+  end;}
 
   if Relative               then    WriteLn(SongFile, '#RELATIVE:yes');
 
@@ -1220,6 +1263,9 @@ var
   found_end:            boolean;
 begin
   if AktSong.Medley.Source = msTag then
+    Exit;
+
+  if not AktSong.CalcMedley then
     Exit;
 
   //relative is not supported for medley by now!
