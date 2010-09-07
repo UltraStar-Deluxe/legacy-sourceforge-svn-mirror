@@ -81,7 +81,7 @@ if(NOT WIN32)
   # hide SDL_image from GUI
   mark_as_advanced(SDLIMAGE_LIBRARY SDLIMAGE_INCLUDE_DIR)
 
-  pkg_check_required_modules(libpng libpng12)
+  pkg_search_module(libpng REQUIRED libpng12 libpng>=1.2)
   #find_package(PNG REQUIRED)
   pkg_check_required_modules(freetype freetype2)
   #find_package(Freetype REQUIRED)
