@@ -119,7 +119,7 @@ uses ULog, DateUtils, UCovers;
 
 function TTextureUnit.GetTexture(Name, Typ: string): TTexture;
 begin
-  Result := GetTexture(Name, Typ, true);
+  Result := GetTexture(Name, Typ, false);
 end;
 
 function TTextureUnit.GetTexture(Name, Typ: string; FromCache: boolean): TTexture;
@@ -144,9 +144,11 @@ begin
   end;
 
   // use preloaded texture
-  if (not FromCache) or (FromCache and not Covers.CoverExists(Name)) then begin
+  if (not FromCache) or (FromCache and not Covers.CoverExists(Name)) then
+  begin
     // use full texture
-    if TextureDatabase.Texture[T].Texture.TexNum = -1 then begin
+    if TextureDatabase.Texture[T].Texture.TexNum = -1 then
+    begin
       // load texture
       TextureDatabase.Texture[T].Texture := LoadTexture(false, pchar(Name), 'JPG', pchar(Typ), $0);
     end;
@@ -156,19 +158,15 @@ begin
 
   end;
 
-  if FromCache and Covers.CoverExists(Name) then begin
+  if FromCache and Covers.CoverExists(Name) then
+  begin
     // use cache texture
     C := Covers.CoverNumber(Name);
 
-    if TextureDatabase.Texture[T].TextureCache.TexNum = -1 then begin
+    if TextureDatabase.Texture[T].TextureCache.TexNum = -1 then
+    begin
       // load texture
       Covers.PrepareData(Name);
-{      Covers.Data[0] := 0;
-      Covers.Data[1] := 0;
-      Covers.Data[2] := 0;
-      Covers.Data[3] := 255;
-      Covers.Data[4] := 255;
-      Covers.Data[5] := 255;}
       TextureDatabase.Texture[T].TextureCache := CreateTexture(Covers.Data, Name, Covers.Cover[C].W, Covers.Cover[C].H, 24);
     end;
 

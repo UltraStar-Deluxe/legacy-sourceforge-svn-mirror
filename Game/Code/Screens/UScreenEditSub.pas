@@ -529,17 +529,22 @@ begin
 
             CP := MedleyNotes.Preview.CP;
             Czesci[CP].Akt := MedleyNotes.Preview.line;
-            Czesci[(CP+1) mod 2].Akt := Czesci[CP].Akt;
+            if AktSong.isDuet then
+              Czesci[(CP+1) mod 2].Akt := Czesci[CP].Akt;
 
             AktNuta[CP] := MedleyNotes.Preview.note;
-            AktNuta[(CP+1) mod 2] := 0;
+            if AktSong.isDuet then
+              AktNuta[(CP+1) mod 2] := 0;
 
             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
 
             EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
             EditorLyric[CP].Selected := AktNuta[CP];
-            EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[(CP+1) mod 2].Akt);
-            EditorLyric[(CP+1) mod 2].Selected := -1;
+            if AktSong.isDuet then
+            begin
+              EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[(CP+1) mod 2].Akt);
+              EditorLyric[(CP+1) mod 2].Selected := -1;
+            end;
             Music.Stop;
             PlaySentence := false;
             PlayOneNote := false;
@@ -2984,10 +2989,10 @@ begin
         else if Blend>1 then
           Blend := 1;
 
-        acDrawGLi(ScreenAct, Window, Blend);
+        acDrawGLi(ScreenAct, Window, Blend, true);
       end else if VidVis=full then
       begin
-        acDrawGL(ScreenAct);
+        acDrawGL(ScreenAct, true);
       end;
 
       if (Czas.Teraz>=Czas.Razem) then

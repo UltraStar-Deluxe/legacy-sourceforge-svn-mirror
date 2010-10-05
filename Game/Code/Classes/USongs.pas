@@ -1,7 +1,7 @@
 unit USongs;
 
 interface
-uses SysUtils, ULog, UTexture, UCatCovers;
+uses SysUtils, ULog, SDL, UTexture, UCovers, UCatCovers, UMergeSort;
 
 const
   SONG_LOAD_COMPLETE = true;
@@ -90,16 +90,17 @@ type
 
   TSongs = class
   private
-    BrowsePos: Cardinal; //Actual Pos in Song Array
+    BrowsePos:  Cardinal; //Actual Pos in Song Array
   public
     Song:       array of TSong; // array of songs
     SongSort:   array of TSong;
     Selected:   integer; // selected song index
     NumFaultySongs: integer;
+
+    function FindSongFile(Dir, Mask: string): string;
     procedure LoadSongList; // load all songs
     procedure BrowseDir(Dir: string); // should return number of songs in the future
     procedure Sort(Order: integer);
-    function FindSongFile(Dir, Mask: string): string;
   end;
 
   TCatSongs = class
@@ -134,12 +135,93 @@ implementation
 
 uses UFiles, UIni, StrUtils, Umusic, UGraphic;
 
+var
+  TempSongArr:    array of TSong;
+  SongSort:       array of TSong;
+  SortOrder:  integer; // number used for ordernum
+
+function SortCompare(TempIndex, SourceIndex: integer): boolean; cdecl;
+begin
+    Result := false;
+
+    case SortOrder of
+      sEdition: // by edition
+        if CompareText(TempSongArr[TempIndex].Edition[0], Songs.SongSort[SourceIndex].Edition[0]) <= 0 then
+          Result := true;
+
+      sGenre: // by genre
+        if CompareText(TempSongArr[TempIndex].Genre[0], Songs.SongSort[SourceIndex].Genre[0]) <= 0 then
+          Result := true;
+
+      sTitle: // by title
+        if CompareText(TempSongArr[TempIndex].Title, Songs.SongSort[SourceIndex].Title) <= 0 then
+          Result := true;
+
+      sArtist: // by artist
+        if CompareText(TempSongArr[TempIndex].Artist, Songs.SongSort[SourceIndex].Artist) <= 0 then
+          Result := true;
+
+      sFolder: // by folder
+        if CompareText(TempSongArr[TempIndex].Folder, Songs.SongSort[SourceIndex].Folder) <= 0 then
+          Result := true;
+
+      sTitle2: // by title2
+        if CompareText(TempSongArr[TempIndex].Title, Songs.SongSort[SourceIndex].Title) <= 0 then
+          Result := true;
+
+      sArtist2: // by artist2
+        if CompareText(TempSongArr[TempIndex].Artist, Songs.SongSort[SourceIndex].Artist) <= 0 then
+          Result := true;
+
+      sLanguage: // by Language
+        if CompareText(TempSongArr[TempIndex].Language, Songs.SongSort[SourceIndex].Language) <= 0 then
+          Result := true;
+
+      sRandom:
+        if (Random(2) = 0) then
+          Result := true;
+    end; // case
+end;
+
+function SortCopy(iSourceIndex, iDestIndex: integer; bDirection: TDirection): boolean; cdecl;
+var
+  TempSong: TSong;
+
+begin
+  Result := true;
+    case bDirection of
+      dSourceSource:
+        begin
+          TempSong := Songs.SongSort[iSourceIndex];
+          Songs.SongSort[iDestIndex] := TempSong;
+        end;
+
+      dSourceTemp:
+        begin
+          TempSong := Songs.SongSort[iSourceIndex];
+          TempSongArr[iDestIndex] := TempSong;
+        end;
+
+      dTempTemp:
+        begin
+          TempSong := TempSongArr[iSourceIndex];
+          TempSongArr[iDestIndex] := TempSong;
+        end;
+
+      dTempSource:
+        begin
+          TempSong := TempSongArr[iSourceIndex];
+          Songs.SongSort[iDestIndex] := TempSong;
+        end;
+    end;
+end;
+
 procedure TSongs.LoadSongList;
 begin
   Log.LogStatus('Initializing', 'LoadSongList');
 
   // clear
-  Setlength(Song, 50);
+  Setlength(Song, 100);
   NumFaultySongs := 0;
 
   BrowsePos := 0;
@@ -155,6 +237,7 @@ var
   SR:     TSearchRec;   // for parsing Songs Directory
   SLen:   integer;
   res:    boolean;
+  Name:   string;
 
 begin
   if FindFirst(Dir + '*', faDirectory, SR) = 0 then begin
@@ -183,7 +266,7 @@ begin
       begin
         SetLength(Czesci, 1);
         AktSong := Song[SLen];
-        res := LoadSong(Song[SLen].Path + Song[SLen].FileName, SONG_LOAD_NOTES); //TODO Hash?
+        res := LoadSong(Song[SLen].Path + Song[SLen].FileName, SONG_LOAD_NOTES);
 
         if not CheckOK then
           inc(NumFaultySongs);
@@ -200,18 +283,54 @@ begin
 
           // scanning complete, file is good
           // if there is no cover then try to find it
-          if Song[SLen].Cover = '' then Song[SLen].Cover := FindSongFile(Dir, '*[CO].jpg');
+          if Song[SLen].Cover = '' then
+          begin
+            Song[SLen].Cover := FindSongFile(Dir, '*[CO].jpg');
+            if not FileExists(Song[SLen].Path + Song[SLen].Cover) then
+              Song[SLen].Cover := '';
+          end;
+
+          try
+            Song[SLen].CoverTex.TexNum := -1;
+            if (Song[SLen].Cover <> '') then
+            begin
+              Name := Song[SLen].Path + Song[SLen].Cover;
+              Texture.Limit := 512;
+              // cache texture if there is a need to this
+              if not Covers.CoverExists(Name) then
+              begin
+                Texture.CreateCacheMipmap := true;
+                Texture.GetTexture(Name, 'Plain', true); // preloads textures and creates cache mipmap
+                Texture.CreateCacheMipmap := false;
+
+                // puts this texture to the cache file
+                Covers.AddCover(Name);
+
+                // unload full size texture
+                Texture.UnloadTexture(Name, false);
+              end;
+
+              Song[SLen].CoverTex := Texture.GetTexture(Name, 'Plain', true);
+              Texture.Limit := 1024*1024;
+            end;
+          except
+            Song[SLen].CoverTex.TexNum := -1;
+            Texture.Limit := 1024*1024;
+          end;
 
           Inc(BrowsePos);
         end;
       end;
 
-      //Change Length Only every 50 Entrys
-      if (BrowsePos mod 50 = 0) AND (BrowsePos <> 0) and res then
-        SetLength(Song, Length(Song) + 50);
+      //Change Length Only every 100 Entrys
+      if (BrowsePos mod 100 = 0) AND (BrowsePos <> 0) and res then
+        SetLength(Song, Length(Song) + 100);
 
-      if (BrowsePos mod 5 = 0) and res then
+      if (BrowsePos mod 100 = 0) and res then
+      begin
         UpdateScreenLoading('Songs: '+IntToStr(BrowsePos));
+        SDL_Delay(1);
+      end;
 
     until FindNext(SR) <> 0;
   end; // if FindFirst
@@ -220,126 +339,26 @@ end;
 
 procedure TSongs.Sort(Order: integer);
 var
-  S:    integer;
-  S2:   integer;
-  TempSong:   TSong;
+  S:            integer;
+  S2:           integer;
+
+  I:            integer;
+  //TempSong:     TSong;
+  MergeSort:    TMergeSorter;
+  //TempSongArr:  array of TSong;
+
 
 begin
-  case Order of
-    sEdition: // by edition
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Edition[0], SongSort[S-1].Edition[0]) < 0 then
-            begin
-              // zamiana miejscami
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
-      end;
-    sGenre: // by genre
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Genre[0], SongSort[S-1].Genre[0]) < 0 then
-            begin
-              // zamiana miejscami
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
-      end;
-    sTitle: // by title
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Title, SongSort[S-1].Title) < 0 then
-            begin
-              // zamiana miejscami
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
+  MergeSort := TMergeSorter.Create();
 
-      end;
-    sArtist: // by artist
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Artist, SongSort[S-1].Artist) < 0 then
-            begin
-              // zamiana miejscami
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
-      end;
-    sFolder: // by folder
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Folder, SongSort[S-1].Folder) < 0 then
-            begin
-              // zamiana miejscami
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
-      end;
-    sTitle2: // by title2
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Title, SongSort[S-1].Title) < 0 then
-            begin
-              // zamiana miejscami
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
+  SetLength(TempSongArr, 0);
+  SetLength(TempSongArr, (Length(SongSort)+1) div 2);
 
-      end;
-    sArtist2: // by artist2
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Artist, SongSort[S-1].Artist) < 0 then
-            begin
-              // zamiana miejscami
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
-      end;
-    sLanguage: // by Language
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-          for S := 1 to Length(SongSort)-1 do
-            if CompareText(SongSort[S].Language, SongSort[S-1].Language) < 0 then
-            begin
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
-      end;
-    sRandom:
-      begin
-        for S2 := 0 to Length(SongSort)-1 do
-        begin
-          for S := 1 to Length(SongSort)-1 do
-          begin
-            if (Random(2) = 0) then
-            begin
-              TempSong := SongSort[S-1];
-              SongSort[S-1] := SongSort[S];
-              SongSort[S] := TempSong;
-            end;
-          end;
-        end;
-      end;
+  SortOrder := Order;
+  MergeSort.Sort(Length(SongSort), @SortCompare, @SortCopy);
 
-  end; // case
+  FreeAndNil(MergeSort);
+  SetLength(TempSongArr, 0);
 end;
 
 function TSongs.FindSongFile(Dir, Mask: string): string;
@@ -405,6 +424,7 @@ var
     end;
   end;
 begin
+  Log.BenchmarkStart(3);
   CatNumShow := -1;
 
   SetLength(Songs.SongSort, 0);
@@ -438,7 +458,10 @@ begin
       end;
     end;      
   end;
+  Log.BenchmarkEnd(3);
+  Log.LogBenchmark('====> Workaround for Editions/Genres', 3);
 
+  Log.BenchmarkStart(3);
   case Ini.Sorting of
     sEdition: begin
           Songs.Sort(sArtist);
@@ -463,8 +486,10 @@ begin
     sRandom:  Songs.Sort(sRandom);
 
   end; // case
+  Log.BenchmarkEnd(3);
+  Log.LogBenchmark('====> Sort Songs', 3);
 
-
+  Log.BenchmarkStart(3);
   Letter := ' ';
   SS := '';
   Order := 0;
@@ -715,10 +740,14 @@ begin
         end;
 
         CatSongs.Song[CatLen].Visible := true;
-      end
+      end;
     end;
 
     CatLen := Length(CatSongs.Song);
+    
+    if (CatLen>0) and CatSongs.Song[CatLen-1].Main then
+      CatSongs.Song[CatLen-1].CoverTex.TexNum := -1;
+
     SetLength(CatSongs.Song, CatLen+1);
 
     Inc (CatNumber); //Increase Number in Cat
@@ -740,6 +769,9 @@ begin
     Song[CatLen - CatNumber].CatNumber := CatNumber;//Set CatNumber of Categroy
   //CatCount Patch
   CatCount := Order;
+
+  Log.BenchmarkEnd(3);
+  Log.LogBenchmark('====> Build Cat-Structure', 3);
 end;
 
 procedure TCatSongs.ShowCategory(Index: integer);

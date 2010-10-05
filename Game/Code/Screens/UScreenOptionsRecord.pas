@@ -3,7 +3,7 @@ unit UScreenOptionsRecord;
 interface
 
 uses
-  UMenu, SDL, UDisplay, UMusic, UFiles, UIni, UThemes;
+  UMenu, SDL, UDisplay, UMusic, UFiles, UIni, UThemes, UCaptureWDM, UWebCam;
 
 type
   TScreenOptionsRecord = class(TMenu)
@@ -11,10 +11,22 @@ type
       SelectSlideInput:       integer;
       SelectSlideChannelL:    integer;
       SelectSlideChannelR:    integer;
+
+      IWebCamDevice:            TList;
+      IWebCamMedia:             TList;
+
+      WebCamPreviewOn:          boolean;
+
+      SelectSlideWebCamOnOff:   integer;
+      SelectSlideWebCamDevice:  integer;
+      SelectSlideWebCamMedia:   integer;
     public
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
+      function Draw: boolean; override;
       procedure onShow; override;
+      procedure onHide; override;
+      procedure UpdateWebCam;
       procedure UpdateCard;
   end;
 
@@ -30,6 +42,8 @@ begin
   Result := true;
   If (PressedDown) Then
   begin // Key Down
+    WebCamPreviewOn := (Ini.EnableWebCam=1);
+
     case PressedKey of
       SDLK_TAB:
         begin
@@ -49,7 +63,8 @@ begin
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 4 then begin
+          if (SelInteraction = 7) or ((Length(IWebCamDevice)=0) and (SelInteraction = 5)) then
+          begin
             Ini.Save;
             Music.PlayBack;
             FadeTo(@ScreenOptions);
@@ -61,19 +76,35 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 3) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 3) then
+          begin
             Music.PlayOption;
             InteractInc;
           end;
           if SelInteraction = 0 then UpdateCard;
+
+          if (SelInteraction >= 4) and (SelInteraction <= 6) then
+          begin
+            Music.PlayOption;
+            InteractInc;
+            UpdateWebCam;
+          end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 3) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 3) then
+          begin
             Music.PlayOption;
             InteractDec;
           end;
           if SelInteraction = 0 then UpdateCard;
+
+          if (SelInteraction >= 4) and (SelInteraction <= 6) then
+          begin
+            Music.PlayOption;
+            InteractDec;
+            UpdateWebCam;
+          end;
         end;
     end;
   end;
@@ -81,7 +112,6 @@ end;
 
 constructor TScreenOptionsRecord.Create;
 var
-  //I:      integer;
   SC:     integer;
   SCI:    integer;
 begin
@@ -93,7 +123,6 @@ begin
 
   for SC := 0 to High(Recording.SoundCard) do
     ICard[SC] := Recording.SoundCard[SC].Description;
-//  end;
 
   if (Length(Recording.SoundCard)>0) then
   begin
@@ -107,6 +136,26 @@ begin
     SelectSlideChannelR := AddSelectSlide(Theme.OptionsRecord.SelectSlideChannelR, Ini.CardList[0].ChannelR, IChannel);
   end;
 
+  IWebCamDevice := GetCapDevices();
+  if (Length(IWebCamDevice)=0) then
+    Ini.EnableWebCam := 0;
+
+  SelectSlideWebCamOnOff := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamOnOff, Ini.EnableWebCam, IEnableWebCam);
+
+  if (Length(IWebCamDevice)>0) then
+  begin
+    if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
+      Ini.WebCamID := 0;
+
+    IWebCamMedia := ListMediaTypes(Ini.WebCamID);
+
+    SelectSlideWebCamDevice := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamDevice, Ini.WebCamID, IWebCamDevice);
+    SelectSlideWebCamMedia  := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamMedia, Ini.WebCamMediaID, IWebCamMedia);
+
+    WebCamPreviewOn := (Ini.EnableWebCam=1);
+  end else
+    WebCamPreviewOn := false;
+
   AddButton(Theme.OptionsRecord.ButtonExit);
   if (Length(Button[0].Text)=0) then
     AddButtonText(14, 20, Theme.Options.Description[7]);
@@ -119,6 +168,24 @@ begin
   Interaction := 0;
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenOptionsRecord)');
+
+  IWebCamDevice := GetCapDevices();
+
+  if (Length(IWebCamDevice)>0) then
+  begin
+    if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
+      Ini.WebCamID := 0;
+
+    IWebCamMedia := ListMediaTypes(Ini.WebCamID);
+
+    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideCard, SelectSlideWebCamDevice, IWebCamDevice, Ini.WebCamID);
+    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideInput, SelectSlideWebCamMedia, IWebCamMedia, Ini.WebCamMediaID);
+
+    WebCamPreviewOn := (Ini.EnableWebCam=1);
+  end else
+    WebCamPreviewOn := false;
+
+  WebCamPreviewOn := wStartWebCam;
 end;
 
 procedure TScreenOptionsRecord.UpdateCard;
@@ -127,17 +194,62 @@ var
   SCI:    integer;
 begin
   SC := Ini.Card;
-//  if SC = 1 then beep;
 
   SetLength(IInput, Length(Recording.SoundCard[SC].Input));
-  for SCI := 0 to High(Recording.SoundCard[SC].Input) do begin
+  for SCI := 0 to High(Recording.SoundCard[SC].Input) do
+  begin
     IInput[SCI] := Recording.SoundCard[SC].Input[SCI].Name;
-//    Log.LogError(IInput[SCI]);
   end;
 
   UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideInput, SelectSlideInput, IInput, Ini.CardList[SC].Input);
   UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideChannelL, SelectSlideChannelL, IChannel, Ini.CardList[SC].ChannelL);
   UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideChannelR, SelectSlideChannelR, IChannel, Ini.CardList[SC].ChannelR);
+end;
+
+procedure TScreenOptionsRecord.onHide;
+begin
+  wClose;
+end;
+
+function TScreenOptionsRecord.Draw: boolean;
+begin
+  DrawBG;
+
+  if WebCamPreviewOn then
+  begin
+    try
+      wDraw(true);
+    except
+      WebCamPreviewOn := false;
+    end;
+  end;
+
+  DrawFG;
+  Result := true;
+end;
+
+procedure TScreenOptionsRecord.UpdateWebCam;
+begin
+  wClose;
+
+  IWebCamDevice := GetCapDevices();
+
+  if (Length(IWebCamDevice)>0) then
+  begin
+    if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
+      Ini.WebCamID := 0;
+
+    IWebCamMedia := ListMediaTypes(Ini.WebCamID);
+
+    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideWebCamDevice, SelectSlideWebCamDevice, IWebCamDevice, Ini.WebCamID);
+    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideWebCamMedia, SelectSlideWebCamMedia, IWebCamMedia, Ini.WebCamMediaID);
+
+    WebCamPreviewOn := (Ini.EnableWebCam=1);
+  end else
+    WebCamPreviewOn := false;
+
+  if WebCamPreviewOn then
+    WebCamPreviewOn := wStartWebCam;
 end;
 
 end.

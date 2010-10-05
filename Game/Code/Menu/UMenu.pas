@@ -70,9 +70,12 @@ type
       // button
       Procedure SetButtonLength(Length: Cardinal); //Function that Set Length of Button Array in one Step instead of register new Memory for every Button
       function AddButton(ThemeButton: TThemeButton): integer; overload;
-      function AddButton(X, Y, W, H: real; Name: String): integer; overload;
-      function AddButton(X, Y, W, H: real; Name, Format, Typ: String; Reflection: Boolean): integer; overload;
-      function AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real; Name, Format, Typ: String; Reflection: Boolean; ReflectionSpacing, DeSelectReflectionSpacing: Real): integer; overload;
+      function AddButton(X, Y, W, H: real; Name: String; FromCache: boolean): integer; overload;
+      function AddButton(X, Y, W, H: real; Name, Format, Typ: String; Reflection: Boolean; FromCache: boolean): integer; overload;
+      function AddButton(X, Y, W, H: real; Reflection: Boolean; Tex: TTexture): integer; overload;
+      function AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real;
+        Name, Format, Typ: String; Reflection: Boolean; ReflectionSpacing, DeSelectReflectionSpacing: Real;
+        FromCache: boolean): integer; overload;
       procedure ClearButtons;
       procedure AddButtonText(AddX, AddY: real; AddText: string); overload;
       procedure AddButtonText(AddX, AddY: real; ColR, ColG, ColB: real; AddText: string); overload;
@@ -313,7 +316,7 @@ begin
   if (Num > High(ButtonCollection)) then
     exit;
 
-  ButtonCollection[Num] := TButtonCollection.Create(Texture.GetTexture(Skin.GetTextureFileName(ThemeCollection.Style.Tex), ThemeCollection.Style.Typ, true)); // use cache texture
+  ButtonCollection[Num] := TButtonCollection.Create(Texture.GetTexture(Skin.GetTextureFileName(ThemeCollection.Style.Tex), ThemeCollection.Style.Typ, false)); // use cache texture
 
   //Set Parent menu
   ButtonCollection[Num].ScreenButton := @Self.Button;
@@ -354,7 +357,7 @@ begin
 
   ButtonCollection[Num].Fade := ThemeCollection.Style.Fade;
   ButtonCollection[Num].FadeText := ThemeCollection.Style.FadeText;
-  ButtonCollection[Num].FadeTex := Texture.GetTexture(Skin.GetTextureFileName(ThemeCollection.Style.FadeTex), ThemeCollection.Style.Typ, true);
+  ButtonCollection[Num].FadeTex := Texture.GetTexture(Skin.GetTextureFileName(ThemeCollection.Style.FadeTex), ThemeCollection.Style.Typ, false);
   ButtonCollection[Num].FadeTexPos := ThemeCollection.Style.FadeTexPos;
 
 
@@ -520,7 +523,8 @@ begin
   Result := AddButton(ThemeButton.X, ThemeButton.Y, ThemeButton.W, ThemeButton.H,
     ThemeButton.ColR, ThemeButton.ColG, ThemeButton.ColB, ThemeButton.Int,
     ThemeButton.DColR, ThemeButton.DColG, ThemeButton.DColB, ThemeButton.DInt,
-    Skin.GetTextureFileName(ThemeButton.Tex), 'JPG', ThemeButton.Typ, ThemeButton.Reflection, ThemeButton.Reflectionspacing, ThemeButton.DeSelectReflectionspacing);
+    Skin.GetTextureFileName(ThemeButton.Tex), 'JPG', ThemeButton.Typ, ThemeButton.Reflection,
+      ThemeButton.Reflectionspacing, ThemeButton.DeSelectReflectionspacing, false);
 
   Button[Result].Z := ThemeButton.Z;
 
@@ -533,7 +537,7 @@ begin
 
   Button[Result].Fade := ThemeButton.Fade;
   Button[Result].FadeText := ThemeButton.FadeText;
-  Button[Result].FadeTex := Texture.GetTexture(Skin.GetTextureFileName(ThemeButton.FadeTex), ThemeButton.Typ, true);
+  Button[Result].FadeTex := Texture.GetTexture(Skin.GetTextureFileName(ThemeButton.FadeTex), ThemeButton.Typ, false);
   Button[Result].FadeTexPos := ThemeButton.FadeTexPos;
 
 
@@ -564,17 +568,17 @@ begin
   end;
 end;
 
-function TMenu.AddButton(X, Y, W, H: real; Name: String): integer;
+function TMenu.AddButton(X, Y, W, H: real; Name: String; FromCache: boolean): integer;
 begin
-  Result := AddButton(X, Y, W, H, Name, 'JPG', 'Plain', False);
+  Result := AddButton(X, Y, W, H, Name, 'JPG', 'Plain', False, FromCache);
 end;
 
-function TMenu.AddButton(X, Y, W, H: real; Name, Format, Typ: String; Reflection: Boolean): integer;
+function TMenu.AddButton(X, Y, W, H: real; Name, Format, Typ: String; Reflection: Boolean; FromCache: boolean): integer;
 begin
-  Result := AddButton(X, Y, W, H, 1, 1, 1, 1, 1, 1, 1, 0.5, Name, 'JPG', 'Plain', Reflection, 15, 15);
+  Result := AddButton(X, Y, W, H, 1, 1, 1, 1, 1, 1, 1, 0.5, Name, 'JPG', 'Plain', Reflection, 15, 15, FromCache);
 end;
 
-function TMenu.AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real; Name, Format, Typ: String; Reflection: Boolean; ReflectionSpacing, DeSelectReflectionSpacing: Real): integer;
+function TMenu.AddButton(X, Y, W, H: real; Reflection: Boolean; Tex: TTexture): integer;
 begin
   // adds button
   //SetLength is used once to reduce Memory usement
@@ -583,19 +587,63 @@ begin
     Result := ButtonPos;
     Inc(ButtonPos)
   end
-  else //Old Method -> Reserve new Memory for every Button 
+  else //Old Method -> Reserve new Memory for every Button
   begin
     Result := Length(Button);
     SetLength(Button, Result + 1);
   end;
-//  Button[Result] := TButton.Create(Texture.GetTexture(Name, Typ));
 
-  // check here for cache
-//  Texture.GetTexture(Name, Typ, false); // preloads textures and creates cahce mipmap when needed
-//  if Covers.CoverExists(Name) then
-  Button[Result] := TButton.Create(Texture.GetTexture(Name, Typ, true)); // use cache texture
-//  else
-//    Button[Result] := TButton.Create(Texture.GetTexture(Name, Typ, false)); // don't use cache texture}
+  Button[Result] := TButton.Create(Tex); // use cache texture
+
+  // configures button
+  Button[Result].X := X;
+  Button[Result].Y := Y;
+  Button[Result].W := W;
+  Button[Result].H := H;
+  Button[Result].SelectColR := 1;
+  Button[Result].SelectColG := 1;
+  Button[Result].SelectColB := 1;
+  Button[Result].SelectInt := 1;
+  Button[Result].DeselectColR := 1;
+  Button[Result].DeselectColG := 1;
+  Button[Result].DeselectColB := 1;
+  Button[Result].DeselectInt := 0.5;
+  Button[Result].Texture.TexX1 := 0;
+  Button[Result].Texture.TexY1 := 0;
+  Button[Result].Texture.TexX2 := 1;
+  Button[Result].Texture.TexY2 := 1;
+  Button[Result].SetSelect(false);
+
+  Button[Result].Reflection := Reflection;
+  Button[Result].Reflectionspacing := 15;
+  Button[Result].DeSelectReflectionspacing := 15;
+
+  //Button Collection Mod
+  Button[Result].Parent := 0;
+
+  // adds interaction
+  AddInteraction(iButton, Result);
+  Interaction := 0;
+end;
+
+function TMenu.AddButton(X, Y, W, H, ColR, ColG, ColB, Int, DColR, DColG, DColB, DInt: real;
+  Name, Format, Typ: String; Reflection: Boolean; ReflectionSpacing, DeSelectReflectionSpacing: Real;
+  FromCache: boolean): integer;
+begin
+  // adds button
+  //SetLength is used once to reduce Memory usement
+  if (ButtonPos <> -1) then
+  begin
+    Result := ButtonPos;
+    Inc(ButtonPos)
+  end
+  else //Old Method -> Reserve new Memory for every Button
+  begin
+    Result := Length(Button);
+    SetLength(Button, Result + 1);
+  end;
+
+  Button[Result] := TButton.Create(Texture.GetTexture(Name, Typ, FromCache)); // use cache texture
 
   // configures button
   Button[Result].X := X;

@@ -25,7 +25,10 @@ type
     ShuffleTime:    integer;
     Debug:          integer;
     LoadFaultySongs:integer;
+    LoadFaultySongs_temp: integer;
     NewPartyPoints: integer;
+    ShowCredits:    integer;
+    NewPartySelectionMode:  integer;
 
     // Graphics
     Screens:        integer;
@@ -72,6 +75,9 @@ type
       ChannelL:       integer;
       ChannelR:       integer;
     end;
+    EnableWebCam:   integer;
+    WebCamID:       integer;
+    WebCamMediaID:  integer;
 
     // Advanced
     LoadAnimation:  integer;
@@ -136,6 +142,8 @@ const
   IDebug:         array[0..1] of string = ('Off', 'On');
   ILoadFaultySongs: array[0..1] of string = ('Off', 'On');
   INewPartyPoints: array[0..1] of string = ('Off', 'On');
+  IShowCredits:   array[0..1] of string = ('Off', 'On');
+  INewPartySelectionMode:   array[0..1] of string = ('Off', 'On');
 
   IScreens:       array[0..1] of string = ('1', '2');
   IFullScreen:    array[0..1] of string = ('Off', 'On');
@@ -153,6 +161,7 @@ const
   IAspectCorrect: array[0..2] of String  = ('Stretch', 'Crop', 'LetterBox');
   IPerformanceMode:array[0..1] of string = ('Off', 'On');
   IEnablePBO:     array[0..1] of string = ('Off', 'On');
+  IEnableWebCam:  array[0..1] of string = ('Off', 'On');
 
   IMicBoost:      array[0..3] of string = ('Off', '+6dB', '+12dB', '+18dB');
   IClickAssist:   array[0..1] of string = ('Off', 'On');
@@ -180,7 +189,7 @@ const
   IPartyPopup:    array[0..1] of string = ('Off', 'On');
   ISumPlayers:    array[0..2] of string = ('Never', 'Dynamic', 'Always');
   IDuelRatio:     array[0..9] of string = ('normal', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%');
-  IPossibleScore: array[0..2] of string = ('Off', 'Bar', 'Numbers');
+  IPossibleScore: array[0..3] of string = ('Off', 'Bar', 'Numbers', 'Name');
   ILogSession:    array[0..1] of string = ('Off', 'On');
 
   IChannel:       array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
@@ -274,13 +283,22 @@ begin
   Tekst := IniFile.ReadString('Game', 'LoadFaultySongs', ILoadFaultySongs[0]);
   for Pet := 0 to High(ILoadFaultySongs) do
     if Tekst = ILoadFaultySongs[Pet] then Ini.LoadFaultySongs := Pet;
+  LoadFaultySongs_temp := LoadFaultySongs;
 
   // NewPartyPoints
   Tekst := IniFile.ReadString('Game', 'NewPartyPoints', INewPartyPoints[1]);
   for Pet := 0 to High(INewPartyPoints) do
     if Tekst = INewPartyPoints[Pet] then Ini.NewPartyPoints := Pet;
 
-  //if Ini.Debug = 1 then SongPath := 'E:\UltraStar 03\Songs\';
+  // ShowCredits
+  Tekst := IniFile.ReadString('Game', 'ShowCredits', IShowCredits[1]);
+  for Pet := 0 to High(IShowCredits) do
+    if Tekst = IShowCredits[Pet] then Ini.ShowCredits := Pet;
+
+  // NewPartySelectionMode
+  Tekst := IniFile.ReadString('Game', 'NewPartySelectionMode', INewPartySelectionMode[1]);
+  for Pet := 0 to High(INewPartySelectionMode) do
+    if Tekst = INewPartySelectionMode[Pet] then Ini.NewPartySelectionMode := Pet;
 
   // Screens
   Tekst := IniFile.ReadString('Graphics', 'Screens', IScreens[0]);
@@ -377,7 +395,7 @@ begin
     if Tekst = IMoviePreview[Pet] then Ini.MoviePreview := Pet;
 
   // AspectCorrection
-  Tekst := IniFile.ReadString('Graphics', 'AspectCorrect', IAspectCorrect[2]);
+  Tekst := IniFile.ReadString('Graphics', 'AspectCorrect', IAspectCorrect[1]);
   for Pet := 0 to High(IAspectCorrect) do
     if Tekst = IAspectCorrect[Pet] then Ini.AspectCorrect := Pet;
 
@@ -560,6 +578,21 @@ begin
     end;
   end;
 
+  // enable WebCam
+  Tekst := IniFile.ReadString('Record', 'EnableWebCam', IEnableWebCam[0]);
+  for Pet := 0 to High(IEnableWebCam) do
+    if Tekst = IEnableWebCam[Pet] then Ini.EnableWebCam := Pet;
+
+  // WebCamID
+  Tekst := IniFile.ReadString('Record', 'WebCamID', '0');
+  if not TryStrToInt(Tekst, Ini.WebCamID) then
+    Ini.WebCamID := 0;
+
+  // WebCamMediaID
+  Tekst := IniFile.ReadString('Record', 'WebCamMediaID', '0');
+  if not TryStrToInt(Tekst, Ini.WebCamMediaID) then
+    Ini.WebCamMediaID := 0;
+
   //Advanced Settings
 
   // LoadAnimation
@@ -682,6 +715,14 @@ begin
     Tekst := INewPartyPoints[Ini.NewPartyPoints];
     IniFile.WriteString('Game',     'NewPartyPoints',   Tekst);
 
+    // ShowCredits
+    Tekst := IShowCredits[Ini.ShowCredits];
+    IniFile.WriteString('Game',     'ShowCredits',   Tekst);
+
+    // NewPartySelectionMode
+    Tekst := IShowCredits[Ini.NewPartySelectionMode];
+    IniFile.WriteString('Game',     'NewPartySelectionMode',   Tekst);
+
     // Screens
     Tekst := IScreens[Ini.Screens];
     IniFile.WriteString('Graphics', 'Screens', Tekst);
@@ -803,6 +844,18 @@ begin
       end;
 
       //Log.LogError(InttoStr(Length(CardList)) + ' Cards Saved');
+
+    // enable WebCam
+    Tekst := IEnableWebCam[Ini.EnableWebCam];
+    IniFile.WriteString('Record', 'EnableWebCam', Tekst);
+
+    // WebCamID
+    Tekst := IntToStr(Ini.WebCamID);
+    IniFile.WriteString('Record', 'WebCamID', Tekst);
+
+    // WebCamMediaID
+    Tekst := IntToStr(Ini.WebCamMediaID);
+    IniFile.WriteString('Record', 'WebCamMediaID', Tekst);
 
     //Advanced Settings
 

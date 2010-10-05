@@ -11,28 +11,29 @@ type
   TScreenCredits = class(TMenu)
     public
 
-      Credits_X: Real;
-      Credits_Time: Cardinal;
-      Credits_Alpha: Cardinal;
+      Credits_X:        Real;
+      Credits_Time:     Cardinal;
+      Credits_Alpha:    Cardinal;
       CTime: Cardinal;
-      CTime_hold: Cardinal;
-      ESC_Alpha: Integer;
+      CTime_hold:       Cardinal;
+      ESC_Alpha:        Integer;
 
-      credits_entry_tex: TTexture;
-      credits_entry_dx_tex: TTexture;
-      credits_bg_tex: TTexture;
-      credits_bg_ovl: TTexture;
+      credits_entry_tex:          TTexture;
+      credits_entry_dx_tex:       TTexture;
+      credits_bg_tex:             TTexture;
+      credits_bg_ovl:             TTexture;
 //      credits_bg_logo: TTexture;
-      credits_bg_scrollbox_left: TTexture;
-      credits_blindy: TTexture;
-      credits_canni: TTexture;
-      credits_ggkfc: TTexture;
-      credits_jaybinks: TTexture;
-      credits_linnex: TTexture;
-      credits_mog: TTexture;
-      credits_omgdutch: TTexture;
-      credits_skillmaster: TTexture;
-      credits_whiteshark: TTexture;
+      credits_bg_scrollbox_left:  TTexture;
+      credits_blindy:             TTexture;
+      credits_canni:              TTexture;
+      credits_ggkfc:              TTexture;
+      credits_jaybinks:           TTexture;
+      credits_linnex:             TTexture;
+      credits_mog:                TTexture;
+      credits_omgdutch:           TTexture;
+      credits_skillmaster:        TTexture;
+      credits_whiteshark:         TTexture;
+      credits_brunzel:            TTexture;
       intro_layer01: TTexture;
       intro_layer02: TTexture;
       intro_layer03: TTexture;
@@ -64,13 +65,28 @@ type
       procedure DrawCredits;
       procedure Draw_FunkyText;
    end;
-                                              
+
 const
-  Funky_Text: AnsiString =   //                                                                                                              |
-  'A small step in version number, a huge step for the community - USDX works with any video format now. Thanks and greetings fly out to Mota '+
-  '(we miss you!), Skar (additional skins), Atlassian.com, Zanadoo.com and WhirlWind-Records.com. Massive thanks to the translators: Jonaspaulo, '+
-  'Jacobo, Bres, W0nderboy, Dadone - and our betatesters: Theril, Tyris, Murmeltier and Lemon. Greetings to Tronic from NuubSing (you guys rule!) and Corvus5.';
-  Timings: array[0..21] of Cardinal=(
+  Funky_Text: AnsiString =
+    'Massive thanks to all the people who have made this possible: Corvus5, for the '+
+    'original program; the USDX team, for creating this deluxe version; igel457 for '+
+    'developing acinerella; the translators: Thursday, UltraClaudio79 and Bruut; the '+
+    'beta-testers: b4St1@fuN, bohning, Thursday and many of you who have been so '+
+    'active on the German forum: ultra-star.de. Additional thanks to MezzoX, merc, gpm, '+
+    'BlindGuard and MasterPhW for your contributions and to our song makers '+
+    'throughout the world - without the music, none of this would be possible.';
+    //I hope to see the improvements in this mod implemented into the USDX version someday :)
+
+  (* old one:                                                                                                              |
+  'A small step in version number, a huge step for the community - USDX works '+
+  'with any video format now. Thanks and greetings fly out to Mota '+
+  '(we miss you!), Skar (additional skins), Atlassian.com, Zanadoo.com and '+
+  'WhirlWind-Records.com. Massive thanks to the translators: Jonaspaulo, '+
+  'Jacobo, Bres, W0nderboy, Dadone - and our betatesters: Theril, Tyris, '+
+  'Murmeltier and Lemon. Greetings to Tronic from NuubSing (you guys rule!) and Corvus5.';
+  *)
+
+  Timings: array[0..22] of Cardinal=(
      20,   //  0 Delay vor Start
 
     149,   //  1 Ende erster Intro Zoom
@@ -83,19 +99,20 @@ const
     271,   //  7 Start Main Part
     280,   //  8 Start On-Beat-Sternchen Main Part
 
-    396,   //  9 Start blindy
-    666,   // 10 Start canni
-    936,   // 11 Start ggkfc
-   1206,   // 12 Start jaybinks
+    351,   //  9 Start blindy
+    801,   // 10 Start canni
+   1026,   // 11 Start ggkfc
+   1251,   // 12 Start jaybinks
    1476,   // 13 Start linnex
-   1746,   // 14 Start mog
-   2016,   // 15 Start omgdutch
-   2286,   // 16 Start SkillMaster
-   2556,   // 17 Start WhiteShark
+   1701,   // 14 Start mog
+   2151,   // 15 Start omgdutch
+   2376,   // 16 Start SkillMaster
+   2601,   // 17 Start WhiteShark
    2826,   // 18 Ende Whiteshark
    3096,   // 19 Start FadeOut Mainscreen
-   3366,   // 20 Ende Credits Tune
-     60);  // 21 start flare im intro
+   3450,   // 20 Ende Credits Tune (3366)
+     60,
+    576);  // 22 start brunzel
 
 implementation
 
@@ -131,28 +148,34 @@ begin
 
   credits_blindy      := Texture.LoadTexture(true, 'CRDTS_blindy',     'PNG', 'Font Black', 0);
   credits_canni       := Texture.LoadTexture(true, 'CRDTS_canni',      'PNG', 'Font Black', 0);
+  SDL_Delay(1);
   credits_ggkfc       := Texture.LoadTexture(true, 'CRDTS_ggkfc',      'PNG', 'Font Black', 0);
   credits_jaybinks    := Texture.LoadTexture(true, 'CRDTS_jaybinks',   'PNG', 'Font Black', 0);
   credits_linnex      := Texture.LoadTexture(true, 'CRDTS_linnex',     'PNG', 'Font Black', 0);
   credits_mog         := Texture.LoadTexture(true, 'CRDTS_mog',        'PNG', 'Font Black', 0);
+  SDL_Delay(1);
   credits_omgdutch    := Texture.LoadTexture(true, 'CRDTS_omgdutch',   'PNG', 'Font Black', 0);
   credits_skillmaster := Texture.LoadTexture(true, 'CRDTS_skillmaster','PNG', 'Font Black', 0);
   credits_whiteshark  := Texture.LoadTexture(true, 'CRDTS_whiteshark', 'PNG', 'Font Black', 0);
+  credits_brunzel     := Texture.LoadTexture(true, 'CRDTS_brunzel', 'PNG', 'Font Black', 0);
 
+  SDL_Delay(1);
   intro_layer01 := Texture.LoadTexture(true, 'INTRO_L01', 'PNG', 'Transparent', 0);
   intro_layer02 := Texture.LoadTexture(true, 'INTRO_L02', 'PNG', 'Transparent', 0);
   intro_layer03 := Texture.LoadTexture(true, 'INTRO_L03', 'PNG', 'Transparent', 0);
   intro_layer04 := Texture.LoadTexture(true, 'INTRO_L04', 'PNG', 'Transparent', 0);
+  SDL_Delay(1);
   intro_layer05 := Texture.LoadTexture(true, 'INTRO_L05', 'PNG', 'Transparent', 0);
   intro_layer06 := Texture.LoadTexture(true, 'INTRO_L06', 'PNG', 'Transparent', 0);
   intro_layer07 := Texture.LoadTexture(true, 'INTRO_L07', 'PNG', 'Transparent', 0);
   intro_layer08 := Texture.LoadTexture(true, 'INTRO_L08', 'PNG', 'Transparent', 0);
+  SDL_Delay(1);
   intro_layer09 := Texture.LoadTexture(true, 'INTRO_L09', 'PNG', 'Transparent', 0);
 
   outro_bg := Texture.LoadTexture(true, 'OUTRO_BG', 'PNG', 'Plain', 0);
   outro_esc := Texture.LoadTexture(true, 'OUTRO_ESC', 'PNG', 'Transparent', 0);
   outro_exd := Texture.LoadTexture(true, 'OUTRO_EXD', 'PNG', 'Plain', 0);
-
+  SDL_Delay(1);
   CRDTS_Stage:=InitialDelay;
 end;
 
@@ -471,7 +494,7 @@ Data := Music.GetFFTData;
 
 // blindy (von links oben reindrehen, nach rechts unten rausdrehen)
     STime:=Timings[9]-10;
-    Delay:=Timings[10]-Timings[9];
+    Delay:=Timings[22]-Timings[9];
     if CTime > STime then
     begin
       k:=0;
@@ -508,6 +531,64 @@ Data := Music.GetFFTData;
         gltranslatef(-223,0,0);
       end;
       glBindTexture(GL_TEXTURE_2D, credits_blindy.TexNum);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glEnable(GL_BLEND);
+      glEnable(GL_TEXTURE_2D);
+      glbegin(gl_quads);
+        glTexCoord2f(0,0);glVertex2f(-163,   -129);
+        glTexCoord2f(0,1);glVertex2f(-163,   129);
+        glTexCoord2f(1,1); glVertex2f(163, 129);
+        glTexCoord2f(1,0);glVertex2f(163, -129);
+      glEnd;
+      gldisable(gl_texture_2d);
+      gldisable(GL_BLEND);
+      glPopMatrix;
+    end;
+
+// brunzel
+    STime:=Timings[22]-10;
+    Delay:=Timings[10]-Timings[22];
+    if CTime > STime then
+    begin
+      k:=0;
+      ESC_Alpha:=20;
+      for j:=0 to 40 do
+        if Data[j]>=Data[k] then k:=j;
+      if Data[k]>0.25 then ESC_Alpha:=5 else inc(ESC_Alpha);
+      if ESC_Alpha >20 then ESC_Alpha:=20;
+      if ((CTime-STime)<20) then ESC_Alpha:=20;
+      //k:=CTime-STime;
+      if CTime <=STime+10 then j:=CTime-STime else j:=10;
+      if (CTime >=STime+Delay-10) then if (CTime <=STime+Delay) then j:=(STime+Delay)-CTime else j:=0;
+      glColor4f(1, 1, 1, ESC_Alpha/20*j/10);
+
+      if (CTime >= STime+10) and (CTime<=STime+12) then begin
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 0, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 1, 0);
+        GoldenRec.Spawn(RandomRange(65,390), RandomRange(200,460), 1, 16, 0, -1, PerfectLineTwinkle, 5, 0);
+      end;
+
+      glPushMatrix;
+      if CTime <= STime+10 then
+      begin
+        j:=CTime-STime;
+        glscalef(j*j/100,j*j/100,j*j/100);
+        gltranslatef(j/10*100+123,j/10*129+200,0);
+        glrotatef(j/10*180+180,0,-1,1);
+      end else
+        gltranslatef(223,329,0);
+
+      if CTime >=STime+Delay-10 then if CTime <=STime+Delay then begin
+        j := (CTime-(STime+Delay-10))*-9;
+        glscalef(j*j/400+1,j*j/400+1,j*j/400+1);
+      end;
+      glBindTexture(GL_TEXTURE_2D, credits_brunzel.TexNum);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       glEnable(GL_BLEND);
       glEnable(GL_TEXTURE_2D);

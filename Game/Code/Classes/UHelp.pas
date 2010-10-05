@@ -58,11 +58,12 @@ type
 
   THelp = class
     private
+      actualID:     string;
       ScrollPos:    double;
-      Entry:    array of TEntry;
-      SEntry:   array of TEntry;
-      AEntry:   TEntry;
-      List:     array of TLanguageList;
+      Entry:        array of TEntry;
+      SEntry:       array of TEntry;
+      AEntry:       TEntry;
+      List:         array of TLanguageList;
       Implode_Glue1, Implode_Glue2: String;
     public
       MaxLines: integer;
@@ -72,6 +73,7 @@ type
       procedure ChangeLanguage(Language: String);
       //procedure LoadKeys;
       function SetHelpID(ID: String):boolean;
+      function GetHelpID(): string;
       function GetHelpStr(): TTextResult;
       procedure SetScrollPos(pos: double);
       function GetScrollPos(): double;
@@ -131,6 +133,8 @@ begin
     if (I = high(List)) then
       Log.LogError('English Languagefile missing! No standard Translation loaded (Help System)');
   end;
+
+  actualID := '';
   //Standard Language END   
 
 end;
@@ -322,13 +326,7 @@ begin
     begin
       Result := true;
       AEntry := Entry[E];
-      {
-      SetLength(AEntry.Keys, Length(Entry[E].Keys));
-      AEntry.ID := Entry[E].ID;
-      AEntry.Title := Entry[E].Title;
-      AEntry.Description := Entry[E].Description;
-      for J := low(Entry[E].Keys) to high(Entry[E].Keys) do
-        AEntry.Keys[J] := Entry[E].Keys[J];}
+      actualID := ID;
       exit;
     end;
   end;
@@ -341,18 +339,16 @@ begin
     begin
       Result := true;
       AEntry := SEntry[E];
-      {
-      SetLength(AEntry.Keys, Length(SEntry[E].Keys));
-      AEntry.ID := SEntry[E].ID;
-      AEntry.Title := SEntry[E].Title;
-      AEntry.Description := SEntry[E].Description;
-      for J := low(SEntry[E].Keys) to high(SEntry[E].Keys) do
-        AEntry.Keys[J] := SEntry[E].Keys[J];   }
-
+      actualID := ID;
       exit;
     end;
   end;
   //Standard Language END
+end;
+
+function THelp.GetHelpID(): string;
+begin
+  Result := actualID;
 end;
 
 function THelp.GetHelpStr(): TTextResult;

@@ -77,7 +77,7 @@ begin
     S := L - n;
     L := n;
   end;
-
+  
   // copy to array
   for A := L+1 to n do
     BufferArray[A-L] := BufferArray[A];
@@ -214,9 +214,9 @@ var
   P1:   integer;
   P2:   integer;
   Boost:  byte;
+
 begin
 //  Log.LogDebug('Record -> GetMicrophone: len='+inttstr(len));
-
   // set boost
   case Ini.MicBoost of
     0:  Boost := 1;

@@ -89,55 +89,54 @@ end;
   //Add a Cover
 procedure TCatCovers.Add(Sorting: integer; Name, Filename: string);
 begin
-if FileExists (Filename) then //If Exists -> Add
-begin
-SetLength (CNames[Sorting], Length(CNames[Sorting]) + 1);
-SetLength (CFiles[Sorting], Length(CNames[Sorting]) + 1);
+  if FileExists (Filename) then //If Exists -> Add
+  begin
+    SetLength (CNames[Sorting], Length(CNames[Sorting]) + 1);
+    SetLength (CFiles[Sorting], Length(CNames[Sorting]) + 1);
 
-CNames[Sorting][high(cNames[Sorting])] := Uppercase(Name);
-CFiles[Sorting][high(cNames[Sorting])] := FileName;
-end;
+    CNames[Sorting][high(cNames[Sorting])] := Uppercase(Name);
+    CFiles[Sorting][high(cNames[Sorting])] := FileName;
+  end;
 end;
 
   //Returns True when a cover with the given Name exists
 function TCatCovers.CoverExists(Sorting: integer; Name: string): boolean;
 var
-I: Integer;
+  I: Integer;
 begin
-Result := False;
-Name := Uppercase(Name); //Case Insensitiv
+  Result := False;
+  Name := Uppercase(Name); //Case Insensitiv
 
-for I := low(cNames[Sorting]) to high(cNames[Sorting]) do
-begin
-  if (cNames[Sorting][I] = Name) then //Found Name
+  for I := low(cNames[Sorting]) to high(cNames[Sorting]) do
   begin
-    Result := true;
-    break; //Break For Loop
+    if (cNames[Sorting][I] = Name) then //Found Name
+    begin
+      Result := true;
+      break; //Break For Loop
+    end;
   end;
-end;
 end;
 
   //Returns the Filename of a Cover
 function TCatCovers.GetCover(Sorting: integer; Name: string): string;
 var
-I: Integer;
+  I: Integer;
 begin
-Result := '';
-Name := Uppercase(Name);
+  Result := '';
+  Name := Uppercase(Name);
 
-for I := low(cNames[Sorting]) to high(cNames[Sorting]) do
-begin
-  if cNames[Sorting][I] = Name then
+  for I := low(cNames[Sorting]) to high(cNames[Sorting]) do
   begin
-    Result := cFiles[Sorting][I];
-    Break;
+    if cNames[Sorting][I] = Name then
+    begin
+      Result := cFiles[Sorting][I];
+      Break;
+    end;
   end;
-end;
 
-//No Cover
-if (Result = '') AND (FileExists(CoversPath + 'NoCover.jpg')) then
-  Result := CoversPath + 'NoCover.jpg';
-
+  //No Cover
+  if (Result = '') AND (FileExists(CoversPath + 'NoCover.jpg')) then
+    Result := CoversPath + 'NoCover.jpg';
 end;
 
 end.

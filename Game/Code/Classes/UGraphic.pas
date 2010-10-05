@@ -4,7 +4,8 @@ interface
 uses
   SDL, gl, glext, UVideo, UTexture, ULanguage, TextGL, ULog, SysUtils, ULyrics, UScreenLoading,
   UScreenWelcome, UScreenMain, UScreenName, UScreenLevel, UScreenOptions, UScreenOptionsGame,
-  UScreenOptionsGraphics, UScreenOptionsSound, UScreenOptionsLyrics, UScreenOptionsThemes, UScreenOptionsRecord, UScreenOptionsAdvanced,
+  UScreenOptionsGraphics, UScreenOptionsSound, UScreenOptionsLyrics, UScreenOptionsThemes, UScreenOptionsRecord,
+  UScreenOptionsAdvanced,
   UScreenSong, UScreenSing, UScreenScore, UScreenTop, UScreenEditSub,
   UScreenEdit, UScreenEditConvert, UScreenEditHeader, UScreenOpen, UThemes, USkins, UScreenSongMenu, UScreenSongJumpto,
   {Party Screens} UScreenSingModi, UScreenPartyNewRound, UScreenPartyScore, UScreenPartyOptions, UScreenPartyWin, UScreenPartyPlayer,
@@ -191,7 +192,7 @@ procedure UnLoadScreens;
 procedure UpdateScreenLoading(txt: string);
 
 implementation
-uses UMain, UIni, UDisplay, UCommandLine, Graphics, Classes, Windows;
+uses UMain, UIni, UDisplay, UCommandLine, Graphics, Classes, Windows, UWebCam;
 
 procedure LoadTextures;
 var
@@ -319,7 +320,13 @@ begin
   if (Ini.LoadFaultySongs=1) and (Log.NumErrors>0) then
     ScreenMain.ShowNumErrors := true;
 
-  Display.ActualScreen^.FadeTo(@ScreenMain);
+  if (Ini.ShowCredits=1) then
+  begin
+    Ini.ShowCredits := 0;
+    Ini.Save;
+    Display.ActualScreen^.FadeTo(@ScreenCredits)
+  end else
+    Display.ActualScreen^.FadeTo(@ScreenMain);
 
   Log.BenchmarkEnd(2);
   Log.LogBenchmark('--> Loading Screens', 2);
@@ -444,6 +451,7 @@ begin
   glClearColor(1, 1, 1, 1);
   glClear(GL_COLOR_BUFFER_BIT);
   SwapBuffers;
+  SDL_Delay(1);
 end;
 
 procedure LoadScreens( aShowLoading : boolean = true );
@@ -458,7 +466,7 @@ begin
     Display.Draw;
     SwapBuffers;
   end;
-
+  SDL_Delay(1);
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Loading', 3); Log.BenchmarkStart(3);
 { ScreenWelcome :=          TScreenWelcome.Create; //'BG', 4, 3);
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Welcome', 3); Log.BenchmarkStart(3);}
@@ -473,7 +481,7 @@ begin
 
   if(aShowLoading) then
     UpdateScreenLoading(Language.Translate('SING_LOADING'));
-
+  SDL_Delay(1);
   ScreenSongMenu :=             TScreenSongMenu.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Song Menu', 3); Log.BenchmarkStart(3);
   ScreenSing :=             TScreenSing.Create;
@@ -534,10 +542,11 @@ begin
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Stat Main', 3); Log.BenchmarkStart(3);
   ScreenStatDetail :=       TScreenStatDetail.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Stat Detail', 3); Log.BenchmarkStart(3);
-  //Now Created when needed
-  //ScreenCredits    :=       TScreenCredits.Create;
-  //Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Credits', 3); Log.BenchmarkStart(3);
-
+  if (Ini.ShowCredits=1) then
+  begin
+    ScreenCredits    :=       TScreenCredits.Create;
+    Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen Credits', 3); Log.BenchmarkStart(3);
+  end;
   //PartyM2 Screens
   ScreenPartyOptionsM2 :=   TScreenPartyOptionsM2.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen PartyOptionsM2', 3); Log.BenchmarkStart(3);
@@ -545,6 +554,7 @@ begin
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen PartyPlayerM2', 3); Log.BenchmarkStart(3);
   ScreenPartyNewRoundM2 :=  TScreenPartyNewRoundM2.Create;
   Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen PartyNewRoundM2', 3); Log.BenchmarkStart(3);
+  SDL_Delay(1);
   end;
 
 procedure UnLoadScreens;

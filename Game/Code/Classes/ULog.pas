@@ -49,11 +49,235 @@ type
     procedure LogError(Log1, Log2: string); overload;
   end;
 
+  TPerfLog = record
+    starttime:  integer;
+    stoptime:   integer;
+    cycle: array of record
+      starttime:  integer;
+      stoptime:   integer;
+      comment: array of record
+        timestamp:  integer;
+        text:       string;
+      end;
+    end;
+  end;
+
+  TPerformanceLog = class
+    private
+      active:   boolean;
+      PerfLog:  TPerflog;
+    public
+      procedure StartNewLog;
+      procedure StopLogging;
+
+      procedure CycleStart;
+      procedure CycleEnd;
+      procedure AddComment(comment: string);
+
+      property isActive: boolean read active;
+  end;
+
 var
-  Log:    TLog;
+  Log:      TLog;
+  PerfLog:  TPerformanceLog;
 
 implementation
-uses UFiles, SysUtils, DateUtils, URecord, UTime, UIni, Windows, UCommandLine;
+uses UFiles, SysUtils, DateUtils, URecord, UTime, UIni, Windows, UCommandLine, SDL;
+
+procedure TPerformanceLog.StartNewLog;
+begin
+  SetLength(PerfLog.cycle, 0);
+  PerfLog.starttime := SDL_GetTicks();
+  PerfLog.stoptime := -1;
+  active := true;
+end;
+
+procedure TPerformanceLog.StopLogging;
+var
+  i, j:       integer;
+  LogFile:    TextFile;
+  CsvFile:    TextFile;
+  TimeTemp:   integer;
+  pos:        integer;
+
+  FileName:   string;
+  FileNameCSV:string;
+  Num:        integer;
+  Year, Month, Day:     word;
+  Hour, Min, Sec, MSec: word;
+  timestamp:  integer;
+  datestr:    string;
+  timestr:    string;
+
+  function Fill(w: word): string;
+  begin
+    Result := '';
+    if (w<10) then
+      Result := '0';
+
+    Result := Result + IntToStr(w);
+  end;
+
+  function duration(t1, t2: integer): integer; //ms
+  begin
+    result := round(t2-t1);
+  end;
+begin
+  if  not active then
+    exit;
+
+  Timetemp := SDL_GetTicks();
+  PerfLog.stoptime := TimeTemp;
+
+  pos := Length(PerfLog.cycle);
+  if (pos>0) then
+  begin
+    if (PerfLog.cycle[pos-1].stoptime<0) then
+      PerfLog.cycle[pos-1].stoptime := TimeTemp;
+  end;
+
+  timestamp := DateTimeToUnix(Now());
+  DecodeDate(UnixToDateTime(timestamp), Year, Month, Day);
+  DecodeTime(UnixToDateTime(timestamp), Hour, Min, Sec, MSec);
+
+  datestr := IntToStr(Year) + Fill(Month) + Fill(Day);
+  timestr := Fill(Hour) + Fill(Min) + Fill(Sec);
+
+  FileName := GamePath + 'PerfLog_' + datestr + '-' + timestr + '.log';
+
+  if FileExists(FileName) then
+  begin
+    for Num := 1 to 9999 do
+    begin
+      FileName := IntToStr(Num);
+      while Length(FileName) < 4 do FileName := '0' + FileName;
+      FileName := GamePath + 'PerfLog_' + datestr + '-' + timestr + '_' + FileName + '.log';
+      if not FileExists(FileName) then break
+    end;
+  end;
+
+  AssignFile(LogFile, FileName);
+  {$I-}
+  Rewrite(LogFile);
+  if IOResult <> 0 then exit;
+  {$I+}
+
+
+  FileNameCSV := GamePath + 'PerfLog_' + datestr + '-' + timestr + '.csv';
+
+  if FileExists(FileNameCSV) then
+  begin
+    for Num := 1 to 9999 do
+    begin
+      FileNameCSV := IntToStr(Num);
+      while Length(FileNameCSV) < 4 do FileNameCSV := '0' + FileNameCSV;
+      FileNameCSV := GamePath + 'PerfLog_' + datestr + '-' + timestr + '_' + FileNameCSV + '.csv';
+      if not FileExists(FileNameCSV) then break
+    end;
+  end;
+
+  AssignFile(CsvFile, FileNameCSV);
+  {$I-}
+  Rewrite(CsvFile);
+  if IOResult <> 0 then exit;
+  {$I+}
+
+  //If File is opened write Date to File
+  WriteLn(LogFile, 'Performance Log');
+  WriteLn(LogFile, 'Date: ' + IntToStr(Year) + '-' + Fill(Month) + '-' + Fill(Day) +
+    ' Time: ' + Fill(Hour) + ':' + Fill(Min) + ':' + Fill(Sec));
+  WriteLn(LogFile, '');
+  WriteLn(LogFile, '# Start    : ' + IntToStr(duration(PerfLog.starttime, PerfLog.starttime)));
+  WriteLn(LogFile, '# End      : ' + IntToStr(duration(PerfLog.starttime, PerfLog.stoptime)));
+  WriteLn(LogFile, '# Duration : ' + IntToStr(duration(PerfLog.starttime, PerfLog.stoptime)));
+  Flush(LogFile);
+
+  for i := 0 to Length(PerfLog.cycle) - 1 do
+  begin
+    WriteLn(LogFile, '');
+    WriteLn(LogFile, '');
+    WriteLn(LogFile, '#----------------------------------------------------------------');
+    WriteLn(LogFile, '# Cycle-Nr.:  ' + IntToStr(i+1));
+    WriteLn(LogFile, '# Start    : ' + IntToStr(duration(PerfLog.starttime, PerfLog.cycle[i].starttime)));
+    WriteLn(LogFile, '# End      : ' + IntToStr(duration(PerfLog.starttime, PerfLog.cycle[i].stoptime)));
+    WriteLn(LogFile, '# Duration : ' + IntToStr(duration(PerfLog.cycle[i].starttime, PerfLog.cycle[i].stoptime)));
+    WriteLn(LogFile, '#----------------------------------------------------------------');
+
+    WriteLn(CsvFile, IntToStr(duration(PerfLog.starttime, PerfLog.cycle[i].starttime))+';'+
+      IntToStr(duration(PerfLog.cycle[i].starttime, PerfLog.cycle[i].stoptime)));
+    for j := 0 to Length(PerfLog.cycle[i].comment) - 1 do
+    begin
+      WriteLn(LogFile, '# Comment ' + IntToStr(j) + ': ' + PerfLog.cycle[i].comment[j].text);
+      WriteLn(LogFile, '# time: ' + IntToStr(duration(PerfLog.starttime, PerfLog.cycle[i].comment[j].timestamp)));
+      WriteLn(LogFile, '#');
+    end;
+    WriteLn(LogFile, '#-----------------------------------------------------------------');
+
+  end;
+  Flush(LogFile);
+  Flush(CsvFile);
+
+  active := false;
+end;
+
+procedure TPerformanceLog.CycleStart;
+var
+  pos:      integer;
+  TimeTemp: integer;
+begin
+  if  not active then
+    exit;
+
+  TimeTemp := SDL_GetTicks();
+
+  pos := Length(PerfLog.cycle);
+  if (pos>0) then
+  begin
+    if (PerfLog.cycle[pos-1].stoptime<0) then
+      PerfLog.cycle[pos-1].stoptime := TimeTemp;
+  end;
+  
+  SetLength(PerfLog.cycle, pos+1);
+  PerfLog.cycle[pos].starttime := TimeTemp;
+  PerfLog.cycle[pos].stoptime := -1;
+
+  SetLength(PerfLog.cycle[pos].comment, 0);
+end;
+
+procedure TPerformanceLog.CycleEnd;
+var
+  pos:  integer;
+begin
+  if  not active then
+    exit;
+
+  pos := Length(PerfLog.cycle)-1;
+
+  if (pos>=0) then
+    PerfLog.cycle[pos].stoptime := SDL_GetTicks();
+end;
+
+procedure TPerformanceLog.AddComment(comment: string);
+var
+  pos:  integer;
+  posc: integer;
+begin
+  if not active then
+    exit;
+
+  pos := Length(PerfLog.cycle)-1;
+  if (pos<0) then
+    exit;
+    
+  posc := Length(PerfLog.cycle[pos].comment);
+  SetLength(PerfLog.cycle[pos].comment, posc+1);
+
+  PerfLog.cycle[pos].comment[posc].text := comment;
+  PerfLog.cycle[pos].comment[posc].timestamp := SDL_GetTicks();
+end;
+
+
+
 
 destructor TLog.Free;
 begin

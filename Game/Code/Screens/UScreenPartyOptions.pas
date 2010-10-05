@@ -167,6 +167,7 @@ begin
           MenuPluginOpen := false;
           if not Help.SetHelpID(ID) then
             Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenPartyOptions)');
+            
           //Don'T start when Playlist is Selected and there are no Playlists
           If (Playlist = 2) and (Length(PlaylistMan.Playlists) = 0) then
             Exit;
@@ -543,7 +544,6 @@ var
   ID_NOSCORE: Integer;
 
 begin
-  Randomize;
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenPartyOptions)');
 

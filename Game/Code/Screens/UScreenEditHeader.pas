@@ -132,10 +132,10 @@ constructor TScreenEditHeader.Create;
 begin
   inherited Create;
 
-  AddButton(40, 20, 100, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(40, 20, 100, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(15, 5, 'Open');
 
-  AddButton(160, 20, 100, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(160, 20, 100, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(20, 5, 'Save');
 
   AddBox(80, 60, 640, 550);

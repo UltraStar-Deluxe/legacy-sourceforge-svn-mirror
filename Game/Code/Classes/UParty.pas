@@ -132,7 +132,7 @@ begin
   //Set cur Round to Round 1
   CurRound := 255;
 
-  Rand3 := true;
+  Rand3 := (Ini.NewPartySelectionMode=1);
 
   //Set Rounds
   NumMedleys := 0;

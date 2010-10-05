@@ -114,7 +114,7 @@ function GetTimeFromBeat(Beat: integer): real;
 procedure ClearScores(PlayerNum: integer);
 
 implementation
-uses USongs, Math, UCommandLine, UVideo;
+uses USongs, Math, UCommandLine, UVideo, UWebCam;
 
 procedure MainLoop;
 var
@@ -123,6 +123,7 @@ begin
   SDL_EnableKeyRepeat(125, 125);
   While not Done do
   Begin
+    PerfLog.CycleStart;
     // keyboard events
     CheckEvents;
 
@@ -133,7 +134,7 @@ begin
     // delay
     CountMidTime;
 
-    Delay := Floor(1000 / 200 - 1000 * TimeMid);
+    Delay := Floor(1000 / 100 - 1000 * TimeMid);
     if Delay >= 1 then
       SDL_Delay(Delay);
     CountSkipTime;
@@ -143,8 +144,10 @@ begin
       Reinitialize3D;
       Restart := false;
     end;
-
+    PerfLog.CycleEnd;
   End;
+  wClose;
+  acClose;
   FreeOpenGL;
 End;
 
@@ -360,15 +363,12 @@ var
   Done:   real;
   N:      integer;
 begin
-  Czas.Teraz := Czas.Teraz + TimeSkip;
+  //Czas.Teraz := Czas.Teraz + TimeSkip;
+  Czas.Teraz := Music.Position;
 
   Czas.OldBeat := Czas.AktBeat;
   Czas.MidBeat := GetMidBeat(Czas.Teraz - (AktSong.Gap{ + 90 I've forgotten for what it is}) / 1000); // new system with variable BPM in function
   Czas.AktBeat := Floor(Czas.MidBeat);
-
-//  Czas.OldHalf := Czas.AktHalf;
-//  Czas.MidHalf := Czas.MidBeat + 0.5;
-//  Czas.AktHalf := Floor(Czas.MidHalf);
 
   Czas.OldBeatC := Czas.AktBeatC;
   Czas.MidBeatC := GetMidBeat(Czas.Teraz - (AktSong.Gap) / 1000);
@@ -547,6 +547,9 @@ end;
 //end;
 
 procedure NewNote(P: integer; Sender: TScreenSing);
+const
+  DEBUG_NOTE_HIT = false;
+
 var
   CP:     integer; // current player
   S:      integer; // sentence
@@ -597,7 +600,7 @@ begin
 
       S := SDet;
 
-      if (Sound[CP].SzczytJest) and (Mozna) then
+      if (Sound[CP].SzczytJest or DEBUG_NOTE_HIT) and (Mozna) then
       begin
         // operowanie na ostatniej nucie
         for Pet := 0 to Czesci[P].Czesc[S].HighNut do
@@ -619,7 +622,8 @@ begin
             //if Ini.Difficulty = 1 then Range := 1;
             //if Ini.Difficulty = 2 then Range := 0;
             Range := 2 - Ini.Difficulty;
-            if abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range then
+            if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
+              DEBUG_NOTE_HIT then
             begin
               Sound[CP].Ton := Czesci[P].Czesc[S].Nuta[Pet].Ton;
 
@@ -771,7 +775,7 @@ begin
 
       S := SDet;
 
-      if (Sound[CP].SzczytJest) and (Mozna) then
+      if (Sound[CP].SzczytJest or DEBUG_NOTE_HIT) and (Mozna) then
       begin
         // operowanie na ostatniej nucie
         for Pet := 0 to Czesci[P].Czesc[S].HighNut do
@@ -793,7 +797,8 @@ begin
             //if Ini.Difficulty = 1 then Range := 1;
             //if Ini.Difficulty = 2 then Range := 0;
             Range := 2 - Ini.Difficulty;
-            if abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range then
+            if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
+              DEBUG_NOTE_HIT then
             begin
               Sound[CP].Ton := Czesci[P].Czesc[S].Nuta[Pet].Ton;
 

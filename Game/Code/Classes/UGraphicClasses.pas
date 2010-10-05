@@ -595,9 +595,11 @@ end;
 
 procedure TEffectManager.SpawnPerfectLineTwinkle();
 var
-  P,I,Life: Cardinal;
+  P,I,Life:   Cardinal;
   Left, Right, Top, Bottom: Cardinal;
-  cScreen: Integer;
+  cScreen:    Integer;
+
+  P4Mode:     boolean;
 begin
 // calculation of coordinates done with hardcoded values like in UDraw.pas
 // might need to be adjusted if drawing of SingScreen is modified
@@ -607,10 +609,12 @@ begin
   begin
     Left := 30;
     Right := 770;
+    P4Mode := false;
   end else
   begin
     Left := 15;
     Right := 385;
+    P4Mode := true;
   end;
 
   // spawn effect for every player with a perfect line
@@ -635,10 +639,14 @@ begin
                         Top:=Bottom-105;
                       end;
                end;
-               case P of
-                 0,1: cScreen:=1;
-                 else cScreen:=2;
-               end;
+               if not P4Mode then
+               begin
+                 case P of
+                  0,1: cScreen:=1;
+                  else cScreen:=2;
+                 end;
+               end else
+                 cScreen := 1;
              end;
         3,6: begin
                case P of
@@ -655,17 +663,42 @@ begin
                         Bottom:=Top+85;
                       end;
                end;
-               case P of
-                 0,1,2: cScreen:=1;
-                 else cScreen:=2;
-               end;
+               if not P4Mode then
+               begin
+                 case P of
+                  0,1,2: cScreen:=1;
+                  else cScreen:=2;
+                 end;
+               end else
+                 cScreen:=1;
              end;
       end;
       // spawn Sparkling Stars inside calculated coordinates
       for I:= 0 to 80 do
       begin
         Life:=RandomRange(8,16);
-        Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+        if not P4Mode then
+          Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2)
+        else
+        begin
+          if PlayersPlay=4 then
+          begin
+            case P of
+              0,1:
+                Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+              2,3:
+                Spawn(RandomRange(Left+400,Right+400), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+            end;
+          end else
+          begin
+            case P of
+              0,1,2:
+                Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+              3,4,5:
+                Spawn(RandomRange(Left+400,Right+400), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+            end;
+          end;
+        end;
       end;
     end;
 end;

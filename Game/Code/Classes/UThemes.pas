@@ -443,31 +443,29 @@ type
     StaticMedleyNav:  TThemeStatic;
     TextMedleyNav:    TThemeText;
 
-    PlayerStatic:     array[1..10] of AThemeStatic;
-    PlayerTexts:      array[1..10] of AThemeText;
+    PlayerStatic:     array[1..16] of AThemeStatic;
+    PlayerTexts:      array[1..16] of AThemeText;
 
-    TextName:         array[1..10] of TThemeText;
-    TextScore:        array[1..10] of TThemeText;
+    TextName:         array[1..16] of TThemeText;
+    TextScore:        array[1..16] of TThemeText;
 
-    TextNotes:            array[1..10] of TThemeText;
-    TextNotesScore:       array[1..10] of TThemeText;
-    TextLineBonus:        array[1..10] of TThemeText;
-    TextLineBonusScore:   array[1..10] of TThemeText;
-    TextGoldenNotes:      array[1..10] of TThemeText;
-    TextGoldenNotesScore: array[1..10] of TThemeText;
-    TextTotal:            array[1..10] of TThemeText;
-    TextTotalScore:       array[1..10] of TThemeText;
+    TextNotes:            array[1..16] of TThemeText;
+    TextNotesScore:       array[1..16] of TThemeText;
+    TextLineBonus:        array[1..16] of TThemeText;
+    TextLineBonusScore:   array[1..16] of TThemeText;
+    TextGoldenNotes:      array[1..16] of TThemeText;
+    TextGoldenNotesScore: array[1..16] of TThemeText;
+    TextTotal:            array[1..16] of TThemeText;
+    TextTotalScore:       array[1..16] of TThemeText;
 
-    StaticBoxLightest:    array[1..10] of TThemeStatic;
-    StaticBoxLight:       array[1..10] of TThemeStatic;
-    StaticBoxDark:        array[1..10] of TThemeStatic;
+    StaticBoxLightest:    array[1..16] of TThemeStatic;
+    StaticBoxLight:       array[1..16] of TThemeStatic;
+    StaticBoxDark:        array[1..16] of TThemeStatic;
 
-    StaticBackLevel:        array[1..10] of TThemeStatic;
-    StaticBackLevelRound:   array[1..10] of TThemeStatic;
-    StaticLevel:            array[1..10] of TThemeStatic;
-    StaticLevelRound:       array[1..10] of TThemeStatic;
-
-//    Description:          array[0..5] of string;}
+    StaticBackLevel:        array[1..16] of TThemeStatic;
+    StaticBackLevelRound:   array[1..16] of TThemeStatic;
+    StaticLevel:            array[1..16] of TThemeStatic;
+    StaticLevelRound:       array[1..16] of TThemeStatic;
   end;
 
   TThemeTop = class(TThemeBasic)
@@ -547,6 +545,11 @@ type
     SelectSlideInput:     TThemeSelectSlide;
     SelectSlideChannelL:  TThemeSelectSlide;
     SelectSlideChannelR:  TThemeSelectSlide;
+
+    SelectSlideWebCamOnOff:   TThemeSelectSlide;
+    SelectSlideWebCamDevice:  TThemeSelectSlide;
+    SelectSlideWebCamMedia:   TThemeSelectSlide;
+
     ButtonExit:           TThemeButton;
   end;
 
@@ -916,6 +919,7 @@ type
 
 function ColorExists(Name: string): integer;
 procedure LoadColor(var R, G, B: real; ColorName: string);
+function GetPlayerColor(Player: integer): TRGB;
 function GetSystemColor(Color: integer): TRGB;
 function ColorSqrt(RGB: TRGB): TRGB;
 
@@ -1251,11 +1255,11 @@ begin
       ThemeLoadStatic(Sing.StaticP5Singbar, 'SingP2MSingBar');
       ThemeLoadStatic(Sing.StaticP6Singbar, 'SingP3SingBar');
 
-      Sing.OFF_P1 := -20;
-      Sing.OFF_P2 := -180;
+      Sing.OFF_P1 := -30;
+      Sing.OFF_P2 := -205;
       Sing.OFF_P3 := -380;
-      Sing.OFF_P4 := 380;
-      Sing.OFF_P5 := 180;
+      Sing.OFF_P4 := 370;
+      Sing.OFF_P5 := 195;
       Sing.OFF_P6 := 20;
 
       {Sing.StaticP3FourPSingbar.X := Sing.StaticP3FourPSingbar.X +
@@ -1396,7 +1400,7 @@ begin
       ThemeLoadStatic(Score.StaticMedleyNav, 'ScoreMedleyNavStatic');
       ThemeLoadText(Score.TextMedleyNav, 'ScoreMedleyNavText');
 
-      for I := 1 to 10 do
+      for I := 1 to 16 do
       begin
         ThemeLoadStatics(Score.PlayerStatic[I], 'ScorePlayer' + IntToStr(I) + 'Static');
         ThemeLoadTexts(Score.PlayerTexts[I],     'ScorePlayer' + IntToStr(I) + 'Text');
@@ -1519,6 +1523,11 @@ begin
       ThemeLoadSelectSlide(OptionsRecord.SelectSlideInput,  'OptionsRecordSelectSlideInput');
       ThemeLoadSelectSlide(OptionsRecord.SelectSlideChannelL, 'OptionsRecordSelectSlideChannelL');
       ThemeLoadSelectSlide(OptionsRecord.SelectSlideChannelR, 'OptionsRecordSelectSlideChannelR');
+
+      ThemeLoadSelectSlide(OptionsRecord.SelectSlideWebCamOnOff, 'OptionsRecordSelectSlideWebCamOnOff');
+      ThemeLoadSelectSlide(OptionsRecord.SelectSlideWebCamDevice, 'OptionsRecordSelectSlideWebCamDevice');
+      ThemeLoadSelectSlide(OptionsRecord.SelectSlideWebCamMedia, 'OptionsRecordSelectSlideWebCamMedia');
+
       ThemeLoadButton(OptionsRecord.ButtonExit, 'OptionsRecordButtonExit');
 
       //Options Advanced
@@ -2201,7 +2210,7 @@ begin
   // P1
   C := C+1;
   Color[C].Name := 'P1Dark';
-  Color[C].RGB := GetSystemColor(0); // 0 - blue
+  Color[C].RGB := GetPlayerColor(1); // 0 - blue
 
   C := C+1;
   Color[C].Name := 'P1Light';
@@ -2214,7 +2223,7 @@ begin
   // P2
   C := C+1;
   Color[C].Name := 'P2Dark';
-  Color[C].RGB := GetSystemColor(3); // 3 - red
+  Color[C].RGB := GetPlayerColor(2); // 3 - red
 
   C := C+1;
   Color[C].Name := 'P2Light';
@@ -2227,7 +2236,7 @@ begin
   // P3
   C := C+1;
   Color[C].Name := 'P3Dark';
-  Color[C].RGB := GetSystemColor(1); // 1 - green
+  Color[C].RGB := GetPlayerColor(3); // 1 - green
 
   C := C+1;
   Color[C].Name := 'P3Light';
@@ -2240,7 +2249,7 @@ begin
   // P4
   C := C+1;
   Color[C].Name := 'P4Dark';
-  Color[C].RGB := GetSystemColor(4); // 4 - brown
+  Color[C].RGB := GetPlayerColor(4); // 4 - violet
 
   C := C+1;
   Color[C].Name := 'P4Light';
@@ -2253,7 +2262,7 @@ begin
   // P5
   C := C+1;
   Color[C].Name := 'P5Dark';
-  Color[C].RGB := GetSystemColor(5); // 5 - yellow
+  Color[C].RGB := GetPlayerColor(5); // 5 - yellow
 
   C := C+1;
   Color[C].Name := 'P5Light';
@@ -2266,7 +2275,7 @@ begin
   // P6
   C := C+1;
   Color[C].Name := 'P6Dark';
-  Color[C].RGB := GetSystemColor(6); // 6 - violet
+  Color[C].RGB := GetPlayerColor(6); // 6 - brown
 
   C := C+1;
   Color[C].Name := 'P6Light';
@@ -2298,6 +2307,42 @@ begin
     R := Color[C].RGB.R;
     G := Color[C].RGB.G;
     B := Color[C].RGB.B;
+  end;
+end;
+
+function GetPlayerColor(Player: integer): TRGB;
+begin
+  case Player of
+    1:  begin // - blue
+          Result.R := 1/255;
+          Result.G := 1/255;
+          Result.B := 205/255;
+        end;
+    2:  begin // - red
+          Result.R := 205/255;
+          Result.G := 1/255;
+          Result.B := 1/255;
+        end;
+    3:  begin // - green
+          Result.R := 1/255;
+          Result.G := 205/255;
+          Result.B := 1/255;
+        end;
+    4:  begin // - violet
+          Result.R := 205/255;
+          Result.G := 1/255;
+          Result.B := 205/255;
+        end;
+    5:  begin // - yellow
+          Result.R := 200/255;
+          Result.G := 200/255;
+          Result.B := 1/255;
+        end;
+    6:  begin // - brown
+          Result.R := 204/255;
+          Result.G := 102/255;
+          Result.B := 1/255;
+        end;
   end;
 end;
 

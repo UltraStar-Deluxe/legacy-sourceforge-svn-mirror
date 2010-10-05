@@ -6,6 +6,9 @@ program UltraStar;
 
 uses
   acinerella in 'lib\acinerella\acinerella.pas',
+  UCaptureWDM in 'lib\DSPack\UCaptureWDM.pas',
+  UWebCam in 'classes\UWebCam.pas',
+  UMergeSort in 'classes\UMergeSort.pas',
   SDL in 'lib\JEDI-SDLv1.0\SDL\Pas\SDL.pas',
   moduleloader in 'lib\JEDI-SDLv1.0\SDL\Pas\moduleloader.pas',
   sdlutils in 'lib\JEDI-SDLv1.0\SDL\Pas\sdlutils.pas',
@@ -119,7 +122,7 @@ uses
   UVideo in 'Classes\UVideo.pas';
 
 const
-  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9 RC2.1';
+  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9 RC4.2';
 
 var
   WndTitle: string;
@@ -161,6 +164,7 @@ begin
 
   // Log + Benchmark
   Log := TLog.Create;
+  PerfLog := TPerformanceLog.Create;
   Log.Title := WndTitle;
   Log.Enabled := Not Params.NoLog;
   Log.BenchmarkStart(0);
@@ -264,15 +268,26 @@ begin
   Log.LogBenchmark('Initializing 3D', 1);
 
   // Songs
-  //Log.BenchmarkStart(1);
+  Log.BenchmarkStart(1);
   Log.LogStatus('Creating Song Array', 'Initialization');     Songs := TSongs.Create;
+  Log.BenchmarkEnd(1);
+  Log.LogBenchmark('Loading Song Array', 1);
+
+  Log.BenchmarkStart(1);
   Songs.LoadSongList;
+  Log.BenchmarkEnd(1);
+  Log.LogBenchmark('Loading Song List', 1);
+
+  Log.BenchmarkStart(1);
   Log.LogStatus('Creating 2nd Song Array', 'Initialization'); CatSongs := TCatSongs.Create;
   Log.BenchmarkEnd(1);
-  Log.LogBenchmark('Loading Songs', 1);
+  Log.LogBenchmark('Loading Song Cats', 1);
 
   // Refresh ScreenSong
+  Log.BenchmarkStart(1);
   ScreenSong.Refresh(true);
+  Log.BenchmarkEnd(1);
+  Log.LogBenchmark('Loading Song Refresh', 1);
 
   // Sound
   Log.BenchmarkStart(1);

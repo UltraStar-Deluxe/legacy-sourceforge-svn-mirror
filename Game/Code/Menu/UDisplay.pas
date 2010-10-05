@@ -131,19 +131,14 @@ var
 begin
   Result := True;
 
-  Col := 1;
-  {if (ParamStr(1) = '-black') or (ParamStr(1) = '-fsblack') then
-    Col := 0;    }
+  Col := 0;
 
-  glClearColor(Col, Col, Col , 0);
+  glClearColor(Col, Col, Col , 1);
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
 
   for S := 1 to Screens do begin
     ScreenAct := S;
 
-//    if Screens = 1 then ScreenX := 0;
-//    if (Screens = 2) and (S = 1) then ScreenX := -1;
-//    if (Screens = 2) and (S = 2) then ScreenX := 1;
     ScreenX := 0;
 
     if S = 2 then TimeSkip := 0;

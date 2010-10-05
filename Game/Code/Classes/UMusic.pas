@@ -65,6 +65,7 @@ type
       DSP_VocalRemover:   HDSP;
     public
       Bass:               hStream;
+      PlayerI:            array of integer;
       
 //      SoundCard:          array of TSoundCard;
       procedure InitializePlayback;
@@ -105,7 +106,7 @@ type
 
       procedure CaptureStart;
       procedure CaptureStop;
-      procedure CaptureCard(RecordI, PlayerLeft, PlayerRight: byte);
+      procedure CaptureCard(RecordI: byte);
       procedure StopCard(Card: byte);
       function LoadPlayerFromFile(var MediaPlayer: TMediaPlayer; Name: string): boolean;
       function LoadSoundFromFile(var hStream: hStream; Name: string): boolean;
@@ -205,8 +206,8 @@ type
     OldCzesc:     array [0..1] of integer;    // poprzednio wyswietlana czesc
                               // akt jest w czesci.akt
 
-    Teraz:        real;       // aktualny czas w utworze
-    Razem:        real;       // caly czas utworu
+    Teraz:        real;       // actual time
+    Razem:        real;       // total time
 //    TerazSek:     integer;
   end;
 
@@ -773,42 +774,16 @@ begin
   for S := 0 to High(Sound) do
     Sound[S].BufferLong[0].Clear;
 
-{    case PlayersPlay of
-      1:  begin
-            CaptureCard(0, 0, 1, 0);
-          end;
-      2:  begin
-            if Ini.TwoPlayerMode = 0 then begin
-              CaptureCard(0, 0, 1, 2);
-            end else begin
-              CaptureCard(0, 0, 1, 0);
-              CaptureCard(1, 1, 2, 0);
-            end;
-          end;
-      3:  begin
-            CaptureCard(0, 0, 1, 2);
-            CaptureCard(1, 1, 3, 0);
-          end;
-    end; // case}
+  SetLength(PlayerI, High(Ini.CardList)+1);
 
-//  CaptureCard(0, 0, 0, 0);
-//  end;
-
-  {for SC := 0 to High(SoundCard) do begin
-    P1 := Ini.SoundCard[SC, 1];
-    P2 := Ini.SoundCard[SC, 2];
-    if P1 > PlayersPlay then P1 := 0;
-    if P2 > PlayersPlay then P2 := 0;
-    CaptureCard(SC, P1, P2);
-  end;       }
-  // 0.5.2: new
   for SC := 0 to High(Ini.CardList) do begin
     P1 := Ini.CardList[SC].ChannelL;
     P2 := Ini.CardList[SC].ChannelR;
     if P1 > PlayersPlay then P1 := 0;
     if P2 > PlayersPlay then P2 := 0;
+    PlayerI[SC] := P1 + P2*256;
     if (P1 > 0) or (P2 > 0) then
-      CaptureCard(SC, P1, P2);
+      CaptureCard(SC);
   end;
 end;
 
@@ -818,31 +793,6 @@ var
   P1:       integer;
   P2:       integer;
 begin
-{  if RecordSystem = 1 then begin
-    case PlayersPlay of
-      1:  begin
-            StopCard(0);
-          end;
-      2:  begin
-            if Ini.TwoPlayerMode = 0 then begin
-              StopCard(0);
-            end else begin
-              StopCard(0);
-              StopCard(1);
-            end;
-          end;
-      3:  begin
-            StopCard(0);
-            StopCard(1);
-          end;
-    end;
-  end;}
-
-  {for SC := 0 to High(SoundCard) do begin
-    StopCard(SC);
-  end; }
-
-  // 0.5.2
   for SC := 0 to High(Ini.CardList) do begin
     P1 := Ini.CardList[SC].ChannelL;
     P2 := Ini.CardList[SC].ChannelR;
@@ -850,15 +800,14 @@ begin
     if P2 > PlayersPlay then P2 := 0;
     if (P1 > 0) or (P2 > 0) then StopCard(SC);
   end;
-
 end;
 
 //procedure TMusic.CaptureCard(RecordI, SoundNum, PlayerLeft, PlayerRight: byte);
-procedure TMusic.CaptureCard(RecordI, PlayerLeft, PlayerRight: byte);
+procedure TMusic.CaptureCard(RecordI: byte);
 var
   Error:      integer;
   ErrorMsg:   string;
-  Player:     integer;
+  //Player:     integer;
 begin
   if not BASS_RecordInit(RecordI) then begin
     Error := BASS_ErrorGetCode;
@@ -873,16 +822,16 @@ begin
       + IntToStr(PlayerLeft) + ', '+ IntToStr(PlayerRight) + ']: '
       + ErrorMsg);}
     Log.LogError('Error initializing record [' + IntToStr(RecordI) + ', '
-      + IntToStr(PlayerLeft) + ', '+ IntToStr(PlayerRight) + ']: '
+      //+ IntToStr(PlayerLeft) + ', '+ IntToStr(PlayerRight) + ']: '
       + ErrorMsg);
     Log.LogError('Music -> CaptureCard: Error initializing record: ' + ErrorMsg);
 
 
   end else
   begin
-  Player := PlayerLeft + PlayerRight*256;
+  //Player := PlayerLeft + PlayerRight*256;
   //SoundCard[RecordI].BassRecordStream := BASS_RecordStart(44100, 2, MakeLong(0, 20) , @GetMicrophone, PlayerLeft + PlayerRight*256);
-  Recording.SoundCard[RecordI].BassRecordStream := BASS_RecordStart(44100, 2, MakeLong(0, 20) , @GetMicrophone, Pointer(Player));
+  Recording.SoundCard[RecordI].BassRecordStream := BASS_RecordStart(44100, 2, MakeLong(0, 20) , @GetMicrophone, Pointer(PlayerI[RecordI]));
 
   {if SoundCard[RecordI].BassRecordStream = 0 then begin
     Error := BASS_ErrorGetCode;

@@ -70,8 +70,10 @@ function  TDataBaseSystem.GetHandicap(P1: string; P2: string): THandicapResult;
 const
   min = 3;
 var
-  P1m, P2m, temp: real;
+  P1m, P2m: real;
   P1c, P2c: integer;
+
+  tP1, tP2: string;
 begin
   if not Assigned(ScoreDB) then
     Exit;
@@ -83,22 +85,25 @@ begin
   P2m := 0;
 
   try
+    tP1 := StringReplace(P1,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tP2 := StringReplace(P2,'"','""',[rfReplaceAll, rfIgnoreCase]);
+
     P1c := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
-      'WHERE `Player` = "' + P1 + '";');
+      'WHERE `Player` = "' + tP1 + '";');
     P2c := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
-      'WHERE `Player` = "' + P2 + '";');
+      'WHERE `Player` = "' + tP2 + '";');
 
     if (P1c>min) and (P2c>min) then
     begin
       P1m := ScoreDB.GetTableFloat('SELECT AVG(`Score`) FROM `US_Scores` '+
         'WHERE `Score` IN ('+
         'SELECT Score FROM `US_Scores` '+
-        'WHERE `Player` = "' + P1 + '" ORDER BY `rowid` DESC LIMIT 10);');
+        'WHERE `Player` = "' + tP1 + '" ORDER BY `rowid` DESC LIMIT 10);');
 
       P2m := ScoreDB.GetTableFloat('SELECT AVG(`Score`) FROM `US_Scores` '+
         'WHERE `Score` IN ('+
         'SELECT Score FROM `US_Scores` '+
-        'WHERE `Player` = "' + P2 + '" ORDER BY `rowid` DESC LIMIT 10);');
+        'WHERE `Player` = "' + tP2 + '" ORDER BY `rowid` DESC LIMIT 10);');
     end;
   except
     P1m := 0;
@@ -107,37 +112,30 @@ begin
 
   if (P1m>0) and (P2m>0) then
   begin
-    if (P1m>P2m) then
-    begin
-      temp := (P2m/P1m) + (P2m/P1m)*0.2;
-      if temp<=1 then
-        Result.P1m := temp
-      else
-        Result.P1m := 1;
-    end else
-    begin
-      temp := (P1m/P2m) + (P1m/P2m)*0.2;
-      if temp<=1 then
-        Result.P2m := temp
-      else
-        Result.P2m := 1;
-    end;
+    if (P1m>=P2m) then
+      Result.P1m := 1-((P1m-P2m)/10000)/1.75
+    else
+      Result.P2m := 1-((P2m-P1m)/10000)/1.75
   end;
 end;
 
 function TDataBaseSystem.GetAspect(Artist, Title: string; def: integer): integer;
 var
-  ID: Integer;
+  ID:               Integer;
+  tArtist, tTitle:  string;
 
 begin
   try
+    tArtist := StringReplace(Artist,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tTitle := StringReplace(Title,'"','""',[rfReplaceAll, rfIgnoreCase]);
+
     ID := ScoreDB.GetTableValue('SELECT `ID` FROM `US_Songs` WHERE `Artist` = "' +
-      Artist + '" AND `Title` = "' + Title + '"');
+      tArtist + '" AND `Title` = "' + tTitle + '"');
 
     if ID = 0 then //Song doesn't exist -> Create
     begin
       ScoreDB.ExecSQL ('INSERT INTO `US_Songs` ( `ID` , `Artist` , `Title` , `TimesPlayed`, `Aspect` ) '+
-              'VALUES (NULL , "' + Artist + '", "' + Title + '", "0", "'+ IntToStr(def) +'");');
+              'VALUES (NULL , "' + tArtist + '", "' + tTitle + '", "0", "'+ IntToStr(def) +'");');
       Result := def;
     end else
     begin
@@ -151,17 +149,21 @@ end;
 
 procedure TDataBaseSystem.SetAspect(Artist, Title: string; aspect: integer);
 var
-  ID: Integer;
+  ID:               Integer;
+  tArtist, tTitle:  string;
 
 begin
   try
+    tArtist := StringReplace(Artist,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tTitle := StringReplace(Title,'"','""',[rfReplaceAll, rfIgnoreCase]);
+
     ID := ScoreDB.GetTableValue('SELECT `ID` FROM `US_Songs` WHERE `Artist` = "' +
-      Artist + '" AND `Title` = "' + Title + '"');
+      tArtist + '" AND `Title` = "' + tTitle + '"');
 
     if ID = 0 then //Song doesn't exist -> Create
     begin
       ScoreDB.ExecSQL ('INSERT INTO `US_Songs` ( `ID` , `Artist` , `Title` , `TimesPlayed`, `Aspect` ) '+
-              'VALUES (NULL , "' + Artist + '", "' + Title + '", "0", "'+ IntToStr(Aspect) +'");');
+              'VALUES (NULL , "' + tArtist + '", "' + tTitle + '", "0", "'+ IntToStr(Aspect) +'");');
     end else
     begin
 
@@ -260,31 +262,36 @@ var
   PlayerListed: boolean;
   DateStr:      string;
   num:          array[0..2] of integer; //num entries easy, medium, hard
+  tArtist,
+  tTitle:       string;
 
 begin
   if not Assigned(ScoreDB) then
     Exit;
 
   try
+    tArtist := StringReplace(Song.Artist,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tTitle := StringReplace(Song.Title,'"','""',[rfReplaceAll, rfIgnoreCase]);
+
     //count num entries
     if(sum=1) then
     begin
       num[0] := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
         'WHERE `Difficulty` = 0 and '+
         '`SongID` = (SELECT `ID` FROM `us_songs` WHERE `Artist` = "' +
-        Song.Artist + '" AND `Title` = "' + Song.Title +
+        tArtist + '" AND `Title` = "' + tTitle +
         '" LIMIT 1);');
 
       num[1] := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
         'WHERE `Difficulty` = 1 and '+
         '`SongID` = (SELECT `ID` FROM `us_songs` WHERE `Artist` = "' +
-        Song.Artist + '" AND `Title` = "' + Song.Title +
+        tArtist + '" AND `Title` = "' + tTitle +
         '" LIMIT 1);');
 
       num[2] := ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` '+
         'WHERE `Difficulty` = 2 and '+
         '`SongID` = (SELECT `ID` FROM `us_songs` WHERE `Artist` = "' +
-        Song.Artist + '" AND `Title` = "' + Song.Title +
+        tArtist + '" AND `Title` = "' + tTitle +
         '" LIMIT 1);');
     end;
 
@@ -292,7 +299,7 @@ begin
     TableData := ScoreDB.GetTable('SELECT `Difficulty`, `Player`, `Score`, `Date` '+
       'FROM `us_scores` WHERE '+
       '`SongID` = (SELECT `ID` FROM `us_songs` WHERE `Artist` = "' +
-      Song.Artist + '" AND `Title` = "' + Song.Title +
+      tArtist + '" AND `Title` = "' + tTitle +
       '" LIMIT 1) ORDER BY `Score` DESC;');
     //Empty Old Scores
     SetLength (Song.Score[0], 0); //easy
@@ -359,44 +366,38 @@ end;
 //--------------------
 procedure TDataBaseSystem.AddScore(var Song: TSong; Level: integer; Name: string; Score: integer; TimeStamp: integer);
 var
-ID: Integer;
-//TableData: TSqliteTable;
+  ID:                     Integer;
+  tArtist, tTitle, tName: string;
+
 begin
-  //ScoreDB := TSqliteDatabase.Create(sFilename);
-  try
   //Prevent 0 Scores from being added
   if (Score > 0) then
   begin
+    tArtist := StringReplace(Song.Artist,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tTitle := StringReplace(Song.Title,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tName := StringReplace(Name,'"','""',[rfReplaceAll, rfIgnoreCase]);
+
     try //todo : wrapper shouldn't throw exceptions at all - this fixed a wine bug, thanks linnex! (11.11.07)
-      ID := ScoreDB.GetTableValue('SELECT `ID` FROM `US_Songs` WHERE `Artist` = "' + Song.Artist + '" AND `Title` = "' + Song.Title + '"');
-        if ID = 0 then //Song doesn't exist -> Create
-          begin
-            ScoreDB.ExecSQL ('INSERT INTO `US_Songs` ( `ID` , `Artist` , `Title` , `TimesPlayed` ) '+
-              'VALUES (NULL , "' + Song.Artist + '", "' + Song.Title + '", "0");');
-            ID := ScoreDB.GetTableValue('SELECT `ID` FROM `US_Songs` WHERE `Artist` = "' + Song.Artist + '" AND `Title` = "' + Song.Title + '"');
+      ID := ScoreDB.GetTableValue('SELECT `ID` FROM `US_Songs` WHERE `Artist` = "' + tArtist +
+        '" AND `Title` = "' + tTitle + '"');
+      if ID = 0 then //Song doesn't exist -> Create
+      begin
+        ScoreDB.ExecSQL ('INSERT INTO `US_Songs` ( `ID` , `Artist` , `Title` , `TimesPlayed` ) '+
+          'VALUES (NULL , "' + tArtist + '", "' + tTitle + '", "0");');
+        ID := ScoreDB.GetTableValue('SELECT `ID` FROM `US_Songs` WHERE `Artist` = "' + tArtist +
+          '" AND `Title` = "' + tTitle + '"');
 
-            if ID = 0 then //Could not Create Table
-              exit;
-          end;
+        if ID = 0 then //Could not Create Table
+          exit;
+      end;
 
-          //Create new Entry
-          ScoreDB.ExecSQL('INSERT INTO `US_Scores` ( `SongID` , `Difficulty` , `Player` , `Score` , `Date` ) '+
-            'VALUES ("' + InttoStr(ID) + '", "' + InttoStr(Level) + '", "' +
-            Name + '", "' + InttoStr(Score) + '","' + InttoStr(TimeStamp) + '");');
-
-          {
-          //Delete Last Position when there are more than 5 Entrys
-          if ScoreDB.GetTableValue('SELECT COUNT(`SongID`) FROM `US_Scores` WHERE `SongID` = "' + InttoStr(ID) + '" AND `Difficulty` = "' + InttoStr(Level) +'"') > 5 then
-            begin
-              TableData := ScoreDB.GetTable('SELECT `Player`, `Score` FROM `US_Scores` WHERE SongID = "' + InttoStr(ID) + '" AND `Difficulty` = "' + InttoStr(Level) +'" ORDER BY `Score` ASC LIMIT 1');
-              ScoreDB.ExecSQL('DELETE FROM `US_Scores` WHERE SongID = "' + InttoStr(ID) + '" AND `Difficulty` = "' + InttoStr(Level) +'" AND `Player` = "' + TableData.FieldAsString(TableData.FieldIndex['Player']) + '" AND `Score` = "' + TableData.FieldAsString(TableData.FieldIndex['Score']) + '"');
-            end; }
+      //Create new Entry
+      ScoreDB.ExecSQL('INSERT INTO `US_Scores` ( `SongID` , `Difficulty` , `Player` , `Score` , `Date` ) '+
+        'VALUES ("' + InttoStr(ID) + '", "' + InttoStr(Level) + '", "' +
+        tName + '", "' + InttoStr(Score) + '","' + InttoStr(TimeStamp) + '");');
     except
-    // katze!
+
     end;
-  end;
-  finally
-  //ScoreDB.Free;
   end;
 end;
 
@@ -404,10 +405,15 @@ end;
 //WriteScore - Not needed with new System; But used for Increment Played Count
 //--------------------
 procedure TDataBaseSystem.WriteScore(var Song: TSong);
+var
+  tArtist, tTitle:  string;
 begin
   try
+    tArtist := StringReplace(Song.Artist,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tTitle := StringReplace(Song.Title,'"','""',[rfReplaceAll, rfIgnoreCase]);
     //Increase TimesPlayed
-    ScoreDB.ExecSQL ('UPDATE `us_songs` SET `TimesPlayed` = `TimesPlayed` + "1" WHERE `Title` = "' + Song.Title + '" AND `Artist` = "' + Song.Artist + '";');
+    ScoreDB.ExecSQL ('UPDATE `us_songs` SET `TimesPlayed` = `TimesPlayed` + "1" WHERE `Title` = "' +
+      tTitle + '" AND `Artist` = "' + tArtist + '";');
   except
 
   end;

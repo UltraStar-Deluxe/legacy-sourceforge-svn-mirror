@@ -131,10 +131,10 @@ begin
   AddButton(670, 540, 100, 40, Skin.SkinPath + Skin.ButtonF);
   AddButtonText(30, 5, 0, 0, 0, 'OK');}
   // buttons
-  AddButton(540, 540, 100, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(540, 540, 100, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(10, 5, 0, 0, 0, 'Cancel');
 
-  AddButton(670, 540, 100, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(670, 540, 100, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(30, 5, 0, 0, 0, 'OK');
 
 

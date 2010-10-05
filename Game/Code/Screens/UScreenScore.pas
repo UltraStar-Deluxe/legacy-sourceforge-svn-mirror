@@ -23,30 +23,30 @@ type
       StaticMedleyNav:  integer;
       TextMedleyNav:    integer;
       
-      TextName:             array[1..10] of integer;
-      TextScore:            array[1..10] of integer;
+      TextName:             array[1..16] of integer;
+      TextScore:            array[1..16] of integer;
 
-      TextNotes:            array[1..10] of integer;
-      TextNotesScore:       array[1..10] of integer;
-      TextLineBonus:        array[1..10] of integer;
-      TextLineBonusScore:   array[1..10] of integer;
-      TextGoldenNotes:      array[1..10] of integer;
-      TextGoldenNotesScore: array[1..10] of integer;
-      TextTotal:            array[1..10] of integer;
-      TextTotalScore:       array[1..10] of integer;
+      TextNotes:            array[1..16] of integer;
+      TextNotesScore:       array[1..16] of integer;
+      TextLineBonus:        array[1..16] of integer;
+      TextLineBonusScore:   array[1..16] of integer;
+      TextGoldenNotes:      array[1..16] of integer;
+      TextGoldenNotesScore: array[1..16] of integer;
+      TextTotal:            array[1..16] of integer;
+      TextTotalScore:       array[1..16] of integer;
 
-      PlayerStatic:         array[1..10] of array of integer;
-      PlayerTexts :         array[1..10] of array of integer;
+      PlayerStatic:         array[1..16] of array of integer;
+      PlayerTexts :         array[1..16] of array of integer;
 
 
-      StaticBoxLightest:    array[1..10] of integer;
-      StaticBoxLight:       array[1..10] of integer;
-      StaticBoxDark:        array[1..10] of integer;
+      StaticBoxLightest:    array[1..16] of integer;
+      StaticBoxLight:       array[1..16] of integer;
+      StaticBoxDark:        array[1..16] of integer;
 
-      StaticBackLevel:        array[1..10] of integer;
-      StaticBackLevelRound:   array[1..10] of integer;
-      StaticLevel:            array[1..10] of integer;
-      StaticLevelRound:       array[1..10] of integer;
+      StaticBackLevel:        array[1..16] of integer;
+      StaticBackLevelRound:   array[1..16] of integer;
+      StaticLevel:            array[1..16] of integer;
+      StaticLevelRound:       array[1..16] of integer;
 
       Animation:    real;
       Fadeout:      boolean;
@@ -227,7 +227,7 @@ begin
   StaticMedleyNav := AddStatic(Theme.Score.StaticMedleyNav);
   TextMedleyNav := AddText(Theme.Score.TextMedleyNav);
 
-  for P := 1 to 10 do
+  for P := 1 to 16 do
   begin
     TextName[P] := AddText(Theme.Score.TextName[P]);
     TextScore[P] := AddText(Theme.Score.TextScore[P]);
@@ -269,7 +269,7 @@ procedure TScreenScore.onShow;
 var
   P:    integer;  // player
   I:    integer;
-  V:    array[1..10] of boolean; // visibility array
+  V:    array[1..16] of boolean; // visibility array
 begin
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenScore)');
@@ -285,7 +285,7 @@ begin
   Text[TextArtistTitle].Text := AktSong.Artist + ' - ' + AktSong.Title;
 
   // set visibility
-  if (not ScreenSing.P4Mode) then
+  if (not ScreenSing.P4Mode) or (ScreenSong.Mode = smChallenge) then
   begin
     case PlayersPlay of
       1:  begin
@@ -299,6 +299,12 @@ begin
           V[8] := false;
           V[9] := false;
           V[10] := false;
+          V[11] := false;
+          V[12] := false;
+          V[13] := false;
+          V[14] := false;
+          V[15] := false;
+          V[16] := false;
           end;
       2, 4:  begin
           V[1] := false;
@@ -311,6 +317,12 @@ begin
           V[8] := false;
           V[9] := false;
           V[10] := false;
+          V[11] := false;
+          V[12] := false;
+          V[13] := false;
+          V[14] := false;
+          V[15] := false;
+          V[16] := false;
           end;
       3, 6:  begin
           V[1] := false;
@@ -323,6 +335,12 @@ begin
           V[8] := false;
           V[9] := false;
           V[10] := false;
+          V[11] := false;
+          V[12] := false;
+          V[13] := false;
+          V[14] := false;
+          V[15] := false;
+          V[16] := false;
           end;
     end;
   end else
@@ -339,24 +357,36 @@ begin
           V[8] := true;
           V[9] := true;
           V[10] := true;
+          V[11] := false;
+          V[12] := false;
+          V[13] := false;
+          V[14] := false;
+          V[15] := false;
+          V[16] := false;
           end;
-      6:  begin   //not finished yet!
+      6:  begin
           V[1] := false;
           V[2] := false;
           V[3] := false;
-          V[4] := true;
-          V[5] := true;
-          V[6] := true;
+          V[4] := false;
+          V[5] := false;
+          V[6] := false;
           V[7] := false;
           V[8] := false;
           V[9] := false;
           V[10] := false;
+          V[11] := true;
+          V[12] := true;
+          V[13] := true;
+          V[14] := true;
+          V[15] := true;
+          V[16] := true;
           end;
     end;
 
   end;
 
-  for P := 1 to 10 do
+  for P := 1 to 16 do
   begin
     Text[TextName[P]].Visible := V[P];
     Text[TextScore[P]].Visible := V[P];
@@ -370,8 +400,8 @@ begin
     Text[TextTotal[P]].Visible := V[P];
     Text[TextTotalScore[P]].Visible := V[P];
 
-    //4P-hack:
-    if (P>7) then
+    //4/6P-hack:
+    if (P>7) and (P<>11) and (P<>14) then
     begin
       Text[TextNotes[P]].Visible := false;
       Text[TextLineBonus[P]].Visible := false;
@@ -440,7 +470,6 @@ begin
     end; // for
   end; // if
 
-  // 0.5.0: try also use 4 players screen with nicks
   if (not ScreenSing.P4Mode) and (PlayersPlay = 4) then
   begin
     for Item := 2 to 3 do
@@ -463,7 +492,7 @@ begin
 
 
   // Singstar - let it be...... with 6 statics
-  if PlayersPlay = 6 then
+  if (not ScreenSing.P4Mode) and (PlayersPlay = 6) then
   begin
     for Item := 4 to 6 do
     begin
@@ -471,7 +500,15 @@ begin
       if ScreenAct = 2 then P := Item-1;
 
       FillPlayer(Item, P);
+    end;
+  end;
 
+  if (ScreenSing.P4Mode) and (PlayersPlay = 6) then
+  begin
+    for Item := 11 to 16 do
+    begin
+      P := Item-11;
+      FillPlayer(Item, P);
     end;
   end;
 
@@ -570,11 +607,14 @@ begin
   end;
 
   //Load Colors of Player Buttons and Nicks
-  LoadColor(
+  (*LoadColor(
     Text[TextName[Item]].ColR,
     Text[TextName[Item]].ColG,
     Text[TextName[Item]].ColB,
-    'P' + IntToStr(P+1) + 'Dark');
+    'P' + IntToStr(P+1) + 'Dark');*)
+  Text[TextName[Item]].ColR := 1;
+  Text[TextName[Item]].ColG := 1;
+  Text[TextName[Item]].ColB := 1;
 
   LoadColor(
     Static[StaticBoxLightest[Item]].Texture.ColR,

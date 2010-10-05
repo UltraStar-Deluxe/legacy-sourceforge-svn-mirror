@@ -25,8 +25,9 @@ type
 
   TScreenSing = class(TMenu)
     protected
-      paused: boolean; //Pause Mod
       PauseTime: Real;
+      WebCam: boolean; //Try WebCam?
+      paused: boolean; //Pause Mod
     public
       NumEmptySentences: array [0..1] of integer;
       //TextTime:           integer;
@@ -38,8 +39,8 @@ type
       StaticLyricDuetBar: integer;
 
       //TimeBar mod
-       StaticTimeProgress:  integer;
-       TextTimeText:        integer;
+      StaticTimeProgress:  integer;
+      TextTimeText:        integer;
       //eoa TimeBar mod
 
       SaveCoords:         TSaveCoords;
@@ -144,6 +145,8 @@ type
       procedure onShowFinish; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       function Draw: boolean; override;
+      function GetHelpID(): string;
+
       procedure Finish; virtual;
       procedure Pause; //Pause Mod(Toggles Pause)
 
@@ -166,8 +169,14 @@ const
 
 implementation
 uses UGraphic, UDataBase, UDraw, UMain, Classes, URecord, ULanguage, UHelp, math,
-  UPartyM2, UParty;
-  
+  UPartyM2, UParty, UWebCam;
+
+
+function TScreenSing.GetHelpID(): string;
+begin
+  Result := ID;
+end;
+
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
 function TScreenSing.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
@@ -262,8 +271,16 @@ begin
 
       SDLK_S:
         begin
-          Ini.PossibleScore := (Ini.PossibleScore+1) mod 3;
-          Ini.Save;
+          Ini.PossibleScore := (Ini.PossibleScore+1) mod 4;
+          //Ini.Save;
+        end;
+
+      SDLK_W:
+        begin
+          if WebCam then
+            WebCam := false
+          else
+            WebCam := wStartWebCam();
         end;
         
       SDLK_RETURN:
@@ -448,6 +465,7 @@ begin
   UVideo.Init;
 
   MP3Volume := 100;
+  WebCam := false;
 end;
 
 procedure TScreenSing.onShow;
@@ -624,6 +642,10 @@ begin
   end else
   begin
     P4Mode := true;
+
+    if (PlayersPlay=6) then
+      Ini.PossibleScore := 3;
+
     NR.Left := 10;
     NR.Right := 390;
 
@@ -704,7 +726,7 @@ begin
           V5       := false;
           V6       := false;
         end;
-    4:  begin // double screen
+    4:  begin
           V1       := false;
           V1TwoP   := true;  //added for ps3 skin
           V1ThreeP := false; //added for ps3 skin
@@ -717,7 +739,7 @@ begin
           V5       := false;
           V6       := false;
         end;
-    6:  begin // double screen
+    6:  begin
           V1       := false;
           V1TwoP   := false; //added for ps3 skin
           V1ThreeP := true;  //added for ps3 skin
@@ -796,9 +818,9 @@ begin
   Text[TextP1TwoPScore].Visible := V1TwoP;
 
   //This one is shown in 3/6P mode
-  Static[StaticP1ThreeP].Visible := V1ThreeP;
+  Static[StaticP1ThreeP].Visible := V1ThreeP and not (PlayersPlay=6);
   Static[StaticP1ThreePScoreBG].Visible := V1ThreeP;
-  Text[TextP1ThreeP].Visible := V1ThreeP;
+  Text[TextP1ThreeP].Visible := V1ThreeP and not (PlayersPlay=6);
   Text[TextP1ThreePScore].Visible := V1ThreeP;
   //eoa
 
@@ -807,14 +829,14 @@ begin
   Text[TextP2R].Visible := V2R;
   Text[TextP2RScore].Visible := V2R;
 
-  Static[StaticP2M].Visible := V2M;
+  Static[StaticP2M].Visible := V2M and not (PlayersPlay=6);
   Static[StaticP2MScoreBG].Visible := V2M;
-  Text[TextP2M].Visible := V2M;
+  Text[TextP2M].Visible := V2M and not (PlayersPlay=6);
   Text[TextP2MScore].Visible := V2M;
 
-  Static[StaticP3R].Visible := V3R;
+  Static[StaticP3R].Visible := V3R and not (PlayersPlay=6);
   Static[StaticP3RScoreBG].Visible := V3R;
-  Text[TextP3R].Visible := V3R;
+  Text[TextP3R].Visible := V3R and not (PlayersPlay=6);
   Text[TextP3RScore].Visible := V3R;
 
   Static[StaticP3FourP].Visible := V3FourP;
@@ -827,19 +849,19 @@ begin
   Text[TextP4FourP].Visible := V4FourP;
   Text[TextP4FourPScore].Visible := V4FourP;
 
-  Static[StaticP4SixP].Visible := V4SixP;
+  Static[StaticP4SixP].Visible := false and V4SixP;
   Static[StaticP4SixPScoreBG].Visible := V4SixP;
-  Text[TextP4SixP].Visible := V4SixP;
+  Text[TextP4SixP].Visible := false and V4SixP;
   Text[TextP4SixPScore].Visible := V4SixP;
 
-  Static[StaticP5].Visible := V5;
+  Static[StaticP5].Visible := false and V5;
   Static[StaticP5ScoreBG].Visible := V5;
-  Text[TextP5].Visible := V5;
+  Text[TextP5].Visible := false and V5;
   Text[TextP5Score].Visible := V5;
 
-  Static[StaticP6].Visible := V6;
+  Static[StaticP6].Visible := false and V6;
   Static[StaticP6ScoreBG].Visible := V6;
-  Text[TextP6].Visible := V6;
+  Text[TextP6].Visible := false and V6;
   Text[TextP6Score].Visible := V6;
 
   //Set Position of Line Bonus - PhrasenBonus
@@ -1182,6 +1204,9 @@ begin
   LoadNextSong;
 
   Log.LogStatus('End', 'onShow');
+
+  if not PerfLog.isActive and (Ini.Debug = 1) then
+    PerfLog.StartNewLog;
 end;
 
 procedure TScreenSing.SongError;
@@ -1247,10 +1272,7 @@ begin
         Lyric.Size := 14; // 13
         Lyric.ColR := Skin_FontR;
         Lyric.ColG := Skin_FontG;
-        Lyric.ColB := Skin_FontB; //Change für Crazy Joker
-        {Lyric.ColSR := Skin_FontHighlightR;
-        Lyric.ColSG := Skin_FontHighlightG;
-        Lyric.ColSB := Skin_FontHighlightB;1aa5dc}
+        Lyric.ColB := Skin_FontB;
         Lyric.ColSR := 5/255; //26
         Lyric.ColSG := 163/255; //165
         Lyric.ColSB := 210/255;  //220
@@ -1259,22 +1281,22 @@ begin
       begin
         Lyric.FontStyle := 2;
         Lyric.Size := 14;
-        Lyric.ColR := 0.75;
-        Lyric.ColG := 0.75;
+        Lyric.ColR := 0.6;
+        Lyric.ColG := 0.6;
         Lyric.ColB := 1;
-        Lyric.ColSR := 0.5;
-        Lyric.ColSG := 0.5;
+        Lyric.ColSR := 0.25;
+        Lyric.ColSG := 0.25;
         Lyric.ColSB := 1;
       end;
     2:
       begin
         Lyric.FontStyle := 3;
         Lyric.Size := 12;
-        Lyric.ColR := 0.75;
-        Lyric.ColG := 0.75;
+        Lyric.ColR := 0.6;
+        Lyric.ColG := 0.6;
         Lyric.ColB := 1;
-        Lyric.ColSR := 0.5;
-        Lyric.ColSG := 0.5;
+        Lyric.ColSR := 0.25;
+        Lyric.ColSG := 0.25;
         Lyric.ColSB := 1;
       end;
     end; // case
@@ -1382,7 +1404,8 @@ begin
   end;
 
   // set movie
-  if (Ini.MovieSize<2) and (AktSong.Video <> '') and FileExists(AktSong.Path + AktSong.Video) then begin
+  if (Ini.MovieSize<2) and (AktSong.Video <> '') and FileExists(AktSong.Path + AktSong.Video) then
+  begin
     acOpenFile(PAnsiChar(AktSong.Path + AktSong.Video));
 
     if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
@@ -1552,6 +1575,8 @@ begin
     end;
   end;
 
+  wStartWebCam();
+
   // play music (II)
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
     Music.Fade(10, MP3Volume, AktSong.Medley.FadeIn_time)
@@ -1578,11 +1603,13 @@ var
   T:      integer;
   I, J, K:integer;
   ab:     real;
+  tt:     real;
   lastLine, LastWord:     integer;
   medley_end:             boolean;
   medley_start_applause:  boolean;
   CurTime:                real;
 begin
+  PerfLog.AddComment('ScreenSing: Start Draw');
 
   //ScoreBG Mod
   // set player colors
@@ -1873,26 +1900,16 @@ begin
     end;
   end;
 
-
-  // beat flash
-{  Flash := 1 - (Czas.MidBeat - Czas.AktBeat);
-  if (Czas.AktBeat + AktSong.NotesGAP) mod AktSong.Resolution = 0 then Flash := 1
-  else Flash := 0;
-  if Czas.AktBeat < 0 then Flash := 0;
-  glClearColor(Flash, Flash, Flash, 1);}
-
-  // beat sound
-//  if (Ini.BeatClick = 1) and (Flash = 1) and (Czas.AktBeat <> Czas.OldBeat) then Music.PlayClick;
-
   // draw static menu (BG)
   DrawBG;
   //Draw Background
   SingDrawBackground;
   // update and draw movie
-  if ShowFinish and AktSong.VideoLoaded then begin
+  if ShowFinish and AktSong.VideoLoaded then
+  begin
     try
       acGetFrame(Czas.Teraz);
-      acDrawGL(ScreenAct); // this only draws
+      acDrawGL(ScreenAct, not WebCam); // this only draws
     except
       //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
       AktSong.VideoLoaded := False;
@@ -1906,6 +1923,7 @@ begin
     end;
   end;
 
+  wDraw(WebCam);
   // draw static menu (FG)
   DrawFG;
 
@@ -1963,18 +1981,22 @@ begin
         Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Dlugosc);
 
     //lyric main and other nice things
-    if (ab>2.5*dt) or ((K = Czesci[I].High) and (ab>dt)) then
+    if (ab>2.3*dt) or ((K = Czesci[I].High) and (ab>dt)) then
     begin
-      Alpha[I] := Alpha[I]-TimeSkip/dt;
+      if (ab>3.3*dt) or (Alpha[I]<1) or (K = Czesci[I].High) then
+        Alpha[I] := Alpha[I]-TimeSkip/dt;
       if (Alpha[I]<0) then
         Alpha[I] := 0;
-    end else if (ab>2*dt) then
-    begin
     end else if (ab>dt) then
     begin
-      Alpha[I] := Alpha[I]+TimeSkip/dt;
-      if (Alpha[I]>1) then
-        Alpha[I] := 1;
+      tt := ab-dt;
+      if (tt<0) then
+        Alpha[I] := 1
+      else
+      begin
+        if (1-tt/dt>Alpha[I]) or (K = Czesci[I].High)then
+          Alpha[I] := 1-tt/dt;
+      end;
     end else
       Alpha[I] := 1;
 
@@ -2080,8 +2102,9 @@ begin
       ' mt: ' + FormatFloat('#0.00', Music.Position) +
       ' dt: ' + FormatFloat('#0.000', Czas.Teraz-Music.Position)));
   end;
+  PerfLog.AddComment('ScreenSing: End Draw');
 end;
- 
+
 procedure TScreenSing.UpdateMedleyStats(medley_end: boolean);
 var
   len, num, I : integer;
@@ -2125,6 +2148,7 @@ var
   CurTime:  real;
 
 begin
+  PerfLog.StopLogging;
   Music.CaptureStop;
   Music.Stop;
 
@@ -2223,6 +2247,8 @@ begin
         LoadNextSong;
       end else
       begin
+        wStopWebCam();
+        Ini.Save;
         //build sums
         len := Length(PlaylistMedley.Stats);
         num := PlaylistMedley.NumPlayer;
@@ -2318,6 +2344,8 @@ begin
     end;
   end else
   begin
+    wStopWebCam();
+    Ini.Save;
     SetLength(PlaylistMedley.Stats, 1);
     SetLength(PlaylistMedley.Stats[0].Player, PlayersPlay);
     for I := 0 to PlayersPlay - 1 do

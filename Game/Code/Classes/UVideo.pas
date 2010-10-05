@@ -35,7 +35,8 @@ uses SDL,
      {$endif}
      {$ENDIF}
      UIni,
-     UTime;
+     UTime,
+     windows;
 
 type
   TAspectCorrection = (acoStretch, acoCrop, acoLetterBox); //from 1.1
@@ -50,20 +51,36 @@ type
     ZoomFaktor:         real;
   end;
 
+  TFrameThread = class(TThread)
+  private
+    Time:               Extended;
+    Gap:                Single;
+    Start:              Single;
+
+    iSkip:              Boolean;
+    iDecode:            Boolean;
+
+    procedure   DoDecode;
+    procedure   DoSkip;
+  protected
+    constructor Create;
+    procedure   Execute; override;
+    procedure   Update();
+  end;
+
 procedure Init;
 procedure acOpenFile(FileName: pAnsiChar);
 procedure acClose;
 procedure acGetFrame(Time: Extended);
-function  acSearch(Time: Extended): integer;
-procedure acDrawGL(Screen: integer);
-procedure acDrawGLi(Screen: integer; Window: TRectCoords; Blend: real);
+procedure acDrawGL(Screen: integer; DoDraw: boolean);
+procedure acDrawGLi(Screen: integer; Window: TRectCoords; Blend: real; DoDraw: boolean);
 procedure acTogglePause;
-procedure acSkip(Gap: Single; Start: Single);
 procedure acSkip2(Gap: Single; Start: Single);
 procedure ToggleAspectCorrection;
 procedure GetVideoRect(var ScreenRect, TexRect: TRectCoords; Window: TRectCoords);
 procedure SetAspectCorrection(aspect: TAspectCorrection);
 procedure ResetAspectCorrection;
+procedure UploadNewFrame;
 
 Const
   MIN_FPS = 40;
@@ -118,6 +135,15 @@ var
 
   EnableVideoDraw:    boolean;
 
+  FrameData:          Pointer;
+  NewFrame:           boolean;
+  SetTime:            Extended;
+  SetGap:             Single;
+  SetStart:           Single;
+  SetSkip:            boolean;
+
+  FrameThread:        TFrameThread;
+
 
 implementation
 
@@ -133,7 +159,7 @@ end;
 
 function seek_proc(sender: Pointer; pos: int64; whence: integer): int64; cdecl;
 begin
-  result := fs.Seek(pos, TSeekOrigin(whence))
+  result := fs.Seek(pos, TSeekOrigin(whence));
 end;
 
 procedure Init;
@@ -161,6 +187,16 @@ begin
     PIXEL_FORMAT := GL_RGBA;
 
   EnableVideoDraw := true;
+
+  SetTime := 0;
+  if(FrameData<>nil) then
+    FreeMem(FrameData);
+  FrameData := nil;
+
+  if (FrameThread<>nil) then
+  begin
+    FrameThread.Terminate;
+  end;
 end;
 
 procedure acOpenFile(FileName: pAnsiChar);
@@ -168,6 +204,7 @@ var
   I: integer;
 
 begin
+  acClose;
 
   VideoPaused    := False;
   VideoTimeBase  := 0;
@@ -175,7 +212,6 @@ begin
   LastFrameTime  := 0;
   TimeDifference := 0;
   Counter := 0;
-  acClose;
 
   if not FileExists(FileName) then
     Exit; //TODO: error.log
@@ -234,6 +270,8 @@ begin
   dataX := Round(Power(2, Ceil(Log2(TexX))));
   dataY := Round(Power(2, Ceil(Log2(TexY))));
 
+  GetMem(FrameData, numBytes*TexX*TexY);
+
   // calculate some information for video display
   VideoAspect:=videodecoder^.stream_info.additional_info.video_info.pixel_aspect;
   if (VideoAspect = 0) then
@@ -268,11 +306,27 @@ begin
   end;
 
   mmfps := (MAX_FPS-MIN_FPS)/2;
+
+  SetTime := 0;
+  NewFrame := false;
+  SetSkip := false;
+  FrameThread := TFrameThread.Create();
 end;
 
 procedure acClose;
 begin
-  if VideoOpened then begin
+  if VideoOpened then
+  begin
+    if (FrameThread<>nil) then
+    begin
+      FrameThread.Terminate;
+      FrameThread.WaitFor;
+      FrameThread.Free;
+      FrameThread := nil;
+    end;
+
+    NewFrame := false;
+    SetSkip := false;
 
     if videodecoder <> nil then
       ac_free_decoder(videodecoder);
@@ -286,6 +340,12 @@ begin
 
     VideoOpened:=False;
     fName := '';
+
+    if(FrameData<>nil) then
+      FreeMem(FrameData);
+    FrameData := nil;
+
+
   end;
 end;
 
@@ -297,117 +357,20 @@ end;
 
 procedure acSkip2(Gap: Single; Start: Single);
 begin
-  VideoSkiptime:=Gap;
-  NegativeSkipTime:=Start+Gap;
-  if Start+Gap > 0 then
-  begin
-    VideoTime:=Start+Gap;
-    try
-      ac_seek(videodecoder, -1, Floor((Start+Gap)*1000));
-    except
-      Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
-      acClose;
-    end;
-  end else
-  begin
-    try
-      ac_seek(videodecoder, 0, 0);
-    except
-      Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
-      acClose;
-    end;
-    VideoTime:=0;
-  end;
-end;
-
-procedure acSkip(Gap: Single; Start: Single);
-begin
-  VideoSkiptime:=Gap;
-  NegativeSkipTime:=Start+Gap;
-  if Start+Gap > 0 then
-  begin
-    VideoTime:=0;
-    ac_seek(videodecoder, -1, Floor((Start+Gap)*1000));
-    if (acSearch(Gap+Start)=0) then
-    begin
-      ac_seek(videodecoder, 0, 0);
-      VideoTime:=0;
-      acSearch(Gap+Start);
-    end;
-  end else
-  begin
-    ac_seek(videodecoder, 0, 0);
-    VideoTime:=0;
-  end;
-end;
-
-function acSearch(Time: Extended): integer;
-var
-  FrameFinished: Integer;
-  errnum: Integer;
-  FrameDataPtr: PByteArray;
-  myTime: Extended;
-
-begin
-  Result := 0;
-  if not VideoOpened then Exit;
-  if (NegativeSkipTime < 0)and(Time+NegativeSkipTime>=0) then
-    NegativeSkipTime:=0;
-
-  myTime:=Time+VideoSkipTime;
-  TimeDifference:=myTime-VideoTime;
-
-  if (VideoTime <> 0) and (TimeDifference <= VideoTimeBase) then begin
-    Exit;// we don't need a new frame now
-  end;
-
-  pack := ac_read_package(inst);
-  FrameFinished:=0;
-  // read packets until we have a finished frame (or there are no more packets)
-  while ((VideoTime < Time-VideoTimeBase)) and (pack <> nil) do
-  begin
-    // if we got a packet from the video stream, then decode it
-    if (videodecoder^.stream_index = pack^.stream_index) then
-    begin
-      FrameFinished := ac_decode_package(pack, videodecoder);
-      VideoTime := videodecoder^.timecode;
-      ac_free_package(pack);
-      if ((VideoTime < Time-VideoTimeBase)) then
-        pack := ac_read_package(inst);
-    end else
-    begin
-      ac_free_package(pack);
-      pack := ac_read_package(inst);
-    end;
-  end;
-  if (pack<>nil) then
-    ac_free_package(pack);
-
-  // if we did not get an new frame, there's nothing more to do
-  if Framefinished=0 then
-  begin
-    Exit;
-  end;
-
-  errnum:=1;       //TODO!!
-  if errnum >=0 then begin
-    FrameDataPtr:=Pointer(videodecoder^.buffer);
-    Result := 1;
-    glBindTexture(GL_TEXTURE_2D, VideoTex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY, PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
-
-    if Ini.Debug = 1 then
-    begin
-      //frame decode debug display
-      GoldenRec.Spawn(200,85,1,16,0,-1,ColoredStar,$ffff00,0);
-    end;
-
-  end;
+  SetGap := Gap;
+  SetStart := Start;
+  SetSkip := true;
 end;
 
 procedure acGetFrame(Time: Extended);
+begin
+  SetTime := Time;
+end;
+
+procedure TFrameThread.DoDecode;
 Const
   MAX = 3000;
+  FRAMEDROPCOUNT=3;
 
 var
   FrameFinished:  Integer;
@@ -417,16 +380,8 @@ var
   myTime:         Extended;
   DropFrame:      Boolean;
   droppedFrames:  Integer;
-  I:              Integer;
 
-  glError:        glEnum;
-  glErrorStr:     String;
-const
-  FRAMEDROPCOUNT=3;
 begin
-  if not VideoOpened then Exit;
-  if VideoPaused then Exit;
-
   mmfps := (Display.mFPS+mmfps)/2;
   if(Ini.PerformanceMode=1) then
   begin
@@ -461,38 +416,27 @@ begin
   myTime:=Time+VideoSkipTime;
   TimeDifference:=myTime-VideoTime;
 
-  if Ini.Debug = 1 then
-  begin
-    timediff_str:= 't-diff: ' + FormatFloat('#0.00', TimeDifference);
-    mtime_str:= 'mytime: ' + FormatFloat('#0.00', myTime);
-  end;
-
   DropFrame:=False;
 
-  if (VideoTime <> 0) and (TimeDifference <= VideoTimeBase) then begin
-    if Ini.Debug = 1 then
-    begin
-      // frame delay debug display
-      GoldenRec.Spawn(200,65,1,16,0,-1,ColoredStar,$00ff00,0);
-    end;
-    Exit;// we don't need a new frame now
-  end;
+  if (VideoTime <> 0) and (TimeDifference <= VideoTimeBase) then
+    Exit;
 
-  if TimeDifference >= (FRAMEDROPCOUNT-1)*VideoTimeBase then begin // skip frames
-    if Ini.Debug = 1 then
-    begin
-      //frame drop debug display
-      GoldenRec.Spawn(200,105,1,16,0,-1,ColoredStar,$ff0000,0);
-    end;
-
+  if TimeDifference >= (FRAMEDROPCOUNT-1)*VideoTimeBase then
+  begin // skip frames
     DropFrame:=True;
   end;
+
+  if terminated then
+    Exit;
 
   pack := ac_read_package(inst);
   FrameFinished:=0;
   // read packets until we have a finished frame (or there are no more packets)
   while (FrameFinished=0) and (pack <> nil) do
   begin
+    if terminated then
+      Exit;
+
     // if we got a packet from the video stream, then decode it
     if (videodecoder^.stream_index = pack^.stream_index) then
     begin
@@ -513,11 +457,16 @@ begin
     //acSearch(Time);
     for droppedFrames:=1 to FRAMEDROPCOUNT do
     begin
+      if terminated then
+        Exit;
       pack := ac_read_package(inst);
       FrameFinished:=0;
       // read packets until we have a finished frame (or there are no more packets)
       while (FrameFinished=0) and (pack <> nil) do
       begin
+        if terminated then
+          Exit;
+
         // if we got a packet from the video stream, then decode it
         if (videodecoder^.stream_index = pack^.stream_index) then
         begin
@@ -537,105 +486,93 @@ begin
   // if we did not get an new frame, there's nothing more to do
   if Framefinished=0 then
   begin
-//    GoldenRec.Spawn(220,15,1,16,0,-1,ColoredStar,$0000ff);
-    acClose;
+    //acClose;
     Exit;
   end;
 
   errnum:=1;       //TODO!!
   if errnum >=0 then
   begin
-    if(not pbo_supported) then
-    begin
-      FrameDataPtr:=Pointer(videodecoder^.buffer);
+    FrameDataPtr := FrameData;
+    FrameDataPtr2:=Pointer(videodecoder^.buffer);
 
-      glBindTexture(GL_TEXTURE_2D, VideoTex);
+    if terminated then
+      Exit;
 
-      if(SkipLines>0)then
-      begin
-        for I := 0 to TexY - 1 do
-        begin
-          if(I mod (SkipLines+1) = 0) then
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (I div (SkipLines+1)), TexX, 1,
-              PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[I*numBytes*TexX]);
-        end;
-      end else
-          glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
-            PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
-    end else
-    begin
-      glGetError();
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
+    move(FrameDataPtr2[0], FrameDataPtr[0], numBytes*TexX*TexY);
 
-      glError := glGetError;
-      if glError <> GL_NO_ERROR then
-      begin
-        acClose;
-        Log.LogError('Error drawing Video "glBindBuffer"');
-        Exit;
-      end;
-
-      FrameDataPtr := glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-      glError := glGetError;
-      if glError <> GL_NO_ERROR then
-      begin
-        acClose;
-        Log.LogError('Error drawing Video pbo "glMapBuffer"');
-        Exit;
-      end;
-
-      FrameDataPtr2:=Pointer(videodecoder^.buffer);
-      move(FrameDataPtr2[0], FrameDataPtr[0], numBytes*TexX*TexY);
-
-      glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-      glError := glGetError;
-      if glError <> GL_NO_ERROR then
-      begin
-        acClose;
-        Log.LogError('Error drawing Video pbo "glUnmapBuffer"');
-        Exit;
-      end;    
-
-      glBindTexture(GL_TEXTURE_2D, VideoTex);
-      glError := glGetError;
-      if glError <> GL_NO_ERROR then
-      begin
-        acClose;
-        Log.LogError('Error drawing Video pbo "glBindTexture"');
-        Exit;
-      end;
-
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
-        PIXEL_FORMAT, GL_UNSIGNED_BYTE, nil);
-
-      glError := glGetError;
-      if glError <> GL_NO_ERROR then
-      begin
-        acClose;
-        case glError of
-              GL_INVALID_ENUM: glErrorStr:='INVALID_ENUM';
-              GL_INVALID_VALUE: glErrorStr:='INVALID_VALUE';
-              GL_INVALID_OPERATION: glErrorStr:='INVALID_OPERATION';
-              GL_STACK_OVERFLOW: glErrorStr:='STACK_OVERFLOW';
-              GL_STACK_UNDERFLOW: glErrorStr:='STACK_UNDERFLOW';
-              GL_OUT_OF_MEMORY: glErrorStr:='OUT_OF_MEMORY';
-              else glErrorStr:='unknown error';
-            end;
-        Log.LogError('Error drawing Video pbo "glTexSubImage2D" ('+glErrorStr+')');
-        Exit;
-      end;
-      glBindTexture(GL_TEXTURE_2D, 0);
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    end;
     VideoTime := videodecoder^.timecode;
-
-    if Ini.Debug = 1 then
-    begin
-      //frame decode debug display
-      GoldenRec.Spawn(200,85,1,16,0,-1,ColoredStar,$ffff00,0);
-    end;
-
+    NewFrame := true;
   end;
+end;
+
+procedure TFrameThread.DoSkip;
+begin
+  VideoSkiptime:=Gap;
+  NegativeSkipTime:=Start+Gap;
+  if Start+Gap > 0 then
+  begin
+    VideoTime:=Start+Gap;
+    try
+      ac_seek(videodecoder, -1, Floor((Start+Gap)*1000));
+    except
+      Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
+      //acClose;
+    end;
+  end else
+  begin
+    try
+      ac_seek(videodecoder, 0, 0);
+    except
+      Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
+      //acClose;
+    end;
+    VideoTime:=0;
+  end;
+end;
+
+constructor TFrameThread.Create;
+begin
+  inherited Create(true);
+
+  Self.Priority := tpLower;
+  Self.FreeOnTerminate := false;
+
+  Time := 0;
+  iDecode := false;
+  iSkip := false;
+
+  Self.Resume;
+end;
+
+procedure TFrameThread.Execute;
+begin
+  while not terminated do
+  begin
+    try
+      if iSkip then
+        DoSkip;
+
+      if iDecode then
+        DoDecode();
+
+      if not terminated then
+        Update();
+    except
+
+    end;
+    Sleep(0);
+  end;
+end;
+
+procedure TFrameThread.Update;
+begin
+  Time := SetTime;
+  iDecode := VideoOpened and not VideoPaused and not NewFrame;
+  iSkip := SetSkip;
+  SetSkip := false;
+  Gap := SetGap;
+  Start := SetStart;
 end;
 
 procedure ToggleAspectCorrection();
@@ -756,7 +693,7 @@ begin
     TexRect.Lower := TexY/ dataY;
 end;
 
-procedure acDrawGL(Screen: integer);
+procedure acDrawGL(Screen: integer; DoDraw: boolean);
 var
   Window: TRectCoords;
 begin
@@ -767,14 +704,120 @@ begin
   Window.windowed := false;
   Window.Reflection := false;
   Window.TargetAspect := fAspectCorrection;
-  acDrawGLi(Screen, Window, 1);
+  acDrawGLi(Screen, Window, 1, DoDraw);
 end;
 
-procedure acDrawGLi(Screen: integer; Window: TRectCoords; Blend: real);
+procedure UploadNewFrame;
+var
+  FrameDataPtr:   PByteArray;
+  FrameDataPtr2:  PByteArray;
+  I:              Integer;
+  glError:        glEnum;
+  glErrorStr:     String;
+
+begin
+  if VideoOpened and NewFrame then
+  begin
+    if(not pbo_supported) then
+    begin
+      FrameDataPtr:=FrameData;
+
+      glBindTexture(GL_TEXTURE_2D, VideoTex);
+
+      if(SkipLines>0)then
+      begin
+        for I := 0 to TexY - 1 do
+        begin
+          if(I mod (SkipLines+1) = 0) then
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (I div (SkipLines+1)), TexX, 1,
+              PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[I*numBytes*TexX]);
+        end;
+      end else
+          glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
+            PIXEL_FORMAT, GL_UNSIGNED_BYTE, @FrameDataPtr[0]);
+    end else
+    begin
+      glGetError();
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
+
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video "glBindBuffer"');
+        Exit;
+      end;
+
+      FrameDataPtr := glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video pbo "glMapBuffer"');
+        Exit;
+      end;
+
+      FrameDataPtr2:=FrameData;
+      move(FrameDataPtr2[0], FrameDataPtr[0], numBytes*TexX*TexY);
+
+      glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video pbo "glUnmapBuffer"');
+        Exit;
+      end;
+
+      glBindTexture(GL_TEXTURE_2D, VideoTex);
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        Log.LogError('Error drawing Video pbo "glBindTexture"');
+        Exit;
+      end;
+
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, TexX, TexY,
+        PIXEL_FORMAT, GL_UNSIGNED_BYTE, nil);
+
+      glError := glGetError;
+      if glError <> GL_NO_ERROR then
+      begin
+        acClose;
+        case glError of
+              GL_INVALID_ENUM: glErrorStr:='INVALID_ENUM';
+              GL_INVALID_VALUE: glErrorStr:='INVALID_VALUE';
+              GL_INVALID_OPERATION: glErrorStr:='INVALID_OPERATION';
+              GL_STACK_OVERFLOW: glErrorStr:='STACK_OVERFLOW';
+              GL_STACK_UNDERFLOW: glErrorStr:='STACK_UNDERFLOW';
+              GL_OUT_OF_MEMORY: glErrorStr:='OUT_OF_MEMORY';
+              else glErrorStr:='unknown error';
+            end;
+        Log.LogError('Error drawing Video pbo "glTexSubImage2D" ('+glErrorStr+')');
+        Exit;
+      end;
+      glBindTexture(GL_TEXTURE_2D, 0);
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    end;
+
+    NewFrame := false;
+  end;
+end;
+
+procedure acDrawGLi(Screen: integer; Window: TRectCoords; Blend: real; DoDraw: boolean);
 var
   ScreenRect, TexRect: TRectCoords;
 
 begin
+  if DoDraw then
+    UploadNewFrame
+  else
+  begin
+    NewFrame := false;
+    Exit;
+  end;
+    
   // have a nice black background to draw on (even if there were errors opening the vid)
   if Not Window.windowed then
   begin

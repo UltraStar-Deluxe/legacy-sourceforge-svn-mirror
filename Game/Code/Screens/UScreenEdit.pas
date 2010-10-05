@@ -71,7 +71,7 @@ end;
 constructor TScreenEdit.Create;
 begin
   inherited Create;
-  AddButton(400-200, 100 + 0*70, 400, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(400-200, 100 + 0*70, 400, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(10, 5, 0, 0, 0, 'Convert Midi to Txt');
 //  Button[High(Button)].Text[0].Size := 11;
 
@@ -81,7 +81,7 @@ begin
 //  AddButton(400-200, 100 + 2*60, 400, 40, 'ButtonF');
 //  AddButtonText(10, 5, 0, 0, 0, 'Set GAP');
 
-  AddButton(400-200, 100 + 3*60, 400, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(400-200, 100 + 3*60, 400, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(10, 5, 0, 0, 0, 'Exit');
 
 end;

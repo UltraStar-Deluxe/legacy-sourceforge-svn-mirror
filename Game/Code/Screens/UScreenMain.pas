@@ -7,6 +7,9 @@ uses
 
 type
   TScreenMain = class(TMenu)
+    private
+      IdleTicks:              cardinal;
+      procedure StartScreenScredits;
     public
       TextDescription:        integer;
       TextDescriptionLong:    integer;
@@ -16,6 +19,7 @@ type
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
       procedure onShow; override;
+      function  Draw: boolean; override;
       procedure InteractNext; override;
       procedure InteractPrev; override;
       procedure InteractInc; override;
@@ -29,25 +33,69 @@ const
   
 implementation
 
-uses Windows, UPlaylist, UGraphic, UMain, UIni, UTexture, USongs, Textgl, opengl, ULanguage, UParty, UDLLManager, UScreenCredits, USkins, ULog;
+uses
+  Windows,
+  UPlaylist,
+  UGraphic,
+  UMain,
+  UIni,
+  UTexture,
+  USongs,
+  Textgl,
+  opengl,
+  ULanguage,
+  UParty,
+  UDLLManager,
+  UScreenCredits,
+  USkins,
+  ULog;
 
+procedure TScreenMain.StartScreenScredits;
+begin
+  //If CreditsScreen is not Created -> Then Create
+  If (ScreenCredits = nil) then
+  begin
+    try
+      //Display White Loading Text
+      SetFontStyle(2); //Font: Outlined1
+      SetFontSize(12);
+      SetFontItalic(False);
+      SetFontPos (400 - glTextWidth ('Loading Credits ...')/2, 250); //Position
+      glColor4f(1,1,1,1);
+      glPrint('Loading Credits ...');
+      SwapBuffers;
+
+      ScreenCredits    :=       TScreenCredits.Create;
+    except
+      Log.LogError ('Couldn''t Create Credits Screen');
+    end;
+  end;
+
+  If (ScreenCredits <> nil) then
+  begin
+    Music.PlayStart;
+    FadeTo(@ScreenCredits);
+  end;
+end;
 
 function TScreenMain.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 var
-SDL_ModState:  Word;
+  SDL_ModState:  Word;
+  I, num:        Integer;
 
 begin
   Result := true;
+  IdleTicks := SDL_GetTicks;
 
   SDL_ModState := SDL_GetModState and (KMOD_LSHIFT + KMOD_RSHIFT
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT);
 
-  //Deactivate Credits when Key is pressed
-//  if Credits_Visible then
-//  begin
-//    Credits_Visible := False;
-//    exit;
-//  end;
+  num := 0; //suitable songs for party-modes
+  for i := 0 to Length(Songs.Song) - 1 do
+  begin
+    if not Songs.Song[i].isDuet then
+      inc(num);
+  end;  
 
   If (PressedDown) Then
   begin // Key Down
@@ -56,7 +104,7 @@ begin
         begin
           ScreenPopupHelp.ShowPopup();
         end;
-        
+
       SDLK_Q:
         begin
           Result := false;
@@ -71,38 +119,13 @@ begin
       SDLK_C:
         begin
           if (SDL_ModState = KMOD_LALT) then
-          begin
-            //If CreditsScreen is not Created -> Then Create
-            If (ScreenCredits = nil) then
-            begin
-              try
-                //Display White Loading Text
-                SetFontStyle(2); //Font: Outlined1
-                SetFontSize(12);
-                SetFontItalic(False);
-                SetFontPos (400 - glTextWidth ('Loading Credits ...')/2, 250); //Position
-                glColor4f(1,1,1,1);
-                glPrint('Loading Credits ...');
-                SwapBuffers;
-
-                ScreenCredits    :=       TScreenCredits.Create;
-              except
-                Log.LogError ('Couldn''t Create Credits Screen');
-              end;
-            end;
-
-            If (ScreenCredits <> nil) then
-            begin
-              Music.PlayStart;
-              FadeTo(@ScreenCredits);
-            end;
-          end;
+            StartScreenScredits;
         end;
       SDLK_M:
         begin
           if SDL_ModState = KMOD_LSHIFT then
           begin
-            if (Length(Songs.Song) >= 1) then
+            if (num >= 1) then
             begin
               if (Length(DLLMan.Plugins)>=1) then
               begin
@@ -116,7 +139,7 @@ begin
               ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));
           end else
           begin
-            if (Length(Songs.Song) >= 1) then
+            if (num >= 1) then
             begin
               if (Length(DLLMan.Plugins)>=1) then
               begin
@@ -163,7 +186,7 @@ begin
 
           //Multi
           if Interaction = 1 then begin
-            if (Length(Songs.Song) >= 1) then
+            if (num >= 1) then
             begin
               if (Length(DLLMan.Plugins)>=1) then
               begin
@@ -177,9 +200,9 @@ begin
               ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));
           end;
 
-          //Muilti M2
+          //Multi M2
           if Interaction = 2 then begin
-            if (Length(Songs.Song) >= 1) then
+            if (num >= 1) then
             begin
               if (Length(DLLMan.Plugins)>=1) then
               begin
@@ -268,6 +291,7 @@ procedure TScreenMain.onShow;
 var
   J:  integer;
 begin
+  IdleTicks := SDL_GetTicks;
   ScreenSong.Mode := smNormal;
   ScreenSong.SongIndex := -1;
   PlaylistMan.Mode := 0;
@@ -286,6 +310,19 @@ begin
     Ini.Sorting := Ini.sorting_temp;
     ScreenSong.Refresh(true);
     PlaylistMan.LoadPlayLists;
+  end;
+end;
+
+function TScreenMain.Draw: boolean;
+begin
+  Result := inherited Draw;
+
+  if ScreenPopupHelp.Visible or ScreenPopupCheck.Visible or ScreenPopupError.Visible then
+    IdleTicks := SDL_GetTicks;
+
+  if (IdleTicks + 30*1000 < SDL_GetTicks) then
+  begin
+    StartScreenScredits;
   end;
 end;
 

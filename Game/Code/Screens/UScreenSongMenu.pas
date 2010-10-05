@@ -151,8 +151,7 @@ begin
           Result := false;
         end;
 
-      SDLK_ESCAPE,
-      SDLK_BACKSPACE :
+      SDLK_ESCAPE:
         begin
           Music.PlayBack;
           Visible := False;
@@ -180,9 +179,10 @@ begin
           if (CurMenu = SM_Sort) then
             Button[3].Visible := (Ini.Sorting <> SelectValue);
 
-          if (ScreenSong.Mode = smParty) and (ScreenSong.Sel3<=0) then
+          if (ScreenSong.Mode = smParty) and (PartySession.Rand3) and (ScreenSong.Sel3<=0) then
           begin
-            Inc(ScreenSong.Sel3);
+            if (ScreenSong.Sel3<1) then
+              Inc(ScreenSong.Sel3);
             Music.PlayChange;
             ScreenSong.SelectNext;
             ScreenSong.ChangeMusic;
@@ -197,9 +197,10 @@ begin
           if (CurMenu = SM_Sort) then
             Button[3].Visible := (Ini.Sorting <> SelectValue);
 
-          if (ScreenSong.Mode = smParty) and (ScreenSong.Sel3>=0) then
+          if (ScreenSong.Mode = smParty) and (PartySession.Rand3) and (ScreenSong.Sel3>=0) then
           begin
-            Dec(ScreenSong.Sel3);
+            if (ScreenSong.Sel3>-1) then
+              Dec(ScreenSong.Sel3);
             Music.PlayChange;
             ScreenSong.SelectPrev;
             ScreenSong.ChangeMusic;

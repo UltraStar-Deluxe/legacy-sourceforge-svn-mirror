@@ -63,7 +63,20 @@ procedure PlaySound (const Index: Cardinal); stdcall;       //Plays a Custom Sou
 function ToSentences(Const Czeski: TCzesci): TSentences;
 
 implementation
-uses UGraphic, UPartyM2, UParty, UDraw, UMain, Classes, URecord, ULanguage, math, UDLLManager, USkins, UGraphicClasses;
+uses
+  UGraphic,
+  UPartyM2,
+  UParty,
+  UDraw,
+  UMain,
+  Classes,
+  URecord,
+  ULanguage,
+  math,
+  UDLLManager,
+  USkins,
+  UGraphicClasses,
+  UWebCam;
 
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
@@ -186,8 +199,7 @@ begin
   PlayerInfo.NumPlayers := PlayersPlay;
   for I := 0 to PlayerInfo.NumPlayers-1 do
   begin
-    if (ScreenSong.Mode=smChallenge) then
-      Ini.Name[I] := TeamInfo.TeamInfo[I].Playerinfo[TeamInfo.TeamInfo[I].CurPlayer].Name;
+    Ini.Name[I] := TeamInfo.TeamInfo[I].Playerinfo[TeamInfo.TeamInfo[I].CurPlayer].Name;
     PlayerInfo.Playerinfo[I].Name := PChar(Ini.Name[I]);
     PlayerInfo.Playerinfo[I].Score:=  0;
     PlayerInfo.Playerinfo[I].Bar :=  50;
@@ -292,6 +304,7 @@ var
   medley_start_applause:  boolean;
   CurTime:  real;
   ab:       real;
+  tt:       real;
 
 begin
   //Aspect
@@ -585,8 +598,10 @@ end;
   if ShowFinish and AktSong.VideoLoaded AND DllMan.Selected.LoadVideo then
   begin
     acGetFrame(Czas.Teraz);
-    acDrawGL(ScreenAct); // this only draws
+    acDrawGL(ScreenAct, not WebCam); // this only draws
   end;
+
+  wDraw(WebCam);
 
   // draw static menu (FG)
   DrawFG;
@@ -646,16 +661,22 @@ end;
         Czesci[I].Czesc[K].Nuta[Czesci[I].Czesc[K].HighNut].Dlugosc);
 
     //lyric main and other nice things
-    if (ab>2.5*dt) or ((K = Czesci[I].High) and (ab>dt)) then
+    if (ab>2.3*dt) or ((K = Czesci[I].High) and (ab>dt)) then
     begin
-      Alpha[I] := Alpha[I]-TimeSkip/dt;
+      if (ab>3.3*dt) or (Alpha[I]<1) or (K = Czesci[I].High) then
+        Alpha[I] := Alpha[I]-TimeSkip/dt;
       if (Alpha[I]<0) then
         Alpha[I] := 0;
     end else if (ab>dt) then
     begin
-      Alpha[I] := Alpha[I]+TimeSkip/dt;
-      if (Alpha[I]>1) then
-        Alpha[I] := 1;
+      tt := ab-dt;
+      if (tt<0) then
+        Alpha[I] := 1
+      else
+      begin
+        if (1-tt/dt>Alpha[I]) or (K = Czesci[I].High)then
+          Alpha[I] := 1-tt/dt;
+      end;
     end else
       Alpha[I] := 1;
 

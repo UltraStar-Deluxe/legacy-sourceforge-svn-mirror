@@ -1,3 +1,35 @@
+Ultrastar Deluxe Challenge, Medley & Duet Edition r9 (xx.10.2010)
+-----------------------------
+New: (General)    DUETT-Support! Song-Syntax wie von hawkear vorgeschlagen, allerdings auf 2 Stimmen begrenzt. Im Editor können die Lieder erstellt/geändert werden.
+New: (General)    Webcam-Support.
+New: (General)    Option [Advanced]->DuelRatio für Challenge Mode: normal, 10%, 20%, ..., 90%: Legt den prozentualen Anteil vom Plugin "Duell" fest.
+New: (General)    Zoom/Slide-Effekt in der Songauswahl beim Minimieren/Maximieren der Videos mit V
+New: (General)    Das Video in der Videovorschau wird nun ähnlich wie die Cover reflektiert.
+New: (General)    Die Sortierung kann direkt im SongScreen geändert werden: SHIFT+T; Mit STRG+T wird zwischen Ordner an/aus getoggelt.
+New: (General)    Menu (erreichbar über die Taste M) in der Songauswahl erweitert.
+New: (General)    Mehrere EDITION- und GENRE-tags sind in einer txt möglich.
+New: (General)    Auf die verbliebenen/noch möglichen Punkte wird nun standardmäßig über einen rot/grünen Balken unterhalb der Punkteanzeige hingewiesen. Von bohning: "ein roter balken ist gefüllt bis zum ende.. und der nimmt mit schlechtem Gesang nach links hin ab... ein grüner balken ist am anfang nicht sichtbar und wandert nach rechts mit den gesungenen punkten (beide balken liegen übereinander, grün über rot)... bei ende des liedes treffen sich die beiden balken natürlich an der stelle, die für die gesungenen punkte stehen" Umschalten zwischen "Bar", "Score" und "AUS" kann man mit "S" (wird in der config.ini gespeichert).
+New: (General)    Die zuvor erwähnte Anzeige hat auch eine vierte Funktion: Anzeige des aktuellen Spielernamens (durchtoggeln mit S).
+New: (General)    und nochmal bohning: "...eine log-datei, die aufzeichnet, welche lieder in einer session gesungen wurden" dies kann nun in der config.ini unter [Advanced] mit "LogSession=On" aktiviert werden. Danach siehe "SessionLog"-Ordner.
+New: (General)    Die Noten und Lyrics und werden ein- und ausgeblendet, wenn es längere Zeit nichts zu singen gibt.
+New: (General)    Unterstützung für 4 bzw. 6 Spieler auf einem Bildschirm.
+New: (General)    Random-Sortierfunktion hinzugefügt. Diese dient vor allem dem Party-Modus.
+New: (Medley)     Neuer Tag "#CalcMedley:Off": Wird dieser in der txt gesetzt, so wird Ultrastar nicht versuchen darin irgendwelche Medleys zu berechnen.
+New: (Party)      In den Party-Optionen ist nun sichtbar, wie wiele Lieder man da gleich zur Auswahl haben wird.
+New: (Party)      Im Party-Modus ist man nicht mehr auf das vorgeschlagene Lied beschränkt. Man kann auch jeweils die Lieder links und rechts davon wählen.
+New: (Party)      Das zuletzt gesungene Lied wird nun in der Party-Score-Anzeige abgespielt (ähnlich wie beim Challenge und normalen Modus).
+Upd: (General)    Nach dem Starten des Spiels kommt eine Abfrage, wenn fehlerhafte Songs gefunden wurden. "X fehlerhafte Songs gefunden! Diese trotzdem laden? Details siehe Error.log" Bei ja, lädt Ultrastar nochmal alle Songs. Die Abfrage kommt dann bei jedem Start. Wenn man "LoadFaultySongs=Off" stellt, kommt die Abfrage nicht und alle Songs werden geladen. Es sei denn die Songs enthalten andere schwerwiegende Fehler.
+Upd: (General)    Spielerfarben geändert - sind nun etwas kräftiger und nicht mehr so blass.
+Upd: (Shuffle)    Wenn man während dem Shuffeln die Pfeiltasten rechts/links drückt, wird vom aktuell angezeigten Lied weiter navigiert, statt zum Anfang des Shuffels zu springen.
+Upd: (Shuffle)    Added the option "FULL" to the shuffle-mode. In this mode the whole song will be played. The video will be switched to full screen (if availible).
+Upd: (Videos)     New Acinerella.dll (video decoding). The video has its own thread now.
+Upd: (Plugins)    Some plugins added (thx to MasterPhW).
+Upd: (Help)       The help-system is now availible in english language (thx to thursday). 
+Fix: (Shuffle)    Playlists werden beim Shuffle nicht mehr verlassen.
+Fix: (General)    The playlist were not loaded properly if the sorting was changed.
+Fix: (General)    Added support for VBR-coded songs.
+Fix: (Editor)     Changing the Video-Gap in the editor will no longer cause a restart of the video.
+
 Ultrastar Deluxe v1.0.1a Challenge MOD r7c (01.05.2010)
 -----------------------------
 Fix: (Videos)      Fixed some problems with wmv-videos.

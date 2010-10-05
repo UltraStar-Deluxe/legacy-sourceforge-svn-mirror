@@ -689,7 +689,6 @@ var
   ID_NOSCORE: Byte;
 
 begin
-  Randomize;
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenPartyOptionsM2)');
     

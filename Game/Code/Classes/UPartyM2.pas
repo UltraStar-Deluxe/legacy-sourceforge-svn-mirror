@@ -310,7 +310,6 @@ begin
   //build the playlist
   SetLength (arr, 0);
   SetLength (arr, NumRounds);
-  Randomize;
 
   for I := 0 to NumRounds - 1 do
   begin

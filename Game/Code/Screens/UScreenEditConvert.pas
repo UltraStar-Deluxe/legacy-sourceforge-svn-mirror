@@ -331,17 +331,17 @@ var
   P:  integer;
 begin
   inherited Create;
-  AddButton(40, 20, 100, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(40, 20, 100, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(15, 5, 0, 0, 0, 'Open');
 //  Button[High(Button)].Text[0].Size := 11;
 
-  AddButton(160, 20, 100, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(160, 20, 100, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(25, 5, 0, 0, 0, 'Play');
 
-  AddButton(280, 20, 200, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(280, 20, 200, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(25, 5, 0, 0, 0, 'Play Selected');
 
-  AddButton(500, 20, 100, 40, Skin.GetTextureFileName('ButtonF'));
+  AddButton(500, 20, 100, 40, Skin.GetTextureFileName('ButtonF'), false);
   AddButtonText(20, 5, 0, 0, 0, 'Save');
 
 

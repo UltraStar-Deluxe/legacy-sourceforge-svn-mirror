@@ -126,13 +126,12 @@ begin
                begin
                  if (Display.ActualScreen = @ScreenMain) and (ScreenMain.ShowNumErrors) then
                  begin
-                   Ini.LoadFaultySongs := 1;
+                   Ini.LoadFaultySongs_temp := 1;
                    Songs.LoadSongList();
                    UGraphic.UnLoadScreens();
                    UGraphic.LoadScreens( true );
                    ScreenSong.Refresh(true);
                    PlaylistMan.LoadPlayLists;
-                   Ini.LoadFaultySongs := 0;
                    ScreenMain.ShowNumErrors := false;
                    FadeTo(@ScreenMain);
                  end else
@@ -314,6 +313,9 @@ begin
       SDLK_BACKSPACE :
         begin
           Visible:=False;
+          if (Help.GetHelpID() = ScreenSing.GetHelpID()) then
+            ScreenSing.Pause;
+            
           Result := false;
         end;
 

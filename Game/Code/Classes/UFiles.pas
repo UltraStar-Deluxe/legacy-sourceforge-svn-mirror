@@ -4,12 +4,25 @@ interface
 
 uses USongs,
      SysUtils,
+     StrUtils,
      ULog,
      UMusic;
 
 const
   DEFAULT_FADE_IN_TIME = 8;    //TODO in INI
   DEFAULT_FADE_OUT_TIME = 2;
+
+  //from USDX 1.1:
+  UTF8_BOM: UTF8String = #$EF#$BB#$BF;
+  //
+
+type
+  // from USDX 1.1:
+  //
+  // String with unknown encoding. Introduced with Delphi 2009 and maybe soon
+  // with FPC.
+  RawByteString = AnsiString;
+  //
 
 procedure     InitializePaths; //Function sets All Absolute Paths eg. for Songs
 function    ReadTXTHeader(var Song: TSong): boolean; //Reads Standard TXT Header
@@ -137,7 +150,7 @@ begin
 
   //Required Information
   Song.Mp3 := '';
-  Song.BPM := 0;
+  SetLength(Song.BPM, 0);
   Song.GAP := 0;
   Song.Start := 0;
   Song.Finish := 0;
@@ -147,6 +160,7 @@ begin
   //Additional Information
   Song.Background := '';
   Song.Cover := '';
+  Song.CoverTex.TexNum := -1;
   Song.Video := '';
   Song.VideoGAP := 0;
   Song.NotesGAP := 0;
@@ -185,6 +199,17 @@ var
     Song.CustomTags[Len].Content := Content;
   end;
 
+  function CheckReplaceUTF8BOM(var Text: RawByteString): boolean;
+  begin
+    if AnsiStartsStr(UTF8_BOM, Text) then
+    begin
+      Text := Copy(Text, Length(UTF8_BOM)+1, Length(Text)-Length(UTF8_BOM));
+      Result := true;
+      Exit;
+    end;
+    Result := false;
+  end;
+
 begin
   Result := true;
   Done := 0;
@@ -197,12 +222,20 @@ begin
   //Read first Line
   ReadLn (SongFile, Line);
 
-  if (Length(Line)<=0) then
+  if CheckReplaceUTF8BOM(Line) then
   begin
-    Log.LogError('File Starts with Empty Line: ' + Song.FileName);
+    Log.LogError('File is encoded in UTF8 (not supported in this version): ' + Song.Path + Song.FileName);
     Result := False;
     Exit;
   end;
+
+  if (Length(Line)<=0) then
+  begin
+    Log.LogError('File Starts with Empty Line: ' + Song.Path + Song.FileName);
+    Result := False;
+    Exit;
+  end;
+
 
   //Read Lines while Line starts with #
   While (Length(Line) = 0) OR (Line[1] = '#') do
@@ -289,13 +322,19 @@ begin
         //Cover Picture
         else if (Identifier = 'COVER') then
         begin
-          Song.Cover := Value;
+          if (FileExists(Song.Path + Value)) then
+            Song.Cover := Value
+          else
+            Log.LogError('Can''t find Cover File in Song: ' + Song.Path + Song.FileName);
         end
 
         //Background Picture
         else if (Identifier = 'BACKGROUND') then
         begin
-          Song.Background := Value;
+          if (FileExists(Song.Path + Value)) then
+            Song.Background := Value
+          else
+            Log.LogError('Can''t find Background File in Song: ' + Song.Path + Song.FileName);
         end
 
         // Video File
@@ -471,15 +510,15 @@ begin
     If lWarnIfTagsNotFound then
     begin
       if (Done and 8) = 0 then      //No BPM Flag
-       Log.LogError('BPM Tag Missing: ' + Song.FileName)
+       Log.LogError('BPM Tag Missing: ' + Song.Path + Song.FileName)
       else if (Done and 4) = 0 then //No MP3 Flag
-        Log.LogError('MP3 Tag/File Missing: ' + Song.FileName)
+        Log.LogError('MP3 Tag/File Missing: ' + Song.Path + Song.FileName)
       else if (Done and 2) = 0 then //No Artist Flag
-        Log.LogError('Artist Tag Missing: ' + Song.FileName)
+        Log.LogError('Artist Tag Missing: ' + Song.Path + Song.FileName)
       else if (Done and 1) = 0 then //No Title Flag
-        Log.LogError('Title Tag Missing: ' + Song.FileName)
+        Log.LogError('Title Tag Missing: ' + Song.Path + Song.FileName)
       else //unknown Error
-        Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.FileName);
+        Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.Path + Song.FileName);
     end;
   end else
   begin //check medley tags
@@ -704,6 +743,8 @@ var
 
 begin
   Result := true;
+  foundMedleyStart := false;
+  foundMedleyEnd := false;
 
   if(AktSong.Medley.Source = msTag) then
   begin
@@ -729,7 +770,7 @@ begin
     if(numLines=0) then
     begin
       Log.LogError('Song ' + AktSong.Path + AktSong.Filename + ' has no lines?');
-      if (Ini.LoadFaultySongs=0) then
+      if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
         Result := false;
     end;
 
@@ -740,7 +781,7 @@ begin
       if(numNotes=0) then
       begin
         Log.LogError('Sentence ' + IntToStr(line+1) + ' in song ' + AktSong.Path + AktSong.Filename + ' has no notes?');
-        if (Ini.LoadFaultySongs=0) then
+        if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
           Result := false;
       end;
 
@@ -748,7 +789,7 @@ begin
       begin
         Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Start) +
           ' in song ' + AktSong.Path + AktSong.Filename);
-        if (Ini.LoadFaultySongs=0) then
+        if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
           Result := false;
       end;
       bt := Czesci[p].Czesc[line].Start;
@@ -759,7 +800,7 @@ begin
         begin
           Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
-          if (Ini.LoadFaultySongs=0) then
+          if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;
         bt := Czesci[p].Czesc[line].Nuta[note].Start;
@@ -768,7 +809,7 @@ begin
         begin
           Log.LogError('Note length <0 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
-          if (Ini.LoadFaultySongs=0) then
+          if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;
 
@@ -776,7 +817,7 @@ begin
         begin
           Log.LogError('Note length =0 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
-          if (Ini.LoadFaultySongs=0) then
+          if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;
 
@@ -791,7 +832,7 @@ begin
         begin
           Log.LogError('Note length error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
             ' in song ' + AktSong.Path + AktSong.Filename);
-          if (Ini.LoadFaultySongs=0) then
+          if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;
 
@@ -809,12 +850,12 @@ begin
   if(medley and not foundMedleyStart) then
   begin
     Log.LogError('Error MedleyStartBeat: no corresponding note start (beat) in song ' + AktSong.Path + AktSong.Filename);
-    if (Ini.LoadFaultySongs=0) then
+    if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
       Result := false;
   end else if(medley and not foundMedleyEnd) then
   begin
     Log.LogError('Error MedleyEndBeat: no corresponding note start+length in song ' + AktSong.Path + AktSong.Filename);
-    if (Ini.LoadFaultySongs=0) then
+    if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
       Result := false;
   end;
 end;
@@ -882,8 +923,6 @@ begin
         Exit;
       end;
     end;
-
-    Result := False;
 
     Reset(SongFile);
     FileLineNo := 0;
@@ -1071,12 +1110,10 @@ end;
 function SaveSong(Song: TSong; Czesc: array of TCzesci; Name: string; Relative: boolean): boolean;
 var
   C:      integer;
-  N:      integer;
   S:      string;
   B:      integer;
   RelativeSubTime:    integer;
   NoteState: String;
-  CP:     integer;
   P:      integer;
 
   procedure WriteCustomTags; //from 1.1 (modified)
@@ -1322,9 +1359,9 @@ begin
   end;
 
   //search for longest sequence
+  max := 0;
   if Length(series)>0 then
   begin
-    max := 0;
     for I := 0 to Length(series) - 1 do
     begin
       if series[I].len > series[max].len then
