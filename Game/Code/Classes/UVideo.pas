@@ -9,7 +9,6 @@
 
 //{$define Info}
 
-
 unit UVideo;
 
 interface
@@ -29,6 +28,7 @@ uses SDL,
      glu,
      glext,
      SysUtils,
+     SyncObjs,
      {$ifdef DebugDisplay}
      {$ifdef win32}
      dialogs,
@@ -65,6 +65,7 @@ type
   protected
     constructor Create;
     procedure   Execute; override;
+  public
     procedure   Update();
   end;
 
@@ -144,6 +145,7 @@ var
 
   FrameThread:        TFrameThread;
 
+  EventDecode:        TEvent;
 
 implementation
 
@@ -196,6 +198,9 @@ begin
   if (FrameThread<>nil) then
   begin
     FrameThread.Terminate;
+    FrameThread.WaitFor;
+    FrameThread.Free;
+    FrameThread := nil;
   end;
 end;
 
@@ -310,7 +315,14 @@ begin
   SetTime := 0;
   NewFrame := false;
   SetSkip := false;
-  FrameThread := TFrameThread.Create();
+
+  if (EventDecode = nil) then
+    EventDecode := TEvent.Create(nil, false, false, '');
+
+  if (FrameThread = nil) then
+    FrameThread := TFrameThread.Create();
+
+  FrameThread.Resume;
 end;
 
 procedure acClose;
@@ -319,11 +331,19 @@ begin
   begin
     if (FrameThread<>nil) then
     begin
+      FrameThread.Suspend;
+      //Framethread.WaitFor;
+    end;
+
+    {if (FrameThread<>nil) then
+    begin
       FrameThread.Terminate;
       FrameThread.WaitFor;
       FrameThread.Free;
       FrameThread := nil;
     end;
+
+    FreeAndNil(EventDecode);}
 
     NewFrame := false;
     SetSkip := false;
@@ -344,8 +364,6 @@ begin
     if(FrameData<>nil) then
       FreeMem(FrameData);
     FrameData := nil;
-
-
   end;
 end;
 
@@ -360,11 +378,13 @@ begin
   SetGap := Gap;
   SetStart := Start;
   SetSkip := true;
+  EventDecode.SetEvent;
 end;
 
 procedure acGetFrame(Time: Extended);
 begin
   SetTime := Time;
+  EventDecode.SetEvent;
 end;
 
 procedure TFrameThread.DoDecode;
@@ -502,22 +522,27 @@ begin
     move(FrameDataPtr2[0], FrameDataPtr[0], numBytes*TexX*TexY);
 
     VideoTime := videodecoder^.timecode;
+
     NewFrame := true;
   end;
 end;
 
 procedure TFrameThread.DoSkip;
+var
+  SkipTime: Extended;
+
 begin
-  VideoSkiptime:=Gap;
-  NegativeSkipTime:=Start+Gap;
-  if Start+Gap > 0 then
+    VideoSkiptime:=Gap;
+    NegativeSkipTime:=Start+Gap;
+    SkipTime := Start+Gap;
+
+  if SkipTime > 0 then
   begin
-    VideoTime:=Start+Gap;
+    VideoTime:=SkipTime;
     try
-      ac_seek(videodecoder, -1, Floor((Start+Gap)*1000));
+      ac_seek(videodecoder, -1, Floor((SkipTime)*1000));
     except
       Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
-      //acClose;
     end;
   end else
   begin
@@ -525,7 +550,6 @@ begin
       ac_seek(videodecoder, 0, 0);
     except
       Log.LogError('Error seeking Video "acSkip2" on video ('+fName+')');
-      //acClose;
     end;
     VideoTime:=0;
   end;
@@ -535,7 +559,7 @@ constructor TFrameThread.Create;
 begin
   inherited Create(true);
 
-  Self.Priority := tpLower;
+  //Self.Priority := tpLower;
   Self.FreeOnTerminate := false;
 
   Time := 0;
@@ -549,19 +573,20 @@ procedure TFrameThread.Execute;
 begin
   while not terminated do
   begin
-    try
-      if iSkip then
-        DoSkip;
+    if (EventDecode.WaitFor(100) = wrSignaled) then
+    begin
+      try
+        if iSkip then
+          DoSkip;
 
-      if iDecode then
-        DoDecode();
+        if iDecode then
+          DoDecode();
+      except
 
-      if not terminated then
-        Update();
-    except
-
+      end;
     end;
-    Sleep(0);
+    if not terminated then
+      Synchronize(Update);
   end;
 end;
 
@@ -573,6 +598,7 @@ begin
   SetSkip := false;
   Gap := SetGap;
   Start := SetStart;
+  UploadNewFrame();
 end;
 
 procedure ToggleAspectCorrection();
@@ -718,7 +744,7 @@ var
 begin
   if VideoOpened and NewFrame then
   begin
-    if(not pbo_supported) then
+    if (not pbo_supported) then
     begin
       FrameDataPtr:=FrameData;
 
@@ -800,8 +826,8 @@ begin
       glBindTexture(GL_TEXTURE_2D, 0);
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     end;
-
     NewFrame := false;
+    EventDecode.SetEvent;
   end;
 end;
 
@@ -810,14 +836,9 @@ var
   ScreenRect, TexRect: TRectCoords;
 
 begin
-  if DoDraw then
-    UploadNewFrame
-  else
-  begin
-    NewFrame := false;
+  if not DoDraw then
     Exit;
-  end;
-    
+
   // have a nice black background to draw on (even if there were errors opening the vid)
   if Not Window.windowed then
   begin

@@ -8,7 +8,7 @@ unit UCaptureWDM;
 interface
 
 uses
-	Classes, Windows, DSPack, DirectShow9, DSUtil, SDL, ExtCtrls;
+	Classes, Windows, DSPack, DirectShow9, DSUtil, SDL, ExtCtrls, SyncObjs;
 
 type
 	TCaptureState = (csPlay, csStop, csDisbaled);
@@ -50,7 +50,8 @@ type
 	protected
     procedure Execute; override;
   public
-    FramePtr: PByteArray;
+    FramePtr:     PByteArray;
+    EventDecode:  TEvent;
     
     constructor Create(DeviceID, MediaTypeID: integer);
     destructor Destroy; override;
@@ -71,7 +72,7 @@ type
 implementation
 
 uses
-	Graphics, SyncObjs, SysUtils;
+	Graphics, SysUtils;
 
 function GetCapDevices: TList;
 var
@@ -138,7 +139,7 @@ constructor TSampleClass.Create(DeviceID, MediaTypeID: integer);
 begin
   inherited Create(true);
 
-  Self.Priority := tpLower;
+  //Self.Priority := tpLower;
   Self.FreeOnTerminate := false;
 
 	Capture := TCapture.Create(DeviceID, MediaTypeID);
@@ -156,6 +157,8 @@ begin
   ready := true;
   Error := false;
 
+  EventDecode := TEvent.Create(nil, false, false, '');
+
   Self.Resume;
 end;
 
@@ -163,6 +166,8 @@ destructor TSampleClass.Destroy;
 begin
 	inherited;
 
+  FreeAndNil(EventDecode);
+  
   if(frame<>nil) then
     FreeMem(frame);
   frame := nil;
@@ -175,7 +180,7 @@ procedure TSampleClass.Execute;
 begin
   while not terminated do
   begin
-    if capturing then
+    if (EventDecode.WaitFor(100) = wrSignaled) and capturing then
     begin
       ready := false;
       GetImage;
@@ -186,7 +191,6 @@ begin
       if Error then
         Self.Terminate;
     end;
-    Sleep(0);
   end;
 end;
 
@@ -208,6 +212,9 @@ begin
     capturing := true;
   end else
     capturing := false;
+
+  if capturing then
+    EventDecode.SetEvent;
 end;
 
 procedure TSampleClass.GetImage;
