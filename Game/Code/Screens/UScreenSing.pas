@@ -1908,7 +1908,7 @@ begin
   if ShowFinish and AktSong.VideoLoaded then
   begin
     try
-      acGetFrame(Czas.Teraz);
+      acGetFrame(Music.Position);
       acDrawGL(ScreenAct, not WebCam); // this only draws
     except
       //If an Error occurs drawing: prevent Video from being Drawn again and Close Video

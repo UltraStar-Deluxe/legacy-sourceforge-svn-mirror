@@ -400,7 +400,7 @@ begin
     if Tekst = IAspectCorrect[Pet] then Ini.AspectCorrect := Pet;
 
   // PerformanceMode
-  Tekst := IniFile.ReadString('Graphics', 'PerformanceMode', IPerformanceMode[1]);
+  Tekst := IniFile.ReadString('Graphics', 'PerformanceMode', IPerformanceMode[0]);
   for Pet := 0 to High(IPerformanceMode) do
     if Tekst = IPerformanceMode[Pet] then Ini.PerformanceMode := Pet;
 
