@@ -269,14 +269,6 @@ begin
   begin
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
-    begin
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
-        end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
-
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
-        st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-    end;}
   end;
 
   glColor4f(1, 1, 1, Alpha);
@@ -377,14 +369,6 @@ begin
   begin
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
-    begin
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
-        end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
-
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
-        st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-    end; }
   end;
 
   glEnable(GL_TEXTURE_2D);
@@ -408,9 +392,8 @@ begin
         end else
         begin
           NotesH2 := int(NotesH * 0.65);
-        end; //if
+        end;
 
-        //        if True then
         Rec.Top    := Y - (Ton-Czesci[CP].Czesc[Czesci[CP].Akt].BaseNote)*Space/2 - NotesH2;
         Rec.Bottom := Rec.Top + 2 *NotesH2;
 
@@ -432,9 +415,6 @@ begin
 
         if Rec.Right <= Rec.Left then Rec.Right := Rec.Left;
 
-
-//        glColor3f(R, G, B);
-//        glBindTexture(GL_TEXTURE_2D, Tex_MidGray.TexNum);
         glBindTexture(GL_TEXTURE_2D, Tex_Mid[NrGracza+1].TexNum);
         glBegin(GL_QUADS);
           glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
@@ -455,20 +435,9 @@ begin
           glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
         glEnd;
 
-
-
-        //Rec.Right := X + (Start+Dlugosc-Czesci[0].Czesc[Czesci[0].Akt].StartNote) * TempR - NotesW - 0.5  + 10*ScreenX;
-        //if (Start+Dlugosc-1 = Czas.AktBeatD) then
         if Perfect and (Ini.EffectSing=1) then begin
-//          A := sqrt((1+sin(Music.Position * 3))/2);
-          //A := 1 - 2*(Czas.Teraz - GetTimeFromBeat(Start+Dlugosc));
           if not (Start+Dlugosc-1 = Czas.AktBeatD) then
-
-            //Star animation counter
-            //inc(Starfr);
-            //Starfr := Starfr mod 128;
             GoldenRec.SavePerfectNotePos(Rec.Left, Rec.Top);
-          {  SingDrawStar(Rec.Left+2, Rec.Top+4, A);}
         end;
       end; // with
     end; // for

@@ -612,6 +612,7 @@ begin
 
               // Half size Notes Patch
               NoteHit := false;
+              AktTon := Sound[CP].Ton;
 
               Range := 2 - Ini.Difficulty;
               if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
@@ -790,7 +791,8 @@ begin
 
               // Half size Notes Patch
               NoteHit := false;
-
+              AktTon := Sound[CP].Ton;
+              
               Range := 2 - Ini.Difficulty;
               if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
                 DEBUG_NOTE_HIT then
