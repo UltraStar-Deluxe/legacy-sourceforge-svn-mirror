@@ -56,7 +56,7 @@ type
     Nuta:     array of record
       Start:      integer;
       Dlugosc:    integer;
-      Detekt:     real;     // dokladne miejsce, w ktorym wykryto ta nute
+      //Detekt:     real;     // dokladne miejsce, w ktorym wykryto ta nute
       Ton:        real;
       Perfect:    boolean; // true if the note matches the original one, lit the star
 
@@ -259,21 +259,25 @@ procedure GetMidBeatSub(BPMNum: integer; var Time: real; var CurBeat: real);
 var
   NewTime:  real;
 begin
-  if High(AktSong.BPM) = BPMNum then begin
+  if High(AktSong.BPM) = BPMNum then
+  begin
     // last BPM
     CurBeat := AktSong.BPM[BPMNum].StartBeat + GetBeats(AktSong.BPM[BPMNum].BPM, Time);
     Time := 0;
-  end else begin
+  end else
+  begin
     // not last BPM
     // count how much time is it for start of the new BPM and store it in NewTime
     NewTime := GetTimeForBeats(AktSong.BPM[BPMNum].BPM, AktSong.BPM[BPMNum+1].StartBeat - AktSong.BPM[BPMNum].StartBeat);
 
     // compare it to remaining time
-    if (Time - NewTime) > 0 then begin
+    if (Time - NewTime) > 0 then
+    begin
       // there is still remaining time
       CurBeat := AktSong.BPM[BPMNum].StartBeat;
       Time := Time - NewTime;
-    end else begin
+    end else
+    begin
       // there is no remaining time
       CurBeat := AktSong.BPM[BPMNum].StartBeat + GetBeats(AktSong.BPM[BPMNum].BPM, Time);
       Time := 0;
@@ -285,37 +289,19 @@ function GetMidBeat(Time: real): real;
 var
   CurBeat:  real;
   CurBPM:   integer;
-//  TopBeat:  real;
-//  TempBeat: real;
-//  TempTime: real;
+
 begin
   Result := 0;
   if Length(AktSong.BPM) = 1 then Result := Time * AktSong.BPM[0].BPM / 60;
 
-  (* 2 BPMs *)
-{  if Length(AktSong.BPM) > 1 then begin
-    (* new system *)
-    CurBeat := 0;
-    TopBeat := GetBeats(AktSong.BPM[0].BPM, Time);
-    if TopBeat > AktSong.BPM[1].StartBeat then begin
-      // analyze second BPM
-      Time := Time - GetTimeForBeats(AktSong.BPM[0].BPM, AktSong.BPM[1].StartBeat - CurBeat);
-      CurBeat := AktSong.BPM[1].StartBeat;
-      TopBeat := GetBeats(AktSong.BPM[1].BPM, Time);
-      Result := CurBeat + TopBeat;
-
-    end else begin
-      (* pierwszy przedzial *)
-      Result := TopBeat;
-    end;
-  end; // if}
-
   (* more BPMs *)
-  if Length(AktSong.BPM) > 1 then begin
+  if Length(AktSong.BPM) > 1 then
+  begin
 
     CurBeat := 0;
     CurBPM := 0;
-    while (Time > 0) do begin
+    while (Time > 0) do
+    begin
       GetMidBeatSub(CurBPM, Time, CurBeat);
       Inc(CurBPM);
     end;
@@ -332,26 +318,25 @@ begin
   if Length(AktSong.BPM) = 1 then Result := AktSong.GAP / 1000 + Beat * 60 / AktSong.BPM[0].BPM;
 
   (* more BPMs *)
-  if Length(AktSong.BPM) > 1 then begin
+  if Length(AktSong.BPM) > 1 then
+  begin
     Result := AktSong.GAP / 1000;
     CurBPM := 0;
-    while (CurBPM <= High(AktSong.BPM)) and (Beat > AktSong.BPM[CurBPM].StartBeat) do begin
-      if (CurBPM < High(AktSong.BPM)) and (Beat >= AktSong.BPM[CurBPM+1].StartBeat) then begin
+    while (CurBPM <= High(AktSong.BPM)) and (Beat > AktSong.BPM[CurBPM].StartBeat) do
+    begin
+      if (CurBPM < High(AktSong.BPM)) and (Beat >= AktSong.BPM[CurBPM+1].StartBeat) then
+      begin
         // full range
         Result := Result + (60 / AktSong.BPM[CurBPM].BPM) * (AktSong.BPM[CurBPM+1].StartBeat - AktSong.BPM[CurBPM].StartBeat);
       end;
 
-      if (CurBPM = High(AktSong.BPM)) or (Beat < AktSong.BPM[CurBPM+1].StartBeat) then begin
+      if (CurBPM = High(AktSong.BPM)) or (Beat < AktSong.BPM[CurBPM+1].StartBeat) then
+      begin
         // in the middle
         Result := Result + (60 / AktSong.BPM[CurBPM].BPM) * (Beat - AktSong.BPM[CurBPM].StartBeat);
       end;
       Inc(CurBPM);
     end;
-
-{    while (Time > 0) do begin
-      GetMidBeatSub(CurBPM, Time, CurBeat);
-      Inc(CurBPM);
-    end;}
   end; // if}
 end;
 
@@ -375,7 +360,7 @@ begin
   Czas.AktBeatC := Floor(Czas.MidBeatC);
 
   Czas.OldBeatD := Czas.AktBeatD;
-  Czas.MidBeatD := -0.5+GetMidBeat(Czas.Teraz - (AktSong.Gap + 120 + 20) / 1000); // MidBeat with addition GAP
+  Czas.MidBeatD := -0.5+GetMidBeat(Czas.Teraz - (AktSong.Gap + 120 + Ini.Delay*10) / 1000); // MidBeat with addition GAP
   Czas.AktBeatD := Floor(Czas.MidBeatD);
   Czas.FracBeatD := Frac(Czas.MidBeatD);
 
@@ -493,10 +478,11 @@ begin
 
   for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
   begin
-    if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = Czas.AktBeat) then
+    if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start <= Czas.AktBeat) and
+      (Sender.LyricMain[CP].Selected <> Pet) then
     begin
       // operates on currently beated note
-      Sender.LyricMain[CP].Selected := Pet
+      Sender.LyricMain[CP].Selected := Pet;
     end;
   end;
 end;
@@ -560,12 +546,18 @@ var
   SMin:   integer;
   SMax:   integer;
   SDet:   integer; // temporary: sentence of detected note
+  BRange: integer; // beat range
+
+  AktTon: integer;
+
   Pet:    integer;
   Mozna:  boolean;
   Nowa:   boolean;
   Range:  integer;
   NoteHit:boolean;
 begin
+  SDet := 0;
+
   for CP := 0 to PlayersPlay-1 do
   begin
     if (not AktSong.isDuet) then
@@ -579,136 +571,135 @@ begin
         SMin := 0;
       SMax := Czesci[P].Akt;
 
-      SDet := SMin;
-      // check if we can add new note
-      Mozna := false;
-      for S := SMin to SMax do
+      for BRange := Czas.OldBeatD+1 to Czas.AktBeatD do
       begin
-        for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+        SDet := SMin;
+        // check if we can add new note
+        Mozna := false;
+        for S := SMin to SMax do
         begin
-          if ((Czesci[P].Czesc[S].Nuta[Pet].Start <= Czas.AktBeatD)
-            and (Czesci[P].Czesc[S].Nuta[Pet].Start + Czesci[P].Czesc[S].Nuta[Pet].Dlugosc - 1 >= Czas.AktBeatD))
-            and (not Czesci[P].Czesc[S].Nuta[Pet].FreeStyle) // but don't allow when it's FreeStyle note
-            and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > 0) // and make sure the note lenghts is at least 1
-            then
+          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
           begin
-            SDet := S;
-            Mozna := true;
-            Break;
+            if ((Czesci[P].Czesc[S].Nuta[Pet].Start <= BRange)
+              and (Czesci[P].Czesc[S].Nuta[Pet].Start + Czesci[P].Czesc[S].Nuta[Pet].Dlugosc - 1 >= BRange))
+              and (not Czesci[P].Czesc[S].Nuta[Pet].FreeStyle) // but don't allow when it's FreeStyle note
+              and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > 0) // and make sure the note lenghts is at least 1
+              then
+            begin
+              SDet := S;
+              Mozna := true;
+              Break;
+            end;
           end;
         end;
-      end;
 
-      S := SDet;
+        S := SDet;
 
-      if (Sound[CP].SzczytJest or DEBUG_NOTE_HIT) and (Mozna) then
-      begin
-        // operowanie na ostatniej nucie
-        for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+        if (Sound[CP].SzczytJest or DEBUG_NOTE_HIT) and Mozna then
         begin
-          if (Czesci[P].Czesc[S].Nuta[Pet].Start <= Czas.OldBeatD+1)
-            and (Czesci[P].Czesc[S].Nuta[Pet].Start +
-            Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > Czas.OldBeatD+1) then
+          // operate on the actual note
+          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
           begin
-            // przesuwanie tonu w odpowiednia game
-            while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
-              Sound[CP].Ton := Sound[CP].Ton - 12;
-            while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
-              Sound[CP].Ton := Sound[CP].Ton + 12;
-
-            // Half size Notes Patch
-            NoteHit := false;
-
-            //if Ini.Difficulty = 0 then Range := 2;
-            //if Ini.Difficulty = 1 then Range := 1;
-            //if Ini.Difficulty = 2 then Range := 0;
-            Range := 2 - Ini.Difficulty;
-            if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
-              DEBUG_NOTE_HIT then
+            if (Czesci[P].Czesc[S].Nuta[Pet].Start <= BRange)
+              and (Czesci[P].Czesc[S].Nuta[Pet].Start +
+              Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > BRange) then
             begin
-              Sound[CP].Ton := Czesci[P].Czesc[S].Nuta[Pet].Ton;
+              // przesuwanie tonu w odpowiednia game => shifting tone in the corresponding game?
+              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
+                Sound[CP].Ton := Sound[CP].Ton - 12;
+              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
+                Sound[CP].Ton := Sound[CP].Ton + 12;
 
               // Half size Notes Patch
-              NoteHit := true;
+              NoteHit := false;
 
-              if (Ini.LineBonus = 0) then
+              Range := 2 - Ini.Difficulty;
+              if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
+                DEBUG_NOTE_HIT then
               begin
-                // add points without LineBonus
-                case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
-                  1:  Player[CP].Score := Player[CP].Score + 10000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                  2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 10000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                AktTon := Czesci[P].Czesc[S].Nuta[Pet].Ton;
+
+                // Half size Notes Patch
+                NoteHit := true;
+
+                if (Ini.LineBonus = 0) then
+                begin
+                  // add points without LineBonus
+                  case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
+                    1:  Player[CP].Score := Player[CP].Score + 10000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                    2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 10000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                  end;
+                end else
+                begin
+                  // add points with Line Bonus
+                  case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
+                    1:  Player[CP].Score := Player[CP].Score + 9000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                    2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 9000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                  end;
                 end;
-              end else
-              begin
-                // add points with Line Bonus
-                case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
-                  1:  Player[CP].Score := Player[CP].Score + 9000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                  2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 9000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                end;
+
+                Player[CP].ScoreI := Floor(Player[CP].Score / 10) * 10;
+                Player[CP].ScoreGoldenI := Floor(Player[CP].ScoreGolden / 10) * 10;
+
+                Player[CP].ScoreTotalI := Player[CP].ScoreI + Player[CP].ScoreGoldenI + Player[CP].ScoreLineI;
               end;
-
-              Player[CP].ScoreI := Floor(Player[CP].Score / 10) * 10;
-              Player[CP].ScoreGoldenI := Floor(Player[CP].ScoreGolden / 10) * 10;
-
-              Player[CP].ScoreTotalI := Player[CP].ScoreI + Player[CP].ScoreGoldenI + Player[CP].ScoreLineI;
-            end;
-          end; // operowanie
-        end;
-
-        // sprawdzanie czy to nowa nuta, czy przedluzenie
-        if S = SMax then
-        begin
-          Nowa := true;
-          // jezeli ostatnia ma ten sam ton
-          if (Player[CP].IlNut > 0 ) and (Player[CP].Nuta[Player[CP].HighNut].Ton = Sound[CP].Ton)
-            and (Player[CP].Nuta[Player[CP].HighNut].Start + Player[CP].Nuta[Player[CP].HighNut].Dlugosc = Czas.AktBeatD)
-            then
-            Nowa := false;
-
-          // jezeli jest jakas nowa nuta na sprawdzanym beacie
-          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
-            if (Czesci[P].Czesc[S].Nuta[Pet].Start = Czas.AktBeatD) then
-              Nowa := true;
-
-          // dodawanie nowej nuty
-          if Nowa then
-          begin
-            // nowa nuta
-            Player[CP].IlNut := Player[CP].IlNut + 1;
-            Player[CP].HighNut := Player[CP].HighNut + 1;
-            SetLength(Player[CP].Nuta, Player[CP].IlNut);
-            Player[CP].Nuta[Player[CP].HighNut].Start := Czas.AktBeatD;
-            Player[CP].Nuta[Player[CP].HighNut].Dlugosc := 1;
-            Player[CP].Nuta[Player[CP].HighNut].Ton := Sound[CP].Ton; // Ton || TonDokl
-            Player[CP].Nuta[Player[CP].HighNut].Detekt := Czas.MidBeat;
-
-            // Half Note Patch
-            Player[CP].Nuta[Player[CP].HighNut].Hit := NoteHit;
-          end else
-          begin
-            // przedluzenie nuty
-            Player[CP].Nuta[Player[CP].HighNut].Dlugosc := Player[CP].Nuta[Player[CP].HighNut].Dlugosc + 1;
+            end; // operowanie
           end;
 
-
-          // check for perfect note and then lit the star (on Draw)
-          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+          // checking whether a new note, or extend
+          if S = SMax then
           begin
-            if (Czesci[P].Czesc[S].Nuta[Pet].Start = Player[CP].Nuta[Player[CP].HighNut].Start)
-              and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc = Player[CP].Nuta[Player[CP].HighNut].Dlugosc)
-              and (Czesci[P].Czesc[S].Nuta[Pet].Ton = Player[CP].Nuta[Player[CP].HighNut].Ton) then
+            Nowa := true;
+            // if the latter has the same tone
+            if (Player[CP].IlNut > 0 ) and (Player[CP].Nuta[Player[CP].HighNut].Ton = AktTon)
+              and (Player[CP].Nuta[Player[CP].HighNut].Start + Player[CP].Nuta[Player[CP].HighNut].Dlugosc = BRange)
+              then
+              Nowa := false;
+
+            // If there is a new note on the checked Beat
+            for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+              if (Czesci[P].Czesc[S].Nuta[Pet].Start = BRange) then
+                Nowa := true;
+
+            // add a new note
+            if Nowa then
             begin
-              Player[CP].Nuta[Player[CP].HighNut].Perfect := true;
+              // nowa nuta
+              Player[CP].IlNut := Player[CP].IlNut + 1;
+              Player[CP].HighNut := Player[CP].HighNut + 1;
+              SetLength(Player[CP].Nuta, Player[CP].IlNut);
+              Player[CP].Nuta[Player[CP].HighNut].Start := BRange;
+              Player[CP].Nuta[Player[CP].HighNut].Dlugosc := 1;
+              Player[CP].Nuta[Player[CP].HighNut].Ton := AktTon; // Ton || TonDokl
+              //Player[CP].Nuta[Player[CP].HighNut].Detekt := Czas.MidBeat;
+
+              // Half Note Patch
+              Player[CP].Nuta[Player[CP].HighNut].Hit := NoteHit;
+            end else
+            begin
+              // extend notes
+              Player[CP].Nuta[Player[CP].HighNut].Dlugosc := Player[CP].Nuta[Player[CP].HighNut].Dlugosc + 1;
             end;
 
-          end;// else beep; // if S = SMax
-        end; //for
-      end; // if moze
 
+            // check for perfect note and then lit the star (on Draw)
+            for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+            begin
+              if (Czesci[P].Czesc[S].Nuta[Pet].Start = Player[CP].Nuta[Player[CP].HighNut].Start)
+                and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc = Player[CP].Nuta[Player[CP].HighNut].Dlugosc)
+                and (Czesci[P].Czesc[S].Nuta[Pet].Ton = Player[CP].Nuta[Player[CP].HighNut].Ton) then
+              begin
+                Player[CP].Nuta[Player[CP].HighNut].Perfect := true;
+              end;
+
+            end;// else beep; // if S = SMax
+          end; //for
+        end; // if moze
+      end; // for BRange
       //calc score last
       SumN := 0;
       NumS := 0;
@@ -758,135 +749,135 @@ begin
         SMin := 0;
       SMax := Czesci[P].Akt;
 
-      SDet := SMin;
-      // check if we can add new note
-      Mozna := false;
-      for S := SMin to SMax do
+      for BRange := Czas.OldBeatD+1 to Czas.AktBeatD do
       begin
-        for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+        SDet := SMin;
+        // check if we can add new note
+        Mozna := false;
+        for S := SMin to SMax do
         begin
-          if ((Czesci[P].Czesc[S].Nuta[Pet].Start <= Czas.AktBeatD)
-            and (Czesci[P].Czesc[S].Nuta[Pet].Start + Czesci[P].Czesc[S].Nuta[Pet].Dlugosc - 1 >= Czas.AktBeatD))
-            and (not Czesci[P].Czesc[S].Nuta[Pet].FreeStyle) // but don't allow when it's FreeStyle note
-            and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > 0) // and make sure the note lenghts is at least 1
-            then
+          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
           begin
-            SDet := S;
-            Mozna := true;
-            Break;
+            if ((Czesci[P].Czesc[S].Nuta[Pet].Start <= BRange)
+              and (Czesci[P].Czesc[S].Nuta[Pet].Start + Czesci[P].Czesc[S].Nuta[Pet].Dlugosc - 1 >= BRange))
+              and (not Czesci[P].Czesc[S].Nuta[Pet].FreeStyle) // but don't allow when it's FreeStyle note
+              and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > 0) // and make sure the note lenghts is at least 1
+              then
+            begin
+              SDet := S;
+              Mozna := true;
+              Break;
+            end;
           end;
         end;
-      end;
 
-      S := SDet;
+        S := SDet;
 
-      if (Sound[CP].SzczytJest or DEBUG_NOTE_HIT) and (Mozna) then
-      begin
-        // operowanie na ostatniej nucie
-        for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+        if (Sound[CP].SzczytJest or DEBUG_NOTE_HIT) and (Mozna) then
         begin
-          if (Czesci[P].Czesc[S].Nuta[Pet].Start <= Czas.OldBeatD+1)
-            and (Czesci[P].Czesc[S].Nuta[Pet].Start +
-            Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > Czas.OldBeatD+1) then
+          // operowanie na ostatniej nucie
+          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
           begin
-            // przesuwanie tonu w odpowiednia game
-            while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
-              Sound[CP].Ton := Sound[CP].Ton - 12;
-            while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
-              Sound[CP].Ton := Sound[CP].Ton + 12;
-
-            // Half size Notes Patch
-            NoteHit := false;
-
-            //if Ini.Difficulty = 0 then Range := 2;
-            //if Ini.Difficulty = 1 then Range := 1;
-            //if Ini.Difficulty = 2 then Range := 0;
-            Range := 2 - Ini.Difficulty;
-            if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
-              DEBUG_NOTE_HIT then
+            if (Czesci[P].Czesc[S].Nuta[Pet].Start <= BRange)
+              and (Czesci[P].Czesc[S].Nuta[Pet].Start +
+              Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > BRange) then
             begin
-              Sound[CP].Ton := Czesci[P].Czesc[S].Nuta[Pet].Ton;
+              // przesuwanie tonu w odpowiednia game
+              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
+                Sound[CP].Ton := Sound[CP].Ton - 12;
+              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
+                Sound[CP].Ton := Sound[CP].Ton + 12;
 
               // Half size Notes Patch
-              NoteHit := true;
+              NoteHit := false;
 
-              if (Ini.LineBonus = 0) then
+              Range := 2 - Ini.Difficulty;
+              if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
+                DEBUG_NOTE_HIT then
               begin
-                // add points without LineBonus
-                case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
-                  1:  Player[CP].Score := Player[CP].Score + 10000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                  2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 10000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                AktTon := Czesci[P].Czesc[S].Nuta[Pet].Ton;
+
+                // Half size Notes Patch
+                NoteHit := true;
+
+                if (Ini.LineBonus = 0) then
+                begin
+                  // add points without LineBonus
+                  case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
+                    1:  Player[CP].Score := Player[CP].Score + 10000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                    2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 10000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                  end;
+                end else
+                begin
+                  // add points with Line Bonus
+                  case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
+                    1:  Player[CP].Score := Player[CP].Score + 9000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                    2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 9000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                  end;
                 end;
-              end else
-              begin
-                // add points with Line Bonus
-                case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
-                  1:  Player[CP].Score := Player[CP].Score + 9000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                  2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 9000 / Czesci[P].Wartosc *
-                        Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                end;
+
+                Player[CP].ScoreI := Floor(Player[CP].Score / 10) * 10;
+                Player[CP].ScoreGoldenI := Floor(Player[CP].ScoreGolden / 10) * 10;
+
+                Player[CP].ScoreTotalI := Player[CP].ScoreI + Player[CP].ScoreGoldenI + Player[CP].ScoreLineI;
               end;
-
-              Player[CP].ScoreI := Floor(Player[CP].Score / 10) * 10;
-              Player[CP].ScoreGoldenI := Floor(Player[CP].ScoreGolden / 10) * 10;
-
-              Player[CP].ScoreTotalI := Player[CP].ScoreI + Player[CP].ScoreGoldenI + Player[CP].ScoreLineI;
-            end;
-          end; // operowanie
-        end;
-
-        // sprawdzanie czy to nowa nuta, czy przedluzenie
-        if S = SMax then
-        begin
-          Nowa := true;
-          // jezeli ostatnia ma ten sam ton
-          if (Player[CP].IlNut > 0 ) and (Player[CP].Nuta[Player[CP].HighNut].Ton = Sound[CP].Ton)
-            and (Player[CP].Nuta[Player[CP].HighNut].Start + Player[CP].Nuta[Player[CP].HighNut].Dlugosc = Czas.AktBeatD)
-            then
-            Nowa := false;
-
-          // jezeli jest jakas nowa nuta na sprawdzanym beacie
-          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
-            if (Czesci[P].Czesc[S].Nuta[Pet].Start = Czas.AktBeatD) then
-              Nowa := true;
-
-          // dodawanie nowej nuty
-          if Nowa then
-          begin
-            // nowa nuta
-            Player[CP].IlNut := Player[CP].IlNut + 1;
-            Player[CP].HighNut := Player[CP].HighNut + 1;
-            SetLength(Player[CP].Nuta, Player[CP].IlNut);
-            Player[CP].Nuta[Player[CP].HighNut].Start := Czas.AktBeatD;
-            Player[CP].Nuta[Player[CP].HighNut].Dlugosc := 1;
-            Player[CP].Nuta[Player[CP].HighNut].Ton := Sound[CP].Ton; // Ton || TonDokl
-            Player[CP].Nuta[Player[CP].HighNut].Detekt := Czas.MidBeat;
-
-            // Half Note Patch
-            Player[CP].Nuta[Player[CP].HighNut].Hit := NoteHit;
-          end else
-          begin
-            // przedluzenie nuty
-            Player[CP].Nuta[Player[CP].HighNut].Dlugosc := Player[CP].Nuta[Player[CP].HighNut].Dlugosc + 1;
+            end; // operowanie
           end;
 
-
-          // check for perfect note and then lit the star (on Draw)
-          for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+          // sprawdzanie czy to nowa nuta, czy przedluzenie
+          if S = SMax then
           begin
-            if (Czesci[P].Czesc[S].Nuta[Pet].Start = Player[CP].Nuta[Player[CP].HighNut].Start)
-              and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc = Player[CP].Nuta[Player[CP].HighNut].Dlugosc)
-              and (Czesci[P].Czesc[S].Nuta[Pet].Ton = Player[CP].Nuta[Player[CP].HighNut].Ton) then
+            Nowa := true;
+            // jezeli ostatnia ma ten sam ton
+            if (Player[CP].IlNut > 0 ) and (Player[CP].Nuta[Player[CP].HighNut].Ton = AktTon)
+              and (Player[CP].Nuta[Player[CP].HighNut].Start + Player[CP].Nuta[Player[CP].HighNut].Dlugosc = BRange)
+              then
+              Nowa := false;
+
+            // jezeli jest jakas nowa nuta na sprawdzanym beacie
+            for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+              if (Czesci[P].Czesc[S].Nuta[Pet].Start = BRange) then
+                Nowa := true;
+
+            // dodawanie nowej nuty
+            if Nowa then
             begin
-              Player[CP].Nuta[Player[CP].HighNut].Perfect := true;
+              // nowa nuta
+              Player[CP].IlNut := Player[CP].IlNut + 1;
+              Player[CP].HighNut := Player[CP].HighNut + 1;
+              SetLength(Player[CP].Nuta, Player[CP].IlNut);
+              Player[CP].Nuta[Player[CP].HighNut].Start := BRange;
+              Player[CP].Nuta[Player[CP].HighNut].Dlugosc := 1;
+              Player[CP].Nuta[Player[CP].HighNut].Ton := AktTon; // Ton || TonDokl
+              //Player[CP].Nuta[Player[CP].HighNut].Detekt := Czas.MidBeat;
+
+              // Half Note Patch
+              Player[CP].Nuta[Player[CP].HighNut].Hit := NoteHit;
+            end else
+            begin
+              // przedluzenie nuty
+              Player[CP].Nuta[Player[CP].HighNut].Dlugosc := Player[CP].Nuta[Player[CP].HighNut].Dlugosc + 1;
             end;
 
-          end;// else beep; // if S = SMax
-        end; //for
-      end; // if moze
+
+            // check for perfect note and then lit the star (on Draw)
+            for Pet := 0 to Czesci[P].Czesc[S].HighNut do
+            begin
+              if (Czesci[P].Czesc[S].Nuta[Pet].Start = Player[CP].Nuta[Player[CP].HighNut].Start)
+                and (Czesci[P].Czesc[S].Nuta[Pet].Dlugosc = Player[CP].Nuta[Player[CP].HighNut].Dlugosc)
+                and (Czesci[P].Czesc[S].Nuta[Pet].Ton = Player[CP].Nuta[Player[CP].HighNut].Ton) then
+              begin
+                Player[CP].Nuta[Player[CP].HighNut].Perfect := true;
+              end;
+
+            end;// else beep; // if S = SMax
+          end; //for
+        end; // if moze
+      end; // for BRange
 
       //calc score last
       SumN := 0;

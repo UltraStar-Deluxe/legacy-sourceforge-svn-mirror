@@ -45,7 +45,8 @@ begin
         end;
       SDLK_RETURN:
         begin
-          if SelInteraction = 6 then begin
+          if SelInteraction = 7 then
+          begin
             Ini.Save;
             Music.PlayBack;
             ScreenSong.MP3Volume := Ini.PreviewVolume * 10;
@@ -58,14 +59,16 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then
+          begin
             Music.PlayOption;
             InteractInc;
           end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 5) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then
+          begin
             Music.PlayOption;
             InteractDec;
           end;
@@ -87,8 +90,9 @@ begin
 
   //Song Preview
   AddSelectSlide(Theme.OptionsSound.SelectSlidePreviewVolume, Ini.PreviewVolume, IPreviewVolume);
-  AddSelectSlide
-  (Theme.OptionsSound.SelectSlidePreviewFading, Ini.PreviewFading, IPreviewFading);
+  AddSelectSlide(Theme.OptionsSound.SelectSlidePreviewFading, Ini.PreviewFading, IPreviewFading);
+
+  AddSelectSlide(Theme.OptionsSound.SelectSlideDelay, Ini.Delay, IDelay);
 
   AddButton(Theme.OptionsSound.ButtonExit);
   if (Length(Button[0].Text)=0) then

@@ -523,6 +523,7 @@ type
     //Song Preview
     SelectSlidePreviewVolume: TThemeSelectSlide;
     SelectSlidePreviewFading: TThemeSelectSlide;
+    SelectSlideDelay:         TThemeSelectSlide;
     ButtonExit:           TThemeButton;
   end;
 
@@ -1497,6 +1498,7 @@ begin
       //Song Preview
       ThemeLoadSelectSlide(OptionsSound.SelectSlidePreviewVolume, 'OptionsSoundSelectSlidePreviewVolume');
       ThemeLoadSelectSlide(OptionsSound.SelectSlidePreviewFading, 'OptionsSoundSelectSlidePreviewFading');
+      ThemeLoadSelectSlide(OptionsSound.SelectSlideDelay, 'OptionsSoundSelectSlideDelay');
 
       ThemeLoadButton(OptionsSound.ButtonExit, 'OptionsSoundButtonExit');
 
