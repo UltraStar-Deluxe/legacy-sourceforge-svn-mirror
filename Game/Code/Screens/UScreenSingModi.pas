@@ -597,7 +597,7 @@ end;
   // update and draw movie
   if ShowFinish and AktSong.VideoLoaded AND DllMan.Selected.LoadVideo then
   begin
-    acGetFrame(Czas.Teraz);
+    acGetFrame(Music.Position);
     acDrawGL(ScreenAct, not WebCam); // this only draws
   end;
 

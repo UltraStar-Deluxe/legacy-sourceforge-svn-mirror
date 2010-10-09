@@ -9,9 +9,12 @@ type
   TScreenOptionsThemes = class(TMenu)
     private
       procedure ReloadTheme;
-
+      procedure ReloadScreens;
     public
-      AktualTheme:  Integer;
+      ActualTheme:  Integer;
+      ActualSkin:   Integer;
+      ActualColor:  Integer;
+
       SkinSelect:   Integer;
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
@@ -47,14 +50,8 @@ begin
         begin
           Ini.Save;
 
-          // Reload all screens, after Theme changed
-          if(AktualTheme<>Ini.Theme) then
-          begin
-            UGraphic.UnLoadScreens();
-            UGraphic.LoadScreens( true );
-            ScreenSong.Refresh(true);
-            PlaylistMan.LoadPlayLists;
-          end;
+          ReloadScreens;
+
           Music.PlayBack;
           FadeTo(@ScreenOptions);
         end;
@@ -64,14 +61,8 @@ begin
           begin
             Ini.Save;
 
-            // Reload all screens, after Theme changed
-            if(AktualTheme<>Ini.Theme) then
-            begin
-              UGraphic.UnLoadScreens();
-              UGraphic.LoadScreens( true );
-              ScreenSong.Refresh(true);
-              PlaylistMan.LoadPlayLists;
-            end;
+            ReloadScreens;
+
             Music.PlayBack;
             FadeTo(@ScreenOptions);
           end;
@@ -152,7 +143,9 @@ begin
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenOptionsThemes)');
 
-  AktualTheme := Ini.Theme;
+  ActualTheme := Ini.Theme;
+  ActualSkin := Ini.SkinNo;
+  ActualColor := Ini.Color;
 end;
 
 procedure TScreenOptionsThemes.ReloadTheme;
@@ -170,9 +163,25 @@ begin
   Display.Draw;
   SwapBuffers;
 
-  ScreenOptionsThemes.AktualTheme := self.AktualTheme;
+  ScreenOptionsThemes.ActualTheme := self.ActualTheme;
+  ScreenOptionsThemes.ActualSkin := self.ActualSkin;
+  ScreenOptionsThemes.ActualColor := self.ActualColor;
 
   freeandnil( self );
+end;
+
+procedure TScreenOptionsThemes.ReloadScreens;
+begin
+  // Reload all screens, after Theme changed
+  if(ActualTheme <> Ini.Theme) or
+    (ActualSkin <> Ini.SkinNo) or
+    (ActualColor <> Ini.Color) then
+  begin
+    UGraphic.UnLoadScreens();
+    UGraphic.LoadScreens( true );
+    ScreenSong.Refresh(true);
+    PlaylistMan.LoadPlayLists;
+  end;
 end;
 
 end.
