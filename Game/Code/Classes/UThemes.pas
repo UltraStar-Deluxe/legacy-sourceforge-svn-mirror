@@ -530,7 +530,6 @@ type
   TThemeOptionsLyrics = class(TThemeBasic)
     SelectLyricsFont:   TThemeSelect;
     SelectLyricsEffect: TThemeSelect;
-    SelectSolmization:  TThemeSelect;
     ButtonExit:         TThemeButton;
   end;
 
@@ -1507,7 +1506,6 @@ begin
 
       ThemeLoadSelect(OptionsLyrics.SelectLyricsFont, 'OptionsLyricsSelectLyricsFont');
       ThemeLoadSelect(OptionsLyrics.SelectLyricsEffect, 'OptionsLyricsSelectLyricsEffect');
-      ThemeLoadSelect(OptionsLyrics.SelectSolmization, 'OptionsLyricsSelectSolmization');
       ThemeLoadButton(OptionsLyrics.ButtonExit, 'OptionsLyricsButtonExit');
 
       // Options Themes

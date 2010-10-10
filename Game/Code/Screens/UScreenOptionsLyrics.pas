@@ -83,8 +83,6 @@ begin
 
   AddSelect(Theme.OptionsLyrics.SelectLyricsFont, Ini.LyricsFont, ILyricsFont);
   AddSelect(Theme.OptionsLyrics.SelectLyricsEffect, Ini.LyricsEffect, ILyricsEffect);
-  //AddSelect(Theme.OptionsLyrics.SelectSolmization, Ini.Solmization, ISolmization);
-
 
   AddButton(Theme.OptionsLyrics.ButtonExit);
   if (Length(Button[0].Text)=0) then

@@ -1575,7 +1575,18 @@ begin
     end;
   end;
 
-  wStartWebCam();
+  if not FGrabFrameFlag and (Ini.EnableWebCam=1) then
+  begin
+    //Display White Activating WebCam Text
+    SetFontStyle(2); //Font: Outlined1
+    SetFontSize(12);
+    SetFontItalic(False);
+    SetFontPos (400 - glTextWidth ('Activating Webcam ...')/2, 250); //Position
+    glColor4f(1,1,1,1);
+    glPrint('Activating Webcam ...');
+    SwapBuffers;
+    wStartWebCam();
+  end;
 
   // play music (II)
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
