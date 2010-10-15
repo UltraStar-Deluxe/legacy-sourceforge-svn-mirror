@@ -37,7 +37,6 @@ uses
   SysUtils,
   Classes,
   SDL,
-  UMusic,
   URecord,
   UTime,
   UDisplay,
@@ -88,6 +87,21 @@ type
     Note:           array of TPlayerNote;
   end;
 
+  TStats = record
+    Player: array of TPlayer;
+    SongArtist:   String;
+    SongTitle:    String;
+  end;
+
+  TMedleyPlaylist = record
+    Song:               array of integer;
+    NumMedleySongs:     integer;
+    CurrentMedleySong:  integer;
+    ApplausePlayed:     boolean;
+    Stats:              array of TStats;
+    NumPlayer:          integer;
+  end;
+
 {* Player and music info *}
 var
   {**
@@ -106,6 +120,8 @@ var
    * Selected song for singing.
    *}
   CurrentSong: TSong;
+
+  PlaylistMedley: TMedleyPlaylist;  // playlist medley
 
 const
   MAX_SONG_SCORE = 10000;     // max. achievable points per song
@@ -133,6 +149,7 @@ uses
   UCovers,
   UCatCovers,
   UDataBase,
+  UMusic,
   UPlaylist,
   UParty,
   UConfig,

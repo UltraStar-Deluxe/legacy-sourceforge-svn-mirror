@@ -53,6 +53,8 @@ uses
   UTime;
 
 type
+  TVisArr = array of integer;
+
   TScreenSong = class(TMenu)
     private
       Equalizer: Tms_Equalizer;
@@ -161,6 +163,10 @@ type
 
       //Extensions
       procedure DrawExtensions;
+
+      //Medley
+      procedure StartMedley(NumSongs: integer; MinSource: TMedleySource);
+      function  getVisibleMedleyArr(MinSource: TMedleySource): TVisArr;
   end;
 
 implementation
@@ -1518,6 +1524,9 @@ begin
   // reset video playback engine
   fCurrentVideo := nil;
 
+  // reset Medley-Playlist
+  SetLength(PlaylistMedley.Song, 0);
+
   if Ini.Players <= 3 then PlayersPlay := Ini.Players + 1;
   if Ini.Players  = 4 then PlayersPlay := 6;
 
@@ -1809,10 +1818,13 @@ begin
   if AudioPlayback.Open(Song.Path.Append(Song.Mp3)) then
   begin
     PreviewOpened := Interaction;
+    if (Song.PreviewStart>0) then
+      PreviewPos := Song.PreviewStart
+    else
+      PreviewPos := AudioPlayback.Length / 4;
 
-    PreviewPos := AudioPlayback.Length / 4;
     // fix for invalid music file lengths
-    if (PreviewPos > 60.0) then
+    if (PreviewPos > 60.0) and (Song.PreviewStart=0) then
       PreviewPos := 60.0;
     AudioPlayback.Position := PreviewPos;
 
@@ -2151,6 +2163,131 @@ begin
   SelectNext(true);
   FixSelected;
   }
+end;
+
+procedure TScreenSong.StartMedley(NumSongs: integer; MinSource: TMedleySource);
+  procedure AddSong(SongNr: integer);
+  begin
+    SetLength(PlaylistMedley.Song, Length(PlaylistMedley.Song)+1);
+    PlaylistMedley.Song[Length(PlaylistMedley.Song)-1] := SongNr;
+  end;
+
+  function SongAdded(SongNr: integer): boolean;
+  var
+    i: integer;
+    skipped :boolean;
+  begin
+    skipped := false;
+    for i := 0 to Length(PlaylistMedley.Song) - 1 do
+    begin
+      if (SongNr=PlaylistMedley.Song[i]) then
+      begin
+        skipped:=true;
+        break;
+      end;
+    end;
+    Result:=skipped;
+  end;
+
+  function NumSongsAdded(): Integer;
+  begin
+    Result := Length(PlaylistMedley.Song);
+  end;
+
+  function GetNextSongNr(MinS: TMedleySource): integer;
+  var
+    I, num: integer;
+    unused_arr: array of integer;
+    visible_arr: TVisArr;
+  begin
+    SetLength(unused_arr, 0);
+    visible_arr := getVisibleMedleyArr(MinS);
+    for I := 0 to Length(visible_arr) - 1 do
+    begin
+      if (not SongAdded(visible_arr[I])) then
+      begin
+        SetLength(unused_arr, Length(unused_arr)+1);
+        unused_arr[Length(unused_arr)-1] := visible_arr[I];
+      end;
+    end;
+
+    num := Random(Length(unused_arr));
+    Result := unused_arr[num];
+end;
+
+var
+  I: integer;
+  VS: integer;
+
+begin
+  if (NumSongs>0) then
+  begin
+    VS := Length(getVisibleMedleyArr(MinSource));
+    if VS < NumSongs then
+      PlaylistMedley.NumMedleySongs := VS
+    else
+    PlaylistMedley.NumMedleySongs := NumSongs;
+
+    //set up Playlist Medley
+    SetLength(PlaylistMedley.Song, 0);
+    for I := 0 to PlaylistMedley.NumMedleySongs - 1 do
+    begin
+      AddSong(GetNextSongNr(MinSource));
+    end;
+  end else //start this song
+  begin
+    SetLength(PlaylistMedley.Song, 1);
+    PlaylistMedley.Song[0] := Interaction;
+    PlaylistMedley.NumMedleySongs := 1;
+  end;
+
+  if (Mode=smNormal) then
+  begin
+    Mode := smMedley;
+    StopMusicPreview();
+    
+    //TODO: how about case 2? menu for medley mode?
+    case Ini.OnSongClick of
+      0: FadeTo(@ScreenSing);
+      1: SelectPlayers;
+      2: FadeTo(@ScreenSing);
+      {2: begin
+         if (CatSongs.CatNumShow = -3) then
+           ScreenSongMenu.MenuShow(SM_Playlist)
+         else
+           ScreenSongMenu.MenuShow(SM_Main);
+       end;}
+    end;
+  end;
+end;
+
+function TScreenSong.getVisibleMedleyArr(MinSource: TMedleySource): TVisArr;
+var
+  I:      integer;
+
+begin
+  SetLength(Result, 0);
+  if CatSongs.Song[Interaction].Main then
+  begin
+    for I := 0 to Length(CatSongs.Song) - 1 do
+    begin
+      if not CatSongs.Song[I].Main and (CatSongs.Song[I].Medley.Source >= MinSource) then
+      begin
+        SetLength(Result, Length(Result)+1);
+        Result[Length(Result)-1] := I;
+      end;
+    end;
+  end else
+  begin
+    for I := 0 to Length(CatSongs.Song) - 1 do
+    begin
+      if CatSongs.Song[I].Visible and (CatSongs.Song[I].Medley.Source >= MinSource) then
+      begin
+        SetLength(Result, Length(Result)+1);
+        Result[Length(Result)-1] := I;
+      end;
+    end;
+  end;
 end;
 
 end.
