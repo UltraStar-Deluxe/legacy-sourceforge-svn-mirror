@@ -54,6 +54,12 @@ uses
   UHookableEvent;
 
 type
+  TPos = record // Lines[part].Line[line].Note[note]
+    part: integer;
+    line: integer;
+    note: integer;
+  end;
+
   TLyricsSyncSource = class(TSyncSource)
     function GetClock(): real; override;
   end;
@@ -77,6 +83,13 @@ type
     fLyricsSync: TLyricsSyncSource;
     fMusicSync: TMusicSyncSource;
     fTimebarMode: TTimebarMode;
+
+    StartNote, EndNote:     TPos;
+
+    procedure LoadNextSong();
+    procedure UpdateMedleyStats(medley_end: boolean);
+    procedure DrawMedleyCountdown();
+    procedure SongError();
   protected
     eSongLoaded: THookableEvent; //< event is called after lyrics of a song are loaded on OnShow
     Paused:     boolean; //pause Mod
@@ -96,6 +109,8 @@ type
     // shown when game is in 3/6 player modus
     StaticP1ThreeP: integer;
     TextP1ThreeP:   integer;
+
+    MedleyStart, MedleyEnd: real;
 
     StaticP2R: integer;
     TextP2R:   integer;
@@ -360,17 +375,14 @@ end;
 
 procedure TScreenSing.OnShow;
 var
-  Index:  integer;
   V1:     boolean;
   V1TwoP: boolean;   // position of score box in two player mode
   V1ThreeP: boolean; // position of score box in three player mode
   V2R:    boolean;
   V2M:    boolean;
   V3R:    boolean;
-  Color: TRGB;
-  VideoFile, BgFile: IPath;
-  success: boolean;
   BadPlayer: integer;
+
 begin
   inherited;
 
@@ -382,25 +394,17 @@ begin
   ClearSettings;
   Party.CallBeforeSing;
 
-  // reset video playback engine
-  fCurrentVideo := nil;
-
-  // setup score manager
-  Scores.ClearPlayers; // clear old player values
-  Color.R := 0;
-  Color.G := 0;
-  Color.B := 0; // dummy atm  <- \(O.o)/? B like bummy?
-
-  // add new players
-  for Index := 0 to PlayersPlay - 1 do
-  begin
-    Scores.AddPlayer(Tex_ScoreBG[Index], Color);
-  end;
-
-  Scores.Init; // get positions for players
-
   // prepare players
   SetLength(Player, PlayersPlay);
+
+  //Reset Player Medley stats
+  if (ScreenSong.Mode = smMedley) then
+  begin
+    PlaylistMedley.CurrentMedleySong:=1;
+
+    PlaylistMedley.NumPlayer := PlayersPlay;
+    SetLength(PlaylistMedley.Stats, 0);
+  end;
 
   case PlayersPlay of
     1:
@@ -474,23 +478,114 @@ begin
 
   fTimebarMode := tbmCurrent;
 
-  // FIXME: sets path and filename to ''
-  ResetSingTemp;
-
-  CurrentSong := CatSongs.Song[CatSongs.Selected];
-
-  // FIXME: bad style, put the try-except into loadsong() and not here
-  try
-    // check if file is xml
-    if CurrentSong.FileName.GetExtension.ToUTF8 = '.xml' then
-      success := CurrentSong.AnalyseXML and CurrentSong.LoadXMLSong()
-    else
-      success := CurrentSong.Analyse and CurrentSong.LoadSong();
-  except
-    success := false;
+  BadPlayer := AudioInputProcessor.CheckPlayersConfig(PlayersPlay);
+  if (BadPlayer <> 0) then
+  begin
+    ScreenPopupError.ShowPopup(
+        Format(Language.Translate('ERROR_PLAYER_NO_DEVICE_ASSIGNMENT'),
+        [BadPlayer]));
   end;
 
-  if (not success) then
+  // set custom options
+  case Ini.LyricsFont of
+    0: // normal fonts
+    begin
+      Lyrics.FontStyle := ftNormal;
+
+      Lyrics.LineColor_en.R := Skin_FontR;
+      Lyrics.LineColor_en.G := Skin_FontG;
+      Lyrics.LineColor_en.B := Skin_FontB;
+      Lyrics.LineColor_en.A := 1;
+
+      Lyrics.LineColor_dis.R := 0.4;
+      Lyrics.LineColor_dis.G := 0.4;
+      Lyrics.LineColor_dis.B := 0.4;
+      Lyrics.LineColor_dis.A := 1;
+
+      Lyrics.LineColor_act.R := 0.02;
+      Lyrics.LineColor_act.G := 0.6;
+      Lyrics.LineColor_act.B := 0.8;
+      Lyrics.LineColor_act.A := 1;
+    end;
+    1, 2: // outline fonts
+    begin
+      if (Ini.LyricsFont = 1) then
+        Lyrics.FontStyle := ftOutline1
+      else
+        Lyrics.FontStyle := ftOutline2;
+
+      Lyrics.LineColor_en.R := 0.75;
+      Lyrics.LineColor_en.G := 0.75;
+      Lyrics.LineColor_en.B := 1;
+      Lyrics.LineColor_en.A := 1;
+
+      Lyrics.LineColor_dis.R := 0.8;
+      Lyrics.LineColor_dis.G := 0.8;
+      Lyrics.LineColor_dis.B := 0.8;
+      Lyrics.LineColor_dis.A := 1;
+
+      Lyrics.LineColor_act.R := 0.5;
+      Lyrics.LineColor_act.G := 0.5;
+      Lyrics.LineColor_act.B := 1;
+      Lyrics.LineColor_act.A := 1;
+    end;
+  end; // case
+
+  // deactivate pause
+  Paused := false;
+
+  LoadNextSong();
+
+  Log.LogStatus('End', 'OnShow');
+end;
+
+procedure TScreenSing.onShowFinish;
+begin
+  // hide cursor on singscreen show    
+  Display.SetCursor;
+
+  // prepare music
+  // Important: AudioPlayback must not be initialized in onShow() as TScreenSong
+  // uses stops AudioPlayback in onHide() which interferes with TScreenSings onShow.
+  AudioPlayback.Open(CurrentSong.Path.Append(CurrentSong.Mp3));
+  if (ScreenSong.Mode = smMedley) then
+     AudioPlayback.SetVolume(0.1)
+  else
+    AudioPlayback.SetVolume(1.0);
+  AudioPlayback.Position := LyricsState.GetCurrentTime();
+
+  // synchronize music
+  if (Ini.SyncTo = Ord(stLyrics)) then
+    AudioPlayback.SetSyncSource(fLyricsSync)
+  else
+    AudioPlayback.SetSyncSource(nil);
+
+  // synchronize lyrics (do not set this before AudioPlayback is initialized)
+  if (Ini.SyncTo = Ord(stMusic)) then
+    LyricsState.SetSyncSource(fMusicSync)
+  else
+    LyricsState.SetSyncSource(nil);
+
+  // start lyrics
+  LyricsState.Start(true);
+
+  // start music
+  if (ScreenSong.Mode = smMedley) then
+    AudioPlayback.FadeIn(CurrentSong.Medley.FadeIn_time, 1.0)
+  else
+    AudioPlayback.Play();
+
+
+  // start timer
+  CountSkipTimeSet;
+end;
+
+procedure TScreenSing.SongError();
+var
+  I, len:  integer;
+
+begin
+  if (ScreenSong.Mode <> smMedley) then
   begin
     // error loading song -> go back to previous screen and show some error message
     Display.AbortScreenChange;
@@ -504,6 +599,182 @@ begin
     // FIXME: do we need this?
     CurrentSong.Path := CatSongs.Song[CatSongs.Selected].Path;
     Exit;
+  end else
+  begin
+    if (PlaylistMedley.CurrentMedleySong<PlaylistMedley.NumMedleySongs) then
+    begin
+      //Error Loading Song in Medley Mode -> skip actual Medley Song an go on if possible
+      len := Length(PlaylistMedley.Song);
+      for I := PlaylistMedley.CurrentMedleySong-1 to len - 1 do
+        PlaylistMedley.Song[I] := PlaylistMedley.Song[I+1];
+
+      SetLength(PlaylistMedley.Song, Len-1);
+      Dec(PlaylistMedley.NumMedleySongs);
+      LoadNextSong;
+      Exit;
+    end else
+    begin
+      if (PlaylistMedley.NumMedleySongs=1) then
+      begin
+        //Error Loading Song in Medley Mode -> Go back to Song Screen and Show some Error Message
+        Display.AbortScreenChange;
+        // select new song in party mode
+        if ScreenSong.Mode = smPartyMode then
+          ScreenSong.SelectRandomSong();
+        if (Length(CurrentSong.LastError) > 0) then
+          ScreenPopupError.ShowPopup(Format(Language.Translate(CurrentSong.LastError), [CurrentSong.ErrorLineNo]))
+        else
+          ScreenPopupError.ShowPopup(Language.Translate('ERROR_CORRUPT_SONG'));
+        // FIXME: do we need this?
+        CurrentSong.Path := CatSongs.Song[CatSongs.Selected].Path;
+        Exit;
+      end else
+      begin
+        //Error Loading Song in Medley Mode -> Finish actual round
+        len := Length(PlaylistMedley.Song);
+        SetLength(PlaylistMedley.Song, len-1);
+        Dec(PlaylistMedley.NumMedleySongs);
+        Finish;
+        Exit;
+      end;
+    end;
+  end;
+end;
+
+procedure TScreenSing.LoadNextSong();
+var
+  Color:      TRGB;
+  Index:      integer;
+  VideoFile:  IPath;
+  BgFile:     IPath;
+  success:    boolean;
+
+  function FindNote(beat: integer): TPos;
+  var
+    line:   integer;
+    note:   integer;
+    found:  boolean;
+    min:    integer;
+    diff:   integer;
+
+  begin
+    found := false;
+
+    for line := 0 to length(Lines[0].Line) - 1 do
+    begin
+      for note := 0 to length(Lines[0].Line[line].Note) - 1 do
+      begin
+        if (beat>=Lines[0].Line[line].Note[line].Start) and
+          (beat<=Lines[0].Line[line].Note[line].Start + Lines[0].Line[line].Note[note].Length) then
+        begin
+          Result.part := 0;
+          Result.line := line;
+          Result.note := note;
+          found:=true;
+          break;
+        end;
+      end;
+    end;
+
+    if found then //found exactly
+      exit;
+
+    min := high(integer);
+    //second try (approximating)
+    for line := 0 to length(Lines[0].Line) - 1 do
+    begin
+      for note := 0 to length(Lines[0].Line[line].Note) - 1 do
+      begin
+        diff := abs(Lines[0].Line[line].Note[note].Start - beat);
+        if diff<min then
+        begin
+          Result.part := 0;
+          Result.line := line;
+          Result.note := note;
+          min := diff;
+        end;
+      end;
+    end;
+  end;
+
+begin
+  // reset video playback engine
+  fCurrentVideo := nil;
+
+  // setup score manager
+  Scores.ClearPlayers; // clear old player values
+  Color.R := 0;
+  Color.G := 0;
+  Color.B := 0; // dummy atm  <- \(O.o)/? B like bummy?
+
+  // add new players
+  for Index := 0 to PlayersPlay - 1 do
+  begin
+    Scores.AddPlayer(Tex_ScoreBG[Index], Color);
+  end;
+
+  Scores.Init; // get positions for players
+
+
+  // FIXME: sets path and filename to ''
+  ResetSingTemp;
+
+  PlaylistMedley.ApplausePlayed := false;
+
+  if (ScreenSong.Mode = smMedley) then
+  begin
+    if (length(PlaylistMedley.Song)>=PlaylistMedley.CurrentMedleySong) then
+    begin
+      CatSongs.Selected := PlaylistMedley.Song[PlaylistMedley.CurrentMedleySong-1];
+      //Music.Open(CatSongs.Song[CatSongs.Selected].Path + CatSongs.Song[CatSongs.Selected].Mp3);
+    end else
+    begin
+      SongError;
+      Exit;
+    end;
+  end;
+
+  CurrentSong := CatSongs.Song[CatSongs.Selected];
+
+  // FIXME: bad style, put the try-except into loadsong() and not here
+  try
+    // check if file is xml
+    if CurrentSong.FileName.GetExtension.ToUTF8 = '.xml' then
+      success := CurrentSong.AnalyseXML and CurrentSong.LoadXMLSong()
+    else
+      success := CurrentSong.Analyse(); // and CurrentSong.LoadSong();
+  except
+    success := false;
+  end;
+
+  if (not success) then
+  begin
+    SongError();
+    Exit;
+  end;
+
+  // Set up Medley timings
+  if (ScreenSong.Mode = smMedley) then
+  begin
+    CurrentSong.SetMedleyMode();
+
+    (* TODO:
+    Text[SongNameText].Text := IntToStr(PlaylistMedley.CurrentMedleySong) +
+      '/' + IntToStr(PlaylistMedley.NumMedleySongs) + ': ' +
+      CurrentSong.Artist + ' - ' + CurrentSong.Title;
+    *)
+
+    //medley start and end timestamps
+    StartNote := FindNote(CurrentSong.Medley.StartBeat - round(CurrentSong.BPM[0].BPM*CurrentSong.Medley.FadeIn_time/60));
+    MedleyStart := GetTimeFromBeat(Lines[0].Line[StartNote.line].Note[0].Start);
+
+    //check Medley-Start
+    if (MedleyStart+CurrentSong.Medley.FadeIn_time*0.5>GetTimeFromBeat(CurrentSong.Medley.StartBeat)) then
+      MedleyStart := GetTimeFromBeat(CurrentSong.Medley.StartBeat) - CurrentSong.Medley.FadeIn_time;
+    if MedleyStart<0 then
+      MedleyStart := 0;
+
+    MedleyEnd := GetTimeFromBeat(CurrentSong.Medley.EndBeat) + CurrentSong.Medley.FadeOut_time;
   end;
 
   {*
@@ -529,7 +800,10 @@ begin
     if (fVideoClip <> nil) then
     begin
       fShowVisualization := false;
-      fCurrentVideo.Position := CurrentSong.VideoGAP + CurrentSong.Start;
+      if (ScreenSong.Mode = smMedley) then
+        fCurrentVideo.Position := CurrentSong.VideoGAP + MedleyStart
+      else
+        fCurrentVideo.Position := CurrentSong.VideoGAP + CurrentSong.Start;
       fCurrentVideo.Play;
     end;
   end;
@@ -578,21 +852,23 @@ begin
 
   // prepare lyrics timer
   LyricsState.Reset();
-  LyricsState.SetCurrentTime(CurrentSong.Start);
-  LyricsState.StartTime := CurrentSong.Gap;
-  if (CurrentSong.Finish > 0) then
-    LyricsState.TotalTime := CurrentSong.Finish / 1000
-  else
-    LyricsState.TotalTime := AudioPlayback.Length;
-  LyricsState.UpdateBeats();
 
-  BadPlayer := AudioInputProcessor.CheckPlayersConfig(PlayersPlay);
-  if (BadPlayer <> 0) then
+  if (ScreenSong.Mode = smMedley) then
   begin
-    ScreenPopupError.ShowPopup(
-        Format(Language.Translate('ERROR_PLAYER_NO_DEVICE_ASSIGNMENT'),
-        [BadPlayer]));
+    LyricsState.SetCurrentTime(MedleyStart);
+    LyricsState.StartTime := CurrentSong.Gap;
+    LyricsState.TotalTime := MedleyEnd;
+  end else
+  begin
+    LyricsState.SetCurrentTime(CurrentSong.Start);
+    LyricsState.StartTime := CurrentSong.Gap;
+    if (CurrentSong.Finish > 0) then
+      LyricsState.TotalTime := CurrentSong.Finish / 1000
+    else
+      LyricsState.TotalTime := AudioPlayback.Length;
   end;
+
+  LyricsState.UpdateBeats();
 
   // prepare and start voice-capture
   AudioInput.CaptureStart;
@@ -619,60 +895,12 @@ begin
   // main text
   Lyrics.Clear(CurrentSong.BPM[0].BPM, CurrentSong.Resolution);
 
-  // set custom options
-  case Ini.LyricsFont of
-    0: // normal fonts
-    begin
-      Lyrics.FontStyle := ftNormal;
-
-      Lyrics.LineColor_en.R := Skin_FontR;
-      Lyrics.LineColor_en.G := Skin_FontG;
-      Lyrics.LineColor_en.B := Skin_FontB;
-      Lyrics.LineColor_en.A := 1;
-
-      Lyrics.LineColor_dis.R := 0.4;
-      Lyrics.LineColor_dis.G := 0.4;
-      Lyrics.LineColor_dis.B := 0.4;
-      Lyrics.LineColor_dis.A := 1;
-
-      Lyrics.LineColor_act.R := 0.02;
-      Lyrics.LineColor_act.G := 0.6;
-      Lyrics.LineColor_act.B := 0.8;
-      Lyrics.LineColor_act.A := 1;
-    end;
-    1, 2: // outline fonts
-    begin
-      if (Ini.LyricsFont = 1) then
-        Lyrics.FontStyle := ftOutline1
-      else
-        Lyrics.FontStyle := ftOutline2;
-
-      Lyrics.LineColor_en.R := 0.75;
-      Lyrics.LineColor_en.G := 0.75;
-      Lyrics.LineColor_en.B := 1;
-      Lyrics.LineColor_en.A := 1;
-
-      Lyrics.LineColor_dis.R := 0.8;
-      Lyrics.LineColor_dis.G := 0.8;
-      Lyrics.LineColor_dis.B := 0.8;
-      Lyrics.LineColor_dis.A := 1;
-
-      Lyrics.LineColor_act.R := 0.5;
-      Lyrics.LineColor_act.G := 0.5;
-      Lyrics.LineColor_act.B := 1;
-      Lyrics.LineColor_act.A := 1;
-    end;
-  end; // case
-
   // initialize lyrics by filling its queue
   while (not Lyrics.IsQueueFull) and
         (Lyrics.LineCounter <= High(Lines[0].Line)) do
   begin
     Lyrics.AddLine(@Lines[0].Line[Lyrics.LineCounter]);
   end;
-
-  // deactivate pause
-  Paused := false;
 
   // kill all stars not killed yet (goldenstarstwinkle mod)
   GoldenRec.SentenceChange;
@@ -686,42 +914,10 @@ begin
 
   eSongLoaded.CallHookChain(False);
 
-  Log.LogStatus('End', 'OnShow');
+  if (ScreenSong.Mode = smMedley) and (PlaylistMedley.CurrentMedleySong>1) then
+    onShowFinish;
 end;
 
-procedure TScreenSing.onShowFinish;
-begin
-  // hide cursor on singscreen show    
-  Display.SetCursor;
-
-  // prepare music
-  // Important: AudioPlayback must not be initialized in onShow() as TScreenSong
-  // uses stops AudioPlayback in onHide() which interferes with TScreenSings onShow.
-  AudioPlayback.Open(CurrentSong.Path.Append(CurrentSong.Mp3));
-  AudioPlayback.SetVolume(1.0);
-  AudioPlayback.Position := CurrentSong.Start;
-
-  // synchronize music
-  if (Ini.SyncTo = Ord(stLyrics)) then
-    AudioPlayback.SetSyncSource(fLyricsSync)
-  else
-    AudioPlayback.SetSyncSource(nil);
-
-  // synchronize lyrics (do not set this before AudioPlayback is initialized)
-  if (Ini.SyncTo = Ord(stMusic)) then
-    LyricsState.SetSyncSource(fMusicSync)
-  else
-    LyricsState.SetSyncSource(nil);
-
-  // start lyrics
-  LyricsState.Start(true);
-
-  // start music
-  AudioPlayback.Play();
-
-  // start timer
-  CountSkipTimeSet;
-end;
 
 procedure TScreenSing.ClearSettings;
 begin
@@ -763,6 +959,7 @@ var
   DisplaySec:   integer;
   T:     integer;
   CurLyricsTime: real;
+  TotalTime:    real;
   VideoFrameTime: Extended;
   Line: TLyricLine;
   LastWord: TLyricWord;
@@ -805,19 +1002,27 @@ begin
 
   // retrieve current lyrics time, we have to store the value to avoid
   // that min- and sec-values do not match
-  CurLyricsTime := LyricsState.GetCurrentTime();
+  if (ScreenSong.Mode = smMedley) then
+  begin
+    CurLyricsTime := LyricsState.GetCurrentTime() - ScreenSing.MedleyStart;
+    TotalTime := ScreenSing.MedleyEnd - ScreenSing.MedleyStart;
+  end else
+  begin
+    CurLyricsTime := LyricsState.GetCurrentTime();
+    TotalTime :=  LyricsState.TotalTime;
+  end;
 
   // retrieve time for timebar text
   case (fTimebarMode) of
     tbmRemaining: begin
-      DisplayTime := LyricsState.TotalTime - CurLyricsTime;
+      DisplayTime := TotalTime - CurLyricsTime;
       DisplayPrefix := '-';
     end;
     tbmTotal: begin
-      DisplayTime := LyricsState.TotalTime;
+      DisplayTime := TotalTime;
       DisplayPrefix := '#';
     end;
-    else begin
+    else begin       // current time
       DisplayTime := CurLyricsTime;
       DisplayPrefix := '';
     end;
@@ -865,6 +1070,10 @@ begin
 
   // draw static menu (FG)
   DrawFG;
+
+  //Medley Countdown
+  if (ScreenSong.Mode = smMedley) then
+    DrawMedleyCountdown;
 
   // check for music finish
   //Log.LogError('Check for music finish: ' + BoolToStr(Music.Finished) + ' ' + FloatToStr(LyricsState.CurrentTime*1000) + ' ' + IntToStr(CurrentSong.Finish));
@@ -1065,6 +1274,65 @@ end;
 function TMusicSyncSource.GetClock(): real;
 begin
   Result := AudioPlayback.Position;
+end;
+
+procedure TScreenSing.UpdateMedleyStats(medley_end: boolean);
+var
+  len, num, I : integer;
+
+begin
+  len := Length(PlaylistMedley.Stats);
+  num := PlaylistMedley.NumPlayer;
+
+  if (PlaylistMedley.CurrentMedleySong>len) and
+    (PlaylistMedley.CurrentMedleySong<=PlaylistMedley.NumMedleySongs) then
+  begin
+    inc(len);
+    SetLength(PlaylistMedley.Stats, len);
+    SetLength(PlaylistMedley.Stats[len-1].Player, num);
+    PlaylistMedley.Stats[len-1].SongArtist := CurrentSong.Artist;
+    PlaylistMedley.Stats[len-1].SongTitle := CurrentSong.Title;
+  end;
+
+  if (PlaylistMedley.CurrentMedleySong<=PlaylistMedley.NumMedleySongs) then
+    for I := 0 to num - 1 do
+      PlaylistMedley.Stats[len-1].Player[I] := Player[I];
+
+  if medley_end and not PlaylistMedley.ApplausePlayed and
+    (PlaylistMedley.CurrentMedleySong<=PlaylistMedley.NumMedleySongs) then
+  begin
+    PlaylistMedley.ApplausePlayed:=true;
+    // TODO:
+    //Music.PlayApplause;
+    //Music.Fade(MP3Volume, 10, CurrentSong.Medley.FadeOut_time);
+  end;
+end;
+
+procedure TScreenSing.DrawMedleyCountdown();
+var
+  w, h:           real;
+  timeDiff:       real;
+  t:              real;
+  CountDownText:  UTF8String;
+
+begin
+  if (AudioPlayback.Position < GetTimeFromBeat(CurrentSong.Medley.StartBeat)) then
+  begin
+    timeDiff := GetTimeFromBeat(CurrentSong.Medley.StartBeat)-AudioPlayback.Position+1;
+    t := frac(timeDiff);
+
+    glColor4f(0.15, 0.30, 0.6, t);
+
+    h := 300*t*ScreenH/RenderH;
+    SetFontStyle(ftBold);
+    SetFontItalic(false);
+    SetFontSize(h);
+    CountDownText := IntToStr(round(timeDiff-t));
+    w := glTextWidth(PChar(CountDownText));
+
+    SetFontPos (RenderW/2-w/2, RenderH/2-h/2);
+    glPrint(PChar(CountDownText));
+  end;
 end;
 
 end.

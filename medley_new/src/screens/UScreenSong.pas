@@ -423,6 +423,24 @@ begin
           Exit;
         end;
 
+      Ord('S'):
+        begin
+          if (SDL_ModState = KMOD_LSHIFT) and
+            (CatSongs.Song[Interaction].Medley.Source>=msCalculated) and (Mode = smNormal)then
+            StartMedley(0, msCalculated)
+          else if (CatSongs.Song[Interaction].Medley.Source>=msTag) and (Mode = smNormal) then
+            StartMedley(0, msTag);
+        end;
+
+      Ord('D'):
+        begin
+          if (Mode = smNormal) and (SDL_ModState = KMOD_LSHIFT) and
+            (length(getVisibleMedleyArr(msCalculated))>0) then
+            StartMedley(5, msCalculated)
+          else if (Mode = smNormal) and (Length(getVisibleMedleyArr(msTag)) > 0) then
+            StartMedley(5, msTag);
+        end;
+
       Ord('R'):
         begin
           if (Songs.SongList.Count > 0) and
@@ -1526,6 +1544,8 @@ begin
 
   // reset Medley-Playlist
   SetLength(PlaylistMedley.Song, 0);
+  if Mode = smMedley then
+    Mode := smNormal;
 
   if Ini.Players <= 3 then PlayersPlay := Ini.Players + 1;
   if Ini.Players  = 4 then PlayersPlay := 6;
