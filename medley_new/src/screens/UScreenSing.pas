@@ -404,7 +404,10 @@ begin
 
     PlaylistMedley.NumPlayer := PlayersPlay;
     SetLength(PlaylistMedley.Stats, 0);
-  end;
+
+    fTimebarMode := tbmRemaining;
+  end else
+    fTimebarMode := tbmCurrent;
 
   case PlayersPlay of
     1:
@@ -475,8 +478,6 @@ begin
 
   Statics[StaticP3R].Visible := V3R;
   Text[TextP3R].Visible     := V3R;
-
-  fTimebarMode := tbmCurrent;
 
   BadPlayer := AudioInputProcessor.CheckPlayersConfig(PlayersPlay);
   if (BadPlayer <> 0) then
@@ -953,16 +954,19 @@ end;
 
 function TScreenSing.Draw: boolean;
 var
-  DisplayTime:  real;
-  DisplayPrefix: string;
-  DisplayMin:   integer;
-  DisplaySec:   integer;
-  T:     integer;
-  CurLyricsTime: real;
-  TotalTime:    real;
-  VideoFrameTime: Extended;
-  Line: TLyricLine;
-  LastWord: TLyricWord;
+  DisplayTime:            real;
+  DisplayPrefix:          string;
+  DisplayMin:             integer;
+  DisplaySec:             integer;
+  T:                      integer;
+  CurLyricsTime:          real;
+  TotalTime:              real;
+  VideoFrameTime:         Extended;
+  Line:                   TLyricLine;
+  LastWord:               TLyricWord;
+  medley_end:             boolean;
+  medley_start_applause:  boolean;
+
 begin
   Background.Draw;
 
@@ -1043,6 +1047,19 @@ begin
       SungToEnd := true;
   end;
 
+  // for medley-mode:
+  CurLyricsTime := LyricsState.GetCurrentTime();
+  if (ScreenSong.Mode = smMedley) and (CurLyricsTime > MedleyEnd) then
+    medley_end := true
+  else
+    medley_end := false;
+
+  if (ScreenSong.Mode = smMedley) and (CurLyricsTime >
+    GetTimeFromBeat(CurrentSong.Medley.EndBeat)) then
+    medley_start_applause := true
+  else
+    medley_start_applause := false;
+
   // update and draw movie
   if Assigned(fCurrentVideo) then
   begin
@@ -1079,15 +1096,19 @@ begin
   //Log.LogError('Check for music finish: ' + BoolToStr(Music.Finished) + ' ' + FloatToStr(LyricsState.CurrentTime*1000) + ' ' + IntToStr(CurrentSong.Finish));
   if ShowFinish then
   begin
-    if (not AudioPlayback.Finished) and
-       ((CurrentSong.Finish = 0) or
-        (LyricsState.GetCurrentTime() * 1000 <= CurrentSong.Finish)) and
-       (not Settings.Finish) then
+    if (not AudioPlayback.Finished) and (not medley_end or (ScreenSong.Mode <> smMedley)) and
+      ((CurrentSong.Finish = 0) or (LyricsState.GetCurrentTime()*1000 <= CurrentSong.Finish)) and
+      (not Settings.Finish) then
     begin
       // analyze song if not paused
       if (not Paused) then
       begin
         Sing(Self);
+
+        //Update Medley Stats
+        if (ScreenSong.Mode = smMedley) and not FadeOut then
+          UpdateMedleyStats(medley_start_applause);
+
         Party.CallOnSing;
       end;
     end
@@ -1096,7 +1117,6 @@ begin
       if (not FadeOut) and (Screens=1) or (ScreenAct=2) then
       begin
         Finish;
-        FadeOut := true;
       end;
     end;
   end;
@@ -1124,6 +1144,10 @@ begin
 end;
 
 procedure TScreenSing.Finish;
+var
+  I, J:     integer;
+  len, num: integer;
+
 begin
   AudioInput.CaptureStop;
   AudioPlayback.Stop;
@@ -1151,8 +1175,104 @@ begin
 
   SetFontItalic(false);
 
-  if not FadeOut then
-    Party.CallAfterSing;
+  if (ScreenSong.Mode = smMedley) then
+  begin
+    if not FadeOut then
+    begin
+      for I := 0 to PlayersPlay - 1 do
+        PlaylistMedley.Stats[Length(PlaylistMedley.Stats)-1].Player[I] := Player[I];
+
+      Inc(PlaylistMedley.CurrentMedleySong);
+      if PlaylistMedley.CurrentMedleySong<=PlaylistMedley.NumMedleySongs then
+      begin
+        LoadNextSong;
+      end else
+      begin
+        //build sums
+        len := Length(PlaylistMedley.Stats);
+        num := PlaylistMedley.NumPlayer;
+
+        SetLength(PlaylistMedley.Stats, len+1);
+        SetLength(PlaylistMedley.Stats[len].Player, num);
+
+        for J := 0 to len - 1 do
+        begin
+          for I := 0 to num - 1 do
+          begin
+            PlaylistMedley.Stats[len].Player[I].Score :=
+              PlaylistMedley.Stats[len].Player[I].Score +
+              PlaylistMedley.Stats[J].Player[I].Score;
+
+            PlaylistMedley.Stats[len].Player[I].ScoreLine :=
+              PlaylistMedley.Stats[len].Player[I].ScoreLine +
+              PlaylistMedley.Stats[J].Player[I].ScoreLine;
+
+            PlaylistMedley.Stats[len].Player[I].ScoreGolden :=
+              PlaylistMedley.Stats[len].Player[I].ScoreGolden +
+              PlaylistMedley.Stats[J].Player[I].ScoreGolden;
+
+            PlaylistMedley.Stats[len].Player[I].ScoreInt :=
+              PlaylistMedley.Stats[len].Player[I].ScoreInt +
+              PlaylistMedley.Stats[J].Player[I].ScoreInt;
+
+            PlaylistMedley.Stats[len].Player[I].ScoreLineInt :=
+              PlaylistMedley.Stats[len].Player[I].ScoreLineInt +
+              PlaylistMedley.Stats[J].Player[I].ScoreLineInt;
+
+            PlaylistMedley.Stats[len].Player[I].ScoreGoldenInt :=
+              PlaylistMedley.Stats[len].Player[I].ScoreGoldenInt +
+              PlaylistMedley.Stats[J].Player[I].ScoreGoldenInt;
+
+            PlaylistMedley.Stats[len].Player[I].ScoreTotalInt :=
+              PlaylistMedley.Stats[len].Player[I].ScoreTotalInt +
+              PlaylistMedley.Stats[J].Player[I].ScoreTotalInt;
+          end; //of for I
+        end; //of for J
+
+        //build mean on sum
+        for I := 0 to num - 1 do
+        begin
+          PlaylistMedley.Stats[len].Player[I].Score := round(
+            PlaylistMedley.Stats[len].Player[I].Score / len);
+
+          PlaylistMedley.Stats[len].Player[I].ScoreLine := round(
+            PlaylistMedley.Stats[len].Player[I].ScoreLine / len);
+
+          PlaylistMedley.Stats[len].Player[I].ScoreGolden := round(
+            PlaylistMedley.Stats[len].Player[I].ScoreGolden / len);
+
+          PlaylistMedley.Stats[len].Player[I].ScoreInt := round(
+            PlaylistMedley.Stats[len].Player[I].ScoreInt / len);
+
+          PlaylistMedley.Stats[len].Player[I].ScoreLineInt := round(
+            PlaylistMedley.Stats[len].Player[I].ScoreLineInt / len);
+
+          PlaylistMedley.Stats[len].Player[I].ScoreGoldenInt := round(
+            PlaylistMedley.Stats[len].Player[I].ScoreGoldenInt / len);
+
+          PlaylistMedley.Stats[len].Player[I].ScoreTotalInt := round(
+            PlaylistMedley.Stats[len].Player[I].ScoreTotalInt / len);
+        end;
+
+        Party.CallAfterSing;
+        FadeOut:=true;
+      end;
+    end;
+  end else
+  begin
+    SetLength(PlaylistMedley.Stats, 1);
+    SetLength(PlaylistMedley.Stats[0].Player, PlayersPlay);
+    for I := 0 to PlayersPlay - 1 do
+      PlaylistMedley.Stats[0].Player[I] := Player[I];
+
+    PlaylistMedley.Stats[0].SongArtist := CurrentSong.Artist;
+    PlaylistMedley.Stats[0].SongTitle := CurrentSong.Title;
+
+    if not FadeOut then
+      Party.CallAfterSing;
+
+    FadeOut := true;
+  end;
 end;
 
 procedure TScreenSing.OnSentenceEnd(SentenceIndex: cardinal);
@@ -1302,7 +1422,7 @@ begin
     (PlaylistMedley.CurrentMedleySong<=PlaylistMedley.NumMedleySongs) then
   begin
     PlaylistMedley.ApplausePlayed:=true;
-    // TODO:
+    // TODO: add fade-out!
     //Music.PlayApplause;
     //Music.Fade(MP3Volume, 10, CurrentSong.Medley.FadeOut_time);
   end;
