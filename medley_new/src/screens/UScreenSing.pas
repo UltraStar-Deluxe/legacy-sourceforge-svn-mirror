@@ -1425,7 +1425,7 @@ begin
   begin
     PlaylistMedley.ApplausePlayed:=true;
     // TODO: add fade-out!
-    //Music.PlayApplause;
+    AudioPlayback.PlaySound(SoundLib.Applause);
     //Music.Fade(MP3Volume, 10, CurrentSong.Medley.FadeOut_time);
   end;
 end;
