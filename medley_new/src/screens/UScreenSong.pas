@@ -78,6 +78,10 @@ type
       //Video Icon Mod
       VideoIcon: cardinal;
 
+      //Medley Icons
+	 	  MedleyIcon:     cardinal;
+	 	  CalcMedleyIcon: cardinal;
+
       TextCat:   integer;
       StaticCat: integer;
 
@@ -866,6 +870,10 @@ begin
   //Show Video Icon Mod
   VideoIcon := AddStatic(Theme.Song.VideoIcon);
 
+  //Meldey Icons
+  MedleyIcon := AddStatic(Theme.Song.MedleyIcon);
+  CalcMedleyIcon := AddStatic(Theme.Song.CalculatedMedleyIcon);
+
   //Party Mode
   StaticTeam1Joker1 := AddStatic(Theme.Song.StaticTeam1Joker1);
   StaticTeam1Joker2 := AddStatic(Theme.Song.StaticTeam1Joker2);
@@ -1026,6 +1034,10 @@ begin
 
     // Set visibility of video icon
     Statics[VideoIcon].Visible := CatSongs.Song[Interaction].Video.IsSet;
+
+    // Set visibility of medley icons
+    Statics[MedleyIcon].Visible := (CatSongs.Song[Interaction].Medley.Source = msTag);
+    Statics[CalcMedleyIcon].Visible := (CatSongs.Song[Interaction].Medley.Source = msCalculated);
 
     // Set texts
     Text[TextArtist].Text := CatSongs.Song[Interaction].Artist;

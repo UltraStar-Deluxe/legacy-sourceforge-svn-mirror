@@ -1550,7 +1550,7 @@ begin
   Resolution := 4;
   Creator    := '';
   PreviewStart := 0;
-  CalcMedley := false;
+  CalcMedley := true;
   Medley.Source := msNone;
 
   Relative := false;
