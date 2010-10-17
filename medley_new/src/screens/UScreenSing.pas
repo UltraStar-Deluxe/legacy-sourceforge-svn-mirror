@@ -243,7 +243,9 @@ begin
       begin
         // record sound hack:
         //Sound[0].BufferLong
-
+        if (ScreenSong.Mode = smMedley) then
+          PlaylistMedley.NumMedleySongs := PlaylistMedley.CurrentMedleySong;
+          
         Finish;
         FadeOut := true;
         AudioPlayback.PlaySound(SoundLib.Back);
