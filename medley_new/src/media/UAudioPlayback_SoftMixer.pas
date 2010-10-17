@@ -482,12 +482,10 @@ end;
 
 procedure TGenericPlaybackStream.Fade(Time: real; TargetVolume: single);
 begin
-  (* TODO: test
   FadeInTime := Trunc(Time * 1000);
   FadeInStartTime := SDL_GetTicks();
   FadeInStartVolume := fVolume;
   FadeInTargetVolume := TargetVolume;
-  *)
 end;
 
 procedure TGenericPlaybackStream.Pause();
