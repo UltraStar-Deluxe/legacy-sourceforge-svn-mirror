@@ -60,6 +60,7 @@ type
       procedure Pause;
       procedure Stop;
       procedure FadeIn(Time: real; TargetVolume: single);
+      procedure Fade(Time: real; TargetVolume: single);
 
       procedure SetSyncSource(SyncSource: TSyncSource);
 
@@ -258,6 +259,12 @@ procedure TAudioPlaybackBase.FadeIn(Time: real; TargetVolume: single);
 begin
   if assigned(MusicStream) then
     MusicStream.FadeIn(Time, TargetVolume);
+end;
+
+procedure TAudioPlaybackBase.Fade(Time: real; TargetVolume: single);
+begin
+  if assigned(MusicStream) then
+    MusicStream.Fade(Time, TargetVolume);
 end;
 
 procedure TAudioPlaybackBase.SetLoop(Enabled: boolean);
