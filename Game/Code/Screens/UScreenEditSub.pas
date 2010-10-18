@@ -1226,7 +1226,8 @@ begin
               Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Freestyle := True;
             end;
           end; // case
-
+          EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+          EditorLyric[CP].Selected := AktNuta[CP];
         end;
 
       //MP3-Volume Up
@@ -1672,7 +1673,12 @@ begin
       end; // case
 
       Czesci[P].Czesc[C].Start := S;
+      Czesci[P].Czesc[C-1].Koniec := Min;
     end; // for
+    C := Length(Czesci[P].Czesc) - 1;
+    len := Length(Czesci[P].Czesc[C].Nuta);
+    Max := Czesci[P].Czesc[C].Nuta[len-1].Start + Czesci[P].Czesc[C].Nuta[len-1].Dlugosc;
+    Czesci[P].Czesc[C].Koniec := Max;
   end;
   {
   //second run for duet mode:
@@ -1924,12 +1930,10 @@ begin
       Dec(Czesci[CP].Czesc[C].HighNut);
       Dec(Czesci[CP].Czesc[C].IlNut);
 
-
       // me slightly modify new note
       if AktNuta[CP] > Czesci[CP].Czesc[C].HighNut then
         Dec(AktNuta[CP]);
 
-      Czesci[CP].Czesc[C].Nuta[AktNuta[CP]].Color := 2;
     end
     //Last Note of current Sentence Deleted - > Delete Sentence
     else
@@ -1937,9 +1941,11 @@ begin
       DeleteSentence;
     end;
   end;
+  
+  Refresh;
   EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
-  {if AktSong.isDuet then
-    EditorLyric[(CP+1) mod 2].AddCzesc((CP+1) mod 2, Czesci[(CP+1) mod 2].Akt);}
+  Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+  EditorLyric[CP].Selected := AktNuta[CP];
 end;
 
 procedure TScreenEditSub.DeleteSentence;
@@ -2416,13 +2422,14 @@ var
 
 begin
   FixTimings;
+  LyricsCorrectSpaces;
   for P := 0 to Length(Czesci) - 1 do
   begin
     Czesci[P].Ilosc := Length(Czesci[P].Czesc);
     Czesci[P].High := Czesci[P].Ilosc-1;
     Czesci[P].Wartosc := 0;
 
-    for L := 0 to Czesci[P].High - 1 do
+    for L := 0 to Czesci[P].High do
     begin
       with Czesci[P].Czesc[L] do
       begin

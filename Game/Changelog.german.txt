@@ -22,7 +22,7 @@ Upd: (Allgemein) Nach dem Starten des Spiels kommt eine Abfrage, wenn fehlerhaft
 Upd: (Allgemein) Spielerfarben geändert - sind nun etwas kräftiger und nicht mehr so blass.
 Upd: (Shuffle)   Wenn man während dem Shuffeln die Pfeiltasten rechts/links drückt, wird vom aktuell angezeigten Lied weiter navigiert, statt zum Anfang des Shuffels zu springen.
 Upd: (Shuffle)   Shufflemodus um die Option "FULL" erweitert. Hierbei werden die angesprungenen Lieder von Anfang bis Ende Abgespielt. Die Option "MAX" spielt ja immer ab der Previewposition bis zum Ende ab. Bei "FULL" wird das Video automatisch in Vollbild geschaltet, wenn denn eins vorhanden ist.
-Upd: (Videos)    Neuere Acinerella.dll (Videodekodierung). Videos werden nun in einem separatem Thread decodiert.
+Upd: (Videos)    Neuere Acinerella.dll (Videodekodierung).
 Upd: (Plugins)   Einige hinzugefügt (thx to MasterPhW).
 Upd: (Hilfe)     Es ist nun endlich eine englische Übersetzung vorhanden (thx to thursday). 
 Fix: (Shuffle)   Playlists werden beim Shuffle nicht mehr verlassen.
