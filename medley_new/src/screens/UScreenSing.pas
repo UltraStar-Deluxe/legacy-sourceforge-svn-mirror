@@ -123,6 +123,9 @@ type
 
     StaticPausePopup: integer;
 
+    SongNameStatic:   integer;
+    SongNameText:     integer;
+
     Tex_Background: TTexture;
     FadeOut: boolean;
     Lyrics:  TLyricEngine;
@@ -370,6 +373,9 @@ begin
   fLyricsSync := TLyricsSyncSource.Create();
   fMusicSync := TMusicSyncSource.Create();
 
+  SongNameStatic := AddStatic(Theme.Sing.StaticSongName);;
+  SongNameText := AddText(Theme.Sing.TextSongName);
+
   eSongLoaded := THookableEvent.Create('ScreenSing.SongLoaded');
 
   ClearSettings;
@@ -410,6 +416,9 @@ begin
     fTimebarMode := tbmRemaining;
   end else
     fTimebarMode := tbmCurrent;
+
+  Statics[SongNameStatic].Visible := false;
+  Text[SongNameText].Visible := false;
 
   case PlayersPlay of
     1:
@@ -761,11 +770,10 @@ begin
   begin
     CurrentSong.SetMedleyMode();
 
-    (* TODO:
+
     Text[SongNameText].Text := IntToStr(PlaylistMedley.CurrentMedleySong) +
       '/' + IntToStr(PlaylistMedley.NumMedleySongs) + ': ' +
       CurrentSong.Artist + ' - ' + CurrentSong.Title;
-    *)
 
     //medley start and end timestamps
     StartNote := FindNote(CurrentSong.Medley.StartBeat - round(CurrentSong.BPM[0].BPM*CurrentSong.Medley.FadeIn_time/60));
@@ -1439,6 +1447,9 @@ var
 begin
   if (AudioPlayback.Position < GetTimeFromBeat(CurrentSong.Medley.StartBeat)) then
   begin
+    Statics[SongNameStatic].Visible := true;
+    Text[SongNameText].Visible := true;
+
     timeDiff := GetTimeFromBeat(CurrentSong.Medley.StartBeat)-AudioPlayback.Position+1;
     t := frac(timeDiff);
 
@@ -1453,6 +1464,10 @@ begin
 
     SetFontPos (RenderW/2-w/2, RenderH/2-h/2);
     glPrint(PChar(CountDownText));
+  end else
+  begin
+    Statics[SongNameStatic].Visible := false;
+    Text[SongNameText].Visible := false;
   end;
 end;
 

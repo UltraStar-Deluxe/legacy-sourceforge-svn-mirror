@@ -360,6 +360,9 @@ type
     TextP3R:          TThemeText;
     TextP3RScore:     TThemeText;
 
+    StaticSongName:   TThemeStatic;
+    TextSongName:     TThemeText;
+
     //Linebonus Translations
     LineBonusText:    array [0..8] of UTF8String;
 
@@ -1217,6 +1220,9 @@ begin
       ThemeLoadText(Sing.TextP3R, 'SingP3RText');
       ThemeLoadStatic(Sing.StaticP3RScoreBG, 'SingP3RStatic2');
       ThemeLoadText(Sing.TextP3RScore, 'SingP3RTextScore');
+
+      ThemeLoadStatic(Sing.StaticSongName, 'SingSongNameStatic');
+      ThemeLoadText(Sing.TextSongName, 'SingSongNameText');
 
       //Line Bonus Texts
       Sing.LineBonusText[0] := Language.Translate('POPUP_AWFUL');
