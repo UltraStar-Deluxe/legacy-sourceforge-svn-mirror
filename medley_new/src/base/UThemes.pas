@@ -408,6 +408,9 @@ type
     StaticLevelRound:       array[1..6] of TThemeStatic;
     StaticPlayerIdBox:      array[1..6] of TThemeStatic;
 
+    StaticNavigate:   TThemeStatic;
+    TextNavigate:     TThemeText;
+
 //    Description:          array[0..5] of string;}
   end;
 
@@ -1273,6 +1276,9 @@ begin
 
         ThemeLoadStatic(Score.StaticRatings[I],        'ScoreStaticRatingPicture'  + IntToStr(I));
       end;
+
+      ThemeLoadStatic(Score.StaticNavigate, 'ScoreStaticNavigate');
+      ThemeLoadText(Score.TextNavigate, 'ScoreTextNavigate');
 
       // Top5
       ThemeLoadBasic(Top5, 'Top5');
