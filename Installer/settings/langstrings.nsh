@@ -1,16 +1,16 @@
 ; Language Strings which are used in the main program
 
-LangString str_continue ${LANG_GERMAN} "Dies wird UltraStar Deluxe installieren. Fortsetzen?"
-LangString str_continue ${LANG_ENGLISH} "This will install UltraStar Deluxe. Continue?"
+LangString str_continue ${LANG_GERMAN} "Dies wird UltraStar Deluxe CMD Edition installieren. Fortsetzen?"
+LangString str_continue ${LANG_ENGLISH} "This will install UltraStar Deluxe CMD Edition. Continue?"
 
 LangString str_abort ${LANG_ENGLISH} "Are you sure to abort Installation?"
 LangString str_abort ${LANG_GERMAN} "Wollen Sie die Installation wirklich abbrechen?"
 
-LangString uninst_begin ${LANG_ENGLISH} "This will uninstall UltraStar Deluxe completely (with Songs!). Continue ?"
-LangString uninst_begin ${LANG_GERMAN} "Dies wird UltraStar Deluxe vollständig deinstallieren (inkl. Songs!). Fortfahren?"
+LangString uninst_begin ${LANG_ENGLISH} "This will uninstall UltraStar Deluxe CMD Edition completely (with Songs!). Continue ?"
+LangString uninst_begin ${LANG_GERMAN} "Dies wird UltraStar Deluxe CMD Edition vollständig deinstallieren (inkl. Songs!). Fortfahren?"
 
-LangString MUI_UNTEXT_FINISH_INFO_TEXT ${LANG_ENGLISH} "We hope you enjoyed UltraStar Deluxe. Please leave us a comment why you uninstalled UltraStar Deluxe in our forum: ${forum}. We would also be pleased to recieve your feedback on UltraStar Deluxe there."
-LangString MUI_UNTEXT_FINISH_INFO_TEXT ${LANG_GERMAN} "Wir hoffen du hast UltraStar Deluxe genossen. Bitte hinterlasse uns einen Kommentar im Forum, warum du UltraStar Deluxe deinstalliert hast: ${forum}. Wir würden uns dort ebenso über eine Rückmeldung für UltraStar Deluxe freuen."
+LangString MUI_UNTEXT_FINISH_INFO_TEXT ${LANG_ENGLISH} "We hope you enjoyed UltraStar Deluxe CMD Edition. Please leave us a comment why you uninstalled UltraStar Deluxe CMD Edition in our forum: ${forum}. We would also be pleased to recieve your feedback on UltraStar Deluxe there."
+LangString MUI_UNTEXT_FINISH_INFO_TEXT ${LANG_GERMAN} "Wir hoffen du hast UltraStar Deluxe CMD Edition genossen. Bitte hinterlasse uns einen Kommentar im Forum, warum du UltraStar Deluxe CMD Edition deinstalliert hast: ${forum}. Wir würden uns dort ebenso über eine Rückmeldung für UltraStar Deluxe freuen."
 
 LangString MUI_UNTEXT_FINISH_INFO_TITLE ${LANG_ENGLISH} "The uninstallation finished successfully!"
 LangString MUI_UNTEXT_FINISH_INFO_TITLE ${LANG_GERMAN} "Die Deinstallation wurde erfolgreich abgeschlossen."
@@ -24,8 +24,8 @@ LangString str_header ${LANG_GERMAN} "Eigene Optionen zur Installation"
 LangString str_header_subtitle ${LANG_ENGLISH} ""
 LangString str_header_subtitle ${LANG_GERMAN} ""
 
-LangString sm_shortcut ${LANG_GERMAN} "UltraStar Deluxe spielen"  ; Name for start Icon in startmenu
-LangString sm_shortcut ${LANG_ENGLISH} "Play UltraStar Deluxe"
+LangString sm_shortcut ${LANG_GERMAN} "UltraStar Deluxe CMD Edition spielen"  ; Name for start Icon in startmenu
+LangString sm_shortcut ${LANG_ENGLISH} "Play UltraStar CMD Edition"
 
 LangString sc_desktop ${LANG_GERMAN} "Verknüpfung auf dem Desktop erstellen?" ; Finish Page: Readme = Create Desktop Shortcut
 LangString sc_desktop ${LANG_ENGLISH} "Create Desktop Shortcut?"
@@ -47,23 +47,23 @@ LangString sm_readme ${LANG_ENGLISH} "Readme"
 
 LangString Settings_TITLE ${LANG_ENGLISH} " "
 LangString Settings_TITLE ${LANG_GERMAN} " "
-LangString Settings_SUBTITLE ${LANG_ENGLISH} "Specify your favorite settings for UltraStar Deluxe"
-LangString Settings_SUBTITLE ${LANG_GERMAN} "Lege deine favorisierten Einstellungen für UltraStar Deluxe fest."
+LangString Settings_SUBTITLE ${LANG_ENGLISH} "Specify your favorite settings for UltraStar Deluxe CMD Edition"
+LangString Settings_SUBTITLE ${LANG_GERMAN} "Lege deine favorisierten Einstellungen für UltraStar Deluxe CMD Edition fest."
 
-LangString wp_title ${LANG_GERMAN} "Willkommen zur Installationsroutine von UltraStar Deluxe"	; Title String in Welcome Page
-LangString wp_title ${LANG_ENGLISH} "Welcome to the UltraStar Deluxe Setup Wizard"
+LangString wp_title ${LANG_GERMAN} "Willkommen zur Installationsroutine von UltraStar Deluxe CMD Edition"	; Title String in Welcome Page
+LangString wp_title ${LANG_ENGLISH} "Welcome to the UltraStar Deluxe CMD Edition Setup Wizard"
 
-LangString wp_text ${LANG_GERMAN} "Dieser Assistent wird Sie durch die Installation von UltraStar Deluxe begleiten. UltraStar Deluxe ist ein kostenloses quelloffenes Karaokespiel, welches Singstar ähnelt. \n\r\n\rDas UltraStar Deluxe Team wünscht viel Spaß.\n\rProjekthomepage: http://www.ultrastardeluxe.org\n\rSupport Forum: http://forum.ultrastardeluxe.org"
-LangString wp_text ${LANG_ENGLISH} "This wizard will guide you through the Installation of UltraStar Deluxe. UltraStar Deluxe is a free open source Karaoke game, which can be compared with Singstar.\n\r\n\rThe UltraStar Deluxe Team wishes you fun.\n\rProject website: http://www.ultrastardeluxe.org\n\rSupport Forum: http://forum.ultrastardeluxe.org"
+LangString wp_text ${LANG_GERMAN} "Dieser Assistent wird Sie durch die Installation von UltraStar Deluxe CMD Edition begleiten. UltraStar Deluxe ist ein kostenloses quelloffenes Karaokespiel, welches Singstar ähnelt. \n\r\n\rDas UltraStar Deluxe Team wünscht viel Spaß.\n\rProjekthomepage: http://www.ultrastardeluxe.org\n\rSupport Forum: http://forum.ultrastardeluxe.org"
+LangString wp_text ${LANG_ENGLISH} "This wizard will guide you through the Installation of UltraStar DeluxeCMD Edition . UltraStar Deluxe is a free open source Karaoke game, which can be compared with Singstar.\n\r\n\rThe UltraStar Deluxe Team wishes you fun.\n\rProject website: http://www.ultrastardeluxe.org\n\rSupport Forum: http://forum.ultrastardeluxe.org"
 
 LangString fp_showreadme ${LANG_GERMAN} "Dokumentation ansehen (PDF)"	; "Show Readme" String in Finish Page
 LangString fp_showreadme ${LANG_ENGLISH} "See documentation (PDF)"
 
-LangString fp_text ${LANG_GERMAN}  "UltraStar Deluxe wurde erfolgreich auf Ihrem System installiert.\n\r\n\rBesuchen Sie unsere Projektwebseite um die neusten Updates und News zu erhalten."
-LangString fp_text ${LANG_ENGLISH}  "UltraStar Deluxe was installed successfully on you system.\n\r\n\rVisit out project website to get latest news and updates."
+LangString fp_text ${LANG_GERMAN}  "UltraStar Deluxe CMD Edition wurde erfolgreich auf Ihrem System installiert.\n\r\n\rBesuchen Sie unsere Projektwebseite um die neusten Updates und News zu erhalten."
+LangString fp_text ${LANG_ENGLISH}  "UltraStar Deluxe CMD Edition was installed successfully on you system.\n\r\n\rVisit out project website to get latest news and updates."
 
 LangString fp_link ${LANG_GERMAN} "Projektwebseite"	; Link to developers website - String in Finish Page
 LangString fp_link ${LANG_ENGLISH} "Project website"
 
-LangString uncp_text ${LANG_GERMAN} "Willkommen beim Deinstallations-Assistent für UltraStar Deluxe" 
-LangString uncp_text ${LANG_ENGLISH} "Welcome to the UltraStar Deluxe Uninstall Wizard"
+LangString uncp_text ${LANG_GERMAN} "Willkommen beim Deinstallations-Assistent für UltraStar Deluxe CMD Edition" 
+LangString uncp_text ${LANG_ENGLISH} "Welcome to the UltraStar Deluxe CMD Edition Uninstall Wizard"
