@@ -68,8 +68,6 @@ type
 
 procedure ShowMessage(const msg: string; msgType: TMessageType = mtInfo);
 
-procedure ConsoleWriteLn(const msg: string);
-
 {$IFDEF FPC}
 function RandomRange(aMin: integer; aMax: integer): integer;
 {$ENDIF}
@@ -297,126 +295,6 @@ begin
 end;
 {$ENDIF}
 
-
-{$IFDEF FPC}
-var
-  MessageList: TStringList;
-  ConsoleHandler: TThreadID;
-  // Note: TRTLCriticalSection is defined in the units System and Libc, use System one
-  ConsoleCriticalSection: System.TRTLCriticalSection;
-  ConsoleEvent: PRTLEvent;
-  ConsoleQuit: boolean;
-{$ENDIF}
-
-(*
- * Write to console if one is available.
- * It checks if a console is available before output so it will not
- * crash on windows if none is available.
- * Do not use this function directly because it is not thread-safe,
- * use ConsoleWriteLn() instead.
- *)
-procedure _ConsoleWriteLn(const aString: string); {$IFDEF HasInline}inline;{$ENDIF}
-begin
-  {$IFDEF MSWINDOWS}
-  // sanity check to avoid crashes with writeln()
-  if (IsConsole) then
-  begin
-  {$ENDIF}
-    Writeln(aString);
-  {$IFDEF MSWINDOWS}
-  end;
-  {$ENDIF}
-end;
-
-{$IFDEF FPC}
-{*
- * The console-handlers main-function.
- * TODO: create a quit-event on closing.
- *}
-function ConsoleHandlerFunc(param: pointer): PtrInt;
-var
-  i: integer;
-  quit: boolean;
-begin
-  quit := false;
-  while (not quit) do
-  begin
-    // wait for new output or quit-request
-    RTLeventWaitFor(ConsoleEvent);
-
-    System.EnterCriticalSection(ConsoleCriticalSection);
-    // output pending messages
-    for i := 0 to MessageList.Count - 1 do
-    begin
-      _ConsoleWriteLn(MessageList[i]);
-    end;
-    MessageList.Clear();
-
-    // use local quit-variable to avoid accessing
-    // ConsoleQuit outside of the critical section
-    if (ConsoleQuit) then
-      quit := true;
-
-    RTLeventResetEvent(ConsoleEvent);
-    System.LeaveCriticalSection(ConsoleCriticalSection);
-  end;
-  result := 0;
-end;
-{$ENDIF}
-
-procedure InitConsoleOutput();
-begin
-  {$IFDEF FPC}
-  // init thread-safe output
-  MessageList := TStringList.Create();
-  System.InitCriticalSection(ConsoleCriticalSection);
-  ConsoleEvent := RTLEventCreate();
-  ConsoleQuit := false;
-  // must be a thread managed by FPC. Otherwise (e.g. SDL-thread)
-  // it will crash when using Writeln.
-  ConsoleHandler := BeginThread(@ConsoleHandlerFunc);
-  {$ENDIF}
-end;
-
-procedure FinalizeConsoleOutput();
-begin
-  {$IFDEF FPC}
-  // terminate console-handler
-  System.EnterCriticalSection(ConsoleCriticalSection);
-  ConsoleQuit := true;
-  RTLeventSetEvent(ConsoleEvent);
-  System.LeaveCriticalSection(ConsoleCriticalSection);
-  WaitForThreadTerminate(ConsoleHandler, 0);
-  // free data
-  System.DoneCriticalsection(ConsoleCriticalSection);
-  RTLeventDestroy(ConsoleEvent);
-  MessageList.Free();
-  {$ENDIF}
-end;
-
-{*
- * FPC uses threadvars (TLS) managed by FPC for console output locking.
- * Using WriteLn() from external threads (like in SDL callbacks)
- * will crash the program as those threadvars have never been initialized.
- * The solution is to create an FPC-managed thread which has the TLS data
- * and use it to handle the console-output (hence it is called Console-Handler)
- *}
-procedure ConsoleWriteLn(const msg: string);
-begin
-{$IFDEF CONSOLE}
-  {$IFDEF FPC}
-  // TODO: check for the main-thread and use a simple _ConsoleWriteLn() then?
-  //GetCurrentThreadThreadId();
-  System.EnterCriticalSection(ConsoleCriticalSection);
-  MessageList.Add(msg);
-  RTLeventSetEvent(ConsoleEvent);
-  System.LeaveCriticalSection(ConsoleCriticalSection);
-  {$ELSE}
-  _ConsoleWriteLn(msg);
-  {$ENDIF}
-{$ENDIF}
-end;
-
 procedure ShowMessage(const msg: String; msgType: TMessageType);
 {$IFDEF MSWINDOWS}
 var Flags: cardinal;
@@ -598,12 +476,5 @@ begin
     FreeMem(PMemAlignHeader(PtrUInt(P) - SizeOf(TMemAlignHeader))^);
 end;
 {$WARNINGS ON}
-
-
-initialization
-  InitConsoleOutput();
-
-finalization
-  FinalizeConsoleOutput();
 
 end.

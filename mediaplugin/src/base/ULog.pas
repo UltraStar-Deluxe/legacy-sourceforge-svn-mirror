@@ -132,6 +132,7 @@ uses
   URecord,
   UMain,  
   UTime,
+  UConsole,
   UCommon,
   UCommandLine,
   UPathUtils;

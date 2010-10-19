@@ -57,6 +57,8 @@ uses
   ctypes                 in 'lib\ctypes\ctypes.pas', // FPC compatibility types for C libs
   {$ENDIF}
 
+  UConsole               in 'base\UConsole.pas',
+
   //------------------------------
   //Includes - 3rd Party Libraries
   //------------------------------
