@@ -140,6 +140,7 @@ const
 
 type
   TAudioSampleFormat = (
+    asfUnknown,           // unknown format
     asfU8, asfS8,         // unsigned/signed  8 bits
     asfU16LSB, asfS16LSB, // unsigned/signed 16 bits (endianness: LSB)
     asfU16MSB, asfS16MSB, // unsigned/signed 16 bits (endianness: MSB)
@@ -152,6 +153,7 @@ type
 const
   // Size of one sample (one channel only) in bytes
   AudioSampleSize: array[TAudioSampleFormat] of integer = (
+    0,        // asfUnknown
     1, 1,     // asfU8, asfS8
     2, 2,     // asfU16LSB, asfS16LSB
     2, 2,     // asfU16MSB, asfS16MSB

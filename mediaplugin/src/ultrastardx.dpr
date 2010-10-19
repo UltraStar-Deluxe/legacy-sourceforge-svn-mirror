@@ -267,6 +267,8 @@ uses
   // This means the first entry has highest priority, the last lowest.
   //******************************
 
+  UMediaPlugin              in 'media\UMediaPlugin.pas',
+
 {$IFDEF UseFFmpegVideo}
   UVideo                    in 'media\UVideo.pas',
 {$ENDIF}
