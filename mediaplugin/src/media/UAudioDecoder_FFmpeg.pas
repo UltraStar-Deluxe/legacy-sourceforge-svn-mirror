@@ -61,7 +61,7 @@ type
   TFFmpegDecodeStream = class(TAudioDecodeStream)
     private
       fFilename: IPath;
-      fStream: PDecodeStream;
+      fStream: PAudioDecodeStream;
       fFormatInfo: TAudioFormatInfo;
 
     public
@@ -85,13 +85,20 @@ type
 
 type
   TAudioDecoder_FFmpeg = class(TInterfacedObject, IAudioDecoder)
+    private
+      fPluginInfo: PMediaPluginInfo;
     public
+      constructor Create();
+
       function GetName: string;
 
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
       function Open(const Filename: IPath): TAudioDecodeStream;
   end;
+
+var
+  AudioDecoderInfo: PAudioDecoderInfo;
 
 { TFFmpegDecodeStream }
 
@@ -118,13 +125,13 @@ begin
 
   Close();
 
-  fStream := DecodeStream_open(PChar(Filename.ToUTF8()));
+  fStream := AudioDecoderInfo.open(PChar(Filename.ToUTF8()));
   if (fStream = nil) then
     Exit;
 
   fFilename := Filename;
 
-  DecodeStream_getAudioFormatInfo(fStream, Info);
+  AudioDecoderInfo.getAudioFormatInfo(fStream, Info);
   fFormatInfo := TAudioFormatInfo.Create(
     Info.channels,
     Info.sampleRate,
@@ -139,14 +146,14 @@ begin
   Self.fFilename := PATH_NONE;
   if (fStream <> nil) then
   begin
-    DecodeStream_close(fStream);
+    AudioDecoderInfo.close(fStream);
     fStream := nil;
   end;
 end;
 
 function TFFmpegDecodeStream.GetLength(): real;
 begin
-  Result := DecodeStream_getLength(fStream);
+  Result := AudioDecoderInfo.getLength(fStream);
 end;
 
 function TFFmpegDecodeStream.GetAudioFormatInfo(): TAudioFormatInfo;
@@ -156,54 +163,78 @@ end;
 
 function TFFmpegDecodeStream.IsEOF(): boolean;
 begin
-  Result := DecodeStream_isEOF(fStream);
+  Result := AudioDecoderInfo.isEOF(fStream);
 end;
 
 function TFFmpegDecodeStream.IsError(): boolean;
 begin
-  Result := DecodeStream_isError(fStream);
+  Result := AudioDecoderInfo.isError(fStream);
 end;
 
 function TFFmpegDecodeStream.GetPosition(): real;
 begin
-  Result := DecodeStream_getPosition(fStream);
+  Result := AudioDecoderInfo.getPosition(fStream);
 end;
 
 procedure TFFmpegDecodeStream.SetPosition(Time: real);
 begin
-  DecodeStream_setPosition(fStream, Time);
+  AudioDecoderInfo.setPosition(fStream, Time);
 end;
 
 function TFFmpegDecodeStream.GetLoop(): boolean;
 begin
-  Result := DecodeStream_getLoop(fStream);
+  Result := AudioDecoderInfo.getLoop(fStream);
 end;
 
 procedure TFFmpegDecodeStream.SetLoop(Enabled: boolean);
 begin
-  DecodeStream_setLoop(fStream, Enabled);
+  AudioDecoderInfo.setLoop(fStream, Enabled);
 end;
 
 function TFFmpegDecodeStream.ReadData(Buffer: PByteArray; BufferSize: integer): integer;
 begin
-  Result := DecodeStream_readData(fStream, PCUint8(Buffer), BufferSize);
+  Result := AudioDecoderInfo.readData(fStream, PCUint8(Buffer), BufferSize);
 end;
 
 
 { TAudioDecoder_FFmpeg }
 
+const
+{$IFDEF MSWINDOWS}
+  ffmpegPlugin = 'ffmpeg_playback.dll';
+{$ENDIF}
+{$IFDEF LINUX}
+  ffmpegPlugin = 'ffmpeg_playback';
+{$ENDIF}
+{$IFDEF DARWIN}
+  ffmpegPlugin = 'ffmpeg_playback.dylib';
+  {$linklib ffmpegPlugin}
+{$ENDIF}
+
+function Plugin_register(core: PMediaPluginCore): PMediaPluginInfo;
+  cdecl; external ffmpegPlugin;
+
+constructor TAudioDecoder_FFmpeg.Create();
+begin
+  inherited Create();
+  fPluginInfo := Plugin_register(MediaPluginCore);
+end;
+
 function TAudioDecoder_FFmpeg.GetName: String;
 begin
-  Result := 'FFmpeg_Decoder';
+  Result := 'Plugin:' + fPluginInfo.name;
 end;
 
 function TAudioDecoder_FFmpeg.InitializeDecoder: boolean;
 begin
-  Result := Plugin_initialize(MediaPluginCore);
+  fPluginInfo.initialize();
+  AudioDecoderInfo := fPluginInfo.audioDecoder;
+  Result := true;
 end;
 
 function TAudioDecoder_FFmpeg.FinalizeDecoder(): boolean;
 begin
+  fPluginInfo.finalize();
   Result := true;
 end;
 

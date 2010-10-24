@@ -39,12 +39,46 @@ uses
   ctypes;
 
 type
+  PFileStream = Pointer;
+  PThread = Pointer;
+  PMutex = Pointer;
+  PCond = Pointer;
+
   PMediaPluginCore = ^TMediaPluginCore;
   TMediaPluginCore = record
+  	version: cint;
+
 	  log: procedure(level: cint; msg: PChar; context: PChar); cdecl;
+    ticksMillis: function(): cuint32; cdecl;
+
+    fileOpen: function(utf8Filename: PAnsiChar; mode: cint): PFileStream; cdecl;
+    fileClose: procedure(stream: PFileStream); cdecl;
+    fileRead: function(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
+    fileWrite: function(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
+    fileSeek: function(stream: PFileStream; pos: cint64; whence: cint): cint64; cdecl;
+    fileSize: function(stream: PFileStream): cint64; cdecl;
+
+    threadCreate: function(func: Pointer; data: Pointer): PThread; cdecl;
+    threadCurrentID: function(): cuint32; cdecl;
+    threadGetID: function(thread: PThread): cuint32; cdecl;
+    threadWait: procedure(thread: PThread; status: PCint); cdecl;
+    threadSleep: procedure(millisecs: cuint32); cdecl;
+
+    mutexCreate: function(): PMutex; cdecl;
+    mutexDestroy: procedure(mutex: PMutex); cdecl;
+    mutexLock: function(mutex: PMutex): cint; cdecl;
+    mutexUnlock: function(mutex: PMutex): cint; cdecl;
+
+    condCreate: function(): PCond; cdecl;
+    condDestroy: procedure(cond: PCond); cdecl;
+    condSignal: function(cond: PCond): cint; cdecl;
+    condBroadcast: function(cond: PCond): cint; cdecl;
+    condWait: function(cond: PCond; mutex: PMutex): cint; cdecl;
+    condWaitTimeout: function(cond: PCond; mutex: PMutex; ms: cuint32): cint; cdecl;
   end;
 
-  PDecodeStream = Pointer;
+  PAudioDecodeStream = Pointer;
+  PAudioResampleStream = Pointer;
 
   PCAudioFormatInfo = ^TCAudioFormatInfo;
   TCAudioFormatInfo = record
@@ -53,49 +87,46 @@ type
     format: cint;
   end;
 
-const
-{$IFDEF MSWINDOWS}
-  ffmpegPlugin = 'ffmpeg_playback.dll';
-{$ENDIF}
-{$IFDEF LINUX}
-  ffmpegPlugin = 'ffmpeg_playback';
-{$ENDIF}
-{$IFDEF DARWIN}
-  ffmpegPlugin = 'ffmpeg_playback.dylib';
-  {$linklib ffmpegPlugin}
-{$ENDIF}
+  PAudioDecoderInfo = ^TAudioDecoderInfo;
+  TAudioDecoderInfo = record
+    open: function(filename: PAnsiChar): PAudioDecodeStream; cdecl;
+    close: procedure(stream: PAudioDecodeStream); cdecl;
+    getLength: function(stream: PAudioDecodeStream): double; cdecl;
+    getAudioFormatInfo: procedure(stream: PAudioDecodeStream; var info: TCAudioFormatInfo); cdecl;
+    getPosition: function(stream: PAudioDecodeStream): double; cdecl;
+    setPosition: procedure(stream: PAudioDecodeStream; time: double); cdecl;
+    getLoop: function(stream: PAudioDecodeStream): cbool; cdecl;
+    setLoop: procedure(stream: PAudioDecodeStream; enabled: cbool); cdecl;
+    isEOF: function(stream: PAudioDecodeStream): cbool; cdecl;
+    isError: function(stream: PAudioDecodeStream): cbool; cdecl;
+    readData: function(stream: PAudioDecodeStream; buffer: PCUint8; bufferSize: cint): cint; cdecl;
+  end;
 
-function Plugin_initialize(core: PMediaPluginCore): cbool;
-  cdecl; external ffmpegPlugin;
+  PAudioConverterInfo = ^TAudioConverterInfo;
+  TAudioConverterInfo = record
+    open: function(inputFormat: PCAudioFormatInfo; outputFormat: PCAudioFormatInfo): PAudioResampleStream; cdecl;
+    close: procedure(stream: PAudioResampleStream); cdecl;
+    convert: function(stream: PAudioResampleStream; input, output: PCuint8; numSamples: cint): cint; cdecl;
+  end;
 
-function DecodeStream_open(filename: PAnsiChar): PDecodeStream;
-  cdecl; external ffmpegPlugin;
-procedure DecodeStream_close(stream: PDecodeStream);
-  cdecl; external ffmpegPlugin;
-function DecodeStream_getLength(stream: PDecodeStream): double;
-  cdecl; external ffmpegPlugin;
-procedure DecodeStream_getAudioFormatInfo(stream: PDecodeStream; var info: TCAudioFormatInfo);
-  cdecl; external ffmpegPlugin;
-function DecodeStream_getPosition(stream: PDecodeStream): double;
-  cdecl; external ffmpegPlugin;
-procedure DecodeStream_setPosition(stream: PDecodeStream; time: double);
-  cdecl; external ffmpegPlugin;
-function DecodeStream_getLoop(stream: PDecodeStream): cbool;
-  cdecl; external ffmpegPlugin;
-procedure DecodeStream_setLoop(stream: PDecodeStream; enabled: cbool);
-  cdecl; external ffmpegPlugin;
-function DecodeStream_isEOF(stream: PDecodeStream): cbool;
-  cdecl; external ffmpegPlugin;
-function DecodeStream_isError(stream: PDecodeStream): cbool;
-  cdecl; external ffmpegPlugin;
-function DecodeStream_readData(stream: PDecodeStream; buffer: PCUint8; bufferSize: cint): cint;
-  cdecl; external ffmpegPlugin;
+  PMediaPluginInfo = ^TMediaPluginInfo;
+  TMediaPluginInfo = record
+    version: cint;
+    name: PAnsiChar;
+    initialize: function(): cbool; cdecl;
+    finalize: function(): cbool; cdecl;
+    audioDecoder: PAudioDecoderInfo;
+    audioConverter: PAudioConverterInfo;
+  end;
+
+  Plugin_register = function(core: PMediaPluginCore): PMediaPluginInfo; cdecl;
 
 function MediaPluginCore: PMediaPluginCore;
 
 implementation
 
 uses
+  SDL,
   ULog;
 
 var
@@ -111,19 +142,165 @@ const
     LOG_LEVEL_CRITICAL
   );
 
-procedure LogFunc(level: cint; msg: PChar; context: PChar); cdecl;
-begin
-  Log.LogMsg(msg, context, DebugLogLevels[level]);
-end;
-
 function MediaPluginCore: PMediaPluginCore;
 begin
   Result := @MediaPluginCore_Instance;
 end;
 
+{* Misc *}
+
+procedure Core_log(level: cint; msg: PChar; context: PChar); cdecl;
+begin
+  Log.LogMsg(msg, context, DebugLogLevels[level]);
+end;
+
+function Core_ticksMillis(): cuint32; cdecl;
+begin
+  Result := SDL_GetTicks();
+end;
+
+{* File *}
+
+function Core_fileOpen(utf8Filename: PChar; mode: cint): PFileStream; cdecl;
+begin
+
+end;
+
+procedure Core_fileClose(stream: PFileStream); cdecl;
+begin
+
+end;
+
+function Core_fileRead(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
+begin
+
+end;
+
+function Core_fileWrite(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
+begin
+
+end;
+
+function Core_fileSeek(stream: PFileStream; pos: cint64; whence: cint): cint64; cdecl;
+begin
+
+end;
+
+function Core_fileSize(stream: PFileStream): cint64; cdecl;
+begin
+
+end;
+
+{* Thread *}
+
+function Core_threadCreate(func: Pointer; data: Pointer): PThread; cdecl;
+begin
+  Result := SDL_CreateThread(func, data);
+end;
+
+function Core_threadCurrentID(): cuint32; cdecl;
+begin
+  Result := SDL_ThreadID();
+end;
+
+function Core_threadGetID(thread: PThread): cuint32; cdecl;
+begin
+  Result := SDL_GetThreadID(PSDL_Thread(thread));
+end;
+
+procedure Core_threadWait(thread: PThread; status: PCint); cdecl;
+begin
+  SDL_WaitThread(PSDL_Thread(thread), status^);
+end;
+
+procedure Core_threadSleep(millisecs: cuint32); cdecl;
+begin
+  SDL_Delay(millisecs);
+end;
+
+{* Mutex *}
+
+function Core_mutexCreate(): PMutex; cdecl;
+begin
+  Result := PMutex(SDL_CreateMutex());
+end;
+
+procedure Core_mutexDestroy(mutex: PMutex); cdecl;
+begin
+  SDL_DestroyMutex(PSDL_Mutex(mutex));
+end;
+
+function Core_mutexLock(mutex: PMutex): cint; cdecl;
+begin
+  Result := SDL_mutexP(PSDL_Mutex(mutex));
+end;
+
+function Core_mutexUnlock(mutex: PMutex): cint; cdecl;
+begin
+  Result := SDL_mutexV(PSDL_Mutex(mutex));
+end;
+
+{* Condition *}
+
+function Core_condCreate(): PCond; cdecl;
+begin
+  Result := PCond(SDL_CreateCond());
+end;
+
+procedure Core_condDestroy(cond: PCond); cdecl;
+begin
+  SDL_DestroyCond(PSDL_Cond(cond));
+end;
+
+function Core_condSignal(cond: PCond): cint; cdecl;
+begin
+  Result := SDL_CondSignal(PSDL_Cond(cond));
+end;
+
+function Core_condBroadcast(cond: PCond): cint; cdecl;
+begin
+  Result := SDL_CondBroadcast(PSDL_Cond(cond));
+end;
+
+function Core_condWait(cond: PCond; mutex: PMutex): cint; cdecl;
+begin
+  Result := SDL_CondWait(PSDL_Cond(cond), PSDL_Mutex(mutex));
+end;
+
+function Core_condWaitTimeout(cond: PCond; mutex: PMutex; ms: cuint32): cint; cdecl;
+begin
+  Result := SDL_CondWaitTimeout(PSDL_Cond(cond), PSDL_Mutex(mutex), ms);
+end;
+
 procedure InitializeMediaPluginCore;
 begin
-  MediaPluginCore.log := LogFunc;
+  with MediaPluginCore_Instance do
+  begin
+    version := 0;
+    log := Core_log;
+    ticksMillis := Core_ticksMillis;
+    fileOpen := Core_fileOpen;
+    fileClose := Core_fileClose;
+    fileRead := Core_fileRead;
+    fileWrite := Core_fileWrite;
+    fileSeek := Core_fileSeek;
+    fileSize := Core_fileSize;
+    threadCreate := Core_threadCreate;
+    threadCurrentID := Core_threadCurrentID;
+    threadGetID := Core_threadGetID;
+    threadWait := Core_threadWait;
+    threadSleep := Core_threadSleep;
+    mutexCreate := Core_mutexCreate;
+    mutexDestroy := Core_mutexDestroy;
+    mutexLock := Core_mutexLock;
+    mutexUnlock := Core_mutexUnlock;
+    condCreate := Core_condCreate;
+    condDestroy := Core_condDestroy;
+    condSignal := Core_condSignal;
+    condBroadcast := Core_condBroadcast;
+    condWait := Core_condWait;
+    condWaitTimeout := Core_condWaitTimeout;
+  end;
 end;
 
 initialization
