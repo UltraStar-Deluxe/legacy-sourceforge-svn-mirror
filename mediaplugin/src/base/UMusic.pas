@@ -331,6 +331,24 @@ type
       procedure SetLoop(Enabled: boolean);  override;
   end;
 
+  TVideoDecodeStream = class
+    public
+      function Open(const FileName: IPath): boolean; virtual; abstract;
+      procedure Close; virtual; abstract;
+
+      procedure SetLoop(Enable: boolean); virtual; abstract;
+      function GetLoop(): boolean; virtual; abstract;
+
+      procedure SetPosition(Time: real); virtual; abstract;
+      function GetPosition: real; virtual; abstract;
+
+      function GetFrameAspect(): real; virtual; abstract;
+      function GetFrame(Time: Extended): PByteArray; virtual; abstract;
+
+      function GetFrameWidth(): integer; virtual; abstract;
+      function GetFrameHeight(): integer; virtual; abstract;
+  end;
+
 type
   // soundcard output-devices information
   TAudioOutputDevice = class
@@ -409,7 +427,7 @@ type
       function Init(): boolean;
       function Finalize: boolean;
 
-      function Open(const FileName : IPath): IVideo;
+      function Open(const FileName: IPath): IVideo;
   end;
 
   IVideoVisualization = Interface( IVideoPlayback )
@@ -474,20 +492,10 @@ type
       //function IsSupported(const Filename: string): boolean;
   end;
 
-  (*
   IVideoDecoder = Interface( IGenericDecoder )
   ['{2F184B2B-FE69-44D5-9031-0A2462391DCA}']
-       function Open(const Filename: IPath): TVideoDecodeStream;
-
-       procedure SetPosition(Time: real);
-       function GetPosition:  real;
-
-       procedure UpdateTexture(Texture: glUint);
-
-       property Loop: boolean read GetLoop write SetLoop;
-       property Position: real read GetPosition write SetPosition;
+      function Open(const FileName: IPath): TVideoDecodeStream;
   end;
-  *)
 
   IAudioDecoder = Interface( IGenericDecoder )
   ['{AB47B1B6-2AA9-4410-BF8C-EC79561B5478}']
@@ -601,6 +609,7 @@ procedure FinalizeMedia;
 
 function  Visualization(): IVideoPlayback;
 function  VideoPlayback(): IVideoPlayback;
+function  VideoDecoder(): IVideoDecoder;
 function  AudioPlayback(): IAudioPlayback;
 function  AudioInput(): IAudioInput;
 function  AudioDecoders(): TInterfaceList;
@@ -622,6 +631,7 @@ uses
 
 var
   DefaultVideoPlayback : IVideoPlayback;
+  DefaultVideoDecoder  : IVideoDecoder;
   DefaultVisualization : IVideoPlayback;
   DefaultAudioPlayback : IAudioPlayback;
   DefaultAudioInput    : IAudioInput;
@@ -682,6 +692,11 @@ end;
 function  VideoPlayback(): IVideoPlayback;
 begin
   Result := DefaultVideoPlayback;
+end;
+
+function  VideoDecoder(): IVideoDecoder;
+begin
+  Result := DefaultVideoDecoder;
 end;
 
 function  Visualization(): IVideoPlayback;
@@ -795,6 +810,7 @@ var
   i: integer;
   InterfaceList: TInterfaceList;
   VideoInterface: IVideoPlayback;
+  VideoDecoderInterface: IVideoDecoder;
   VisualInterface: IVideoVisualization;
 begin
   InterfaceList := TInterfaceList.Create;
@@ -812,6 +828,21 @@ begin
     end;
     Log.LogError('Initialize failed, Removing - '+ VideoInterface.GetName);
     MediaManager.Remove(VideoInterface);
+  end;
+
+  // initialize and set video-decoder singleton
+  DefaultVideoDecoder := nil;
+  FilterInterfaceList(IVideoDecoder, MediaManager, InterfaceList);
+  for i := 0 to InterfaceList.Count-1 do
+  begin
+    VideoDecoderInterface := InterfaceList[i] as IVideoDecoder;
+    if (VideoDecoderInterface.InitializeDecoder()) then
+    begin
+      DefaultVideoDecoder := VideoDecoderInterface;
+      break;
+    end;
+    Log.LogError('Initialize failed, Removing - '+ VideoDecoderInterface.GetName);
+    MediaManager.Remove(VideoDecoderInterface);
   end;
 
   // initialize and set visualization singleton
@@ -874,6 +905,11 @@ begin
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IVideoPlayback).Finalize();
 
+  // finalize video interfaces
+  FilterInterfaceList(IVideoDecoder, MediaManager, InterfaceList);
+  for i := 0 to InterfaceList.Count-1 do
+    (InterfaceList[i] as IVideoDecoder).FinalizeDecoder();
+
   // finalize audio decoder interfaces
   FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
@@ -910,6 +946,7 @@ begin
   writeln( 'Registered Audio Playback Interface : ' + AudioPlayback.GetName );
   writeln( 'Registered Audio Input    Interface : ' + AudioInput.GetName    );
   writeln( 'Registered Video Playback Interface : ' + VideoPlayback.GetName );
+  writeln( 'Registered Video Decoder  Interface : ' + VideoDecoder.GetName );
   writeln( 'Registered Visualization  Interface : ' + Visualization.GetName );
   writeln( '--------------------------------------------------------------' );
   writeln( '' );

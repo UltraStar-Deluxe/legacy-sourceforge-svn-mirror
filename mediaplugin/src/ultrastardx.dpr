@@ -271,6 +271,7 @@ uses
 
 {$IFDEF UseFFmpegVideo}
   UVideo                    in 'media\UVideo.pas',
+  UVideoDecoder_FFmpeg      in 'media\UVideoDecoder_FFmpeg.pas',
 {$ENDIF}
 {$IFDEF UseProjectM}
   // must be after UVideo, so it will not be the default video module
