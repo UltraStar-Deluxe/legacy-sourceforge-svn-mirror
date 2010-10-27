@@ -40,9 +40,7 @@ uses
   {$IFDEF UseSRCResample}
   samplerate,
   {$ENDIF}
-  {$IFDEF UseFFmpegResample}
-  avcodec,
-  {$ENDIF}
+  UMediaPlugin,
   UMediaCore_SDL,
   sdl,
   SysUtils,
@@ -76,13 +74,11 @@ type
   end;
 
   {$IFDEF UseFFmpegResample}
-  // Note: FFmpeg seems to be using "kaiser windowed sinc" for resampling, so
-  // the quality should be good.
   TAudioConverter_FFmpeg = class(TAudioConverter)
     private
-      // TODO: use SDL for multi-channel->stereo and format conversion
-      ResampleContext: PReSampleContext;
-      Ratio: double;
+      fPluginInfo: PMediaPluginInfo;
+      fAudioConverter: PAudioConverterInfo;
+      fStream: PAudioConvertStream;
     public
       function Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean; override;
       destructor Destroy(); override;
@@ -199,84 +195,50 @@ end;
 {$IFDEF UseFFmpegResample}
 
 function TAudioConverter_FFmpeg.Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean;
+var
+  CSrcFormatInfo: TCAudioFormatInfo;
+  CDstFormatInfo: TCAudioFormatInfo;
 begin
   inherited Init(SrcFormatInfo, DstFormatInfo);
 
   Result := false;
+  fPluginInfo := Plugin_register(MediaPluginCore);
+  fPluginInfo.initialize();
+  fAudioConverter := fPluginInfo.audioConverter;
 
-  // Note: ffmpeg does not support resampling for more than 2 input channels
-
-  if (srcFormatInfo.Format <> asfS16) then
+  AudioFormatInfoToCStruct(SrcFormatInfo, CSrcFormatInfo);
+  AudioFormatInfoToCStruct(DstFormatInfo, CDstFormatInfo);
+  fStream := fAudioConverter.open(@CSrcFormatInfo, @CDstFormatInfo);
+  if (fStream = nil) then
   begin
-    Log.LogError('Unsupported format', 'TAudioConverter_FFmpeg.Init');
+    Log.LogError('fAudioConverter.open() failed', 'TAudioConverter_FFmpeg.Init');
     Exit;
   end;
-
-  // TODO: use SDL here
-  if (srcFormatInfo.Format <> dstFormatInfo.Format) then
-  begin
-    Log.LogError('Incompatible formats', 'TAudioConverter_FFmpeg.Init');
-    Exit;
-  end;
-
-  ResampleContext := audio_resample_init(
-      dstFormatInfo.Channels, srcFormatInfo.Channels,
-      Round(dstFormatInfo.SampleRate), Round(srcFormatInfo.SampleRate));
-  if (ResampleContext = nil) then
-  begin
-    Log.LogError('audio_resample_init() failed', 'TAudioConverter_FFmpeg.Init');
-    Exit;
-  end;
-
-  // calculate ratio
-  Ratio := (dstFormatInfo.Channels / srcFormatInfo.Channels) *
-           (dstFormatInfo.SampleRate / srcFormatInfo.SampleRate);
 
   Result := true;
 end;
 
 destructor TAudioConverter_FFmpeg.Destroy();
 begin
-  if (ResampleContext <> nil) then
-    audio_resample_close(ResampleContext);
+  if (fStream <> nil) then
+    fAudioConverter.close(fStream);
   inherited;
 end;
 
 function TAudioConverter_FFmpeg.Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer;
-var
-  InputSampleCount: integer;
-  OutputSampleCount: integer;
 begin
-  Result := -1;
-
-  if (InputSize <= 0) then
-  begin
-    // avoid div-by-zero in audio_resample()
-    if (InputSize = 0) then
-      Result := 0;
-    Exit;
-  end;
-
-  InputSampleCount := InputSize div SrcFormatInfo.FrameSize;
-  OutputSampleCount := audio_resample(
-      ResampleContext, PSmallInt(OutputBuffer), PSmallInt(InputBuffer),
-      InputSampleCount);
-  if (OutputSampleCount = -1) then
-  begin
-    Log.LogError('audio_resample() failed', 'TAudioConverter_FFmpeg.Convert');
-    Exit;
-  end;
-  Result := OutputSampleCount * DstFormatInfo.FrameSize;
+  Result := fAudioConverter.convert(fStream,
+      PCuint8(InputBuffer), PCuint8(OutputBuffer), @InputSize);
 end;
 
 function TAudioConverter_FFmpeg.GetOutputBufferSize(InputSize: integer): integer;
 begin
-  Result := Ceil(InputSize * GetRatio());
+  Result := fAudioConverter.getOutputBufferSize(fStream, InputSize);
 end;
 
 function TAudioConverter_FFmpeg.GetRatio(): double;
 begin
-  Result := Ratio;
+  Result := fAudioConverter.getRatio(fStream);
 end;
 
 {$ENDIF}

@@ -199,21 +199,6 @@ end;
 
 { TAudioDecoder_FFmpeg }
 
-const
-{$IFDEF MSWINDOWS}
-  ffmpegPlugin = 'ffmpeg_playback.dll';
-{$ENDIF}
-{$IFDEF LINUX}
-  ffmpegPlugin = 'ffmpeg_playback';
-{$ENDIF}
-{$IFDEF DARWIN}
-  ffmpegPlugin = 'ffmpeg_playback.dylib';
-  {$linklib ffmpegPlugin}
-{$ENDIF}
-
-function Plugin_register(core: PMediaPluginCore): PMediaPluginInfo;
-  cdecl; external ffmpegPlugin;
-
 constructor TAudioDecoder_FFmpeg.Create();
 begin
   inherited Create();

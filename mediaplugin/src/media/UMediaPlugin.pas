@@ -36,6 +36,7 @@ interface
 {$ENDIF}
 
 uses
+  UMusic,
   ctypes;
 
 type
@@ -78,7 +79,7 @@ type
   end;
 
   PAudioDecodeStream = Pointer;
-  PAudioResampleStream = Pointer;
+  PAudioConvertStream = Pointer;
 
   PCAudioFormatInfo = ^TCAudioFormatInfo;
   TCAudioFormatInfo = record
@@ -104,9 +105,11 @@ type
 
   PAudioConverterInfo = ^TAudioConverterInfo;
   TAudioConverterInfo = record
-    open: function(inputFormat: PCAudioFormatInfo; outputFormat: PCAudioFormatInfo): PAudioResampleStream; cdecl;
-    close: procedure(stream: PAudioResampleStream); cdecl;
-    convert: function(stream: PAudioResampleStream; input, output: PCuint8; numSamples: cint): cint; cdecl;
+    open: function(inputFormat: PCAudioFormatInfo; outputFormat: PCAudioFormatInfo): PAudioConvertStream; cdecl;
+    close: procedure(stream: PAudioConvertStream); cdecl;
+    convert: function(stream: PAudioConvertStream; input, output: PCuint8; numSamples: PCint): cint; cdecl;
+	  getOutputBufferSize: function(stream: PAudioConvertStream; inputSize: cint): cint; cdecl;
+    getRatio: function(stream: PAudioConvertStream): double; cdecl;
   end;
 
   PMediaPluginInfo = ^TMediaPluginInfo;
@@ -119,9 +122,28 @@ type
     audioConverter: PAudioConverterInfo;
   end;
 
-  Plugin_register = function(core: PMediaPluginCore): PMediaPluginInfo; cdecl;
+  Plugin_registerFunc = function(core: PMediaPluginCore): PMediaPluginInfo; cdecl;
+
+const
+{$IFDEF MSWINDOWS}
+  ffmpegPlugin = 'ffmpeg_playback.dll';
+{$ENDIF}
+{$IFDEF LINUX}
+  ffmpegPlugin = 'ffmpeg_playback';
+{$ENDIF}
+{$IFDEF DARWIN}
+  ffmpegPlugin = 'ffmpeg_playback.dylib';
+  {$linklib ffmpegPlugin}
+{$ENDIF}
+
+function Plugin_register(core: PMediaPluginCore): PMediaPluginInfo;
+  cdecl; external ffmpegPlugin;
+
 
 function MediaPluginCore: PMediaPluginCore;
+
+procedure AudioFormatInfoToCStruct(
+    const Info: TAudioFormatInfo; var CInfo: TCAudioFormatInfo);
 
 implementation
 
@@ -145,6 +167,14 @@ const
 function MediaPluginCore: PMediaPluginCore;
 begin
   Result := @MediaPluginCore_Instance;
+end;
+
+procedure AudioFormatInfoToCStruct(
+    const Info: TAudioFormatInfo; var CInfo: TCAudioFormatInfo);
+begin
+  CInfo.sampleRate := Info.SampleRate;
+  CInfo.channels := Info.Channels;
+  CInfo.format := Ord(Info.Format);
 end;
 
 {* Misc *}
