@@ -610,7 +610,7 @@ begin
     DebugWriteln('Time:      '+inttostr(floor(Time*1000)) + sLineBreak +
                  'VideoTime: '+inttostr(floor(fFrameTime*1000)) + sLineBreak +
                  'TimeBase:  '+inttostr(floor(fFrameDuration*1000)) + sLineBreak +
-                 'TimeDiff:  '+inttostr(floor(TimeDifference*1000)));
+                 'TimeDiff:  '+inttostr(floor(TimeDiff*1000)));
     {$endif}
 
     // check if time has reached the next frame
@@ -626,7 +626,7 @@ begin
           'Time:      '+inttostr(floor(Time*1000)) + sLineBreak +
           'VideoTime: '+inttostr(floor(fFrameTime*1000)) + sLineBreak +
           'TimeBase:  '+inttostr(floor(fFrameDuration*1000)) + sLineBreak +
-          'TimeDiff:  '+inttostr(floor(TimeDifference*1000)));
+          'TimeDiff:  '+inttostr(floor(TimeDiff*1000)));
       {$endif}
 
       // we do not need a new frame now
@@ -651,7 +651,7 @@ begin
     {$IFDEF DebugDisplay}
     DebugWriteln('skipping frames' + sLineBreak +
         'TimeBase:  '+inttostr(floor(fFrameDuration*1000)) + sLineBreak +
-        'TimeDiff:  '+inttostr(floor(TimeDifference*1000)));
+        'TimeDiff:  '+inttostr(floor(TimeDiff*1000)));
     {$endif}
 
     // update video-time
