@@ -207,7 +207,7 @@ end;
 
 function TAudioDecoder_FFmpeg.GetName: String;
 begin
-  Result := 'Plugin:' + fPluginInfo.name;
+  Result := 'Plugin:AudioDecoder:' + fPluginInfo.name;
 end;
 
 function TAudioDecoder_FFmpeg.InitializeDecoder: boolean;

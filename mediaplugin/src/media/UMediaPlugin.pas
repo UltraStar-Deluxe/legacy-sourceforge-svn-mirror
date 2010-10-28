@@ -80,6 +80,7 @@ type
 
   PAudioDecodeStream = Pointer;
   PAudioConvertStream = Pointer;
+  PVideoDecodeStream = Pointer;
 
   PCAudioFormatInfo = ^TCAudioFormatInfo;
   TCAudioFormatInfo = record
@@ -112,6 +113,20 @@ type
     getRatio: function(stream: PAudioConvertStream): double; cdecl;
   end;
 
+  PVideoDecoderInfo = ^TVideoDecoderInfo;
+  TVideoDecoderInfo = record
+    open: function(filename: PAnsiChar): PVideoDecodeStream; cdecl;
+    close: procedure(stream: PVideoDecodeStream); cdecl;
+    setLoop: procedure(stream: PVideoDecodeStream; enable: cbool); cdecl;
+    getLoop: function(stream: PVideoDecodeStream): cbool; cdecl;
+    setPosition: procedure(stream: PVideoDecodeStream; time: double); cdecl;
+    getPosition: function(stream: PVideoDecodeStream): double; cdecl;
+    getFrameWidth: function(stream: PVideoDecodeStream): cint; cdecl;
+    getFrameHeight: function(stream: PVideoDecodeStream): cint; cdecl;
+    getFrameAspect: function(stream: PVideoDecodeStream): double; cdecl;
+    getFrame: function (stream: PVideoDecodeStream; time: clongdouble): PCuint8; cdecl;
+  end;
+
   PMediaPluginInfo = ^TMediaPluginInfo;
   TMediaPluginInfo = record
     version: cint;
@@ -120,6 +135,7 @@ type
     finalize: function(): cbool; cdecl;
     audioDecoder: PAudioDecoderInfo;
     audioConverter: PAudioConverterInfo;
+    videoDecoder: PVideoDecoderInfo;
   end;
 
   Plugin_registerFunc = function(core: PMediaPluginCore): PMediaPluginInfo; cdecl;

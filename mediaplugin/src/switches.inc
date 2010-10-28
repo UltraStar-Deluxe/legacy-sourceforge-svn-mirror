@@ -93,15 +93,8 @@
   {$ENDIF}
 {$IFEND}
 
-// ffmpeg config
-{$IFDEF HaveFFmpeg}
-  {$DEFINE UseFFmpegDecoder}
-  {$DEFINE UseFFmpegResample}
-  {$DEFINE UseFFmpegVideo}
-  {$IFDEF HaveSWScale}
-    {$DEFINE UseSWScale}
-  {$ENDIF}
-{$ENDIF}
+// ffmpeg config (TODO: remove when dynamically loaded)
+{$DEFINE UseFFmpegResample}
 
 {$IFDEF HaveLibsamplerate}
   {$DEFINE UseSRCResample}
@@ -113,10 +106,6 @@
 {$IFEND}
 
 // specify some useful defines
-
-{$IF Defined(UseFFmpegVideo) or Defined(UseFFmpegDecoder)}
-  {$DEFINE UseFFmpeg}
-{$IFEND}
 
 {$IF Defined(UseBASSInput) or Defined(UseBASSPlayback) or Defined(UseBASSDecoder)}
   {$DEFINE UseBASS}

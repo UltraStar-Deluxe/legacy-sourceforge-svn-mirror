@@ -88,20 +88,6 @@ uses
   portmixer              in 'lib\portmixer\portmixer.pas',
   {$ENDIF}
 
-  {$IFDEF UseFFmpeg}
-  avcodec                in 'lib\ffmpeg\avcodec.pas',
-  avformat               in 'lib\ffmpeg\avformat.pas',
-  avutil                 in 'lib\ffmpeg\avutil.pas',
-  rational               in 'lib\ffmpeg\rational.pas',
-  opt                    in 'lib\ffmpeg\opt.pas',
-  avio                   in 'lib\ffmpeg\avio.pas',
-  mathematics            in 'lib\ffmpeg\mathematics.pas',
-  UMediaCore_FFmpeg      in 'media\UMediaCore_FFmpeg.pas',
-  {$IFDEF UseSWScale}
-  swscale                in 'lib\ffmpeg\swscale.pas',
-  {$ENDIF}
-  {$ENDIF}
-
   {$IFDEF UseSRCResample}
   samplerate             in 'lib\samplerate\samplerate.pas',
   {$ENDIF}
@@ -268,11 +254,12 @@ uses
   //******************************
 
   UMediaPlugin              in 'media\UMediaPlugin.pas',
-
-{$IFDEF UseFFmpegVideo}
   UVideo                    in 'media\UVideo.pas',
+
+  // TODO: load dynamically
   UVideoDecoder_FFmpeg      in 'media\UVideoDecoder_FFmpeg.pas',
-{$ENDIF}
+  UAudioDecoder_FFmpeg      in 'media\UAudioDecoder_FFmpeg.pas',
+
 {$IFDEF UseProjectM}
   // must be after UVideo, so it will not be the default video module
   UVisualizer               in 'media\UVisualizer.pas',
@@ -295,9 +282,6 @@ uses
 {$ENDIF}
 {$IFDEF UsePortaudioPlayback}
   UAudioPlayback_Portaudio  in 'media\UAudioPlayback_Portaudio.pas',
-{$ENDIF}
-{$IFDEF UseFFmpegDecoder}
-  UAudioDecoder_FFmpeg      in 'media\UAudioDecoder_FFmpeg.pas',
 {$ENDIF}
   // fallback dummy, must be last
   UMedia_dummy              in 'media\UMedia_dummy.pas',
