@@ -1343,6 +1343,8 @@ end;
 procedure TScreenSing.LoadNextSong;
 var
   P, I:       integer;
+  C, N, beat: integer;
+  error:      boolean;
 
 begin
   // load notes
@@ -1382,6 +1384,23 @@ begin
   end;
   
   AktSong.Path := CatSongs.Song[CatSongs.Selected].Path;
+
+  error := false;
+  for P := 0 to Length(Czesci) - 1 do
+  begin
+    C := Length(Czesci[P].Czesc)-1;
+    N := Length(Czesci[P].Czesc[C].Nuta)-1;
+    beat := Czesci[P].Czesc[C].Nuta[N].Start + Czesci[P].Czesc[C].Nuta[N].Dlugosc;
+    if (Music.Length < GetTimeFromBeat(beat)) then
+      error := true;
+  end;
+
+  if error then
+  begin
+    Log.LogError('Error: TXT is longer then the MP3 in Song: ' + AktSong.Path + AktSong.Filename);
+    SongError;
+    Exit;
+  end;
 
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley then
   begin
@@ -2510,7 +2529,7 @@ begin
     glColor4f(0.15, 0.30, 0.6, t);
 
     h := 100*t*ScreenH/RenderH;
-    SetFontStyle(1);
+    SetFontStyle(4);
     SetFontItalic(false);
     SetFontSize(h);
     CountDownText := IntToStr(round(timeDiff-t));

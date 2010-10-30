@@ -2,6 +2,7 @@ Ultrastar Deluxe Challenge, Medley & Duet Edition r9 (xx.10.2010)
 -----------------------------
 New: (General)     DUET support! Song syntax as proposed by hawkear, however, limited to 2 parts. Duet songs can be created and edited in the editor.
 New: (General)     Webcam support.
+New: (General)     New Fonst (higher resolution)
 New: (General)     Option [Advanced]->DuelRatio for Challenge Mode: normal, 10%, 20%, ..., 90%: determines the percentage of the "duel" plugin.
 New: (General)     Zoom/slide effect in song selection screen when minimizing/maximizing videos via V.
 New: (General)     Video preview now has a reflection effect similar to the song cover.

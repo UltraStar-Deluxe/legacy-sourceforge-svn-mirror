@@ -294,7 +294,7 @@ begin
     if Tekst = INewPartyPoints[Pet] then Ini.NewPartyPoints := Pet;
 
   // ShowCredits
-  Tekst := IniFile.ReadString('Game', 'ShowCredits', IShowCredits[1]);
+  Tekst := IniFile.ReadString('Game', 'ShowCredits', IShowCredits[0]);
   for Pet := 0 to High(IShowCredits) do
     if Tekst = IShowCredits[Pet] then Ini.ShowCredits := Pet;
 

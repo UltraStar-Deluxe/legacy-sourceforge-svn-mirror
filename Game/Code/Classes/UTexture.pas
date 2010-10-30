@@ -73,6 +73,9 @@ type
     procedure UnloadTexture(Name: string; FromCache: boolean);
   end;
 
+const
+  max = 2048;
+
 var
   Texture:          TTextureUnit;
   TextureDatabase:  TTextureDatabase;
@@ -99,11 +102,11 @@ var
   TexFitW:    integer;
   TexFitH:    integer; // new for limit
 
-  TextureD8:    array[1..1024*1024] of byte; // 1MB
-  TextureD16:   array[1..1024*1024, 1..2] of byte;  // luminance/alpha tex (2MB)
-  TextureD24:   array[1..1024*1024, 1..3] of byte;  // normal 24-bit tex (3MB)
+  TextureD8:    array[1..max*max] of byte; // 1MB
+  TextureD16:   array[1..max*max, 1..2] of byte;  // luminance/alpha tex (2MB)
+  TextureD24:   array[1..max*max, 1..3] of byte;  // normal 24-bit tex (3MB)
   TextureD242:  array[1..512*512, 1..3] of byte;  // normal 24-bit tex (0,75MB)
-  TextureD32:   array[1..1024*1024, 1..4] of byte; // transparent 32-bit tex (4MB)
+  TextureD32:   array[1..max*max, 1..4] of byte; // transparent 32-bit tex (4MB)
   // total 40MB at 2048*2048
   // total 10MB at 1024*1024
 
@@ -245,7 +248,8 @@ begin
     TextureJ.Free;
   end
 
-  else if Format = 'PNG' then begin
+  else if Format = 'PNG' then
+  begin
     TexturePNG := TPNGObject.Create;
     if FromRegistry then TexturePNG.LoadFromStream(Res)
     else begin
@@ -281,7 +285,7 @@ begin
 
   if FromRegistry then Res.Free;
 
-  if (TextureB.Width > 1024) or (TextureB.Height > 1024) then begin // will be fixed in 0.5.1 and dynamically extended to 8192x8192 depending on the driver
+  if (TextureB.Width > max) or (TextureB.Height > max) then begin // will be fixed in 0.5.1 and dynamically extended to 8192x8192 depending on the driver
     Log.LogError('Image ' + Nazwa + ' is too big (' + IntToStr(TextureB.Width) + 'x' + IntToStr(TextureB.Height) + ')');
     Result.TexNum := -1;
   end else begin
@@ -452,7 +456,8 @@ begin
     end;}
   end;
 
-  if Typ = 'Font' then begin
+  if Typ = 'Font' then
+  begin
 
 // a patch from Linnex, that solves the font problem in wine which causes chrashes
    //TextureB.PixelFormat := pf24bit;
@@ -469,6 +474,8 @@ begin
       PPix := TextureB.ScanLine[Pet];
       for Pet2 := 0 to TextureB.Width-1 do begin
         Pix := PPix[Pet2 * 3];
+        if Pix>0 then
+          Pix := Pix * 1;
         TextureD16[Pet*TextureB.Width + Pet2 + 1, 1] := 255;
         TextureD16[Pet*TextureB.Width + Pet2 + 1, 2] := Pix;
       end;

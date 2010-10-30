@@ -67,7 +67,7 @@ Brandingtext "${p_name} Installation"
 OutFile "USdx CMD Edition-${version}-Installer.exe"
 !define ins_name "Install ${p_name} ${version}.exe"
 
-InstallDir "$PROGRAMFILES\${p_name}"
+InstallDir "C:\${p_name}"
 
 ShowInstDetails show
 ShowUnInstDetails show

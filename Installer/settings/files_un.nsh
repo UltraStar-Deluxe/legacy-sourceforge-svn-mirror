@@ -31,6 +31,34 @@ ${EndIf}
 ; Delete provided Covers 
  Delete "$INSTDIR\Covers\Covers.ini"
  Delete "$INSTDIR\Covers\NoCover.jpg"
+ 
+; Delete provided Fonts
+  Delete "$INSTDIR\Fonts\Bold.fnt"
+  Delete "$INSTDIR\Fonts\Bold_0.png"
+  Delete "$INSTDIR\Fonts\Bold_1.png"
+  Delete "$INSTDIR\Fonts\FontO.fnt"
+  Delete "$INSTDIR\Fonts\FontO2.fnt"
+  Delete "$INSTDIR\Fonts\FontO2_0.png"
+  Delete "$INSTDIR\Fonts\FontO2_1.png"
+  Delete "$INSTDIR\Fonts\FontO2_2.png"
+  Delete "$INSTDIR\Fonts\FontO2_3.png"
+  Delete "$INSTDIR\Fonts\FontO2_4.png"
+  ;Delete "$INSTDIR\Fonts\FontO2_5.png"
+  ;Delete "$INSTDIR\Fonts\FontO2_6.png"
+  Delete "$INSTDIR\Fonts\FontO_0.png"
+  Delete "$INSTDIR\Fonts\FontO_1.png"
+  Delete "$INSTDIR\Fonts\FontO_2.png"
+  Delete "$INSTDIR\Fonts\FontO_3.png"
+  Delete "$INSTDIR\Fonts\FontO_4.png"
+  Delete "$INSTDIR\Fonts\FontO_5.png"
+  Delete "$INSTDIR\Fonts\HighResNumbersO.fnt"
+  Delete "$INSTDIR\Fonts\HighResNumbersO_0.png"
+  Delete "$INSTDIR\Fonts\HighResNumbersO_1.png"
+  Delete "$INSTDIR\Fonts\HighResNumbersO_2.png"
+  Delete "$INSTDIR\Fonts\HighResNumbersO_3.png"
+  Delete "$INSTDIR\Fonts\HighResNumbersO_4.png"
+  Delete "$INSTDIR\Fonts\Normal.fnt"
+  Delete "$INSTDIR\Fonts\Normal_0.png" 
 
 ; Delete provided languages
  Delete "$INSTDIR\Languages\readme.txt"
@@ -420,6 +448,9 @@ ${EndIf}
 ; Delete only empty directories:
 
 StrCpy $0 "$INSTDIR\Covers"
+Call un.DeleteIfEmpty
+
+StrCpy $0 "$INSTDIR\Fonts"
 Call un.DeleteIfEmpty
 
 StrCpy $0 "$INSTDIR\Languages"

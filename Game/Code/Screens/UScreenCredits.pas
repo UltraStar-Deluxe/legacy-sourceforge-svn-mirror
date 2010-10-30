@@ -206,7 +206,8 @@ Procedure TScreenCredits.Draw_FunkyText;
 var
   S{,I, Len}: Integer;
   X,Y,A: Real;
-  visibleText: PChar;
+  visibleText:    PChar;
+  visibleString:  string;
 begin
   SetFontSize(10);
   //Init ScrollingText
@@ -230,10 +231,13 @@ begin
       if Credits_X+X > 32 then A:=17;
       glColor4f( 230/255-40/255+Y*(Credits_X+X)/900, 200/255-30/255+Y*(Credits_X+X)/1000, 155/255-20/255+Y*(Credits_X+X)/1100, A/17);
       glPrintLetter(visibleText[S]);
-      X := X + Fonts[ActFont].Width[Ord(visibleText[S])] * Fonts[ActFont].Tex.H / 30 * Fonts[ActFont].AspectW;
+      visibleString := visibleText[S];
+      X := X + glTextWidth(PChar(visibleString));
     end;
-    if (Credits_X<0) and (CurrentScrollStart < length(Funky_Text)) then begin
-      Credits_X:=Credits_X + Fonts[ActFont].Width[Ord(Funky_Text[CurrentScrollStart])] * Fonts[ActFont].Tex.H / 30 * Fonts[ActFont].AspectW;
+    if (Credits_X<0) and (CurrentScrollStart < length(Funky_Text)) then
+    begin
+      visibleString := Funky_Text[CurrentScrollStart];
+      Credits_X:=Credits_X + glTextWidth(PChar(visibleString));
       inc(CurrentScrollStart);
     end;
     visibleText:=pchar(Copy(Funky_Text, CurrentScrollStart, CurrentScrollEnd));

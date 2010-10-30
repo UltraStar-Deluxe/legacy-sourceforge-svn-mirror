@@ -1561,6 +1561,7 @@ begin
           Czesci[P].Czesc[C].Nuta[0].Tekst := Copy(Czesci[P].Czesc[C].Nuta[0].Tekst, 2, 100);
 
         // move spaces on the start to the end of the previous note
+        {
         for N := 1 to Czesci[P].Czesc[C].HighNut do
         begin
           while (Copy(Czesci[P].Czesc[C].Nuta[N].Tekst, 1, 1) = ' ') do
@@ -1569,20 +1570,22 @@ begin
             Czesci[P].Czesc[C].Nuta[N-1].Tekst := Czesci[P].Czesc[C].Nuta[N-1].Tekst + ' ';
           end;
         end; // N
+        }
 
         // correct '-'  to '- '
-        for N := 0 to Czesci[P].Czesc[C].HighNut do
+        {for N := 0 to Czesci[P].Czesc[C].HighNut do
         begin
           if Czesci[P].Czesc[C].Nuta[N].Tekst = '-' then
             Czesci[P].Czesc[C].Nuta[N].Tekst := '- ';
         end; // N
-
+        }
         // add space to the previous note when the current word is '- '
-        for N := 1 to Czesci[P].Czesc[C].HighNut do
+        {for N := 1 to Czesci[P].Czesc[C].HighNut do
         begin
           if Czesci[P].Czesc[C].Nuta[N].Tekst  = '- ' then
             Czesci[P].Czesc[C].Nuta[N-1].Tekst := Czesci[P].Czesc[C].Nuta[N-1].Tekst + ' ';
         end; // N
+        }
 
         // correct too many spaces at the end of note
         for N := 0 to Czesci[P].Czesc[C].HighNut do
@@ -1592,9 +1595,9 @@ begin
         end; // N
 
         // and correct if there is no space at the end of sentence
-        N := Czesci[P].Czesc[C].HighNut;
+        {N := Czesci[P].Czesc[C].HighNut;
         if Copy(Czesci[P].Czesc[C].Nuta[N].Tekst, Length(Czesci[P].Czesc[C].Nuta[N].Tekst), 1) <> ' ' then
-          Czesci[P].Czesc[C].Nuta[N].Tekst := Czesci[P].Czesc[C].Nuta[N].Tekst + ' ';
+          Czesci[P].Czesc[C].Nuta[N].Tekst := Czesci[P].Czesc[C].Nuta[N].Tekst + ' ';}
       end;
     end; // C
     EditorLyric[P].AddCzesc(P, Czesci[P].Akt);
@@ -2171,12 +2174,12 @@ begin
   cRR := 1; cGR := 0.8; cBR := 0.8;
 
   // Line
-  AddText(500, 573, 1, 7, 0, 0, 0, 'Line:');
-  TextSentence := AddText(545, 573, 1, 7, 0, 0, 0, '0 / 0');
+  //AddText(500, 573, 1, 7, 0, 0, 0, 'Line:');
+  TextSentence := AddText(500, 573, 1, 7, 0, 0, 0, 'Line: 0/0');
 
   // Note
-  AddText(655, 573, 1, 7, 0, 0, 0, 'Note:');
-  TextNote := AddText(710, 573, 1, 7, 0, 0, 0, '0 / 0');
+  //AddText(655, 573, 1, 7, 0, 0, 0, 'Note:');
+  TextNote := AddText(655, 573, 1, 7, 0, 0, 0, 'Note: 0/0');
 
   AddText(10, 10, 0, 8, 0, 0, 0, 'Title:');
   AddText(10, 30, 0, 8, 0, 0, 0, 'Artist:');
@@ -2847,8 +2850,8 @@ begin
     end; // click
   end; // if PlayOneNote
 
-  Text[TextSentence].Text := IntToStr(Czesci[CP].Akt + 1) + ' / ' + IntToStr(Czesci[CP].Ilosc);
-  Text[TextNote].Text := IntToStr(AktNuta[CP] + 1) + ' / ' + IntToStr(Czesci[CP].Czesc[Czesci[CP].Akt].IlNut);
+  Text[TextSentence].Text := 'Line: ' + IntToStr(Czesci[CP].Akt + 1) + '/' + IntToStr(Czesci[CP].Ilosc);
+  Text[TextNote].Text := 'Note: ' + IntToStr(AktNuta[CP] + 1) + '/' + IntToStr(Czesci[CP].Czesc[Czesci[CP].Akt].IlNut);
 
   // Song info
   if not BPMEditMode then

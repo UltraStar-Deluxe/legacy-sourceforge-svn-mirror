@@ -19,6 +19,18 @@ procedure SetFontItalic(Enable: boolean); // sets italic type letter (works for 
 procedure SetFontAspectW(Aspect: real);
 
 type
+  TChar = record
+    id:       integer;
+    x:        integer;
+    y:        integer;
+    width:    integer;
+    height:   integer;
+    xOffset:  integer;
+    yOffset:  integer;
+    xAdvance: integer;
+    page:     integer;
+  end;
+
   TTextGL = record
     X:        real;
     Y:        real;
@@ -30,15 +42,24 @@ type
   end;
 
   TFont = record
-    Tex:      TTexture;
-    Width:    array[0..255] of byte;
-    AspectW:  real;
-    Centered: boolean;
+    Tex:      array of TTexture;
+    Chars:    array of TChar;
+    IDs:      array of integer;
+    TexSize:  integer;
+    Size:     integer;
     Done:     real;
-    Outline:  real;
+    AspectW:  real;
+    AspectH:  real;
+    Bold:     boolean;
     Italic:   boolean;
+    lineH:    integer;
+    base:     integer;
+    X, Y:     real;
+    W, H:     real;
   end;
 
+const
+  SCALE = 28;
 
 var
   base:       GLuint;			                // Base Display List For The Font Set
@@ -50,79 +71,240 @@ var
 
 implementation
 
-uses UMain, Windows, SysUtils, UGraphic;
+uses UMain, Windows, SysUtils, UGraphic, UFiles;
 
 procedure BuildFont;			                // Build Our Bitmap Font
 var
-  Rejestr:  TResourceStream;
-  Pet:      integer;
+  I:          integer;
+  FontFiles:  array of string;
+
+  procedure ReadFontFile(num: integer);
+  var
+    Line:       string;
+    Fractal:    string;
+    FontFile:   TextFile;
+    Position:   word;
+    id:         integer;
+    idstr:      string;
+    len:        integer;
+    I:          integer;
+    Ident:      string;
+    maxID:      integer;
+
+  begin
+    maxID := 0;
+    AssignFile(FontFile, FontPath + FontFiles[num]);
+    Reset(FontFile);
+
+    ReadLn(FontFile, Line);
+    While (Length(Line) <> 0) do
+    begin
+      Position := Pos(' ', Line);
+      Ident := Trim(Copy(Line, 1, Position - 1));
+      Fractal := Trim(Copy(Line, Position + 1, Length(Line) - Position));
+
+      if (Ident='info') then
+      begin
+        //face
+
+        //size
+        Position := Pos('size=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 5, Length(Fractal) - Position - 4));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].size);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //bold
+
+        //italic
+
+        //charset
+
+        //unicode
+
+        //stretchH
+
+        //smooth
+
+        //aa
+
+        //padding
+
+        //spacing
+
+        //outline
+      end
+
+      else if (Ident='common') then
+      begin
+        //lineHeight
+        Position := Pos('lineHeight=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 11, Length(Fractal) - Position - 10));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].lineH);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //base
+        Position := Pos('base=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 5, Length(Fractal) - Position - 4));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].base);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //scaleW (TexSize)
+        Position := Pos('scaleW=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 7, Length(Fractal) - Position - 6));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].TexSize);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //scaleH
+      end
+
+      else if (Ident='page') then
+      begin
+        len := Length(Fonts[num].Tex);
+        SetLength(Fonts[num].Tex, len+1);
+
+        //id
+        Position := Pos('id=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 3, Length(Fractal) - Position - 2));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), id);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //file
+        Position := Pos('file="', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 6, Length(Fractal) - Position - 5));
+        Position := Pos('"', Fractal);
+        idstr := Trim(Copy(Fractal, 1, Position - 1));
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        if (num<2) then
+          Fonts[num].Tex[len] := Texture.LoadTexture(false, PChar(FontPath + idstr), 'PNG', 'Font', 0)
+        else
+          Fonts[num].Tex[len] := Texture.LoadTexture(false, PChar(FontPath + idstr), 'PNG', 'Font Outline', 0);
+      end
+
+      else if (Ident='chars') then
+      begin
+      end
+
+      else if (Ident='char') then
+      begin
+        len := Length(Fonts[num].Chars);
+        SetLength(Fonts[num].Chars, len+1);
+
+        //id
+        Position := Pos('id=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 3, Length(Fractal) - Position - 2));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].id);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        if (maxID < Fonts[num].Chars[len].id) then
+          maxID := Fonts[num].Chars[len].id;
+
+        //x
+        Position := Pos('x=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 2, Length(Fractal) - Position - 1));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].x);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //y
+        Position := Pos('y=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 2, Length(Fractal) - Position - 1));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].y);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //width
+        Position := Pos('width=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 6, Length(Fractal) - Position - 5));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].width);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //height
+        Position := Pos('height=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 7, Length(Fractal) - Position - 6));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].height);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //xoffset
+        Position := Pos('xoffset=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 8, Length(Fractal) - Position - 7));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].xOffset);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //yoffset
+        Position := Pos('yoffset=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 8, Length(Fractal) - Position - 7));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].yOffset);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //xadvance
+        Position := Pos('xadvance=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 9, Length(Fractal) - Position - 8));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].xAdvance);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //page
+        Position := Pos('page=', Fractal);
+        Fractal := Trim(Copy(Fractal, Position + 5, Length(Fractal) - Position - 4));
+        Position := Pos(' ', Fractal);
+        TryStrtoInt(Trim(Copy(Fractal, 1, Position - 1)), Fonts[num].Chars[len].page);
+        Fractal := Trim(Copy(Fractal, Position + 1, Length(Fractal) - Position));
+
+        //chnl
+      end
+
+      else if (Ident='kernings') then
+      begin
+      end
+
+      else if (Ident='kerning') then
+      begin
+      end;
+
+      if not EOf(FontFile) then
+        ReadLn (FontFile, Line)
+      else
+        break;
+    end;
+
+    CloseFile(FontFile);
+
+    SetLength(Fonts[num].IDs, maxID+1);
+    for I := 0 to Length(Fonts[num].Chars) - 1 do
+    begin
+      Fonts[num].IDs[Fonts[num].Chars[I].id] := I;
+    end;
+  end;
+
 begin
   ActFont := 0;
+  SetLength(FontFiles, 5);
+  FontFiles[0] := 'Normal.fnt';
+  FontFiles[1] := 'Bold.fnt';
+  FontFiles[2] := 'FontO.fnt';
+  FontFiles[3] := 'FontO2.fnt';
+  FontFiles[4] := 'HighResNumbersO.fnt';
 
   SetLength(Fonts, 5);
-  Fonts[0].Tex := Texture.LoadTexture(true, 'Font', 'PNG', 'Font', 0);
-  Fonts[0].Tex.H := 30;
-  Fonts[0].AspectW := 0.9;
-  Fonts[0].Done := -1;
-  Fonts[0].Outline := 0;
-
-  Fonts[1].Tex := Texture.LoadTexture(true, 'FontB', 'PNG', 'Font', 0);
-  Fonts[1].Tex.H := 30;
-  Fonts[1].AspectW := 1;
-  Fonts[1].Done := -1;
-  Fonts[1].Outline := 0;
-
-  Fonts[2].Tex := Texture.LoadTexture(true, 'FontO', 'PNG', 'Font Outline', 0);
-  Fonts[2].Tex.H := 30;
-  Fonts[2].AspectW := 0.95;
-  Fonts[2].Done := -1;
-  Fonts[2].Outline := 5;
-
-  Fonts[3].Tex := Texture.LoadTexture(true, 'FontO2', 'PNG', 'Font Outline 2', 0);
-  Fonts[3].Tex.H := 30;
-  Fonts[3].AspectW := 0.95;
-  Fonts[3].Done := -1;
-  Fonts[3].Outline := 4;
-
-{  Fonts[4].Tex := Texture.LoadTexture('FontO', 'BMP', 'Arrow', 0); // for score screen
-  Fonts[4].Tex.H := 30;
-  Fonts[4].AspectW := 0.95;
-  Fonts[4].Done := -1;
-  Fonts[4].Outline := 5;}
-
-
-  Rejestr := TResourceStream.Create(HInstance, 'Font', 'FNT');
-  Rejestr.Read(Fonts[0].Width, 256);
-  Rejestr.Free;
-
-  Rejestr := TResourceStream.Create(HInstance, 'FontB', 'FNT');
-  Rejestr.Read(Fonts[1].Width, 256);
-  Rejestr.Free;
-
-  Rejestr := TResourceStream.Create(HInstance, 'FontO', 'FNT');
-  Rejestr.Read(Fonts[2].Width, 256);
-  Rejestr.Free;
-
-  Rejestr := TResourceStream.Create(HInstance, 'FontO2', 'FNT');
-  Rejestr.Read(Fonts[3].Width, 256);
-  Rejestr.Free;
-
-{  Rejestr := TResourceStream.Create(HInstance, 'FontO', 'FNT');
-  Rejestr.Read(Fonts[4].Width, 256);
-  Rejestr.Free;}
-
-  for Pet := 0 to 255 do
-    Fonts[1].Width[Pet] := Fonts[1].Width[Pet] div 2;
-
-  for Pet := 0 to 255 do
-    Fonts[2].Width[Pet] := Fonts[2].Width[Pet] div 2 + 2;
-
-  for Pet := 0 to 255 do
-    Fonts[3].Width[Pet] := Fonts[3].Width[Pet] + 1;
-
-{  for Pet := 0 to 255 do
-    Fonts[4].Width[Pet] := Fonts[4].Width[Pet] div 2 + 2;}
-
+  for I := 0 to Length(FontFiles) - 1 do
+  begin
+    Fonts[I].Done := -1;
+    Fonts[I].AspectW := 1.0;
+    Fonts[I].AspectH := 1.0;
+    Fonts[I].H := 30;
+    ReadFontFile(I);
+  end;
 end;
 
 procedure KillFont;     		                // Delete The Font
@@ -134,13 +316,14 @@ function glTextWidth(text: pchar): real;
 var
   Letter:       char;
 begin
-//  Log.LogStatus(Text, 'glTextWidth');
   Result := 0;
-  while (length(text) > 0) do begin
+  while (length(text) > 0) do
+  begin
     Letter := Text[0];
     text := pchar(Copy(text, 2, Length(text)-1));
-    Result := Result + Fonts[ActFont].Width[Ord(Letter)] * Fonts[ActFont].Tex.H / 30 * Fonts[ActFont].AspectW;
-  end; // while
+    Result := Result + Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].xAdvance *
+      (Fonts[ActFont].H/30) * Fonts[ActFont].AspectW * SCALE/Fonts[ActFont].lineH;
+  end;
 end;
 
 procedure glPrintDone(text: pchar; Done: real; ColR, ColG, ColB, Alpha: real);
@@ -155,104 +338,107 @@ end;
 
 procedure glPrintLetter(Letter: char);
 var
-  TexX, TexY:   real;
-  TexR, TexB:   real;
-  FWidth:       real;
-  PL, PT:       real;
-  PR, PB:       real;
   XItal:        real; // X shift for italic type letter
+  gXO, gYO:     real;
+  gX, gY:       real;
+  gW, gH:       real;
+  tW, tH:       real;
+  fW, fH:       real;
 begin
-  with Fonts[ActFont].Tex do begin
-  FWidth := Fonts[ActFont].Width[Ord(Letter)];
+  fW := Fonts[ActFont].H/30 * Fonts[ActFont].AspectW * SCALE/Fonts[ActFont].lineH;
+  fH := Fonts[ActFont].H/30 * Fonts[ActFont].AspectH * SCALE/Fonts[ActFont].lineH;
 
-  W := FWidth * (H/30) * Fonts[ActFont].AspectW;
-//  H := 30;
+  tW := Fonts[ActFont].TexSize;
+  tH := Fonts[ActFont].TexSize;
 
-  // set texture positions
-  TexX := (ord(Letter) mod 16) * 1/16 + 1/32 - FWidth/1024 - Fonts[ActFont].Outline/1024;
-  TexY := (ord(Letter) div 16) * 1/16 + 2/1024; // 2/1024
-  TexR := (ord(Letter) mod 16) * 1/16 + 1/32 + FWidth/1024 + Fonts[ActFont].Outline/1024;
-  TexB := (1 + ord(Letter) div 16) * 1/16 - 2/1024;
+  gX := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].x;
+  gY := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].y;
+  gW := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].width;
+  gH := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].height;
+  gXO := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].xOffset * fW;
+  gYO := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].yOffset * fH +
+    Fonts[ActFont].H/30 * 2.5;
 
-  // set vector positions
-  PL := X - Fonts[ActFont].Outline * (H/30) * Fonts[ActFont].AspectW /2;
-  PT := Y;
-  PR := PL + W + Fonts[ActFont].Outline * (H/30) * Fonts[ActFont].AspectW;
-  PB := PT + H;
   if Fonts[ActFont].Italic = false then
     XItal := 0
   else
-    XItal := 12;
+    XItal := fH*gH*0.3;
 
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glBindTexture(GL_TEXTURE_2D, TexNum);
+  glBindTexture(GL_TEXTURE_2D, Fonts[ActFont].Tex[Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].page].TexNum);
   glBegin(GL_QUADS);
-    glTexCoord2f(TexX, TexY); glVertex2f(PL+XItal,  PT);
-    glTexCoord2f(TexX, TexB); glVertex2f(PL,        PB);
-    glTexCoord2f(TexR, TexB); glVertex2f(PR,        PB);
-    glTexCoord2f(TexR, TexY); glVertex2f(PR+XItal,  PT);
+    glTexCoord2f(gX/tW, gY/tH);
+    glVertex2f(Fonts[ActFont].X + gXO + XItal,  Fonts[ActFont].Y + gYO);
+
+    glTexCoord2f((gX+gW)/tW, gY/tH);
+    glVertex2f(Fonts[ActFont].X + gW*fW + gXO + XItal,  Fonts[ActFont].Y + gYO);
+
+    glTexCoord2f((gX+gW)/tW, (gY+gH)/tH);
+    glVertex2f(Fonts[ActFont].X + gW*fW + gXO,  Fonts[ActFont].Y + gH*fH + gYO);
+
+    glTexCoord2f(gX/tW, (gY+gH)/tH);
+    glVertex2f(Fonts[ActFont].X + gXO,  Fonts[ActFont].Y + gH*fH + gYO);
   glEnd;
-  X := X + W;
+  Fonts[ActFont].X := Fonts[ActFont].X + Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].xAdvance * fW;
   glDisable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
-  end; // with
 end;
 
 procedure glPrintLetterCut(letter: char; Start, Finish: real);
 var
-  TexX, TexY:   real;
-  TexR, TexB:   real;
-  TexTemp:      real;
-  FWidth:       real;
-  PL, PT:       real;
-  PR, PB:       real;
-  OutTemp:      real;
+  gXO, gYO:     real;
+  gX, gY:       real;
+  gW, gH:       real;
+  tW, tH:       real;
+  fW, fH:       real;
+  TexR:         real;
   XItal:        real;
+
 begin
-  with Fonts[ActFont].Tex do begin
-  FWidth := Fonts[ActFont].Width[Ord(Letter)];
+  fW := Fonts[ActFont].H/30 * Fonts[ActFont].AspectW * SCALE/Fonts[ActFont].lineH;
+  fH := Fonts[ActFont].H/30 * Fonts[ActFont].AspectH * SCALE/Fonts[ActFont].lineH;
 
-  W := FWidth * (H/30) * Fonts[ActFont].AspectW;
-//  H := 30;
-  OutTemp := Fonts[ActFont].Outline * (H/30) * Fonts[ActFont].AspectW;
+  tW := Fonts[ActFont].TexSize;
+  tH := Fonts[ActFont].TexSize;
 
-  // set texture positions
-  TexX := (ord(Letter) mod 16) * 1/16 + 1/32 - FWidth/1024 - Fonts[ActFont].Outline/1024;
-  TexY := (ord(Letter) div 16) * 1/16 + 2/1024; // 2/1024
-  TexR := (ord(Letter) mod 16) * 1/16 + 1/32 + FWidth/1024 + Fonts[ActFont].Outline/1024;
-  TexB := (1 + ord(Letter) div 16) * 1/16 - 2/1024;
+  gX := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].x;
+  gY := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].y;
+  gW := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].width;
+  gH := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].height;
+  gXO := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].xOffset * fW;
+  gYO := Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].yOffset * fH +
+    Fonts[ActFont].H/30 * 2.5;
 
-  TexTemp := TexX + Start * (TexR - TexX);
-  TexR := TexX + Finish * (TexR - TexX);
-  TexX := TexTemp;
+  TexR := gX + Finish * gW;
+  gX := gX + Start * gW;
 
-  // set vector positions
-  PL := X - OutTemp / 2 + OutTemp * Start;
-  PT := Y;
-  PR := PL + (W + OutTemp) * (Finish - Start);
-  PB := PT + H;
   if Fonts[ActFont].Italic = false then
     XItal := 0
   else
-    XItal := 12;
+    XItal := fH*gH*0.3;
 
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glBindTexture(GL_TEXTURE_2D, TexNum);
+  glBindTexture(GL_TEXTURE_2D, Fonts[ActFont].Tex[Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].page].TexNum);
   glBegin(GL_QUADS);
-    glTexCoord2f(TexX, TexY); glVertex2f(PL+XItal,  PT);
-    glTexCoord2f(TexX, TexB); glVertex2f(PL,        PB);
-    glTexCoord2f(TexR, TexB); glVertex2f(PR,        PB);
-    glTexCoord2f(TexR, TexY); glVertex2f(PR+XItal,  PT); // not tested with XItal
+    glTexCoord2f(gX/tW, gY/tH);
+    glVertex2f(Fonts[ActFont].X + gXO + XItal,  Fonts[ActFont].Y + gYO);
+
+    glTexCoord2f(TexR/tW, gY/tH);
+    glVertex2f(Fonts[ActFont].X + gXO + gW*fW*(Finish-Start) + XItal,  Fonts[ActFont].Y + gYO);
+
+    glTexCoord2f(TexR/tW, (gY+gH)/tH);
+    glVertex2f(Fonts[ActFont].X + gXO + gW*fW*(Finish-Start),  Fonts[ActFont].Y + gH*fH + gYO);
+
+    glTexCoord2f(gX/tW, (gY+gH)/tH);
+    glVertex2f(Fonts[ActFont].X + gXO,  Fonts[ActFont].Y + gH*fH + gYO);
   glEnd;
-  X := X + W * (Finish - Start);
+	Fonts[ActFont].X := Fonts[ActFont].X + gW*fW*(Finish-Start);
   glDisable(GL_BLEND);
   glDisable(GL_TEXTURE_2D);
-  end; // with
-
 end;
 
 procedure glPrint(text: pchar);	                // Custom GL "Print" Routine
@@ -279,6 +465,7 @@ var
   PTotWidth:    real;
   PDoingNow:    real;
   S:            string;
+  lastX:		real;
 begin
   if (Text = '') then   			        // If There's No Text
                 Exit;					        // Do Nothing
@@ -299,10 +486,14 @@ begin
     if (PToDo > 0) and (PDoingNow <= PToDo) then
       glPrintLetter(Letter);
 
-    if (PToDo > 0) and (PDoingNow > PToDo) then begin
+    if (PToDo > 0) and (PDoingNow > PToDo) then
+    begin
+	  lastX := Fonts[ActFont].X;
       glPrintLetterCut(Letter, 0, PToDo / PDoingNow);
       glColor4f(PColR, PColG,  PColB, Alpha);
       glPrintLetterCut(Letter, PToDo / PDoingNow, 1);
+	  Fonts[ActFont].X := lastX + Fonts[ActFont].Chars[Fonts[ActFont].IDs[Ord(Letter)]].xAdvance *
+        (Fonts[ActFont].H/30) * Fonts[ActFont].AspectW * SCALE/Fonts[ActFont].lineH;
     end;
 
     if (PToDo <= 0) then
@@ -316,13 +507,13 @@ end;
 
 procedure SetFontPos(X, Y: real);
 begin
-  Fonts[ActFont].Tex.X := X;
-  Fonts[ActFont].Tex.Y := Y;
+  Fonts[ActFont].X := X;
+  Fonts[ActFont].Y := Y;
 end;
 
 procedure SetFontSize(Size: real);
 begin
-  Fonts[ActFont].Tex.H := 30 * (Size/10);
+  Fonts[ActFont].H := 30 * (Size/10);
 end;
 
 procedure SetFontStyle(Style: integer);

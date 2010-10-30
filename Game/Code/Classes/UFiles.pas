@@ -55,6 +55,7 @@ var
   PlayListPath:     string;
   RecordingsPath:   string;
   SessionLogPath:   string;
+  FontPath:         string;
 
   SongFile: TextFile;   // all procedures in this unit operates on this file
   FileLineNo: integer;  //Line which is readed at Last, for error reporting
@@ -91,6 +92,7 @@ begin
   PlaylistPath := GamePath + 'Playlists\';
   RecordingsPath := GamePath + 'Recordings\';
   SessionLogPath := GamePath + 'SessionLog\';
+  FontPath := GamePath + 'Fonts\';
 
   Writeable := true;
 
@@ -124,6 +126,9 @@ begin
 
   If Writeable And (not DirectoryExists(SessionLogPath)) then
     Writeable := ForceDirectories(SessionLogPath);
+
+  If Writeable And (not DirectoryExists(FontPath)) then
+    Writeable := ForceDirectories(FontPath);
 
   if not Writeable then
     Log.LogError('Error: Dir is Readonly');
@@ -1334,7 +1339,7 @@ begin
   begin
     for J := I+1 to num_lines - 1 do
     begin
-      if sentences[I]=sentences[J] then
+      if (sentences[I]<>'') and (sentences[I]=sentences[J]) then
       begin
         temp_series.start := I;
         temp_series.end_  := I;
@@ -1346,7 +1351,7 @@ begin
 
         for K := 1 to max do
         begin
-          if sentences[I+K]=sentences[J+K] then
+          if (sentences[I+K]<>'') and (sentences[I+K]=sentences[J+K]) then
             temp_series.end_ := I+K
           else
             break;

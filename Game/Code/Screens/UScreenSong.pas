@@ -2257,12 +2257,14 @@ begin
     Music.SetMusicVolume(100);
 
   //If Preview is deactivated: Load MUsicfile now
-  If (Ini.PreviewVolume = 0) then
+  If (Ini.PreviewVolume = 0) and (Display.NextScreen <> @ScreenEditSub) and
+    (not CatSongs.Song[Interaction].Main) then
     Music.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3);
 
   //When hide then Stop Music (For Party Mode Popup on Exit)
   if (Display.NextScreen <> @ScreenSong) and (Display.NextScreen <> @ScreenSing) and
-    (Display.NextScreen <> @ScreenSingModi) and (Music <> nil) then
+    (Display.NextScreen <> @ScreenSingModi) and (Display.NextScreen <> @ScreenEditSub) and
+    (Music <> nil) then
     Music.Stop;
 end;
 
@@ -3621,7 +3623,8 @@ end;
 
 procedure TScreenSong.OpenEditor;
 begin
-  if (Length(Songs.Song) > 0) and (not CatSongs.Song[Interaction].Main) AND (Mode = smNormal) then begin
+  if (Length(Songs.Song) > 0) and (not CatSongs.Song[Interaction].Main) AND (Mode = smNormal) then
+  begin
     Music.Stop;
     acClose;
     VidVis := none;

@@ -1,0 +1,20 @@
+info face="Comic Sans MS" size=1024 bold=1 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=5,5,5,5 spacing=5,5 outline=10
+common lineHeight=1024 base=810 scaleW=1024 scaleH=1024 pages=5 packed=0 alphaChnl=2 redChnl=0 greenChnl=0 blueChnl=0
+page id=0 file="HighResNumbersO_0.png"
+page id=1 file="HighResNumbersO_1.png"
+page id=2 file="HighResNumbersO_2.png"
+page id=3 file="HighResNumbersO_3.png"
+page id=4 file="HighResNumbersO_4.png"
+chars count=12
+char id=43   x=0     y=620   width=370   height=322   xoffset=45    yoffset=420   xadvance=449   page=0  chnl=15
+char id=45   x=375   y=620   width=320   height=120   xoffset=64    yoffset=554   xadvance=449   page=0  chnl=15
+char id=48   x=433   y=0     width=460   height=602   xoffset=-7    yoffset=237   xadvance=449   page=1  chnl=15
+char id=49   x=0     y=0     width=290   height=590   xoffset=69    yoffset=235   xadvance=449   page=4  chnl=15
+char id=50   x=295   y=0     width=395   height=582   xoffset=30    yoffset=244   xadvance=449   page=4  chnl=15
+char id=51   x=474   y=0     width=394   height=595   xoffset=24    yoffset=247   xadvance=449   page=3  chnl=15
+char id=52   x=0     y=0     width=469   height=599   xoffset=-12   yoffset=235   xadvance=449   page=2  chnl=15
+char id=53   x=0     y=0     width=428   height=604   xoffset=16    yoffset=244   xadvance=449   page=1  chnl=15
+char id=54   x=439   y=0     width=418   height=614   xoffset=17    yoffset=237   xadvance=449   page=0  chnl=15
+char id=55   x=0     y=0     width=469   height=595   xoffset=-4    yoffset=254   xadvance=449   page=3  chnl=15
+char id=56   x=474   y=0     width=422   height=598   xoffset=12    yoffset=246   xadvance=449   page=2  chnl=15
+char id=57   x=0     y=0     width=434   height=615   xoffset=4     yoffset=244   xadvance=449   page=0  chnl=15
