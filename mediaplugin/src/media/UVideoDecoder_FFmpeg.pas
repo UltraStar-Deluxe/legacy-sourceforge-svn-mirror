@@ -33,27 +33,45 @@ interface
 
 {$I switches.inc}
 
+uses
+  UMediaPlugin,
+  UMusic,
+  UPath;
+
+type
+  TVideoDecoder_FFmpeg = class( TInterfacedObject, IVideoDecoder )
+  private
+    fPluginInfo: PMediaPluginInfo;
+  public
+    constructor Create(Info: PMediaPluginInfo);
+
+    function GetName: String;
+
+    function InitializeDecoder(): boolean;
+    function FinalizeDecoder: boolean;
+
+    function Open(const FileName: IPath): TVideoDecodeStream;
+  end;
+
 implementation
 
 uses
   SysUtils,
   Math,
-  UMediaPlugin,
+  ctypes,
   UCommon,
   UConfig,
-  ULog,
-  UMusic,
-  UPath;
+  ULog;
 
 type
   TVideoDecodeStream_FFmpeg = class (TVideoDecodeStream)
   private
-    private
-      fFilename: IPath;
-      fStream: PVideoDecodeStream;
+    fVideoDecoderInfo: PVideoDecoderInfo;
+    fFilename: IPath;
+    fStream: PVideoDecodeStream;
 
   public
-    constructor Create;
+    constructor Create(Info: PVideoDecoderInfo);
     destructor Destroy; override;
 
     function Open(const FileName: IPath): boolean; override;
@@ -72,31 +90,14 @@ type
     function GetFrame(Time: Extended): PByteArray; override;
   end;
 
-  TVideoDecoder_FFmpeg = class( TInterfacedObject, IVideoDecoder )
-  private
-    fPluginInfo: PMediaPluginInfo;
-  public
-    constructor Create();
-
-    function GetName: String;
-
-    function InitializeDecoder(): boolean;
-    function FinalizeDecoder: boolean;
-
-    function Open(const FileName: IPath): TVideoDecodeStream;
-  end;
-
-var
-  VideoDecoderInfo: PVideoDecoderInfo;
-
 {*------------------------------------------------------------------------------
  * TVideoPlayback_ffmpeg
  *------------------------------------------------------------------------------}
 
-constructor TVideoDecoder_FFmpeg.Create();
+constructor TVideoDecoder_FFmpeg.Create(Info: PMediaPluginInfo);
 begin
   inherited Create();
-  fPluginInfo := Plugin_register(MediaPluginCore);
+  fPluginInfo := Info;
 end;
 
 function  TVideoDecoder_FFmpeg.GetName: String;
@@ -106,14 +107,13 @@ end;
 
 function TVideoDecoder_FFmpeg.InitializeDecoder(): boolean;
 begin
-  fPluginInfo.initialize();
-  VideoDecoderInfo := fPluginInfo.videoDecoder;
+  //fPluginInfo.initialize();
   Result := true;
 end;
 
 function TVideoDecoder_FFmpeg.FinalizeDecoder(): boolean;
 begin
-  fPluginInfo.finalize();
+  //fPluginInfo.finalize();
   Result := true;
 end;
 
@@ -123,7 +123,7 @@ var
 begin
   Result := nil;
 
-  Stream := TVideoDecodeStream_FFmpeg.Create;
+  Stream := TVideoDecodeStream_FFmpeg.Create(fPluginInfo.videoDecoder);
   if (not Stream.Open(FileName)) then
   begin
     Stream.Free;
@@ -136,9 +136,10 @@ end;
 
 {* TVideoDecoder_FFmpeg *}
 
-constructor TVideoDecodeStream_FFmpeg.Create;
+constructor TVideoDecodeStream_FFmpeg.Create(Info: PVideoDecoderInfo);
 begin
   inherited Create();
+  fVideoDecoderInfo := Info;
   fFilename := PATH_NONE;
 end;
 
@@ -154,7 +155,7 @@ begin
 
   Close();
 
-  fStream := VideoDecoderInfo.open(PChar(Filename.ToUTF8()));
+  fStream := fVideoDecoderInfo.open(PChar(Filename.ToUTF8()));
   if (fStream = nil) then
     Exit;
 
@@ -168,52 +169,49 @@ begin
   Self.fFilename := PATH_NONE;
   if (fStream <> nil) then
   begin
-    VideoDecoderInfo.close(fStream);
+    fVideoDecoderInfo.close(fStream);
     fStream := nil;
   end;
 end;
 
 function TVideoDecodeStream_FFmpeg.GetFrame(Time: Extended): PByteArray;
 begin
-  Result := PByteArray(VideoDecoderInfo.getFrame(fStream, Time));
+  Result := PByteArray(fVideoDecoderInfo.getFrame(fStream, Time));
 end;
 
 procedure TVideoDecodeStream_FFmpeg.SetLoop(Enable: boolean);
 begin
-  VideoDecoderInfo.setLoop(fStream, Enable);
+  fVideoDecoderInfo.setLoop(fStream, Enable);
 end;
 
 function TVideoDecodeStream_FFmpeg.GetLoop(): boolean;
 begin
-  Result := VideoDecoderInfo.getLoop(fStream);
+  Result := fVideoDecoderInfo.getLoop(fStream);
 end;
 
 procedure TVideoDecodeStream_FFmpeg.SetPosition(Time: real);
 begin
-  VideoDecoderInfo.setPosition(fStream, Time);
+  fVideoDecoderInfo.setPosition(fStream, Time);
 end;
 
 function  TVideoDecodeStream_FFmpeg.GetPosition: real;
 begin
-  Result := VideoDecoderInfo.getPosition(fStream);
+  Result := fVideoDecoderInfo.getPosition(fStream);
 end;
 
 function TVideoDecodeStream_FFmpeg.GetFrameWidth(): integer;
 begin
-  Result := VideoDecoderInfo.getFrameWidth(fStream);
+  Result := fVideoDecoderInfo.getFrameWidth(fStream);
 end;
 
 function TVideoDecodeStream_FFmpeg.GetFrameHeight(): integer;
 begin
-  Result := VideoDecoderInfo.getFrameHeight(fStream);
+  Result := fVideoDecoderInfo.getFrameHeight(fStream);
 end;
 
 function TVideoDecodeStream_FFmpeg.GetFrameAspect(): real;
 begin
-  Result := VideoDecoderInfo.getFrameAspect(fStream);
+  Result := fVideoDecoderInfo.getFrameAspect(fStream);
 end;
-
-initialization
-  MediaManager.Add(TVideoDecoder_FFmpeg.Create);
 
 end.

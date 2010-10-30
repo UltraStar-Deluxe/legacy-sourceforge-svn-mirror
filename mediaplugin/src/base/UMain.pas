@@ -93,6 +93,7 @@ uses
   ULuaTextGL,
   ULuaParty,
   ULuaScreenSing,
+  UMediaPlugin,
   UTime;
 
 procedure Main;
@@ -182,6 +183,8 @@ begin
 
     Log.BenchmarkEnd(1);
     Log.LogBenchmark('Loading Ini', 1);
+
+    LoadMediaPlugins();
 
     // Sound
     Log.BenchmarkStart(1);

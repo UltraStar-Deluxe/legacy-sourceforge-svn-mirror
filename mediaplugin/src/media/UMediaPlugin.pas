@@ -47,9 +47,9 @@ type
 
   PMediaPluginCore = ^TMediaPluginCore;
   TMediaPluginCore = record
-  	version: cint;
+    version: cint;
 
-	  log: procedure(level: cint; msg: PChar; context: PChar); cdecl;
+    log: procedure(level: cint; msg: PChar; context: PChar); cdecl;
     ticksMillis: function(): cuint32; cdecl;
 
     fileOpen: function(utf8Filename: PAnsiChar; mode: cint): PFileStream; cdecl;
@@ -138,23 +138,9 @@ type
     videoDecoder: PVideoDecoderInfo;
   end;
 
-  Plugin_registerFunc = function(core: PMediaPluginCore): PMediaPluginInfo; cdecl;
+  TPluginRegisterFunc = function(core: PMediaPluginCore): PMediaPluginInfo; cdecl;
 
-const
-{$IFDEF MSWINDOWS}
-  ffmpegPlugin = 'ffmpeg_playback.dll';
-{$ENDIF}
-{$IFDEF LINUX}
-  ffmpegPlugin = 'ffmpeg_playback';
-{$ENDIF}
-{$IFDEF DARWIN}
-  ffmpegPlugin = 'ffmpeg_playback.dylib';
-  {$linklib ffmpegPlugin}
-{$ENDIF}
-
-function Plugin_register(core: PMediaPluginCore): PMediaPluginInfo;
-  cdecl; external ffmpegPlugin;
-
+procedure LoadMediaPlugins();
 
 function MediaPluginCore: PMediaPluginCore;
 
@@ -164,8 +150,15 @@ procedure AudioFormatInfoToCStruct(
 implementation
 
 uses
+  SysUtils,
   SDL,
-  ULog;
+  moduleloader,
+  UFilesystem,
+  UPath,
+  UPathUtils,
+  ULog,
+  UAudioDecoder_FFmpeg,
+  UVideoDecoder_FFmpeg;
 
 var
   MediaPluginCore_Instance: TMediaPluginCore;
@@ -346,6 +339,65 @@ begin
     condBroadcast := Core_condBroadcast;
     condWait := Core_condWait;
     condWaitTimeout := Core_condWaitTimeout;
+  end;
+end;
+
+procedure LoadMediaPlugins();
+var
+  LibPath: IPath;
+  Iter: IFileIterator;
+  FileInfo: TFileInfo;
+  ModuleFile: IPath;
+  Module: TModuleHandle;
+  RegisterFunc: TPluginRegisterFunc;
+  PluginInfo: PMediaPluginInfo;
+begin
+  LibPath := MediaPluginPath.Append('*.dll');
+  Iter := FileSystem.FileFind(LibPath, faAnyFile);
+  while (Iter.HasNext) do
+  begin
+    FileInfo := Iter.Next();
+    ModuleFile := MediaPluginPath.Append(FileInfo.Name);
+    if (not LoadModule(Module, PChar(ModuleFile.ToNative))) then
+    begin
+      Log.LogInfo('Failed to load media plugin: "' + FileInfo.Name.ToNative + '"',
+          'LoadMediaPlugins');
+      Continue;
+    end;
+    RegisterFunc := GetModuleSymbol(Module, 'Plugin_register');
+    if (@RegisterFunc = nil) then
+    begin
+      Log.LogError('Invalid media plugin: "' + FileInfo.Name.ToNative + '"',
+          'LoadMediaPlugins');
+      UnloadModule(Module);
+      Continue;
+    end;
+    PluginInfo := RegisterFunc(MediaPluginCore);
+    if (PluginInfo = nil) then
+    begin
+      Log.LogError('Invalid media plugin info: "' + FileInfo.Name.ToNative + '"',
+          'LoadMediaPlugins');
+      UnloadModule(Module);
+      Continue;
+    end;
+    if (not PluginInfo.initialize()) then
+    begin
+      Log.LogError('Failed to initialize media plugin: "' + PluginInfo.name + '"',
+          'LoadMediaPlugins');
+      UnloadModule(Module);
+      Continue;
+    end;
+
+    Log.LogStatus('Loaded media plugin: "' + PluginInfo.name + '"',
+        'LoadMediaPlugins');
+    
+    // register modules
+    if (PluginInfo.audioDecoder <> nil) then
+      MediaManager.Add(TAudioDecoder_FFmpeg.Create(PluginInfo));
+    if (PluginInfo.videoDecoder <> nil) then
+      MediaManager.Add(TVideoDecoder_FFmpeg.Create(PluginInfo));
+    //if (PluginInfo.audioConverter <> nil) then
+    //  MediaManager.Add();
   end;
 end;
 

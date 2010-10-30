@@ -194,6 +194,21 @@ end;
 
 {$IFDEF UseFFmpegResample}
 
+const
+{$IFDEF MSWINDOWS}
+  ffmpegPlugin = 'ffmpeg_playback.dll';
+{$ENDIF}
+{$IFDEF LINUX}
+  ffmpegPlugin = 'ffmpeg_playback';
+{$ENDIF}
+{$IFDEF DARWIN}
+  ffmpegPlugin = 'ffmpeg_playback.dylib';
+  {$linklib ffmpegPlugin}
+{$ENDIF}
+
+function Plugin_register(core: PMediaPluginCore): PMediaPluginInfo;
+  cdecl; external ffmpegPlugin;
+
 function TAudioConverter_FFmpeg.Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean;
 var
   CSrcFormatInfo: TCAudioFormatInfo;

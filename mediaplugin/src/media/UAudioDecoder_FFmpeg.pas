@@ -44,28 +44,45 @@ interface
 
 {$I switches.inc}
 
+uses
+  UMediaPlugin,
+  UMusic,
+  UPath;
+
+type
+  TAudioDecoder_FFmpeg = class(TInterfacedObject, IAudioDecoder)
+    private
+      fPluginInfo: PMediaPluginInfo;
+    public
+      constructor Create(Info: PMediaPluginInfo);
+
+      function GetName: string;
+
+      function InitializeDecoder(): boolean;
+      function FinalizeDecoder(): boolean;
+      function Open(const Filename: IPath): TAudioDecodeStream;
+  end;
+
 implementation
 
 uses
   ctypes,
   Classes,
   SysUtils,
-  UMediaPlugin,
-  UMusic,
   UIni,
   UMain,
-  ULog,
-  UPath;
+  ULog;
 
 type
   TFFmpegDecodeStream = class(TAudioDecodeStream)
     private
+      fAudioDecoderInfo: PAudioDecoderInfo;
       fFilename: IPath;
       fStream: PAudioDecodeStream;
       fFormatInfo: TAudioFormatInfo;
 
     public
-      constructor Create();
+      constructor Create(Info: PAudioDecoderInfo);
       destructor Destroy(); override;
 
       function Open(const Filename: IPath): boolean;
@@ -83,28 +100,12 @@ type
       function ReadData(Buffer: PByteArray; BufferSize: integer): integer; override;
   end;
 
-type
-  TAudioDecoder_FFmpeg = class(TInterfacedObject, IAudioDecoder)
-    private
-      fPluginInfo: PMediaPluginInfo;
-    public
-      constructor Create();
-
-      function GetName: string;
-
-      function InitializeDecoder(): boolean;
-      function FinalizeDecoder(): boolean;
-      function Open(const Filename: IPath): TAudioDecodeStream;
-  end;
-
-var
-  AudioDecoderInfo: PAudioDecoderInfo;
-
 { TFFmpegDecodeStream }
 
-constructor TFFmpegDecodeStream.Create();
+constructor TFFmpegDecodeStream.Create(Info: PAudioDecoderInfo);
 begin
   inherited Create();
+  fAudioDecoderInfo := Info;
   fFilename := PATH_NONE;
 end;
 
@@ -125,13 +126,13 @@ begin
 
   Close();
 
-  fStream := AudioDecoderInfo.open(PChar(Filename.ToUTF8()));
+  fStream := fAudioDecoderInfo.open(PChar(Filename.ToUTF8()));
   if (fStream = nil) then
     Exit;
 
   fFilename := Filename;
 
-  AudioDecoderInfo.getAudioFormatInfo(fStream, Info);
+  fAudioDecoderInfo.getAudioFormatInfo(fStream, Info);
   fFormatInfo := TAudioFormatInfo.Create(
     Info.channels,
     Info.sampleRate,
@@ -146,14 +147,14 @@ begin
   Self.fFilename := PATH_NONE;
   if (fStream <> nil) then
   begin
-    AudioDecoderInfo.close(fStream);
+    fAudioDecoderInfo.close(fStream);
     fStream := nil;
   end;
 end;
 
 function TFFmpegDecodeStream.GetLength(): real;
 begin
-  Result := AudioDecoderInfo.getLength(fStream);
+  Result := fAudioDecoderInfo.getLength(fStream);
 end;
 
 function TFFmpegDecodeStream.GetAudioFormatInfo(): TAudioFormatInfo;
@@ -163,46 +164,46 @@ end;
 
 function TFFmpegDecodeStream.IsEOF(): boolean;
 begin
-  Result := AudioDecoderInfo.isEOF(fStream);
+  Result := fAudioDecoderInfo.isEOF(fStream);
 end;
 
 function TFFmpegDecodeStream.IsError(): boolean;
 begin
-  Result := AudioDecoderInfo.isError(fStream);
+  Result := fAudioDecoderInfo.isError(fStream);
 end;
 
 function TFFmpegDecodeStream.GetPosition(): real;
 begin
-  Result := AudioDecoderInfo.getPosition(fStream);
+  Result := fAudioDecoderInfo.getPosition(fStream);
 end;
 
 procedure TFFmpegDecodeStream.SetPosition(Time: real);
 begin
-  AudioDecoderInfo.setPosition(fStream, Time);
+  fAudioDecoderInfo.setPosition(fStream, Time);
 end;
 
 function TFFmpegDecodeStream.GetLoop(): boolean;
 begin
-  Result := AudioDecoderInfo.getLoop(fStream);
+  Result := fAudioDecoderInfo.getLoop(fStream);
 end;
 
 procedure TFFmpegDecodeStream.SetLoop(Enabled: boolean);
 begin
-  AudioDecoderInfo.setLoop(fStream, Enabled);
+  fAudioDecoderInfo.setLoop(fStream, Enabled);
 end;
 
 function TFFmpegDecodeStream.ReadData(Buffer: PByteArray; BufferSize: integer): integer;
 begin
-  Result := AudioDecoderInfo.readData(fStream, PCUint8(Buffer), BufferSize);
+  Result := fAudioDecoderInfo.readData(fStream, PCUint8(Buffer), BufferSize);
 end;
 
 
 { TAudioDecoder_FFmpeg }
 
-constructor TAudioDecoder_FFmpeg.Create();
+constructor TAudioDecoder_FFmpeg.Create(Info: PMediaPluginInfo);
 begin
   inherited Create();
-  fPluginInfo := Plugin_register(MediaPluginCore);
+  fPluginInfo := Info;
 end;
 
 function TAudioDecoder_FFmpeg.GetName: String;
@@ -212,14 +213,13 @@ end;
 
 function TAudioDecoder_FFmpeg.InitializeDecoder: boolean;
 begin
-  fPluginInfo.initialize();
-  AudioDecoderInfo := fPluginInfo.audioDecoder;
+  //fPluginInfo.initialize();
   Result := true;
 end;
 
 function TAudioDecoder_FFmpeg.FinalizeDecoder(): boolean;
 begin
-  fPluginInfo.finalize();
+  //fPluginInfo.finalize();
   Result := true;
 end;
 
@@ -229,7 +229,7 @@ var
 begin
   Result := nil;
 
-  Stream := TFFmpegDecodeStream.Create();
+  Stream := TFFmpegDecodeStream.Create(fPluginInfo.audioDecoder);
   if (not Stream.Open(Filename)) then
   begin
     Stream.Free;
@@ -238,8 +238,5 @@ begin
 
   Result := Stream;
 end;
-
-initialization
-  MediaManager.Add(TAudioDecoder_FFmpeg.Create);
 
 end.
