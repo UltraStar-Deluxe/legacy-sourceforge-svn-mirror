@@ -157,8 +157,8 @@ uses
   UPath,
   UPathUtils,
   ULog,
-  UAudioDecoder_FFmpeg,
-  UVideoDecoder_FFmpeg;
+  UAudioDecoderPlugin,
+  UVideoDecoderPlugin;
 
 var
   MediaPluginCore_Instance: TMediaPluginCore;

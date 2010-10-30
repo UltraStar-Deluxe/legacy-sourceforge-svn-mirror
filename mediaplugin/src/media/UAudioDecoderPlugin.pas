@@ -23,7 +23,7 @@
  * $Id$
  *}
 
-unit UAudioDecoder_FFmpeg;
+unit UAudioDecoderPlugin;
 
 (*******************************************************************************
  *

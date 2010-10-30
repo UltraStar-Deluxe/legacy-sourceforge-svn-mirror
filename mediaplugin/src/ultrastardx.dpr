@@ -254,11 +254,10 @@ uses
   //******************************
 
   UMediaPlugin              in 'media\UMediaPlugin.pas',
-  UVideo                    in 'media\UVideo.pas',
+  UVideoDecoderPlugin       in 'media\UVideoDecoderPlugin.pas',
+  UAudioDecoderPlugin       in 'media\UAudioDecoderPlugin.pas',
 
-  // TODO: load dynamically
-  UVideoDecoder_FFmpeg      in 'media\UVideoDecoder_FFmpeg.pas',
-  UAudioDecoder_FFmpeg      in 'media\UAudioDecoder_FFmpeg.pas',
+  UVideo                    in 'media\UVideo.pas',
 
 {$IFDEF UseProjectM}
   // must be after UVideo, so it will not be the default video module

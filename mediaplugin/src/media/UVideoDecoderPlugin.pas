@@ -23,7 +23,7 @@
  * $Id$
  *}
 
-unit UVideoDecoder_FFmpeg;
+unit UVideoDecoderPlugin;
 
 interface
 
