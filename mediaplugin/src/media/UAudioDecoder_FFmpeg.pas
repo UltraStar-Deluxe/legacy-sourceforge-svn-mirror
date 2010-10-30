@@ -50,7 +50,7 @@ uses
   UPath;
 
 type
-  TAudioDecoder_FFmpeg = class(TInterfacedObject, IAudioDecoder)
+  TAudioDecoderPlugin = class(TInterfacedObject, IAudioDecoder)
     private
       fPluginInfo: PMediaPluginInfo;
     public
@@ -74,7 +74,7 @@ uses
   ULog;
 
 type
-  TFFmpegDecodeStream = class(TAudioDecodeStream)
+  TPluginAudioDecodeStream = class(TAudioDecodeStream)
     private
       fAudioDecoderInfo: PAudioDecoderInfo;
       fFilename: IPath;
@@ -100,9 +100,9 @@ type
       function ReadData(Buffer: PByteArray; BufferSize: integer): integer; override;
   end;
 
-{ TFFmpegDecodeStream }
+{ TPluginAudioDecodeStream }
 
-constructor TFFmpegDecodeStream.Create(Info: PAudioDecoderInfo);
+constructor TPluginAudioDecodeStream.Create(Info: PAudioDecoderInfo);
 begin
   inherited Create();
   fAudioDecoderInfo := Info;
@@ -112,13 +112,13 @@ end;
 {*
  * Frees the decode-stream data.
  *}
-destructor TFFmpegDecodeStream.Destroy();
+destructor TPluginAudioDecodeStream.Destroy();
 begin
   Close();
   inherited;
 end;
 
-function TFFmpegDecodeStream.Open(const Filename: IPath): boolean;
+function TPluginAudioDecodeStream.Open(const Filename: IPath): boolean;
 var
   Info: TCAudioFormatInfo;
 begin
@@ -142,7 +142,7 @@ begin
   Result := true;
 end;
 
-procedure TFFmpegDecodeStream.Close();
+procedure TPluginAudioDecodeStream.Close();
 begin
   Self.fFilename := PATH_NONE;
   if (fStream <> nil) then
@@ -152,84 +152,84 @@ begin
   end;
 end;
 
-function TFFmpegDecodeStream.GetLength(): real;
+function TPluginAudioDecodeStream.GetLength(): real;
 begin
   Result := fAudioDecoderInfo.getLength(fStream);
 end;
 
-function TFFmpegDecodeStream.GetAudioFormatInfo(): TAudioFormatInfo;
+function TPluginAudioDecodeStream.GetAudioFormatInfo(): TAudioFormatInfo;
 begin
   Result := fFormatInfo;
 end;
 
-function TFFmpegDecodeStream.IsEOF(): boolean;
+function TPluginAudioDecodeStream.IsEOF(): boolean;
 begin
   Result := fAudioDecoderInfo.isEOF(fStream);
 end;
 
-function TFFmpegDecodeStream.IsError(): boolean;
+function TPluginAudioDecodeStream.IsError(): boolean;
 begin
   Result := fAudioDecoderInfo.isError(fStream);
 end;
 
-function TFFmpegDecodeStream.GetPosition(): real;
+function TPluginAudioDecodeStream.GetPosition(): real;
 begin
   Result := fAudioDecoderInfo.getPosition(fStream);
 end;
 
-procedure TFFmpegDecodeStream.SetPosition(Time: real);
+procedure TPluginAudioDecodeStream.SetPosition(Time: real);
 begin
   fAudioDecoderInfo.setPosition(fStream, Time);
 end;
 
-function TFFmpegDecodeStream.GetLoop(): boolean;
+function TPluginAudioDecodeStream.GetLoop(): boolean;
 begin
   Result := fAudioDecoderInfo.getLoop(fStream);
 end;
 
-procedure TFFmpegDecodeStream.SetLoop(Enabled: boolean);
+procedure TPluginAudioDecodeStream.SetLoop(Enabled: boolean);
 begin
   fAudioDecoderInfo.setLoop(fStream, Enabled);
 end;
 
-function TFFmpegDecodeStream.ReadData(Buffer: PByteArray; BufferSize: integer): integer;
+function TPluginAudioDecodeStream.ReadData(Buffer: PByteArray; BufferSize: integer): integer;
 begin
   Result := fAudioDecoderInfo.readData(fStream, PCUint8(Buffer), BufferSize);
 end;
 
 
-{ TAudioDecoder_FFmpeg }
+{ TAudioDecoderPlugin }
 
-constructor TAudioDecoder_FFmpeg.Create(Info: PMediaPluginInfo);
+constructor TAudioDecoderPlugin.Create(Info: PMediaPluginInfo);
 begin
   inherited Create();
   fPluginInfo := Info;
 end;
 
-function TAudioDecoder_FFmpeg.GetName: String;
+function TAudioDecoderPlugin.GetName: String;
 begin
   Result := 'Plugin:AudioDecoder:' + fPluginInfo.name;
 end;
 
-function TAudioDecoder_FFmpeg.InitializeDecoder: boolean;
+function TAudioDecoderPlugin.InitializeDecoder: boolean;
 begin
   //fPluginInfo.initialize();
   Result := true;
 end;
 
-function TAudioDecoder_FFmpeg.FinalizeDecoder(): boolean;
+function TAudioDecoderPlugin.FinalizeDecoder(): boolean;
 begin
   //fPluginInfo.finalize();
   Result := true;
 end;
 
-function TAudioDecoder_FFmpeg.Open(const Filename: IPath): TAudioDecodeStream;
+function TAudioDecoderPlugin.Open(const Filename: IPath): TAudioDecodeStream;
 var
-  Stream: TFFmpegDecodeStream;
+  Stream: TPluginAudioDecodeStream;
 begin
   Result := nil;
 
-  Stream := TFFmpegDecodeStream.Create(fPluginInfo.audioDecoder);
+  Stream := TPluginAudioDecodeStream.Create(fPluginInfo.audioDecoder);
   if (not Stream.Open(Filename)) then
   begin
     Stream.Free;

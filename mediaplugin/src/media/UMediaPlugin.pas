@@ -393,9 +393,9 @@ begin
     
     // register modules
     if (PluginInfo.audioDecoder <> nil) then
-      MediaManager.Add(TAudioDecoder_FFmpeg.Create(PluginInfo));
+      MediaManager.Add(TAudioDecoderPlugin.Create(PluginInfo));
     if (PluginInfo.videoDecoder <> nil) then
-      MediaManager.Add(TVideoDecoder_FFmpeg.Create(PluginInfo));
+      MediaManager.Add(TVideoDecoderPlugin.Create(PluginInfo));
     //if (PluginInfo.audioConverter <> nil) then
     //  MediaManager.Add();
   end;
