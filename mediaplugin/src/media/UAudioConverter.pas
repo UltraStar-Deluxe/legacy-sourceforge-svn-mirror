@@ -74,7 +74,7 @@ type
   end;
 
   {$IFDEF UseFFmpegResample}
-  TAudioConverter_FFmpeg = class(TAudioConverter)
+  TAudioConverterPlugin = class(TAudioConverter)
     private
       fPluginInfo: PMediaPluginInfo;
       fAudioConverter: PAudioConverterInfo;
@@ -209,7 +209,7 @@ const
 function Plugin_register(core: PMediaPluginCore): PMediaPluginInfo;
   cdecl; external ffmpegPlugin;
 
-function TAudioConverter_FFmpeg.Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean;
+function TAudioConverterPlugin.Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean;
 var
   CSrcFormatInfo: TCAudioFormatInfo;
   CDstFormatInfo: TCAudioFormatInfo;
@@ -226,32 +226,32 @@ begin
   fStream := fAudioConverter.open(@CSrcFormatInfo, @CDstFormatInfo);
   if (fStream = nil) then
   begin
-    Log.LogError('fAudioConverter.open() failed', 'TAudioConverter_FFmpeg.Init');
+    Log.LogError('fAudioConverter.open() failed', 'TAudioConverterPlugin.Init');
     Exit;
   end;
 
   Result := true;
 end;
 
-destructor TAudioConverter_FFmpeg.Destroy();
+destructor TAudioConverterPlugin.Destroy();
 begin
   if (fStream <> nil) then
     fAudioConverter.close(fStream);
   inherited;
 end;
 
-function TAudioConverter_FFmpeg.Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer;
+function TAudioConverterPlugin.Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer;
 begin
   Result := fAudioConverter.convert(fStream,
       PCuint8(InputBuffer), PCuint8(OutputBuffer), @InputSize);
 end;
 
-function TAudioConverter_FFmpeg.GetOutputBufferSize(InputSize: integer): integer;
+function TAudioConverterPlugin.GetOutputBufferSize(InputSize: integer): integer;
 begin
   Result := fAudioConverter.getOutputBufferSize(fStream, InputSize);
 end;
 
-function TAudioConverter_FFmpeg.GetRatio(): double;
+function TAudioConverterPlugin.GetRatio(): double;
 begin
   Result := fAudioConverter.getRatio(fStream);
 end;

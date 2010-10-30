@@ -434,7 +434,7 @@ begin
 
   // TODO: selection should not be done here, use a factory (TAudioConverterFactory) instead 
   {$IF Defined(UseFFmpegResample)}
-  Converter := TAudioConverter_FFmpeg.Create();
+  Converter := TAudioConverterPlugin.Create();
   {$ELSEIF Defined(UseSRCResample)}
   Converter := TAudioConverter_SRC.Create();
   {$ELSE}
