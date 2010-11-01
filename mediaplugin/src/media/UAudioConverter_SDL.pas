@@ -23,7 +23,7 @@
  * $Id$
  *}
 
-unit UAudioConverter;
+unit UAudioConverter_SDL;
 
 interface
 

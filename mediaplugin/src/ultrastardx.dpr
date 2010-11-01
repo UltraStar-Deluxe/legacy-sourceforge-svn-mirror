@@ -282,7 +282,7 @@ uses
 {$IFDEF UsePortaudioPlayback}
   UAudioPlayback_Portaudio  in 'media\UAudioPlayback_Portaudio.pas',
 {$ENDIF}
-  UAudioConverter           in 'media\UAudioConverter.pas',
+  UAudioConverter_SDL       in 'media\UAudioConverter_SDL.pas',
 // TODO
 {$IFDEF UseSRCResample}
   //UAudioConverter_SRC       in 'media\UAudioConverter_SRC.pas',
