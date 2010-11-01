@@ -49,6 +49,7 @@ type
     public
       constructor Create();
       function GetName: string;
+      function GetPriority: integer;
 
       function Init(): boolean;
       function Finalize(): boolean;
@@ -157,6 +158,7 @@ type
     public
       constructor Create();
       function GetName: string;
+      function GetPriority: integer;
 
       function Init(): boolean;
       function Finalize(): boolean;
@@ -167,6 +169,11 @@ type
 function  TAudio_Dummy.GetName: string;
 begin
   Result := 'AudioDummy';
+end;
+
+function TAudio_Dummy.GetPriority: integer;
+begin
+  Result := -100;
 end;
 
 constructor TAudio_Dummy.Create();
@@ -467,6 +474,11 @@ end;
 function TVideoPlayback_Dummy.GetName: string;
 begin
   Result := 'VideoDummy';
+end;
+
+function TVideoPlayback_Dummy.GetPriority: integer;
+begin
+  Result := -100;
 end;
 
 function TVideoPlayback_Dummy.Init(): boolean;

@@ -170,6 +170,7 @@ type
   TVideoPlayback_FFmpeg = class( TInterfacedObject, IVideoPlayback )
   public
     function GetName: String;
+    function GetPriority: integer;
 
     function Init(): boolean;
     function Finalize: boolean;
@@ -183,7 +184,12 @@ type
 
 function  TVideoPlayback_FFmpeg.GetName: String;
 begin
-  result := 'OpenGL_VideoPlayback';
+  Result := 'OpenGL_VideoPlayback';
+end;
+
+function TVideoPlayback_FFmpeg.GetPriority: integer;
+begin
+  Result := 80;
 end;
 
 function TVideoPlayback_FFmpeg.Init(): boolean;
@@ -236,7 +242,6 @@ function TVideo_FFmpeg.Open(const Decoder: TVideoDecodeStream): boolean;
 var
   glErr: GLenum;
 begin
-  Result := false;
   Reset();
 
   fDecoder := Decoder;

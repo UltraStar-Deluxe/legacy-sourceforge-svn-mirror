@@ -59,7 +59,7 @@ type
       SourceBufferSize:  integer;
       SourceBufferCount: integer; // number of available bytes in SourceBuffer
 
-      Converter: TAudioConverter;
+      Converter: TAudioConvertStream;
       Status:    TStreamStatus;
       InternalLock: PSDL_Mutex;
       SoundEffects: TList;
@@ -73,7 +73,6 @@ type
       procedure Reset();
 
       procedure ApplySoundEffects(Buffer: PByteArray; BufferSize: integer);
-      function InitFormatConversion(): boolean;
       procedure FlushBuffers();
 
       procedure LockSampleBuffer(); {$IFDEF HasInline}inline;{$ENDIF}
@@ -387,7 +386,9 @@ begin
     Exit;
   Self.SourceStream := SourceStream;
 
-  if not InitFormatConversion() then
+  Converter := AudioConverter.Open(SourceStream.GetAudioFormatInfo(),
+      GetAudioFormatInfo());
+  if (Converter = nil) then
   begin
     // reset decode-stream so it will not be freed on destruction
     Self.SourceStream := nil;
@@ -420,28 +421,6 @@ end;
 procedure TGenericPlaybackStream.UnlockSampleBuffer();
 begin
   SDL_mutexV(InternalLock);
-end;
-
-function TGenericPlaybackStream.InitFormatConversion(): boolean;
-var
-  SrcFormatInfo: TAudioFormatInfo;
-  DstFormatInfo: TAudioFormatInfo;
-begin
-  Result := false;
-
-  SrcFormatInfo := SourceStream.GetAudioFormatInfo();
-  DstFormatInfo := GetAudioFormatInfo();
-
-  // TODO: selection should not be done here, use a factory (TAudioConverterFactory) instead 
-  {$IF Defined(UseFFmpegResample)}
-  Converter := TAudioConverterPlugin.Create();
-  {$ELSEIF Defined(UseSRCResample)}
-  Converter := TAudioConverter_SRC.Create();
-  {$ELSE}
-  Converter := TAudioConverter_SDL.Create();
-  {$IFEND}
-
-  Result := Converter.Init(SrcFormatInfo, DstFormatInfo);
 end;
 
 procedure TGenericPlaybackStream.Play();

@@ -56,7 +56,8 @@ type
     public
       constructor Create(Info: PMediaPluginInfo);
 
-      function GetName: string;
+      function GetName(): string;
+      function GetPriority(): integer;
 
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
@@ -209,6 +210,11 @@ end;
 function TAudioDecoderPlugin.GetName: String;
 begin
   Result := 'Plugin:AudioDecoder:' + fPluginInfo.name;
+end;
+
+function TAudioDecoderPlugin.GetPriority(): integer;
+begin
+  Result := fPluginInfo.audioDecoder.priority;
 end;
 
 function TAudioDecoderPlugin.InitializeDecoder: boolean;

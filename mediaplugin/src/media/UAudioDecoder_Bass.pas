@@ -73,6 +73,7 @@ type
   TAudioDecoder_Bass = class( TInterfacedObject, IAudioDecoder )
     public
       function GetName: string;
+      function GetPriority: integer;
 
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
@@ -209,7 +210,12 @@ end;
 
 function TAudioDecoder_Bass.GetName: String;
 begin
-  result := 'BASS_Decoder';
+  Result := 'BASS_Decoder';
+end;
+
+function TAudioDecoder_Bass.GetPriority: integer;
+begin
+  Result := 90;
 end;
 
 function TAudioDecoder_Bass.InitializeDecoder(): boolean;

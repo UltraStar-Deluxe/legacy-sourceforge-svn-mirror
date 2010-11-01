@@ -121,6 +121,8 @@ type
       function CreatePlaybackStream(): TAudioPlaybackStream; override;
     public
       function GetName: String; override;
+      function GetPriority: integer; override;
+
       function InitializePlayback(): boolean; override;
       function FinalizePlayback: boolean; override;
       procedure SetAppVolume(Volume: single); override;
@@ -647,6 +649,11 @@ end;
 function TAudioPlayback_Bass.GetName: String;
 begin
   Result := 'BASS_Playback';
+end;
+
+function TAudioPlayback_Bass.GetPriority: integer;
+begin
+  Result := 90;
 end;
 
 function TAudioPlayback_Bass.EnumDevices(): boolean;

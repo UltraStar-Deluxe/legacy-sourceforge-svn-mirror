@@ -52,6 +52,7 @@ type
       function OpenDecodeStream(const Filename: IPath): TAudioDecodeStream;
     public
       function GetName: string; virtual; abstract;
+      function GetPriority: integer; virtual; abstract;
 
       function Open(const Filename: IPath): boolean; // true if succeed
       procedure Close;

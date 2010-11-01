@@ -91,6 +91,7 @@ type
 
   PAudioDecoderInfo = ^TAudioDecoderInfo;
   TAudioDecoderInfo = record
+    priority: cint;
     open: function(filename: PAnsiChar): PAudioDecodeStream; cdecl;
     close: procedure(stream: PAudioDecodeStream); cdecl;
     getLength: function(stream: PAudioDecodeStream): double; cdecl;
@@ -106,6 +107,7 @@ type
 
   PAudioConverterInfo = ^TAudioConverterInfo;
   TAudioConverterInfo = record
+    priority: cint;
     open: function(inputFormat: PCAudioFormatInfo; outputFormat: PCAudioFormatInfo): PAudioConvertStream; cdecl;
     close: procedure(stream: PAudioConvertStream); cdecl;
     convert: function(stream: PAudioConvertStream; input, output: PCuint8; numSamples: PCint): cint; cdecl;
@@ -115,6 +117,7 @@ type
 
   PVideoDecoderInfo = ^TVideoDecoderInfo;
   TVideoDecoderInfo = record
+    priority: cint;
     open: function(filename: PAnsiChar): PVideoDecodeStream; cdecl;
     close: procedure(stream: PVideoDecodeStream); cdecl;
     setLoop: procedure(stream: PVideoDecodeStream; enable: cbool); cdecl;

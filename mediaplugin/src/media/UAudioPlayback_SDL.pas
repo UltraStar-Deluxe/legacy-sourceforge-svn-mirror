@@ -57,7 +57,8 @@ type
       function FinalizeAudioPlaybackEngine(): boolean;   override;
       function GetLatency(): double;                     override;
     public
-      function GetName: String;                          override;
+      function GetName: String; override;
+      function GetPriority: integer; override;
       procedure MixBuffers(dst, src: PByteArray; size: Cardinal; volume: Single); override;
   end;
 
@@ -75,6 +76,11 @@ end;
 function TAudioPlayback_SDL.GetName: String;
 begin
   Result := 'SDL_Playback';
+end;
+
+function TAudioPlayback_SDL.GetPriority: integer;
+begin
+  Result := 60;
 end;
 
 function TAudioPlayback_SDL.EnumDevices(): boolean;

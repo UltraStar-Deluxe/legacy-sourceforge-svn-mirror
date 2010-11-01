@@ -183,6 +183,7 @@ type
 
     public
       function GetName: String;
+      function GetPriority: integer;
 
       function Init(): boolean;
       function Finalize(): boolean;
@@ -196,6 +197,11 @@ type
 function  TVideoPlayback_ProjectM.GetName: String;
 begin
   Result := 'ProjectM';
+end;
+
+function TVideoPlayback_ProjectM.GetPriority: integer;
+begin
+  Result := 80;
 end;
 
 function TVideoPlayback_ProjectM.Init(): boolean;

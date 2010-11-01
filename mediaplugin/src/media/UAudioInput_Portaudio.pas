@@ -61,6 +61,7 @@ type
       function EnumDevices(): boolean;
     public
       function GetName: string; override;
+      function GetPriority: integer; override;
       function InitializeRecord: boolean; override;
       function FinalizeRecord: boolean; override;
   end;
@@ -311,7 +312,12 @@ end;
 
 function TAudioInput_Portaudio.GetName: String;
 begin
-  result := 'Portaudio';
+  Result := 'Portaudio';
+end;
+
+function TAudioInput_Portaudio.GetPriority: integer;
+begin
+  Result := 40;
 end;
 
 function TAudioInput_Portaudio.EnumDevices(): boolean;

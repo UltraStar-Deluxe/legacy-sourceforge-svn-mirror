@@ -47,26 +47,29 @@ uses
   Math;
 
 type
-  {*
-   * Notes:
-   *  - 44.1kHz to 48kHz conversion or vice versa is not supported
-   *    by SDL 1.2 (will be introduced in 1.3).
-   *    No conversion takes place in this cases.
-   *    This is because SDL just converts differences in powers of 2.
-   *    So the result might not be that accurate.
-   *    This IS audible (voice to high/low) and it needs good synchronization
-   *    with the video or the lyrics timer.
-   *  - float<->int16 conversion is not supported (will be part of 1.3) and
-   *    SDL (<1.3) is not capable of handling floats at all.
-   *  -> Using FFmpeg or libsamplerate for resampling is preferred.
-   *     Use SDL for channel and format conversion only.
-   *}
-  TAudioConverter_SDL = class(TAudioConverter)
+  TAudioConverter_SDL = class(TInterfacedObject, IAudioConverter)
+    public
+      function GetName(): string;
+      function GetPriority(): integer;
+      function Init(): boolean;
+      function Finalize(): boolean;
+
+      function Open(SrcFormatInfo: TAudioFormatInfo;
+                    DstFormatInfo: TAudioFormatInfo): TAudioConvertStream;
+  end;
+
+  TAudioConvertStream_SDL = class(TAudioConvertStream)
     private
       cvt: TSDL_AudioCVT;
+      function Init(): boolean;
+    protected
+      constructor Create(SrcFormatInfo: TAudioFormatInfo;
+                    DstFormatInfo: TAudioFormatInfo);
     public
-      function Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean; override;
       destructor Destroy(); override;
+
+      class function Open(SrcFormatInfo: TAudioFormatInfo;
+                    DstFormatInfo: TAudioFormatInfo): TAudioConvertStream_SDL;
 
       function Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer; override;
       function GetOutputBufferSize(InputSize: integer): integer; override;
@@ -115,18 +118,85 @@ type
   // if people sing along with the song.
   // But FFmpeg might offer a better quality/speed ratio than SRC_LINEAR.
   const
-    SRC_CONVERTER_TYPE = SRC_LINEAR; 
+    SRC_CONVERTER_TYPE = SRC_LINEAR;
   {$ENDIF}
 
 implementation
 
-function TAudioConverter_SDL.Init(srcFormatInfo: TAudioFormatInfo; dstFormatInfo: TAudioFormatInfo): boolean;
+{ TAudioConverter_SDL }
+
+function TAudioConverter_SDL.GetName(): string;
+begin
+  Result := 'AudioConverter_SDL';
+end;
+
+function TAudioConverter_SDL.GetPriority(): integer;
+begin
+  {* Notes:
+   *  - 44.1kHz to 48kHz conversion or vice versa is not supported
+   *    by SDL 1.2 (will be introduced in 1.3).
+   *    No conversion takes place in this cases.
+   *    This is because SDL just converts differences in powers of 2.
+   *    So the result might not be that accurate.
+   *    This IS audible (voice to high/low) and it needs good synchronization
+   *    with the video or the lyrics timer.
+   *  - float<->int16 conversion is not supported (will be part of 1.3) and
+   *    SDL (<1.3) is not capable of handling floats at all.
+   *  -> Using FFmpeg or libsamplerate for resampling is preferred.
+   *     Use SDL for channel and format conversion only.
+   *}
+  Result := 0;
+end;
+
+function TAudioConverter_SDL.Init(): boolean;
+begin
+  Result := true;
+end;
+
+function TAudioConverter_SDL.Finalize(): boolean;
+begin
+  Result := true;
+end;
+
+function TAudioConverter_SDL.Open(SrcFormatInfo: TAudioFormatInfo;
+  DstFormatInfo: TAudioFormatInfo): TAudioConvertStream;
+begin
+  Result := TAudioConvertStream_SDL.Open(SrcFormatInfo, DstFormatInfo);
+end;
+
+{ TAudioConvertStream_SDL }
+
+constructor TAudioConvertStream_SDL.Create(SrcFormatInfo: TAudioFormatInfo;
+  DstFormatInfo: TAudioFormatInfo);
+begin
+  inherited Create(SrcFormatInfo, DstFormatInfo);
+end;
+
+destructor TAudioConvertStream_SDL.Destroy();
+begin
+  inherited;
+end;
+
+class function TAudioConvertStream_SDL.Open(SrcFormatInfo: TAudioFormatInfo;
+  DstFormatInfo: TAudioFormatInfo): TAudioConvertStream_SDL;
+var
+  Stream: TAudioConvertStream_SDL;
+begin
+  Result := nil;
+  Stream := TAudioConvertStream_SDL.Create(SrcFormatInfo, DstFormatInfo);
+  if (not Stream.Init()) then
+  begin
+    Stream.Free;
+    Exit;
+  end;
+  Result := Stream;
+end;
+
+function TAudioConvertStream_SDL.Init(): boolean;
 var
   srcFormat: UInt16;
   dstFormat: UInt16;
 begin
-  inherited Init(SrcFormatInfo, DstFormatInfo);
-
   Result := false;
 
   if (not ConvertAudioFormatToSDL(srcFormatInfo.Format, srcFormat) or
@@ -147,29 +217,23 @@ begin
   Result := true;
 end;
 
-destructor TAudioConverter_SDL.Destroy();
-begin
-  // nothing to be done here
-  inherited;
-end;
-
 (*
  * Returns the size of the output buffer. This might be bigger than the actual
  * size of resampled audio data.
  *)
-function TAudioConverter_SDL.GetOutputBufferSize(InputSize: integer): integer;
+function TAudioConvertStream_SDL.GetOutputBufferSize(InputSize: integer): integer;
 begin
   // Note: len_ratio must not be used here. Even if the len_ratio is 1.0, len_mult might be 2.
   // Example: 44.1kHz/mono to 22.05kHz/stereo -> len_ratio=1, len_mult=2
   Result := InputSize * cvt.len_mult;
 end;
 
-function TAudioConverter_SDL.GetRatio(): double;
+function TAudioConvertStream_SDL.GetRatio(): double;
 begin
   Result := cvt.len_ratio;
 end;
 
-function TAudioConverter_SDL.Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer;
+function TAudioConvertStream_SDL.Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer;
 begin
   Result := -1;
 
@@ -456,5 +520,8 @@ begin
 end;
 
 {$ENDIF}
+
+initialization
+  MediaManager.add(TAudioConverter_SDL.Create);
 
 end.

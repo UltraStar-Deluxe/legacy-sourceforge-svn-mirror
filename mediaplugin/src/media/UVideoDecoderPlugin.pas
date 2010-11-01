@@ -45,7 +45,8 @@ type
   public
     constructor Create(Info: PMediaPluginInfo);
 
-    function GetName: String;
+    function GetName(): String;
+    function GetPriority(): integer;
 
     function InitializeDecoder(): boolean;
     function FinalizeDecoder: boolean;
@@ -98,9 +99,14 @@ begin
   fPluginInfo := Info;
 end;
 
-function  TVideoDecoderPlugin.GetName: String;
+function TVideoDecoderPlugin.GetName(): String;
 begin
   Result := 'Plugin:VideoDecoder:' + fPluginInfo.name;
+end;
+
+function TVideoDecoderPlugin.GetPriority(): integer;
+begin
+  Result := fPluginInfo.videoDecoder.priority;
 end;
 
 function TVideoDecoderPlugin.InitializeDecoder(): boolean;

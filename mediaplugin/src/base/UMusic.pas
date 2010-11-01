@@ -331,6 +331,92 @@ type
       procedure SetLoop(Enabled: boolean);  override;
   end;
 
+  TAudioConvertStream = class
+    protected
+      fSrcFormatInfo: TAudioFormatInfo;
+      fDstFormatInfo: TAudioFormatInfo;
+    public
+      constructor Create(SrcFormatInfo: TAudioFormatInfo;
+                      DstFormatInfo: TAudioFormatInfo);
+      destructor Destroy(); override;
+
+      (**
+       * Converts the InputBuffer and stores the result in OutputBuffer.
+       * If the result is not -1, InputSize will be set to the actual number of
+       * input-buffer bytes used.
+       * Returns the number of bytes written to the output-buffer or -1 if an error occured.
+       *)
+      function Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer; virtual; abstract;
+
+      (**
+       * Destination/Source size ratio
+       *)
+      function GetRatio(): double; virtual; abstract;
+
+      function GetOutputBufferSize(InputSize: integer): integer; virtual; abstract;
+      property SrcFormatInfo: TAudioFormatInfo read fSrcFormatInfo;
+      property DstFormatInfo: TAudioFormatInfo read fDstFormatInfo;
+  end;
+
+  IVideo = interface
+  ['{58DFC674-9168-41EA-B59D-A61307242B80}']
+      procedure Play;
+      procedure Pause;
+      procedure Stop;
+
+      procedure SetLoop(Enable: boolean);
+      function GetLoop(): boolean;
+
+      procedure SetPosition(Time: real);
+      function GetPosition: real;
+
+      procedure SetScreen(Screen: integer);
+      function GetScreen(): integer;
+
+      procedure SetScreenPosition(X, Y: double; Z: double = 0.0);
+      procedure GetScreenPosition(var X, Y, Z: double);
+
+      procedure SetWidth(Width: double);
+      function GetWidth(): double;
+
+      procedure SetHeight(Height: double);
+      function GetHeight(): double;
+
+      {**
+       * Sub-image of the video frame to draw.
+       * This can be used for zooming or similar purposes.
+       *}
+      procedure SetFrameRange(Range: TRectCoords);
+      function GetFrameRange(): TRectCoords;
+
+      function GetFrameAspect(): real;
+
+      procedure SetAspectCorrection(AspectCorrection: TAspectCorrection);
+      function GetAspectCorrection(): TAspectCorrection;
+
+
+      procedure SetAlpha(Alpha: double);
+      function GetAlpha(): double;
+
+      procedure SetReflectionSpacing(Spacing: double);
+      function GetReflectionSpacing(): double;
+
+      procedure GetFrame(Time: Extended);
+      procedure Draw();
+      procedure DrawReflection();
+
+
+      property Screen: integer read GetScreen;
+      property Width: double read GetWidth write SetWidth;
+      property Height: double read GetHeight write SetHeight;
+      property Alpha: double read GetAlpha write SetAlpha;
+      property ReflectionSpacing: double read GetReflectionSpacing write SetReflectionSpacing;
+      property FrameAspect: real read GetFrameAspect;
+      property AspectCorrection: TAspectCorrection read GetAspectCorrection write SetAspectCorrection;
+      property Loop: boolean read GetLoop write SetLoop;
+      property Position: real read GetPosition write SetPosition;
+  end;
+
   TVideoDecodeStream = class
     public
       function Open(const FileName: IPath): boolean; virtual; abstract;
@@ -358,71 +444,17 @@ type
   TAudioOutputDeviceList = array of TAudioOutputDevice;
 
 type
-  IGenericPlayback = Interface
-  ['{63A5EBC3-3F4D-4F23-8DFB-B5165FCE33DD}']
+  IMediaInterface = interface
+  ['{9C31F7EF-76DB-4EEC-949F-009A26D553A2}']
       function GetName: String;
+      function GetPriority(): integer;
   end;
 
-  IVideo = interface
-  ['{58DFC674-9168-41EA-B59D-A61307242B80}']
-      procedure Play;
-      procedure Pause;
-      procedure Stop;
-
-      procedure SetLoop(Enable: boolean);
-      function GetLoop(): boolean;
-
-      procedure SetPosition(Time: real);
-      function GetPosition: real;
-
-      procedure SetScreen(Screen: integer);
-      function GetScreen(): integer;
-      
-      procedure SetScreenPosition(X, Y: double; Z: double = 0.0);
-      procedure GetScreenPosition(var X, Y, Z: double);
-
-      procedure  SetWidth(Width: double);
-       function GetWidth(): double;
-      
-      procedure  SetHeight(Height: double);
-       function GetHeight(): double;
-      
-      {**
-       * Sub-image of the video frame to draw.
-       * This can be used for zooming or similar purposes.
-       *}
-      procedure SetFrameRange(Range: TRectCoords);
-      function GetFrameRange(): TRectCoords;
-      
-      function GetFrameAspect(): real;
-      
-      procedure SetAspectCorrection(AspectCorrection: TAspectCorrection);
-      function GetAspectCorrection(): TAspectCorrection;
-      
-
-      procedure SetAlpha(Alpha: double);
-      function GetAlpha(): double;
-      
-      procedure SetReflectionSpacing(Spacing: double);
-      function GetReflectionSpacing(): double;
-
-      procedure GetFrame(Time: Extended);
-      procedure Draw();
-      procedure DrawReflection();
-       
-       
-      property Screen: integer read GetScreen;
-      property Width: double read GetWidth write SetWidth;
-      property Height: double read GetHeight write SetHeight;
-      property Alpha: double read GetAlpha write SetAlpha;
-      property ReflectionSpacing: double read GetReflectionSpacing write SetReflectionSpacing;
-      property FrameAspect: real read GetFrameAspect;
-      property AspectCorrection: TAspectCorrection read GetAspectCorrection write SetAspectCorrection;
-      property Loop: boolean read GetLoop write SetLoop;
-      property Position: real read GetPosition write SetPosition;
+  IGenericPlayback = interface(IMediaInterface)
+  ['{63A5EBC3-3F4D-4F23-8DFB-B5165FCE33DD}']
   end;
 
-  IVideoPlayback = Interface( IGenericPlayback )
+  IVideoPlayback = interface(IGenericPlayback)
   ['{3574C40C-28AE-4201-B3D1-3D1F0759B131}']
       function Init(): boolean;
       function Finalize: boolean;
@@ -430,15 +462,15 @@ type
       function Open(const FileName: IPath): IVideo;
   end;
 
-  IVideoVisualization = Interface( IVideoPlayback )
+  IVideoVisualization = interface(IVideoPlayback)
   ['{5AC17D60-B34D-478D-B632-EB00D4078017}']
   end;
 
-  IAudioPlayback = Interface( IGenericPlayback )
+  IAudioPlayback = interface(IGenericPlayback)
   ['{E4AE0B40-3C21-4DC5-847C-20A87E0DFB96}']
       function InitializePlayback: boolean;
       function FinalizePlayback: boolean;
-      
+
       function GetOutputDeviceList(): TAudioOutputDeviceList;
 
       procedure SetAppVolume(Volume: single);
@@ -484,27 +516,25 @@ type
       function CreateVoiceStream(ChannelMap: integer; FormatInfo: TAudioFormatInfo): TAudioVoiceStream;
   end;
 
-  IGenericDecoder = Interface
+  IGenericDecoder = interface(IMediaInterface)
   ['{557B0E9A-604D-47E4-B826-13769F3E10B7}']
-      function GetName(): string;
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
       //function IsSupported(const Filename: string): boolean;
   end;
 
-  IVideoDecoder = Interface( IGenericDecoder )
+  IVideoDecoder = interface(IGenericDecoder)
   ['{2F184B2B-FE69-44D5-9031-0A2462391DCA}']
       function Open(const FileName: IPath): TVideoDecodeStream;
   end;
 
-  IAudioDecoder = Interface( IGenericDecoder )
+  IAudioDecoder = interface(IGenericDecoder)
   ['{AB47B1B6-2AA9-4410-BF8C-EC79561B5478}']
       function Open(const Filename: IPath): TAudioDecodeStream;
   end;
 
-  IAudioInput = Interface
+  IAudioInput = interface(IMediaInterface)
   ['{A5C8DA92-2A0C-4AB2-849B-2F7448C6003A}']
-      function GetName: String;
       function InitializeRecord: boolean;
       function FinalizeRecord(): boolean;
 
@@ -512,31 +542,13 @@ type
       procedure CaptureStop;
   end;
 
-type
-  TAudioConverter = class
-    protected
-      fSrcFormatInfo: TAudioFormatInfo;
-      fDstFormatInfo: TAudioFormatInfo;
-    public
-      function Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean; virtual;
-      destructor Destroy(); override;
+  IAudioConverter = interface(IMediaInterface)
+  ['{01FB458C-D631-4CA2-9E39-BF1B0ACB1AD7}']
+      function Init(): boolean;
+      function Finalize(): boolean;
 
-      (**
-       * Converts the InputBuffer and stores the result in OutputBuffer.
-       * If the result is not -1, InputSize will be set to the actual number of
-       * input-buffer bytes used.
-       * Returns the number of bytes written to the output-buffer or -1 if an error occured.
-       *)
-      function Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer; virtual; abstract;
-
-      (**
-       * Destination/Source size ratio
-       *)
-      function GetRatio(): double; virtual; abstract;
-
-      function GetOutputBufferSize(InputSize: integer): integer; virtual; abstract;
-      property SrcFormatInfo: TAudioFormatInfo read fSrcFormatInfo;
-      property DstFormatInfo: TAudioFormatInfo read fDstFormatInfo;
+      function Open(SrcFormatInfo: TAudioFormatInfo;
+                    DstFormatInfo: TAudioFormatInfo): TAudioConvertStream;
   end;
 
 (* TODO
@@ -607,12 +619,13 @@ procedure InitializeSound;
 procedure InitializeVideo;
 procedure FinalizeMedia;
 
-function  Visualization(): IVideoPlayback;
-function  VideoPlayback(): IVideoPlayback;
-function  VideoDecoder(): IVideoDecoder;
-function  AudioPlayback(): IAudioPlayback;
-function  AudioInput(): IAudioInput;
-function  AudioDecoders(): TInterfaceList;
+function Visualization(): IVideoPlayback;
+function VideoPlayback(): IVideoPlayback;
+function VideoDecoder(): IVideoDecoder;
+function AudioPlayback(): IAudioPlayback;
+function AudioInput(): IAudioInput;
+function AudioDecoders(): TInterfaceList;
+function AudioConverter(): IAudioConverter;
 
 function  MediaManager: TInterfaceList;
 
@@ -635,6 +648,7 @@ var
   DefaultVisualization : IVideoPlayback;
   DefaultAudioPlayback : IAudioPlayback;
   DefaultAudioInput    : IAudioInput;
+  DefaultAudioConverter: IAudioConverter;
   AudioDecoderList     : TInterfaceList;
   MediaInterfaceList   : TInterfaceList;
 
@@ -719,6 +733,11 @@ begin
   Result := AudioDecoderList;
 end;
 
+function AudioConverter(): IAudioConverter;
+begin
+  Result := DefaultAudioConverter;
+end;
+
 procedure FilterInterfaceList(const IID: TGUID; InList, OutList: TInterfaceList);
 var
   i: integer;
@@ -745,6 +764,7 @@ var
   InterfaceList: TInterfaceList;
   CurrentAudioDecoder: IAudioDecoder;
   CurrentAudioPlayback: IAudioPlayback;
+  CurrentAudioConverter: IAudioConverter;
   CurrentAudioInput: IAudioInput;
 begin
   // create a temporary list for interface enumeration
@@ -779,6 +799,21 @@ begin
     end;
     Log.LogError('Initialize failed, Removing - '+ CurrentAudioPlayback.GetName);
     MediaManager.Remove(CurrentAudioPlayback);
+  end;
+
+  // find and initialize converter interface
+  DefaultAudioConverter := nil;
+  FilterInterfaceList(IAudioConverter, MediaManager, InterfaceList);
+  for i := 0 to InterfaceList.Count-1 do
+  begin
+    CurrentAudioConverter := InterfaceList[i] as IAudioConverter;
+    if (CurrentAudioConverter.Init()) then
+    begin
+      DefaultAudioConverter := CurrentAudioConverter;
+      break;
+    end;
+    Log.LogError('Initialize failed, Removing - '+ CurrentAudioConverter.GetName);
+    MediaManager.Remove(CurrentAudioConverter);
   end;
 
   // find and initialize input interface
@@ -879,7 +914,9 @@ begin
   FreeAndNil(AudioDecoderList);
   DefaultAudioPlayback := nil;
   DefaultAudioInput := nil;
+  DefaultAudioConverter := nil;
   DefaultVideoPlayback := nil;
+  DefaultVideoDecoder := nil;
   DefaultVisualization := nil;
 
   // create temporary interface list
@@ -900,17 +937,22 @@ begin
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IAudioDecoder).FinalizeDecoder();
 
+  // finalize audio converter interfaces
+  FilterInterfaceList(IAudioConverter, MediaManager, InterfaceList);
+  for i := 0 to InterfaceList.Count-1 do
+    (InterfaceList[i] as IAudioConverter).Finalize();
+
   // finalize video interfaces
   FilterInterfaceList(IVideoPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IVideoPlayback).Finalize();
 
-  // finalize video interfaces
+  // finalize video decoder interfaces
   FilterInterfaceList(IVideoDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IVideoDecoder).FinalizeDecoder();
 
-  // finalize audio decoder interfaces
+  // finalize visualization interfaces
   FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IVideoVisualization).Finalize();
@@ -945,6 +987,7 @@ begin
   writeln( '--------------------------------------------------------------' );
   writeln( 'Registered Audio Playback Interface : ' + AudioPlayback.GetName );
   writeln( 'Registered Audio Input    Interface : ' + AudioInput.GetName    );
+  writeln( 'Registered Audio Converter Interface: ' + AudioConverter.GetName    );
   writeln( 'Registered Video Playback Interface : ' + VideoPlayback.GetName );
   writeln( 'Registered Video Decoder  Interface : ' + VideoDecoder.GetName );
   writeln( 'Registered Visualization  Interface : ' + Visualization.GetName );
@@ -1049,16 +1092,16 @@ begin
   end;
 end;
 
-{ TAudioConverter }
+{ TAudioConvertStream }
 
-function TAudioConverter.Init(SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo): boolean;
+constructor TAudioConvertStream.Create(
+  SrcFormatInfo: TAudioFormatInfo; DstFormatInfo: TAudioFormatInfo);
 begin
   fSrcFormatInfo := SrcFormatInfo.Copy();
   fDstFormatInfo := DstFormatInfo.Copy();
-  Result := true;
 end;
 
-destructor TAudioConverter.Destroy();
+destructor TAudioConvertStream.Destroy();
 begin
   FreeAndNil(fSrcFormatInfo);
   FreeAndNil(fDstFormatInfo);

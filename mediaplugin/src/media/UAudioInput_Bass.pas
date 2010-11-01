@@ -59,6 +59,7 @@ type
       function EnumDevices(): boolean;
     public
       function GetName: String; override;
+      function GetPriority: integer; override;
       function InitializeRecord: boolean; override;
       function FinalizeRecord: boolean; override;
   end;
@@ -346,9 +347,14 @@ end;
 
 { TAudioInput_Bass }
 
-function  TAudioInput_Bass.GetName: String;
+function TAudioInput_Bass.GetName: String;
 begin
-  result := 'BASS_Input';
+  Result := 'BASS_Input';
+end;
+
+function TAudioInput_Bass.GetPriority: integer;
+begin
+  Result := 90;
 end;
 
 function TAudioInput_Bass.EnumDevices(): boolean;

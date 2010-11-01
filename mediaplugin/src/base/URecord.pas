@@ -176,6 +176,7 @@ type
       function UnifyDeviceName(const name: UTF8String; deviceIndex: integer): UTF8String;
     public
       function GetName: String;           virtual; abstract;
+      function GetPriority: integer;      virtual; abstract;
       function InitializeRecord: boolean; virtual; abstract;
       function FinalizeRecord: boolean;   virtual;
 
