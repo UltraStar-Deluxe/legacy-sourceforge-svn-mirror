@@ -161,6 +161,7 @@ uses
   UPathUtils,
   ULog,
   UAudioDecoderPlugin,
+  UAudioConverterPlugin,
   UVideoDecoderPlugin;
 
 var
@@ -397,10 +398,10 @@ begin
     // register modules
     if (PluginInfo.audioDecoder <> nil) then
       MediaManager.Add(TAudioDecoderPlugin.Create(PluginInfo));
+    if (PluginInfo.audioConverter <> nil) then
+      MediaManager.Add(TAudioConverterPlugin.Create(PluginInfo));
     if (PluginInfo.videoDecoder <> nil) then
       MediaManager.Add(TVideoDecoderPlugin.Create(PluginInfo));
-    //if (PluginInfo.audioConverter <> nil) then
-    //  MediaManager.Add();
   end;
 end;
 
