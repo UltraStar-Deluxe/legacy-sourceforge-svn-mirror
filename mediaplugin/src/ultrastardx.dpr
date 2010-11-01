@@ -283,9 +283,8 @@ uses
   UAudioPlayback_Portaudio  in 'media\UAudioPlayback_Portaudio.pas',
 {$ENDIF}
   UAudioConverter_SDL       in 'media\UAudioConverter_SDL.pas',
-// TODO
 {$IFDEF UseSRCResample}
-  //UAudioConverter_SRC       in 'media\UAudioConverter_SRC.pas',
+  UAudioConverter_SRC       in 'media\UAudioConverter_SRC.pas',
 {$ENDIF}
   // fallback dummy, must be last
   UMedia_dummy              in 'media\UMedia_dummy.pas',
