@@ -49,7 +49,7 @@ type
   TMediaPluginCore = record
     version: cint;
 
-    log: procedure(level: cint; msg: PChar; context: PChar); cdecl;
+    log: procedure(level: cint; msg: PAnsiChar; context: PAnsiChar); cdecl;
     ticksMillis: function(): cuint32; cdecl;
 
     fileOpen: function(utf8Filename: PAnsiChar; mode: cint): PFileStream; cdecl;
@@ -154,6 +154,7 @@ implementation
 
 uses
   SysUtils,
+  Classes,
   SDL,
   moduleloader,
   UFilesystem,
@@ -192,7 +193,7 @@ end;
 
 {* Misc *}
 
-procedure Core_log(level: cint; msg: PChar; context: PChar); cdecl;
+procedure Core_log(level: cint; msg: PAnsiChar; context: PAnsiChar); cdecl;
 begin
   Log.LogMsg(msg, context, DebugLogLevels[level]);
 end;
@@ -204,34 +205,83 @@ end;
 
 {* File *}
 
-function Core_fileOpen(utf8Filename: PChar; mode: cint): PFileStream; cdecl;
-begin
+const
+  FILE_OPEN_MODE_READ  = $01;
+  FILE_OPEN_MODE_WRITE = $02;
+  FILE_OPEN_MODE_READ_WRITE = FILE_OPEN_MODE_READ or FILE_OPEN_MODE_WRITE;
 
+function Core_fileOpen(utf8Filename: PAnsiChar; mode: cint): PFileStream; cdecl;
+var
+  OpenMode: word;
+begin
+  if (mode = FILE_OPEN_MODE_READ_WRITE) then
+    OpenMode := fmCreate
+  else if (mode = FILE_OPEN_MODE_WRITE) then
+    OpenMode := fmCreate // TODO: fmCreate is Read+Write -> reopen with fmOpenWrite
+  else // (mode = FILE_OPEN_MODE_READ)
+    OpenMode := fmOpenRead or fmShareDenyWrite;
+
+  try
+    Result := TBinaryFileStream.Create(Path(utf8Filename), OpenMode);
+  except
+    Result := nil;
+  end;
 end;
 
 procedure Core_fileClose(stream: PFileStream); cdecl;
+var
+  FileStream : TStream;
 begin
-
+  FileStream := TStream(stream);
+  FileStream.Free;
 end;
 
 function Core_fileRead(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
+var
+  FileStream: TStream;
 begin
-
+  FileStream := TStream(stream);
+  try
+    Result := FileStream.Read(buf^, size);
+  except
+    Result := -1;
+  end;
 end;
 
 function Core_fileWrite(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
+var
+  FileStream: TStream;
 begin
-
+  FileStream := TStream(stream);
+  try
+    Result := FileStream.Write(buf^, size);
+  except
+    Result := -1;
+  end;
 end;
 
 function Core_fileSeek(stream: PFileStream; pos: cint64; whence: cint): cint64; cdecl;
+var
+  FileStream : TStream;
+  Origin : TSeekOrigin;
 begin
-
+  FileStream := TStream(stream);
+  case whence of
+    0 {SEEK_SET}: Origin := soBeginning;
+    1 {SEEK_CUR}: Origin := soCurrent;
+    2 {SEEK_END}: Origin := soEnd;
+  else
+    Origin := soBeginning;
+  end;
+  Result := FileStream.Seek(pos, Origin);
 end;
 
 function Core_fileSize(stream: PFileStream): cint64; cdecl;
+var
+  FileStream : TStream;
 begin
-
+  FileStream := TStream(stream);
+  Result := FileStream.Size;
 end;
 
 {* Thread *}
