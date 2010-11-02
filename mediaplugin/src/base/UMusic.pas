@@ -738,7 +738,35 @@ begin
   Result := DefaultAudioConverter;
 end;
 
-procedure FilterInterfaceList(const IID: TGUID; InList, OutList: TInterfaceList);
+{**
+ * Sort media interfaces in the order of their priority.
+ * The highest priority interface will be the first in list.
+ *}
+procedure SortMediaIFacesByPrio(List: TInterfaceList);
+var
+  I, N: integer;
+  Sorted: boolean;
+  IFace1, IFace2: IMediaInterface;
+begin
+  // this is not time critical, use a simple Bubblesort
+  N := List.Count - 1;
+  repeat
+    Sorted := true;
+    for I := 1 to N do
+    begin
+      IFace1 := (List[I-1] as IMediaInterface);
+      IFace2 := (List[I] as IMediaInterface);
+      if (IFace1.GetPriority < IFace2.GetPriority) then
+      begin
+        List.Exchange(I-1, I);
+        Sorted := false;
+      end;
+    end;
+    Dec(N);
+  until Sorted;
+end;
+
+procedure FilterMediaIFaceList(const IID: TGUID; InList, OutList: TInterfaceList);
 var
   i: integer;
   obj: IInterface;
@@ -756,6 +784,7 @@ begin
         OutList.Add(obj);
     end;
   end;
+  SortMediaIFacesByPrio(OutList);
 end;
 
 procedure InitializeSound;
@@ -771,7 +800,7 @@ begin
   InterfaceList := TInterfaceList.Create();
 
   // initialize all audio-decoders first
-  FilterInterfaceList(IAudioDecoder, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
     CurrentAudioDecoder := InterfaceList[i] as IAudioDecoder;
@@ -784,11 +813,11 @@ begin
 
   // create and setup decoder-list (see AudioDecoders())
   AudioDecoderList := TInterfaceList.Create;
-  FilterInterfaceList(IAudioDecoder, MediaManager, AudioDecoders);
+  FilterMediaIFaceList(IAudioDecoder, MediaManager, AudioDecoders);
 
   // find and initialize playback interface
   DefaultAudioPlayback := nil;
-  FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
     CurrentAudioPlayback := InterfaceList[i] as IAudioPlayback;
@@ -803,7 +832,7 @@ begin
 
   // find and initialize converter interface
   DefaultAudioConverter := nil;
-  FilterInterfaceList(IAudioConverter, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioConverter, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
     CurrentAudioConverter := InterfaceList[i] as IAudioConverter;
@@ -818,7 +847,7 @@ begin
 
   // find and initialize input interface
   DefaultAudioInput := nil;
-  FilterInterfaceList(IAudioInput, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioInput, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
     CurrentAudioInput := InterfaceList[i] as IAudioInput;
@@ -852,14 +881,17 @@ begin
 
   // initialize and set video-playback singleton
   DefaultVideoPlayback := nil;
-  FilterInterfaceList(IVideoPlayback, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IVideoPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
     VideoInterface := InterfaceList[i] as IVideoPlayback;
+    // ignore visualizations
+    if (Supports(VideoInterface, IVideoVisualization)) then
+      Continue;
     if (VideoInterface.Init()) then
     begin
       DefaultVideoPlayback := VideoInterface;
-      break;
+      Break;
     end;
     Log.LogError('Initialize failed, Removing - '+ VideoInterface.GetName);
     MediaManager.Remove(VideoInterface);
@@ -867,7 +899,7 @@ begin
 
   // initialize and set video-decoder singleton
   DefaultVideoDecoder := nil;
-  FilterInterfaceList(IVideoDecoder, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IVideoDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
     VideoDecoderInterface := InterfaceList[i] as IVideoDecoder;
@@ -882,7 +914,7 @@ begin
 
   // initialize and set visualization singleton
   DefaultVisualization := nil;
-  FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
   begin
     VisualInterface := InterfaceList[i] as IVideoVisualization;
@@ -923,37 +955,37 @@ begin
   InterfaceList := TInterfaceList.Create();
 
   // finalize audio playback interfaces (should be done before the decoders)
-  FilterInterfaceList(IAudioPlayback, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IAudioPlayback).FinalizePlayback();
 
   // finalize audio input interfaces
-  FilterInterfaceList(IAudioInput, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioInput, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IAudioInput).FinalizeRecord();
 
   // finalize audio decoder interfaces
-  FilterInterfaceList(IAudioDecoder, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IAudioDecoder).FinalizeDecoder();
 
   // finalize audio converter interfaces
-  FilterInterfaceList(IAudioConverter, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IAudioConverter, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IAudioConverter).Finalize();
 
   // finalize video interfaces
-  FilterInterfaceList(IVideoPlayback, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IVideoPlayback, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IVideoPlayback).Finalize();
 
   // finalize video decoder interfaces
-  FilterInterfaceList(IVideoDecoder, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IVideoDecoder, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IVideoDecoder).FinalizeDecoder();
 
   // finalize visualization interfaces
-  FilterInterfaceList(IVideoVisualization, MediaManager, InterfaceList);
+  FilterMediaIFaceList(IVideoVisualization, MediaManager, InterfaceList);
   for i := 0 to InterfaceList.Count-1 do
     (InterfaceList[i] as IVideoVisualization).Finalize();
 

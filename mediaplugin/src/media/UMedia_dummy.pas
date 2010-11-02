@@ -43,7 +43,7 @@ uses
   UPath;
 
 type
-    TAudio_Dummy = class( TInterfacedObject, IAudioPlayback, IAudioInput )
+    TAudio_Dummy = class( TInterfacedObject, IMediaInterface, IAudioPlayback, IAudioInput )
     private
       DummyOutputDeviceList: TAudioOutputDeviceList;
     public
@@ -99,7 +99,7 @@ type
       procedure CloseVoiceStream(var VoiceStream: TAudioVoiceStream);
     end;
 
-    TVideo_Dummy = class( TInterfacedObject, IVideo )
+    TVideo_Dummy = class(TInterfacedObject, IVideo)
     public
       procedure Close;
 
@@ -154,7 +154,8 @@ type
       property Position: real read GetPosition write SetPosition;
     end;
 
-    TVideoPlayback_Dummy = class( TInterfacedObject, IVideoPlayback, IVideoVisualization )
+    TVideoPlayback_Dummy = class(TInterfacedObject, IMediaInterface,
+      IVideoPlayback, IVideoVisualization)
     public
       constructor Create();
       function GetName: string;
@@ -164,6 +165,16 @@ type
       function Finalize(): boolean;
 
       function Open(const FileName: IPath): IVideo;
+    end;
+
+    TVideoDecoder_Dummy = class(TInterfacedObject, IMediaInterface, IVideoDecoder)
+    public
+      function GetName: string;
+      function GetPriority: integer;
+
+      function InitializeDecoder(): boolean;
+      function FinalizeDecoder(): boolean;
+      function Open(const FileName: IPath): TVideoDecodeStream;
     end;
 
 function  TAudio_Dummy.GetName: string;
@@ -473,7 +484,7 @@ end;
 
 function TVideoPlayback_Dummy.GetName: string;
 begin
-  Result := 'VideoDummy';
+  Result := 'VideoPlaybackDummy';
 end;
 
 function TVideoPlayback_Dummy.GetPriority: integer;
@@ -496,9 +507,36 @@ begin
   Result := TVideo_Dummy.Create;
 end;
 
+{ TVideoDecoder_Dummy }
+
+function TVideoDecoder_Dummy.GetName: string;
+begin
+  Result := 'VideoDecoderDummy';
+end;
+
+function TVideoDecoder_Dummy.GetPriority: integer;
+begin
+  Result := -100;
+end;
+
+function TVideoDecoder_Dummy.InitializeDecoder(): boolean;
+begin
+  Result := true;
+end;
+
+function TVideoDecoder_Dummy.FinalizeDecoder(): boolean;
+begin
+  Result := true;
+end;
+
+function TVideoDecoder_Dummy.Open(const FileName: IPath): TVideoDecodeStream;
+begin
+  Result := nil;
+end;
 
 initialization
   MediaManager.Add(TAudio_Dummy.Create);
   MediaManager.Add(TVideoPlayback_Dummy.Create);
+  MediaManager.Add(TVideoDecoder_Dummy.Create);
 
 end.

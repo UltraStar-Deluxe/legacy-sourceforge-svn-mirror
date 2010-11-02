@@ -43,7 +43,7 @@ uses
   Math;
 
 type
-  TAudioConverter_SDL = class(TInterfacedObject, IAudioConverter)
+  TAudioConverter_SDL = class(TInterfacedObject, IMediaInterface, IAudioConverter)
     public
       function GetName(): string;
       function GetPriority(): integer;

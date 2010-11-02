@@ -167,7 +167,7 @@ type
     procedure DrawReflection();
   end;
 
-  TVideoPlayback_FFmpeg = class( TInterfacedObject, IVideoPlayback )
+  TVideoPlayback_FFmpeg = class(TInterfacedObject, IMediaInterface, IVideoPlayback)
   public
     function GetName: String;
     function GetPriority: integer;

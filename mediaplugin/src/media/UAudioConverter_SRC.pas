@@ -42,7 +42,7 @@ uses
   Math;
 
 type
-  TAudioConverter_SRC = class(TInterfacedObject, IAudioConverter)
+  TAudioConverter_SRC = class(TInterfacedObject, IMediaInterface, IAudioConverter)
     public
       function GetName(): string;
       function GetPriority(): integer;

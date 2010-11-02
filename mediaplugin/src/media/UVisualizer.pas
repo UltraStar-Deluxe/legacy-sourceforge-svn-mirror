@@ -103,7 +103,7 @@ type
   TGLMatrixStack = array of TGLMatrix;
 
 type
-  TVideo_ProjectM = class( TInterfacedObject, IVideo )
+  TVideo_ProjectM = class(TInterfacedObject, IVideo)
     private
       fPm: TProjectM;
       fProjectMPath : string;
@@ -177,7 +177,7 @@ type
       procedure DrawReflection();
   end;
 
-  TVideoPlayback_ProjectM = class( TInterfacedObject, IVideoVisualization )
+  TVideoPlayback_ProjectM = class( TInterfacedObject, IMediaInterface, IVideoVisualization )
     private
       fInitialized: boolean;
 

@@ -169,7 +169,7 @@ type
                                      InputDevice: TAudioInputDevice);
   end;
 
-  TAudioInputBase = class( TInterfacedObject, IAudioInput )
+  TAudioInputBase = class(TInterfacedObject, IMediaInterface, IAudioInput)
     private
       Started: boolean;
     protected

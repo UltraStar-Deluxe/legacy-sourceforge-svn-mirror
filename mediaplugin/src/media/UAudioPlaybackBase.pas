@@ -39,7 +39,7 @@ uses
   UPath;
 
 type
-  TAudioPlaybackBase = class(TInterfacedObject, IAudioPlayback)
+  TAudioPlaybackBase = class(TInterfacedObject, IMediaInterface, IAudioPlayback)
     protected
       OutputDeviceList: TAudioOutputDeviceList;
       MusicStream: TAudioPlaybackStream;

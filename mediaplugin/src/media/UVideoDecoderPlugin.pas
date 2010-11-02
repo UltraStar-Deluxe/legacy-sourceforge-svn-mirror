@@ -39,7 +39,7 @@ uses
   UPath;
 
 type
-  TVideoDecoderPlugin = class( TInterfacedObject, IVideoDecoder )
+  TVideoDecoderPlugin = class(TInterfacedObject, IMediaInterface, IVideoDecoder)
   private
     fPluginInfo: PMediaPluginInfo;
   public

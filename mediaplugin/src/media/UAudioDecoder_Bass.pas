@@ -70,7 +70,7 @@ type
   end;
 
 type
-  TAudioDecoder_Bass = class( TInterfacedObject, IAudioDecoder )
+  TAudioDecoder_Bass = class(TInterfacedObject, IMediaInterface, IAudioDecoder)
     public
       function GetName: string;
       function GetPriority: integer;

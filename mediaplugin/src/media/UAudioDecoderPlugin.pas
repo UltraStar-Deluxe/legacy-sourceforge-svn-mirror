@@ -50,7 +50,7 @@ uses
   UPath;
 
 type
-  TAudioDecoderPlugin = class(TInterfacedObject, IAudioDecoder)
+  TAudioDecoderPlugin = class(TInterfacedObject, IMediaInterface, IAudioDecoder)
     private
       fPluginInfo: PMediaPluginInfo;
     public

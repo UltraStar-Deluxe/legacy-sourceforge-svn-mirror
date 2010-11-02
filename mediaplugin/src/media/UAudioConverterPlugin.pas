@@ -41,7 +41,7 @@ uses
   SysUtils;
 
 type
-  TAudioConverterPlugin = class(TInterfacedObject, IAudioConverter)
+  TAudioConverterPlugin = class(TInterfacedObject, IMediaInterface, IAudioConverter)
     private
       fPluginInfo: PMediaPluginInfo;
     public

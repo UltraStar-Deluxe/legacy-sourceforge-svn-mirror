@@ -93,9 +93,6 @@
   {$ENDIF}
 {$IFEND}
 
-// ffmpeg config (TODO: remove when dynamically loaded)
-{$DEFINE UseFFmpegResample}
-
 {$IFDEF HaveLibsamplerate}
   {$DEFINE UseSRCResample}
 {$ENDIF}
