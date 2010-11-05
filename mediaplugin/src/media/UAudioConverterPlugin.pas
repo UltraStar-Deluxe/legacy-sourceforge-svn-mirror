@@ -93,18 +93,18 @@ end;
 
 function TAudioConverterPlugin.GetPriority(): integer;
 begin
-  Result := fPluginInfo.audioDecoder.priority;
+  Result := fPluginInfo.audioConverter.priority;
 end;
 
 function TAudioConverterPlugin.Init(): boolean;
 begin
-  //fPluginInfo.initialize();
+  fPluginInfo.audioConverter.init();
   Result := true;
 end;
 
 function TAudioConverterPlugin.Finalize(): boolean;
 begin
-  //fPluginInfo.finalize();
+  fPluginInfo.audioConverter.finalize();
   Result := true;
 end;
 

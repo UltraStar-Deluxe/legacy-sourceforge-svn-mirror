@@ -340,6 +340,8 @@ begin
     Log.LogStatus('Uninitialize 3D', 'Finalization');
     Finalize3D();
 
+    UnloadMediaPlugins();
+
     Log.LogStatus('Finalize SDL', 'Finalization');
     SDL_Quit();
 

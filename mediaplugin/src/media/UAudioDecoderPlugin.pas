@@ -219,13 +219,13 @@ end;
 
 function TAudioDecoderPlugin.InitializeDecoder: boolean;
 begin
-  //fPluginInfo.initialize();
+  fPluginInfo.audioDecoder.init();
   Result := true;
 end;
 
 function TAudioDecoderPlugin.FinalizeDecoder(): boolean;
 begin
-  //fPluginInfo.finalize();
+  fPluginInfo.audioDecoder.finalize();
   Result := true;
 end;
 

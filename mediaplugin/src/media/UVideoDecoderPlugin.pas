@@ -111,13 +111,13 @@ end;
 
 function TVideoDecoderPlugin.InitializeDecoder(): boolean;
 begin
-  //fPluginInfo.initialize();
+  fPluginInfo.videoDecoder.init();
   Result := true;
 end;
 
 function TVideoDecoderPlugin.FinalizeDecoder(): boolean;
 begin
-  //fPluginInfo.finalize();
+  fPluginInfo.videoDecoder.finalize();
   Result := true;
 end;
 

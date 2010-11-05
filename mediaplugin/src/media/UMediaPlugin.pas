@@ -92,6 +92,8 @@ type
   PAudioDecoderInfo = ^TAudioDecoderInfo;
   TAudioDecoderInfo = record
     priority: cint;
+    init: function(): cbool; cdecl;
+    finalize: function(): cbool; cdecl;
     open: function(filename: PAnsiChar): PAudioDecodeStream; cdecl;
     close: procedure(stream: PAudioDecodeStream); cdecl;
     getLength: function(stream: PAudioDecodeStream): double; cdecl;
@@ -108,6 +110,8 @@ type
   PAudioConverterInfo = ^TAudioConverterInfo;
   TAudioConverterInfo = record
     priority: cint;
+    init: function(): cbool; cdecl;
+    finalize: function(): cbool; cdecl;
     open: function(inputFormat: PCAudioFormatInfo; outputFormat: PCAudioFormatInfo): PAudioConvertStream; cdecl;
     close: procedure(stream: PAudioConvertStream); cdecl;
     convert: function(stream: PAudioConvertStream; input, output: PCuint8; numSamples: PCint): cint; cdecl;
@@ -118,6 +122,8 @@ type
   PVideoDecoderInfo = ^TVideoDecoderInfo;
   TVideoDecoderInfo = record
     priority: cint;
+    init: function(): cbool; cdecl;
+    finalize: function(): cbool; cdecl;
     open: function(filename: PAnsiChar): PVideoDecodeStream; cdecl;
     close: procedure(stream: PVideoDecodeStream); cdecl;
     setLoop: procedure(stream: PVideoDecodeStream; enable: cbool); cdecl;
@@ -144,6 +150,7 @@ type
   TPluginRegisterFunc = function(core: PMediaPluginCore): PMediaPluginInfo; cdecl;
 
 procedure LoadMediaPlugins();
+procedure UnloadMediaPlugins();
 
 function MediaPluginCore: PMediaPluginCore;
 
@@ -396,6 +403,16 @@ begin
   end;
 end;
 
+var
+  MediaPlugins: TList;
+
+type
+  PMediaPluginEntry = ^TMediaPluginEntry;
+  TMediaPluginEntry = record
+    Module: TModuleHandle;
+    Info: PMediaPluginInfo;
+  end;
+
 procedure LoadMediaPlugins();
 var
   LibPath: IPath;
@@ -405,7 +422,10 @@ var
   Module: TModuleHandle;
   RegisterFunc: TPluginRegisterFunc;
   PluginInfo: PMediaPluginInfo;
+  PluginEntry: PMediaPluginEntry;
 begin
+  MediaPlugins := TList.Create;
+
   LibPath := MediaPluginPath.Append('*.dll');
   Iter := FileSystem.FileFind(LibPath, faAnyFile);
   while (Iter.HasNext) do
@@ -434,7 +454,8 @@ begin
       UnloadModule(Module);
       Continue;
     end;
-    if (not PluginInfo.initialize()) then
+    if ((@PluginInfo.initialize <> nil) and
+        (not PluginInfo.initialize())) then
     begin
       Log.LogError('Failed to initialize media plugin: "' + PluginInfo.name + '"',
           'LoadMediaPlugins');
@@ -444,7 +465,12 @@ begin
 
     Log.LogStatus('Loaded media plugin: "' + PluginInfo.name + '"',
         'LoadMediaPlugins');
-    
+
+    New(PluginEntry);
+    PluginEntry.Module := Module;
+    PluginEntry.Info := PluginInfo;
+    MediaPlugins.Add(PluginEntry);
+
     // register modules
     if (PluginInfo.audioDecoder <> nil) then
       MediaManager.Add(TAudioDecoderPlugin.Create(PluginInfo));
@@ -452,6 +478,24 @@ begin
       MediaManager.Add(TAudioConverterPlugin.Create(PluginInfo));
     if (PluginInfo.videoDecoder <> nil) then
       MediaManager.Add(TVideoDecoderPlugin.Create(PluginInfo));
+  end;
+end;
+
+procedure UnloadMediaPlugins();
+var
+  I: integer;
+  PluginEntry: PMediaPluginEntry;
+begin
+  for I := 0 to MediaPlugins.Count - 1 do
+  begin
+    PluginEntry := MediaPlugins[I];
+    if ((@PluginEntry.Info.finalize <> nil) and
+        (not PluginEntry.Info.finalize())) then
+    begin
+      Log.LogError('Failed to finalize media plugin: "' + PluginEntry.Info.name + '"',
+          'UnloadMediaPlugins');
+    end;
+    UnloadModule(PluginEntry.Module);
   end;
 end;
 
