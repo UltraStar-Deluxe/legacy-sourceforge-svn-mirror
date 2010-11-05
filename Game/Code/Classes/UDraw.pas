@@ -64,7 +64,7 @@ var
   TickOld: cardinal;
   TickOld2:cardinal;
   //end Singbar Mod
-
+  ShowNotes:  integer; //0=show all; 1=don't show notes+rating; 2=don't show notes, rating, score+score bar
 
 
 
@@ -100,7 +100,6 @@ var
 begin
   if ScreenSing.Tex_Background.TexNum >= 1 then
   begin
-  exit;
   glClearColor (1, 1, 1, 1);
   glColor4f (1, 1, 1, 1);
 
@@ -194,6 +193,9 @@ procedure SingDrawNoteLines(Left, Top, Right: real; Space: integer; Alpha: real)
 var
   Pet:    integer;
 begin
+  if (ShowNotes>0) then
+    Exit;
+
   glEnable(GL_BLEND);
   glColor4f(Skin_P1_LinesR, Skin_P1_LinesG, Skin_P1_LinesB, 0.4*Alpha);
   glBegin(GL_LINES);
@@ -213,6 +215,9 @@ var
   end_:   integer;
   st:     integer;
 begin
+  if (ShowNotes>0) then
+    Exit;
+
   CP := NrCzesci;
   {if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
   begin
@@ -263,6 +268,9 @@ var
   st:       integer;
   nW:       real;
 begin
+  if (ShowNotes>0) then
+    Exit;
+
   CP := NrCzesci;
   if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
     Exit
@@ -286,8 +294,8 @@ begin
       with Nuta[Pet] do
       begin
         nW := NotesW;
-        if ( 1 + 2*NotesW >Dlugosc * TempR ) then
-          nW := TempR/2;
+        if (1+2*NotesW >Dlugosc * TempR ) then
+          nW := (Dlugosc*TempR-1)/2;
 
         if not FreeStyle then
         begin
@@ -310,9 +318,9 @@ begin
           glBindTexture(GL_TEXTURE_2D, Tex_Left[Color].TexNum);
           glBegin(GL_QUADS);
             glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-            glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-            glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-            glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+            glTexCoord2f(0, Tex_Left[Color].TexH); glVertex2f(Rec.Left,  Rec.Bottom);
+            glTexCoord2f(Tex_Left[Color].TexW, Tex_Left[Color].TexH); glVertex2f(Rec.Right, Rec.Bottom);
+            glTexCoord2f(Tex_Left[Color].TexW, 0); glVertex2f(Rec.Right, Rec.Top);
           glEnd;
 
           //We keep the postion of the top left corner b4 it's overwritten
@@ -328,9 +336,9 @@ begin
             glBindTexture(GL_TEXTURE_2D, Tex_Mid[Color].TexNum);
             glBegin(GL_QUADS);
               glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-              glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-              glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-              glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+              glTexCoord2f(0, Tex_Mid[Color].TexH); glVertex2f(Rec.Left,  Rec.Bottom);
+              glTexCoord2f(Tex_Mid[Color].TexW, Tex_Mid[Color].TexH); glVertex2f(Rec.Right, Rec.Bottom);
+              glTexCoord2f(Tex_Mid[Color].TexW, 0); glVertex2f(Rec.Right, Rec.Top);
             glEnd;
           end;
           
@@ -341,9 +349,9 @@ begin
           glBindTexture(GL_TEXTURE_2D, Tex_Right[Color].TexNum);
           glBegin(GL_QUADS);
             glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-            glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-            glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-            glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+            glTexCoord2f(0, Tex_Right[Color].TexH); glVertex2f(Rec.Left,  Rec.Bottom);
+            glTexCoord2f(Tex_Right[Color].TexW, Tex_Right[Color].TexH); glVertex2f(Rec.Right, Rec.Bottom);
+            glTexCoord2f(Tex_Right[Color].TexW, 0); glVertex2f(Rec.Right, Rec.Top);
           glEnd;
 
           // Golden Star Patch
@@ -373,6 +381,9 @@ var
   st:       integer;
   nW:       real;
 begin
+  if (ShowNotes>0) then
+    Exit;
+
   if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
     Exit
   else
@@ -393,7 +404,7 @@ begin
       begin
         nW := NotesW;
         if ( 1 + 2*NotesW >Dlugosc * TempR ) then
-          nW := TempR/2;
+          nW := (Dlugosc*TempR-1)/2;
 
         // lewa czesc
         Rec.Left := X + (Start-st) * TempR + 0.5 {+ 10*ScreenX};
@@ -415,9 +426,9 @@ begin
         glBindTexture(GL_TEXTURE_2D, Tex_Left[NrGracza+1].TexNum);
         glBegin(GL_QUADS);
           glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-          glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-          glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-          glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+          glTexCoord2f(0, Tex_Left[NrGracza+1].TexH); glVertex2f(Rec.Left,  Rec.Bottom);
+          glTexCoord2f(Tex_Left[NrGracza+1].TexW, Tex_Left[NrGracza+1].TexH); glVertex2f(Rec.Right, Rec.Bottom);
+          glTexCoord2f(Tex_Left[NrGracza+1].TexW, 0); glVertex2f(Rec.Right, Rec.Top);
         glEnd;
 
         // srodkowa czesc
@@ -434,9 +445,9 @@ begin
           glBindTexture(GL_TEXTURE_2D, Tex_Mid[NrGracza+1].TexNum);
           glBegin(GL_QUADS);
             glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-            glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-            glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-            glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+            glTexCoord2f(0, Tex_Mid[NrGracza+1].TexH); glVertex2f(Rec.Left,  Rec.Bottom);
+            glTexCoord2f(Tex_Mid[NrGracza+1].TexW, Tex_Mid[NrGracza+1].TexH); glVertex2f(Rec.Right, Rec.Bottom);
+            glTexCoord2f(Tex_Mid[NrGracza+1].TexW, 0); glVertex2f(Rec.Right, Rec.Top);
           glEnd;
         end;
 
@@ -447,9 +458,9 @@ begin
         glBindTexture(GL_TEXTURE_2D, Tex_Right[NrGracza+1].TexNum);
         glBegin(GL_QUADS);
           glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-          glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-          glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-          glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+          glTexCoord2f(0, Tex_Right[NrGracza+1].TexH); glVertex2f(Rec.Left,  Rec.Bottom);
+          glTexCoord2f(Tex_Right[NrGracza+1].TexW, Tex_Right[NrGracza+1].TexH); glVertex2f(Rec.Right, Rec.Bottom);
+          glTexCoord2f(Tex_Right[NrGracza+1].TexW, 0); glVertex2f(Rec.Right, Rec.Top);
         glEnd;
 
         if Perfect and (Ini.EffectSing=1) then begin
@@ -476,12 +487,16 @@ var
   Pet:      integer;
   TempR:    real;
   X1, X2, X3, X4: real;
-  W, H:     real;
+  H:     real;
   CP:     integer;
   end_:   integer;
   st:     integer;
   nW:     real;
+
 begin
+  if (ShowNotes>0) then
+    Exit;
+
   if (Player[NrGracza].ScoreTotalI >= 0) then
   begin
     CP := NrCzesci;
@@ -515,22 +530,21 @@ begin
       begin
         with Nuta[Pet] do
         begin
-          if not FreeStyle then
+          if not FreeStyle and (Dlugosc>0) then
           begin
             nW := NotesW;
             if ( 1 + 2*NotesW >Dlugosc * TempR ) then
-              nW := TempR/2;
+              nW := (Dlugosc*TempR-1)/2;
 
             // begin: 14, 20
             // easy: 6, 11
-            W := nW * 2 + 2;
             H := NotesH * 1.5 + 3.5;
-            
-            X2 := (Start-st) * TempR + Left + 0.5 {+ 10*ScreenX} + 4; // wciecie              
-            X1 := X2-W;
 
-            X3 := (Start+Dlugosc-st) * TempR + Left - 0.5 {+ 10*ScreenX} - 4; // wciecie              
-            X4 := X3+W;
+            X1 := Left + (Start-st) * TempR + 0.5 - 6 - nW;
+            X2 := X1 + 6 + 2*nW;
+
+            X3 := (Start+Dlugosc-st) * TempR + Left - 0.5 {+ 10*ScreenX} - nW;
+            X4 := X3 + 2*nW + 6;
             
             // left
             Rec.Left := X1;
@@ -550,8 +564,8 @@ begin
             // srodkowa czesc
             Rec.Left := X2;
             Rec.Right := X3;
-            if (nW=NotesW) then
-            begin
+            //if (nW=NotesW) then
+            //begin
               glBindTexture(GL_TEXTURE_2D, Tex_BG_Mid[NrGracza+1].TexNum);
               glBegin(GL_QUADS);
                 glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
@@ -559,7 +573,7 @@ begin
                 glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
                 glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
               glEnd;
-            end;
+            //end;
             
             // prawa czesc
             Rec.Left := X3;
@@ -1676,6 +1690,9 @@ var
   wd:  real;
   Percent, ScoreMax, ScoreCurrent:  integer;
 begin;
+  if (ShowNotes>1) then
+    Exit;
+    
   Percent := Player[P].ScorePercent;
   ScoreMax := Player[P].ScoreMax;
   ScoreCurrent := Player[P].ScoreTotalI;
@@ -1831,7 +1848,7 @@ var
   Size: Integer; //Size of Popup
 
 begin
-  if Alpha <> 0 then
+  if (Alpha <> 0) and (ShowNotes=0) then
   begin
 
   //Set Font Propertys

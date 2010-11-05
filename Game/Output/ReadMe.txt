@@ -23,10 +23,10 @@ This modification was continued at Sourceforge.net by the Ultrastar Deluxe Team:
      Mota
      Sawyer
      Whiteshark
-And Ultrastar Deluxe 1.0.1a was the Result (December 2007).
+And Ultrastar Deluxe 1.0.1a was the result (December 2007).
 
 The Challenge, Medley & Duet Edition was created in the year 2010 by brunzel who has joined the Ultrastar Deluxe Team in December 2009.
-A lot of the changes and new function are the result of suggestions from the German Ultrastar forum.
+A lot of the changes and new functions are the result of suggestions from the German Ultrastar forum.
 
 ----------------------------
 2. Release Notes
@@ -34,7 +34,7 @@ A lot of the changes and new function are the result of suggestions from the Ger
 
 New features and functions:
 + Challenge mode:
-  - Sing with up to 9 players in a compitition!
+  - Sing with up to 9 players in a competition!
   
 + Medley support:
   - Sing shortet versions of your songs! The program tries to recognize suitable sections automatically. You can also set tags for manual definitions.

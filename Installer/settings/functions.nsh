@@ -1,4 +1,4 @@
-!define exe2 "UltraStar CMDe"					; Current name of start exe
+!define exe2 "UltraStar"					; Current name of start exe
 ; Creates Desktop Shortcut(s) if 
 ; checked on Finish Page
 

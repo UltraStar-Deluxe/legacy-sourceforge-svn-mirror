@@ -2592,12 +2592,17 @@ var
   end_:   boolean;
 
   Window: TRectCoords;
-  Blend: real;
+  Blend:  real;
+
+  beat:   integer;
+  last:   integer;
 begin
   DrawStatics;
   end_ := false;
 
   glClearColor(1,1,1,1);
+
+  last := LastClick;
 
   PlayClick := false;
   if PlaySentenceMidi or PlaySentence then
@@ -2621,14 +2626,18 @@ begin
         end_ := false;
     end;
 
-    if AktBeat <> LastClick then
+    if AktBeat <> last then
     begin
+      for beat := LastClick+1 to AktBeat do
+      begin
+
+      PlayClick := false;
       for line := 0 to Length(Czesci[CP].Czesc) - 1 do
       begin
         for note := 0 to Length(Czesci[CP].Czesc[line].Nuta) - 1 do
         begin
           //line change
-          if (Czesci[CP].Czesc[line].Start = AktBeat) and (line <> Czesci[CP].Akt) and
+          if (Czesci[CP].Czesc[line].Start = beat) and (line <> Czesci[CP].Akt) and
             not end_ and not PlayOneSentence then
           begin
             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
@@ -2640,9 +2649,9 @@ begin
             LineChanged[CP] := true;
           end;
 
-          if (Czesci[CP].Czesc[line].Nuta[note].Start = AktBeat) then
+          if (Czesci[CP].Czesc[line].Nuta[note].Start = beat) then
           begin
-            LastClick := AktBeat;
+            LastClick := beat;
             PlayClick := true;
           end;
         end;
@@ -2655,7 +2664,7 @@ begin
           for note := 0 to Length(Czesci[(CP+1) mod 2].Czesc[line].Nuta) - 1 do
           begin
             //line change
-            if (Czesci[(CP+1) mod 2].Czesc[line].Start = AktBeat) and (line <> Czesci[(CP+1) mod 2].Akt) and not end_ then
+            if (Czesci[(CP+1) mod 2].Czesc[line].Start = beat) and (line <> Czesci[(CP+1) mod 2].Akt) and not end_ then
             begin
               if(Length(Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta)>0) then
                 Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta[AktNuta[(CP+1) mod 2]].Color := 0;
@@ -2669,16 +2678,9 @@ begin
           end;
         end;
       end;
-    end;
-  end else
-  begin
-    LineChanged[0]:=false;
-    LineChanged[1]:=false;
-    PlayVideo := false;
-    PlayOneSentence := false;
-  end;
 
-  // midi music
+
+      // midi music
   if PlaySentenceMidi then
   begin
     // stop the music
@@ -2689,7 +2691,7 @@ begin
       Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
       if (Czesci[CP].Akt = lineStart) then
         AktNuta[CP] := noteStart;
-        
+
       Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
       EditorLyric[CP].Selected := AktNuta[CP];
     end;
@@ -2700,7 +2702,7 @@ begin
     if PlayClick then
     begin
       for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
-        if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = AktBeat) then
+        if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = beat) then
         begin
           if Pet > 0 then
             MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet-1].Ton + 60, 127);
@@ -2742,7 +2744,7 @@ begin
       for note := 0 to Length(Czesci[CP].Czesc[line].Nuta) - 1 do
       begin
         //note change
-        if (Czesci[CP].Czesc[line].Nuta[note].Start = AktBeat) and
+        if (Czesci[CP].Czesc[line].Nuta[note].Start = beat) and
           (((note <> AktNuta[CP]) or LineChanged[CP]) and
           (not PlayOneSentence or (line = Czesci[CP].Akt))) then
         begin
@@ -2768,7 +2770,7 @@ begin
         for note := 0 to Length(Czesci[(CP+1) mod 2].Czesc[line].Nuta) - 1 do
         begin
           //note change
-          if (Czesci[(CP+1) mod 2].Czesc[line].Nuta[note].Start = AktBeat) and
+          if (Czesci[(CP+1) mod 2].Czesc[line].Nuta[note].Start = beat) and
             ((note <> AktNuta[(CP+1) mod 2]) or LineChanged[(CP+1) mod 2]) then
           begin
             if(Length(Czesci[(CP+1) mod 2].Czesc[Czesci[(CP+1) mod 2].Akt].Nuta)>0) then
@@ -2790,36 +2792,16 @@ begin
 
   end;
 
-  // midi music
-  if PlayOneNoteMidi then
+
+      end; //for beat
+    end;
+  end else
   begin
-    MidiPos := USTime.GetTime - MidiTime + MidiStart;
-    // stop the music
-    if (MidiPos > MidiStop) then
-    begin
-      MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
-      PlayOneNoteMidi := false;
-    end;
-
-    // click
-    AktBeat := Floor(GetMidBeat(MidiPos - AktSong.GAP / 1000));
-    Text[TextDebug].Text := IntToStr(AktBeat);
-
-    if AktBeat <> LastClick then
-    begin
-      for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
-      begin
-        if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = AktBeat) then
-        begin
-          LastClick := AktBeat;
-          if Pet > 0 then
-            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet-1].Ton + 60, 127);
-          MidiOut.PutShort($91, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Ton + 60, 127);
-          MidiLastNote := Pet;
-        end;
-      end;
-    end;
-  end; // if PlayOneNoteMidi
+    LineChanged[0]:=false;
+    LineChanged[1]:=false;
+    PlayVideo := false;
+    PlayOneSentence := false;
+  end;
 
   // mp3 music
   if PlayOneNote then
@@ -2838,17 +2820,54 @@ begin
       Text[TextDebug].Text := IntToStr(AktBeat);
       if AktBeat <> LastClick then
       begin
-        for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
+        for beat := LastClick+1 to AktBeat do
         begin
-          if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = AktBeat) then
+          for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
           begin
-            Music.PlayClick;
-            LastClick := AktBeat;
+            if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = beat) then
+            begin
+              Music.PlayClick;
+              LastClick := beat;
+            end;
           end;
-        end;
+        end; //for beat
       end;
     end; // click
   end; // if PlayOneNote
+
+  // midi music
+  if PlayOneNoteMidi then
+  begin
+    MidiPos := USTime.GetTime - MidiTime + MidiStart;
+    // stop the music
+    if (MidiPos > MidiStop) then
+    begin
+      MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+      PlayOneNoteMidi := false;
+    end;
+
+    // click
+    AktBeat := Floor(GetMidBeat(MidiPos - AktSong.GAP / 1000));
+    Text[TextDebug].Text := IntToStr(AktBeat);
+
+    if AktBeat <> LastClick then
+    begin
+      for beat := LastClick+1 to AktBeat do
+      begin
+        for Pet := 0 to Czesci[CP].Czesc[Czesci[CP].Akt].HighNut do
+        begin
+          if (Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Start = beat) then
+          begin
+            LastClick := beat;
+            if Pet > 0 then
+              MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet-1].Ton + 60, 127);
+            MidiOut.PutShort($91, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Ton + 60, 127);
+            MidiLastNote := Pet;
+          end;
+        end;
+      end; //for beat
+    end;
+  end; // if PlayOneNoteMidi
 
   Text[TextSentence].Text := 'Line: ' + IntToStr(Czesci[CP].Akt + 1) + '/' + IntToStr(Czesci[CP].Ilosc);
   Text[TextNote].Text := 'Note: ' + IntToStr(AktNuta[CP] + 1) + '/' + IntToStr(Czesci[CP].Czesc[Czesci[CP].Akt].IlNut);

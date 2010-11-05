@@ -150,6 +150,8 @@ type
       procedure Finish; virtual;
       procedure Pause; //Pause Mod(Toggles Pause)
 
+      procedure SetVis();
+
       //OnSentenceEnd for LineBonus + Singbar
       procedure onSentenceEnd(CP: integer; S: Cardinal);
       //OnSentenceChange (for Golden Notes)
@@ -215,6 +217,16 @@ begin
             Music.DisableVocalRemover
           else
             Music.EnableVocalRemover;
+        end;
+
+      SDLK_N:
+        begin
+          if (ScreenSong.Mode <> smNormal) then
+            Exit;
+            
+          Inc(ShowNotes);
+          if (ShowNotes>2) then
+            ShowNotes:=0;
         end;
 
       SDLK_TAB:
@@ -470,17 +482,6 @@ end;
 
 procedure TScreenSing.onShow;
 var
-  V1:       boolean;
-  V1TwoP:   boolean; //added for ps3 skin
-  V1ThreeP: boolean; //added for ps3 skin
-  V2R:      boolean;
-  V2M:      boolean;
-  V3R:      boolean;
-  V3FourP:  boolean;
-  V4FourP:  boolean;
-  V4SixP:   boolean;
-  V5:       boolean;
-  V6:       boolean;
   NR:       TRecR; //Line Bonus Mod
 begin
   Log.LogStatus('Begin', 'onShow');
@@ -497,6 +498,8 @@ begin
   Static[VideoAspectStatic].Visible := false;
 
   MP3VolumeHandler.changed := false;
+
+  ShowNotes := 0;
 
   //Reset Player Medley stats
   if (ScreenSong.Mode = smMedley) or ScreenSong.PartyMedley  then
@@ -558,87 +561,6 @@ begin
     Theme.Sing.StaticP3RScoreBG.X := Round(SaveCoords.PlayerS[6].StaticScoreBG);
     Theme.Sing.TextP3R.X := Round(SaveCoords.PlayerS[6].TextP);
     Theme.Sing.TextP3RScore.X := Round(SaveCoords.PlayerS[6].TextPScore);
-
-    case PlayersPlay of
-    1:  begin
-          V1       := true;
-          V1TwoP   := false;  //added for ps3 skin
-          V1ThreeP := false;  //added for ps3 skin
-          V2R      := false;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    2:  begin
-          V1       := false;
-          V1TwoP   := true;  //added for ps3 skin
-          V1ThreeP := false; //added for ps3 skin
-          V2R      := true;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    3:  begin
-          V1       := false;
-          V1TwoP   := false; //added for ps3 skin
-          V1ThreeP := true;  //added for ps3 skin
-          V2R      := false;
-          V2M      := true;
-          V3R      := true;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    4:  begin // double screen
-          V1       := false;
-          V1TwoP   := true;  //added for ps3 skin
-          V1ThreeP := false; //added for ps3 skin
-          V2R      := true;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    6:  begin // double screen
-          V1       := false;
-          V1TwoP   := false; //added for ps3 skin
-          V1ThreeP := true;  //added for ps3 skin
-          V2R      := false;
-          V2M      := true;
-          V3R      := true;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    else begin    //should not happen
-          V1       := true;
-          V1TwoP   := false;
-          V1ThreeP := false;
-          V2R      := false;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    end;
   end else
   begin
     P4Mode := true;
@@ -685,87 +607,6 @@ begin
     Theme.Sing.StaticP3RScoreBG.X := Round(SaveCoords.PlayerS[6].StaticScoreBG+Theme.Sing.OFF_P3);
     Theme.Sing.TextP3R.X := Round(SaveCoords.PlayerS[6].TextP+Theme.Sing.OFF_P3);
     Theme.Sing.TextP3RScore.X := Round(SaveCoords.PlayerS[6].TextPScore+Theme.Sing.OFF_P3);
-
-    case PlayersPlay of
-    1:  begin
-          V1       := true;
-          V1TwoP   := false;  //added for ps3 skin
-          V1ThreeP := false;  //added for ps3 skin
-          V2R      := false;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    2:  begin
-          V1       := false;
-          V1TwoP   := true;  //added for ps3 skin
-          V1ThreeP := false; //added for ps3 skin
-          V2R      := true;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    3:  begin
-          V1       := false;
-          V1TwoP   := false; //added for ps3 skin
-          V1ThreeP := true;  //added for ps3 skin
-          V2R      := false;
-          V2M      := true;
-          V3R      := true;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    4:  begin
-          V1       := false;
-          V1TwoP   := true;  //added for ps3 skin
-          V1ThreeP := false; //added for ps3 skin
-          V2R      := true;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := true;
-          V4FourP  := true;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    6:  begin
-          V1       := false;
-          V1TwoP   := false; //added for ps3 skin
-          V1ThreeP := true;  //added for ps3 skin
-          V2R      := false;
-          V2M      := true;
-          V3R      := true;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := true;
-          V5       := true;
-          V6       := true;
-        end;
-    else begin    //should not happen
-          V1       := true;
-          V1TwoP   := false;
-          V1ThreeP := false;
-          V2R      := false;
-          V2M      := false;
-          V3R      := false;
-          V3FourP  := false;
-          V4FourP  := false;
-          V4SixP   := false;
-          V5       := false;
-          V6       := false;
-        end;
-    end;
   end;
 
     Static[StaticP1].Texture.X := Theme.Sing.StaticP1.X;
@@ -802,67 +643,7 @@ begin
   NR.WMid := NR.Width / 2;
   NR.Mid := NR.Left + NR.WMid;
 
-
-
-  //Added for ps3 skin
-  //This one is shown in 1P mode
-  Static[StaticP1].Visible := V1;
-  Static[StaticP1ScoreBG].Visible := V1;
-  Text[TextP1].Visible := V1;
-  Text[TextP1Score].Visible := V1;
-
-  //This one is shown in 2/4P mode
-  Static[StaticP1TwoP].Visible := V1TwoP;
-  Static[StaticP1TwoPScoreBG].Visible := V1TwoP;
-  Text[TextP1TwoP].Visible := V1TwoP;
-  Text[TextP1TwoPScore].Visible := V1TwoP;
-
-  //This one is shown in 3/6P mode
-  Static[StaticP1ThreeP].Visible := V1ThreeP and not (PlayersPlay=6);
-  Static[StaticP1ThreePScoreBG].Visible := V1ThreeP;
-  Text[TextP1ThreeP].Visible := V1ThreeP and not (PlayersPlay=6);
-  Text[TextP1ThreePScore].Visible := V1ThreeP;
-  //eoa
-
-  Static[StaticP2R].Visible := V2R;
-  Static[StaticP2RScoreBG].Visible := V2R;
-  Text[TextP2R].Visible := V2R;
-  Text[TextP2RScore].Visible := V2R;
-
-  Static[StaticP2M].Visible := V2M and not (PlayersPlay=6);
-  Static[StaticP2MScoreBG].Visible := V2M;
-  Text[TextP2M].Visible := V2M and not (PlayersPlay=6);
-  Text[TextP2MScore].Visible := V2M;
-
-  Static[StaticP3R].Visible := V3R and not (PlayersPlay=6);
-  Static[StaticP3RScoreBG].Visible := V3R;
-  Text[TextP3R].Visible := V3R and not (PlayersPlay=6);
-  Text[TextP3RScore].Visible := V3R;
-
-  Static[StaticP3FourP].Visible := V3FourP;
-  Static[StaticP3FourPScoreBG].Visible := V3FourP;
-  Text[TextP3FourP].Visible := V3FourP;
-  Text[TextP3FourPScore].Visible := V3FourP;
-
-  Static[StaticP4FourP].Visible := V4FourP;
-  Static[StaticP4FourPScoreBG].Visible := V4FourP;
-  Text[TextP4FourP].Visible := V4FourP;
-  Text[TextP4FourPScore].Visible := V4FourP;
-
-  Static[StaticP4SixP].Visible := false and V4SixP;
-  Static[StaticP4SixPScoreBG].Visible := V4SixP;
-  Text[TextP4SixP].Visible := false and V4SixP;
-  Text[TextP4SixPScore].Visible := V4SixP;
-
-  Static[StaticP5].Visible := false and V5;
-  Static[StaticP5ScoreBG].Visible := V5;
-  Text[TextP5].Visible := false and V5;
-  Text[TextP5Score].Visible := V5;
-
-  Static[StaticP6].Visible := false and V6;
-  Static[StaticP6ScoreBG].Visible := V6;
-  Text[TextP6].Visible := false and V6;
-  Text[TextP6Score].Visible := V6;
+  SetVis();
 
   //Set Position of Line Bonus - PhrasenBonus
   if (Ini.LineBonus = 1) then //Show Line Bonus at Scores
@@ -1209,6 +990,265 @@ begin
     PerfLog.StartNewLog;
 end;
 
+procedure TScreenSing.SetVis();
+var
+  V1:       boolean;
+  V1TwoP:   boolean; //added for ps3 skin
+  V1ThreeP: boolean; //added for ps3 skin
+  V2R:      boolean;
+  V2M:      boolean;
+  V3R:      boolean;
+  V3FourP:  boolean;
+  V4FourP:  boolean;
+  V4SixP:   boolean;
+  V5:       boolean;
+  V6:       boolean;
+  vis:      boolean;
+begin
+  vis := (ShowNotes<2);
+
+  if not P4Mode and vis then
+  begin
+    case PlayersPlay of
+    1:  begin
+          V1       := true;
+          V1TwoP   := false;  //added for ps3 skin
+          V1ThreeP := false;  //added for ps3 skin
+          V2R      := false;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    2:  begin
+          V1       := false;
+          V1TwoP   := true;  //added for ps3 skin
+          V1ThreeP := false; //added for ps3 skin
+          V2R      := true;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    3:  begin
+          V1       := false;
+          V1TwoP   := false; //added for ps3 skin
+          V1ThreeP := true;  //added for ps3 skin
+          V2R      := false;
+          V2M      := true;
+          V3R      := true;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    4:  begin // double screen
+          V1       := false;
+          V1TwoP   := true;  //added for ps3 skin
+          V1ThreeP := false; //added for ps3 skin
+          V2R      := true;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    6:  begin // double screen
+          V1       := false;
+          V1TwoP   := false; //added for ps3 skin
+          V1ThreeP := true;  //added for ps3 skin
+          V2R      := false;
+          V2M      := true;
+          V3R      := true;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    else begin    //should not happen
+          V1       := true;
+          V1TwoP   := false;
+          V1ThreeP := false;
+          V2R      := false;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    end;
+  end else if vis then
+  begin
+    case PlayersPlay of
+    1:  begin
+          V1       := true;
+          V1TwoP   := false;  //added for ps3 skin
+          V1ThreeP := false;  //added for ps3 skin
+          V2R      := false;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    2:  begin
+          V1       := false;
+          V1TwoP   := true;  //added for ps3 skin
+          V1ThreeP := false; //added for ps3 skin
+          V2R      := true;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    3:  begin
+          V1       := false;
+          V1TwoP   := false; //added for ps3 skin
+          V1ThreeP := true;  //added for ps3 skin
+          V2R      := false;
+          V2M      := true;
+          V3R      := true;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    4:  begin
+          V1       := false;
+          V1TwoP   := true;  //added for ps3 skin
+          V1ThreeP := false; //added for ps3 skin
+          V2R      := true;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := true;
+          V4FourP  := true;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    6:  begin
+          V1       := false;
+          V1TwoP   := false; //added for ps3 skin
+          V1ThreeP := true;  //added for ps3 skin
+          V2R      := false;
+          V2M      := true;
+          V3R      := true;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := true;
+          V5       := true;
+          V6       := true;
+        end;
+    else begin    //should not happen
+          V1       := true;
+          V1TwoP   := false;
+          V1ThreeP := false;
+          V2R      := false;
+          V2M      := false;
+          V3R      := false;
+          V3FourP  := false;
+          V4FourP  := false;
+          V4SixP   := false;
+          V5       := false;
+          V6       := false;
+        end;
+    end;
+  end;
+
+  if not vis then
+  begin
+    V1       := false;
+    V1TwoP   := false;
+    V1ThreeP := false;
+    V2R      := false;
+    V2M      := false;
+    V3R      := false;
+    V3FourP  := false;
+    V4FourP  := false;
+    V4SixP   := false;
+    V5       := false;
+    V6       := false;
+  end;
+
+  //Added for ps3 skin
+  //This one is shown in 1P mode
+  Static[StaticP1].Visible := V1;
+  Static[StaticP1ScoreBG].Visible := V1;
+  Text[TextP1].Visible := V1;
+  Text[TextP1Score].Visible := V1;
+
+  //This one is shown in 2/4P mode
+  Static[StaticP1TwoP].Visible := V1TwoP;
+  Static[StaticP1TwoPScoreBG].Visible := V1TwoP;
+  Text[TextP1TwoP].Visible := V1TwoP;
+  Text[TextP1TwoPScore].Visible := V1TwoP;
+
+  //This one is shown in 3/6P mode
+  Static[StaticP1ThreeP].Visible := V1ThreeP and not (PlayersPlay=6);
+  Static[StaticP1ThreePScoreBG].Visible := V1ThreeP;
+  Text[TextP1ThreeP].Visible := V1ThreeP and not (PlayersPlay=6);
+  Text[TextP1ThreePScore].Visible := V1ThreeP;
+  //eoa
+
+  Static[StaticP2R].Visible := V2R;
+  Static[StaticP2RScoreBG].Visible := V2R;
+  Text[TextP2R].Visible := V2R;
+  Text[TextP2RScore].Visible := V2R;
+
+  Static[StaticP2M].Visible := V2M and not (PlayersPlay=6);
+  Static[StaticP2MScoreBG].Visible := V2M;
+  Text[TextP2M].Visible := V2M and not (PlayersPlay=6);
+  Text[TextP2MScore].Visible := V2M;
+
+  Static[StaticP3R].Visible := V3R and not (PlayersPlay=6);
+  Static[StaticP3RScoreBG].Visible := V3R;
+  Text[TextP3R].Visible := V3R and not (PlayersPlay=6);
+  Text[TextP3RScore].Visible := V3R;
+
+  Static[StaticP3FourP].Visible := V3FourP;
+  Static[StaticP3FourPScoreBG].Visible := V3FourP;
+  Text[TextP3FourP].Visible := V3FourP;
+  Text[TextP3FourPScore].Visible := V3FourP;
+
+  Static[StaticP4FourP].Visible := V4FourP;
+  Static[StaticP4FourPScoreBG].Visible := V4FourP;
+  Text[TextP4FourP].Visible := V4FourP;
+  Text[TextP4FourPScore].Visible := V4FourP;
+
+  Static[StaticP4SixP].Visible := false and V4SixP;
+  Static[StaticP4SixPScoreBG].Visible := V4SixP;
+  Text[TextP4SixP].Visible := false and V4SixP;
+  Text[TextP4SixPScore].Visible := V4SixP;
+
+  Static[StaticP5].Visible := false and V5;
+  Static[StaticP5ScoreBG].Visible := V5;
+  Text[TextP5].Visible := false and V5;
+  Text[TextP5Score].Visible := V5;
+
+  Static[StaticP6].Visible := false and V6;
+  Static[StaticP6ScoreBG].Visible := V6;
+  Text[TextP6].Visible := false and V6;
+  Text[TextP6Score].Visible := V6;
+end;
+
 procedure TScreenSing.SongError;
 var
   I, len:  integer;
@@ -1397,7 +1437,7 @@ begin
 
   if error then
   begin
-    Log.LogError('Error: TXT is longer then the MP3 in Song: ' + AktSong.Path + AktSong.Filename);
+    Log.LogError('Error: TXT is longer than the MP3 in Song: ' + AktSong.Path + AktSong.Filename);
     SongError;
     Exit;
   end;
@@ -1641,6 +1681,7 @@ var
 begin
   PerfLog.AddComment('ScreenSing: Start Draw');
 
+  SetVis;
   //ScoreBG Mod
   // set player colors
   if PlayersPlay = 4 then
@@ -1745,7 +1786,6 @@ begin
           end;
     end; // case
   end; // if
-
   // stereo
 
 // weird stuff, maybe this is for "dual screen?", but where is player three then?
@@ -2054,12 +2094,13 @@ begin
 
   if AktSong.isDuet then
     Static[StaticLyricDuetBar].Texture.Alpha := Alpha[0];
-    
+
   // draw custom items
   SingDraw(Alpha);  // always draw
 
   //GoldenNoteStarsTwinkle Mod
-  GoldenRec.SpawnRec(Alpha);
+  if (ShowNotes=0) then
+    GoldenRec.SpawnRec(Alpha);
   //GoldenNoteStarsTwinkle Mod
 
   // back stereo

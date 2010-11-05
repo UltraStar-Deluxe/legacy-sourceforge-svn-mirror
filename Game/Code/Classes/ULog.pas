@@ -439,6 +439,8 @@ type
     { data follows here }
   end;
 
+  TCharSet = Set of Char;
+
 procedure HeadInit(var Header: TWAVHeader);
 begin
   with Header do
@@ -469,6 +471,25 @@ begin
   end;
 end;
 
+function Filter(const sTemp: String; const inValidChars: TCharSet): String;
+var
+  iDest: Integer;
+  iSource: Integer;
+begin
+  SetLength(Result, Length(sTemp));
+  iDest := 0;
+  for iSource := 1 to Length(sTemp) do
+    if not (sTemp[iSource] in inValidChars) then
+    begin
+      Inc(iDest);
+      Result[iDest] := sTemp[iSource];
+    end;
+  SetLength(Result, iDest);
+end;
+
+const
+  invChars = ['\', '/', ':', '*', '?', '"', '<', '>', '|'];
+
 
 var
   FS:           TFileStream;
@@ -479,13 +500,20 @@ var
   s:            LongInt;
 
 begin
-  for Num := 1 to 9999 do begin
-    FileName := IntToStr(Num);
-    while Length(FileName) < 4 do FileName := '0' + FileName;
-    //FileName := RecordingsPath + Artist + '_' +
-    //  Title + '_P' + Points + '_' + FileName + '_' + Player + '.wav'; //some characters are not allowed; TODO
-    FileName := RecordingsPath + 'V_' + FileName + '.wav';
-    if not FileExists(FileName) then break
+  FileName := RecordingsPath + Filter(Artist, invChars) + '-' +
+      Filter(Title, invChars)  + '_' + Filter(Player, invChars) + '_N0000.wav';
+
+  if FileExists(FileName) then
+  begin
+    for Num := 1 to 9999 do
+    begin
+      FileName := IntToStr(Num);
+      while Length(FileName) < 4 do FileName := '0' + FileName;
+      FileName := RecordingsPath + Filter(Artist, invChars) + '-' +
+        Filter(Title, invChars)  + '_' + Filter(Player, invChars) + '_N' + FileName +'.wav';
+      //FileName := RecordingsPath + 'V_' + FileName + '.wav';
+      if not FileExists(FileName) then break
+    end;
   end;
 
   HeadInit(Header);

@@ -1,13 +1,13 @@
 ; These are the common used variables
 ; for the USdx Challenge, Medley & Duet Edition Installation Wizard
 
-!define version "r9 RC6.1"						; Current version of UltraStar Deluxe Challenge, Medley & Duet Edition
+!define version "r9 RC6.4"						; Current version of UltraStar Deluxe Challenge, Medley & Duet Edition
 !define p_name "UltraStar Deluxe CMD Edition" 				; Just the name of the program
 !define publisher "USDX Team"					; Publisher
 !define homepage "http://www.ultrastardeluxe.org/"		; Project Homepage
 !define forum "http://forum.ultrastardeluxe.org/"		; Forum Homepage
 
-!define exe "UltraStar CMDe"						; Current name of start exe (must also be defined in functions.nsh)
+!define exe "UltraStar"						; Current name of start exe (must also be defined in functions.nsh)
 
 ;!define demosong "http://ultrastardeluxe.xtremeweb-hosting.net/installer/songs/song.zip" ; URL from where the demo song "I18" will be downloaded	
 ;!define demosong2 "http://ultrastardeluxe.xtremeweb-hosting.net/installer/songs/song2.zip"  ; URL from where the demo song "Northern Star" will be downloaded	

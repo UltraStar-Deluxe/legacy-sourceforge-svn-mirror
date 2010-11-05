@@ -2006,6 +2006,8 @@ begin
   if SongIndex<>Interaction then
     Music.Stop;
 
+  ShowNotes := 0;
+
   PartyMedley := false;
   FadeOut := false;
 
