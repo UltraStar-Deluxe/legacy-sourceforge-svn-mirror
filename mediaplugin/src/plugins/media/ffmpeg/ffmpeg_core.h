@@ -83,6 +83,10 @@ class MediaCore_FFmpeg {
 private:
 	URLProtocol utf8FileProtocol;
 	Mutex _codecLock;
+
+	std::string hexVerToStr(unsigned version);
+	void checkVersions();
+	void registerUTF8FileProtocol();
 public:
 	MediaCore_FFmpeg();
 	~MediaCore_FFmpeg();

@@ -28,16 +28,10 @@
 
 const uint8_t* STATUS_PACKET = (uint8_t*)"STATUS_PACKET";
 
-static int CDECL ffmpegStreamOpen(URLContext *h, const char *filename, int flags);
-static int CDECL ffmpegStreamRead(URLContext *h, uint8_t *buf, int size);
-static int CDECL ffmpegStreamWrite(URLContext *h, const unsigned char *buf, int size);
-static int64_t CDECL ffmpegStreamSeek(URLContext *h, int64_t pos, int whence);
-static int CDECL ffmpegStreamClose(URLContext *h);
-
 #define UNICODE_PROTOCOL_NAME "ufile"
 #define UNICODE_PROTOCOL_PREFIX UNICODE_PROTOCOL_NAME ":"
 
-std::string hexVerToStr(unsigned version) {
+std::string MediaCore_FFmpeg::hexVerToStr(unsigned version) {
 	unsigned major = (version >> 16) & 0xFF;
 	unsigned minor = (version >> 8) & 0xFF;
 	unsigned release = version & 0xFF;
@@ -46,7 +40,7 @@ std::string hexVerToStr(unsigned version) {
 	return s.str();
 }
 
-void checkVersions() {
+void MediaCore_FFmpeg::checkVersions() {
 	unsigned libVersion;
 	unsigned headerVersion;
 
@@ -96,16 +90,7 @@ void checkVersions() {
 
 MediaCore_FFmpeg::MediaCore_FFmpeg() {
 	checkVersions();
-
-	memset(&utf8FileProtocol, 0, sizeof(URLProtocol));
-	utf8FileProtocol.name = UNICODE_PROTOCOL_NAME;
-	utf8FileProtocol.url_open = ffmpegStreamOpen;
-	utf8FileProtocol.url_read = ffmpegStreamRead;
-	utf8FileProtocol.url_write = ffmpegStreamWrite;
-	utf8FileProtocol.url_seek = ffmpegStreamSeek;
-	utf8FileProtocol.url_close = ffmpegStreamClose;
-
-	av_register_protocol2(&utf8FileProtocol, sizeof(URLProtocol));
+	registerUTF8FileProtocol();
 }
 
 MediaCore_FFmpeg::~MediaCore_FFmpeg() {
@@ -204,7 +189,7 @@ bool MediaCore_FFmpeg::convertFFmpegToAudioFormat(SampleFormat ffmpegFormat, aud
  * http://www.mail-archive.com/libav-user@mplayerhq.hu/msg02460.html
  */
 
-int CDECL ffmpegStreamOpen(URLContext *h, const char *filename, int flags) {
+static int CDECL ffmpegStreamOpen(URLContext *h, const char *filename, int flags) {
 	// check for protocol prefix ("ufile:") and strip it
 	const std::string protPrefix(UNICODE_PROTOCOL_PREFIX);
 	std::string utf8Filename(filename);
@@ -230,17 +215,22 @@ int CDECL ffmpegStreamOpen(URLContext *h, const char *filename, int flags) {
 	return 0;
 }
 
-int CDECL ffmpegStreamRead(URLContext *h, uint8_t *buf, int size) {
+static int CDECL ffmpegStreamRead(URLContext *h, uint8_t *buf, int size) {
 	fileStream_t *stream = (fileStream_t*)h->priv_data;
 	return pluginCore->fileRead(stream, buf, size);
 }
 
-int CDECL ffmpegStreamWrite(URLContext *h, const uint8_t *buf, int size) {
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(52,68,0)
+static int CDECL ffmpegStreamWrite(URLContext *h, const unsigned char *buf, int size)
+#else
+static int CDECL ffmpegStreamWrite(URLContext *h, unsigned char *buf, int size)
+#endif
+{
 	fileStream_t *stream = (fileStream_t*)h->priv_data;
 	return pluginCore->fileWrite(stream, buf, size);
 }
 
-int64_t CDECL ffmpegStreamSeek(URLContext *h, int64_t pos, int whence) {
+static int64_t CDECL ffmpegStreamSeek(URLContext *h, int64_t pos, int whence) {
 	fileStream_t *stream = (fileStream_t*)h->priv_data;
 	switch (whence) {
 	case AVSEEK_SIZE:
@@ -250,10 +240,22 @@ int64_t CDECL ffmpegStreamSeek(URLContext *h, int64_t pos, int whence) {
 	}
 }
 
-int CDECL ffmpegStreamClose(URLContext *h) {
+static int CDECL ffmpegStreamClose(URLContext *h) {
 	fileStream_t *stream = (fileStream_t*)h->priv_data;
 	pluginCore->fileClose(stream);
 	return 0;
+}
+
+void MediaCore_FFmpeg::registerUTF8FileProtocol() {
+	memset(&utf8FileProtocol, 0, sizeof(URLProtocol));
+	utf8FileProtocol.name = UNICODE_PROTOCOL_NAME;
+	utf8FileProtocol.url_open = ffmpegStreamOpen;
+	utf8FileProtocol.url_read = ffmpegStreamRead;
+	utf8FileProtocol.url_write = ffmpegStreamWrite;
+	utf8FileProtocol.url_seek = ffmpegStreamSeek;
+	utf8FileProtocol.url_close = ffmpegStreamClose;
+
+	av_register_protocol2(&utf8FileProtocol, sizeof(URLProtocol));
 }
 
 /* PacketQueue */
