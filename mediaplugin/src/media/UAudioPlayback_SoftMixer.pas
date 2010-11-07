@@ -196,7 +196,6 @@ uses
   ULog,
   UIni,
   UFFT,
-  UAudioConverter,
   UMain;
 
 { TAudioMixerStream }

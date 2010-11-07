@@ -100,6 +100,7 @@ uses
   sdl,
   UFilesystem,
   UMain,
+  UConsole,
   UUnicodeUtils;
 
 function SplitString(const Str: string; MaxCount: integer; Separators: TSysCharSet): TStringDynArray;
