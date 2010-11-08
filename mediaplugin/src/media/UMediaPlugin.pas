@@ -423,10 +423,18 @@ var
   RegisterFunc: TPluginRegisterFunc;
   PluginInfo: PMediaPluginInfo;
   PluginEntry: PMediaPluginEntry;
+const
+  {$IF Defined(MSWINDOWS)}
+  ModuleExt = '.dll';
+  {$ELSEIF Defined(DARWIN)}
+  ModuleExt = '.dylib';
+  {$ELSE} //Defined(UNIX)
+  ModuleExt = '.so';
+  {$IFEND}
 begin
   MediaPlugins := TList.Create;
 
-  LibPath := MediaPluginPath.Append('*.dll');
+  LibPath := MediaPluginPath.Append('*' + ModuleExt);
   Iter := FileSystem.FileFind(LibPath, faAnyFile);
   while (Iter.HasNext) do
   begin
