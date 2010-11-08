@@ -58,17 +58,18 @@ type
 
   TPluginAudioConvertStream = class(TAudioConvertStream)
     private
-      fPluginInfo: PMediaPluginInfo;
       fAudioConverter: PAudioConverterInfo;
       fStream: PAudioConvertStream;
       function Init(): boolean;
-    protected
-      constructor Create(SrcFormatInfo: TAudioFormatInfo;
-                    DstFormatInfo: TAudioFormatInfo);
     public
+      // Do not call this directly, use Open() instead
+      constructor Create(Info: PAudioConverterInfo;
+                    SrcFormatInfo: TAudioFormatInfo;
+                    DstFormatInfo: TAudioFormatInfo);
       destructor Destroy(); override;
 
-      class function Open(SrcFormatInfo: TAudioFormatInfo;
+      class function Open(Info: PAudioConverterInfo;
+                    SrcFormatInfo: TAudioFormatInfo;
                     DstFormatInfo: TAudioFormatInfo): TPluginAudioConvertStream;
 
       function Convert(InputBuffer: PByteArray; OutputBuffer: PByteArray; var InputSize: integer): integer; override;
@@ -111,15 +112,20 @@ end;
 function TAudioConverterPlugin.Open(SrcFormatInfo: TAudioFormatInfo;
   DstFormatInfo: TAudioFormatInfo): TAudioConvertStream;
 begin
-  Result := TPluginAudioConvertStream.Open(SrcFormatInfo, DstFormatInfo);
+  Result := TPluginAudioConvertStream.Open(
+      fPluginInfo.audioConverter,
+      SrcFormatInfo, DstFormatInfo);
 end;
 
 { TAudioConverterPlugin }
 
-constructor TPluginAudioConvertStream.Create(SrcFormatInfo: TAudioFormatInfo;
+constructor TPluginAudioConvertStream.Create(
+  Info: PAudioConverterInfo;
+  SrcFormatInfo: TAudioFormatInfo;
   DstFormatInfo: TAudioFormatInfo);
 begin
   inherited Create(SrcFormatInfo, DstFormatInfo);
+  fAudioConverter := Info;
 end;
 
 destructor TPluginAudioConvertStream.Destroy();
@@ -129,13 +135,15 @@ begin
   inherited;
 end;
 
-class function TPluginAudioConvertStream.Open(SrcFormatInfo: TAudioFormatInfo;
+class function TPluginAudioConvertStream.Open(
+  Info: PAudioConverterInfo;
+  SrcFormatInfo: TAudioFormatInfo;
   DstFormatInfo: TAudioFormatInfo): TPluginAudioConvertStream;
 var
   Stream: TPluginAudioConvertStream;
 begin
   Result := nil;
-  Stream := TPluginAudioConvertStream.Create(SrcFormatInfo, DstFormatInfo);
+  Stream := TPluginAudioConvertStream.Create(Info, SrcFormatInfo, DstFormatInfo);
   if (not Stream.Init()) then
   begin
     Stream.Free;
@@ -150,7 +158,6 @@ var
   CDstFormatInfo: TCAudioFormatInfo;
 begin
   Result := false;
-  fAudioConverter := fPluginInfo.audioConverter;
 
   AudioFormatInfoToCStruct(SrcFormatInfo, CSrcFormatInfo);
   AudioFormatInfoToCStruct(DstFormatInfo, CDstFormatInfo);
