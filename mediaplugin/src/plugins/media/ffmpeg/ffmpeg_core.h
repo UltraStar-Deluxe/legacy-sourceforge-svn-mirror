@@ -26,7 +26,9 @@
 #define _FFMPEG_CORE_H_
 
 // TODO: check with configure
+#ifndef HAVE_SWSCALE
 #define HAVE_SWSCALE
+#endif
 
 #ifdef HAVE_SWSCALE
 #define USE_SWSCALE
