@@ -28,8 +28,6 @@
 #include "ffmpeg_core.h"
 #include "core/plugin_video_decode.h"
 
-#define USE_SWSCALE
-
 // uncomment if you want to see the debug stuff
 //#define DEBUG_DISPLAY
 //#define DEBUG_FRAMES

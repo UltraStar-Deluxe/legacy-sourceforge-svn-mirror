@@ -210,7 +210,7 @@ static int CDECL ffmpegStreamOpen(URLContext *h, const char *filename, int flags
 	case URL_RDONLY:
 		mode = FILE_OPEN_MODE_READ;
 	default:
-		return AVERROR(ENOSYS);
+		return AVERROR_NOTSUPP;
 	}
 
 	fileStream_t *stream = pluginCore->fileOpen(utf8Filename.c_str(), mode);

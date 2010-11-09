@@ -25,7 +25,7 @@ AC_PRESERVE_HELP_ORDER
 # find tools
 # -----------------------------------------
 
-LT_INIT
+#LT_INIT
 
 # options for make command
 AC_PROG_MAKE_SET
@@ -49,7 +49,7 @@ AM_INIT_AUTOMAKE([foreign])
 # check for compilers
 # -----------------------------------------
 
-AC_CANONICAL_HOST
+#AC_CANONICAL_HOST
 
 # find and test the C compiler (for C-libs and wrappers)
 AC_PROG_CC
@@ -58,7 +58,6 @@ AC_LANG([C])
 # find and test the C++ compiler (for C-libs and wrappers)
 AC_PROG_CXX
 AC_LANG([C++])
-
 
 # find pkg-config
 PKG_PROG_PKG_CONFIG()
@@ -69,23 +68,30 @@ if [[ x$PKG_CONFIG = x ]]; then
 !!! Install it and try again.])
 fi
 
+# ADD_DEFINE(DEFINE)
+# adds a preprocessor definition
+AC_DEFUN([ADD_DEFINE],
+[
+    CPPFLAGS="-D$1 $CPPFLAGS"
+])
 
 # -----------------------------------------
 # check for libraries
 # -----------------------------------------
 
-# find FFMpeg
+# find FFmpeg
 PKG_CHECK_MODULES([ffmpeg], [libavcodec libavformat libavutil], [
-    #AC_CHECK_HEADERS(libavcodec/avcodec.h ffmpeg/avcodec.h)
-    #AC_CHECK_HEADERS(libavutil/avutil.h ffmpeg/avutil.h)
+    CPPFLAGS="$ffmpeg_CFLAGS $CPPFLAGS"
+	AC_CHECK_HEADERS(ffmpeg/avformat.h)
+	if [[ HAVE_FFMPEG_AVFORMAT_H ]]; then
+	  ADD_DEFINE(HAVE_FFMPEG_INCLUDE_DIR)
+	fi
   ])
 # find FFMpeg's swscale lib (just if FFMpeg is compiled in GPL mode)
 PKG_CHECK_MODULES([libswscale], [libswscale], 
-  [
-    HAVE_SWSCALE="yes"
-  ], [
-    HAVE_SWSCALE="no"
-  ])
+  [ 
+    ADD_DEFINE(HAVE_SWSCALE) 
+  ], [])
 
 # -----------------------------------------
 # create output files
