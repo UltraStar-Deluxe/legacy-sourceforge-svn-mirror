@@ -24,6 +24,7 @@
  */
 #include "ffmpeg_core.h"
 #include "core/logger.h"
+#include <errno.h>
 #include <sstream>
 
 const uint8_t* STATUS_PACKET = (uint8_t*)"STATUS_PACKET";
@@ -175,9 +176,11 @@ bool MediaCore_FFmpeg::convertFFmpegToAudioFormat(SampleFormat ffmpegFormat, aud
 	case SAMPLE_FMT_FLT:
 		*format = asfFloat;
 		break;
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(51,65,0)
 	case SAMPLE_FMT_DBL:
 		*format = asfDouble;
 		break;
+#endif	
 	default:
 		return false;
 	}
@@ -206,6 +209,8 @@ static int CDECL ffmpegStreamOpen(URLContext *h, const char *filename, int flags
 		break;
 	case URL_RDONLY:
 		mode = FILE_OPEN_MODE_READ;
+	default:
+		return AVERROR(ENOSYS);
 	}
 
 	fileStream_t *stream = pluginCore->fileOpen(utf8Filename.c_str(), mode);

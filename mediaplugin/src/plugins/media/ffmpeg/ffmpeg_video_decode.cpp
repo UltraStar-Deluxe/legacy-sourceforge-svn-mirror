@@ -29,6 +29,7 @@
 
 #include "ffmpeg_video_decode.h"
 #include <sstream>
+#include <math.h>
 
 // These are called whenever we allocate a frame buffer.
 // We use this to store the global_pts in a frame at the time it is allocated.

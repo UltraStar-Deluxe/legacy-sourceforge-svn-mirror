@@ -27,6 +27,7 @@
 
 #include "ffmpeg_core.h"
 #include "core/plugin_audio_convert.h"
+#include <math.h>
 
 extern const audioConverterInfo_t audioConverterInfo;
 
@@ -68,10 +69,10 @@ protected:
 				TAPS, 10, 0, 0.8);
 #else
 		_resampleContext = audio_resample_init(
-				dstFormatInfo.getChannels(),
-				srcFormatInfo.getChannels(),
-				lround(dstFormatInfo.getSampleRate()),
-				lround(srcFormatInfo.getSampleRate()));
+				_dstFormatInfo.getChannels(),
+				_srcFormatInfo.getChannels(),
+				lround(_dstFormatInfo.getSampleRate()),
+				lround(_srcFormatInfo.getSampleRate()));
 #endif
 
 		if (!_resampleContext) {
