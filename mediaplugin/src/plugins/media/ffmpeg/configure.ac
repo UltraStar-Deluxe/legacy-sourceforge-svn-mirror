@@ -82,10 +82,10 @@ AC_DEFUN([ADD_DEFINE],
 # find FFmpeg
 PKG_CHECK_MODULES([ffmpeg], [libavcodec libavformat libavutil], [
     CPPFLAGS="$ffmpeg_CFLAGS $CPPFLAGS"
-	AC_CHECK_HEADERS(ffmpeg/avformat.h)
-	if [[ HAVE_FFMPEG_AVFORMAT_H ]]; then
-	  ADD_DEFINE(HAVE_FFMPEG_INCLUDE_DIR)
-	fi
+    AC_CHECK_HEADERS(ffmpeg/avformat.h, [
+      # old include layout
+      ADD_DEFINE(HAVE_FFMPEG_INCLUDE_DIR)
+    ])
   ])
 # find FFMpeg's swscale lib (just if FFMpeg is compiled in GPL mode)
 PKG_CHECK_MODULES([libswscale], [libswscale], 
