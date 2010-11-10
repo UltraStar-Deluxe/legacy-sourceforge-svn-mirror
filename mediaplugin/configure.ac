@@ -12,12 +12,10 @@
 #
 
 # Require autoconf >= 2.61
-AC_PREREQ(2.61)
+AC_PREREQ([2.67])
 
 # Init autoconf
-AC_INIT([ultrastardx], 
-        [1.1], 
-        [http://sourceforge.net/tracker/?group_id=191560&atid=937872])
+AC_INIT([ultrastardx],[1.1],[http://sourceforge.net/tracker/?group_id=191560&atid=937872])
 # specify the website here
 PACKAGE_WEBSITE="http://www.ultrastardeluxe.org/"
 AC_SUBST(PACKAGE_WEBSITE)
@@ -34,6 +32,8 @@ AC_CONFIG_AUX_DIR(dists/autogen)
 # show features and packages in one list
 AC_PRESERVE_HELP_ORDER
 
+AC_CONFIG_SUBDIRS(src/plugins/media/ffmpeg)
+
 # -----------------------------------------
 # find tools
 # -----------------------------------------
@@ -41,7 +41,7 @@ AC_PRESERVE_HELP_ORDER
 # options for make command
 AC_PROG_MAKE_SET
 # find tool for ln -s (e.g. uses cp -p for FAT-filesystems)
-AC_LN_S
+AC_PROG_LN_S
 # find a program for recursive dir creation
 AC_PROG_MKDIR_P
 # find the best install tool

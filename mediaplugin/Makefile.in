@@ -81,6 +81,7 @@ USE_PROJECTM_CWRAPPER = @USE_PROJECTM_CWRAPPER@
 #################################################
 
 DEPS :=
+DEPS += $(USDX_SRC_DIR)/plugins/media
 ifeq ($(USE_PROJECTM_CWRAPPER), yes)
 DEPS += $(PROJECTM_CWRAPPER_DIR)
 endif
