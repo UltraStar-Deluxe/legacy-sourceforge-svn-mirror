@@ -25,8 +25,6 @@ AC_PRESERVE_HELP_ORDER
 # find tools
 # -----------------------------------------
 
-#LT_INIT
-
 # options for make command
 AC_PROG_MAKE_SET
 # find tool for ln -s (e.g. uses cp -p for FAT-filesystems)
@@ -49,7 +47,7 @@ AM_INIT_AUTOMAKE([foreign])
 # check for compilers
 # -----------------------------------------
 
-#AC_CANONICAL_HOST
+AC_CANONICAL_HOST
 
 # find and test the C compiler (for C-libs and wrappers)
 AC_PROG_CC
@@ -74,6 +72,14 @@ AC_DEFUN([ADD_DEFINE],
 [
     CPPFLAGS="-D$1 $CPPFLAGS"
 ])
+
+case "${host_os}" in
+  darwin*)
+    CPPFLAGS="-arch i386"
+    CFLAGS="-arch i386"
+    CXXFLAGS="-arch i386"
+    ;;
+esac
 
 # -----------------------------------------
 # check for libraries
