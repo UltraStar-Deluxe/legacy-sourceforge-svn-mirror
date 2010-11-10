@@ -18,7 +18,7 @@ procedure wStopWebCam;
 
 procedure wInit;
 procedure wClose;
-procedure wDraw(DoDraw: boolean);
+procedure wDraw(DoDraw: boolean; Screen: integer);
 
 
 var
@@ -159,7 +159,7 @@ begin
 end;
 
 
-procedure wDraw(DoDraw: boolean);
+procedure wDraw(DoDraw: boolean; Screen: integer);
 var
   SRect: record
     left, right, upper, lower:  double;
@@ -203,10 +203,12 @@ begin
   SRect.lower := (RenderH - ScaledVideoHeight) / 2;
   SRect.upper := SRect.lower + ScaledVideoHeight;
 
-  // have a nice black background to draw on (even if there were errors opening the vid)
-  glClearColor(0,0,0,1);
-  glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
-  
+  if (Screen=1) then
+  begin
+    glClearColor(0,0,0,1);
+    glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT);
+  end;
+
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   

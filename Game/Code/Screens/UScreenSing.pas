@@ -327,7 +327,7 @@ begin
   else            //Pause ausschalten
   begin
     Czas.Teraz := PauseTime; //Position of Notes
-    Music.MoveTo (PauseTime);//Position of Music
+    Music.MoveTo (PauseTime + Ini.LipSync*0.01);//Position of Music
     Music.Play; //Play Music
     if (AktSong.Video <> '') and FileExists(AktSong.Path + AktSong.Video) then //Video
       acTogglePause;
@@ -1643,7 +1643,7 @@ begin
     SetFontPos (400 - glTextWidth ('Activating Webcam ...')/2, 250); //Position
     glColor4f(1,1,1,1);
     glPrint('Activating Webcam ...');
-    SwapBuffers;
+    SwapBuffers;    
     wStartWebCam();
   end;
 
@@ -1978,7 +1978,7 @@ begin
   if ShowFinish and AktSong.VideoLoaded then
   begin
     try
-      acGetFrame(Music.Position);
+      acGetFrame(Music.Position + Ini.LipSync*0.01);
       acDrawGL(ScreenAct, not WebCam); // this only draws
     except
       //If an Error occurs drawing: prevent Video from being Drawn again and Close Video
@@ -1993,7 +1993,7 @@ begin
     end;
   end;
 
-  wDraw(WebCam);
+  wDraw(WebCam, ScreenAct);
   // draw static menu (FG)
   DrawFG;
 
@@ -2006,7 +2006,7 @@ begin
   if ShowFinish then
   begin
     if (not Music.Finished) and (not medley_end or (ScreenSong.Mode <> smMedley))
-      and ((AktSong.Finish = 0) or (CurTime*1000 <= AktSong.Finish)) then
+      and ((AktSong.Finish = 0) or (Music.Position + Ini.LipSync*0.01 <= AktSong.Finish)) then
     begin
       //Pause Mod:
       if not Paused then
@@ -2170,8 +2170,8 @@ begin
 
     SetFontPos (5, 184);
     glPrint(PChar('lt: ' + FormatFloat('#0.00', Czas.Teraz) +
-      ' mt: ' + FormatFloat('#0.00', Music.Position) +
-      ' dt: ' + FormatFloat('#0.000', Czas.Teraz-Music.Position)));
+      ' mt: ' + FormatFloat('#0.00', Music.Position + Ini.LipSync*0.01) +
+      ' dt: ' + FormatFloat('#0.000', Czas.Teraz-(Music.Position+Ini.LipSync*0.01))));
   end;
   PerfLog.AddComment('ScreenSing: End Draw');
 end;

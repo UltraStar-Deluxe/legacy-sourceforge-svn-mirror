@@ -9,10 +9,11 @@ type
   TScreenOptionsGame = class(TMenu)
     private
       old_Tabs, old_Sorting: integer;
+      old_Language:          integer;
 
       procedure Leave;
       procedure RefreshSongs;
-      
+      procedure RefreshLanguage;
     public
       constructor Create; override;
       function ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean; override;
@@ -24,7 +25,7 @@ const
   
 implementation
 
-uses UGraphic, UHelp, ULog, UPlaylist;
+uses UGraphic, UHelp, ULog, UPlaylist, ULanguage, TextGL, UTexture;
 
 function TScreenOptionsGame.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
@@ -59,14 +60,16 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then
+          begin
             Music.PlayOption;
             InteractInc;
           end;
         end;
       SDLK_LEFT:
         begin
-          if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
+          if (SelInteraction >= 0) and (SelInteraction <= 6) then
+          begin
             Music.PlayOption;
             InteractDec;
           end;
@@ -99,11 +102,34 @@ end;
 //Refresh Songs Patch
 procedure TScreenOptionsGame.RefreshSongs;
 begin
-  if (ini.Sorting <> old_Sorting) or (ini.Tabs <> old_Tabs) then
+  if (Ini.Sorting <> old_Sorting) or (Ini.Tabs <> old_Tabs) then
   begin
     ScreenSong.Refresh(false);
     PlaylistMan.LoadPlayLists;
   end;
+end;
+
+procedure TScreenOptionsGame.RefreshLanguage;
+begin
+  if (Ini.Language = old_Language) then
+    Exit;
+
+  UGraphic.UnLoadScreens();
+  KillFont;
+
+  BuildFont;
+  Language.ChangeLanguage(ILanguage[Ini.Language]);
+  Help.ChangeLanguage(ILanguage[Ini.Language]);
+
+  Theme.LoadTheme('Themes\' + ITheme[Ini.Theme] + '.ini', Ini.Color);
+  UGraphic.LoadScreens( true );
+  ScreenSong.Refresh(true);
+  PlaylistMan.LoadPlayLists;
+
+  old_language := Ini.Language;
+  old_Sorting := Ini.Sorting;
+  old_Tabs    := Ini.Tabs;
+  ScreenMain.ShowNumErrors := false;
 end;
 
 procedure TScreenOptionsGame.onShow;
@@ -115,14 +141,16 @@ begin
   //Refresh Songs Patch
   old_Sorting := Ini.Sorting;
   old_Tabs    := Ini.Tabs;
+  old_Language := Ini.Language;
 end;
 
 procedure TScreenOptionsGame.Leave;
 begin
-
+  Ini.Save;
+  RefreshLanguage;
+  RefreshSongs;
 
   Music.PlayBack;
-  RefreshSongs;
   FadeTo(@ScreenOptions);
 end;
 

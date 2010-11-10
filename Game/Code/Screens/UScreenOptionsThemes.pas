@@ -181,6 +181,7 @@ begin
     UGraphic.LoadScreens( true );
     ScreenSong.Refresh(true);
     PlaylistMan.LoadPlayLists;
+    ScreenMain.ShowNumErrors := false;
   end;
 end;
 

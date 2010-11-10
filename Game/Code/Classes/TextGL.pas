@@ -71,7 +71,7 @@ var
 
 implementation
 
-uses UMain, Windows, SysUtils, UGraphic, UFiles;
+uses UMain, Windows, SysUtils, UGraphic, UFiles, UIni;
 
 procedure BuildFont;			                // Build Our Bitmap Font
 var
@@ -290,10 +290,20 @@ var
 begin
   ActFont := 0;
   SetLength(FontFiles, 5);
-  FontFiles[0] := 'Normal.fnt';
-  FontFiles[1] := 'Bold.fnt';
-  FontFiles[2] := 'FontO.fnt';
-  FontFiles[3] := 'FontO2.fnt';
+  if (Uppercase(ILanguage[Ini.Language]) <> 'POLISH') then
+  begin
+    FontFiles[0] := 'Normal.fnt';
+    FontFiles[1] := 'Bold.fnt';
+    FontFiles[2] := 'FontO.fnt';
+    FontFiles[3] := 'FontO2.fnt';
+  end else
+  begin
+    FontFiles[0] := 'Normal_p.fnt';
+    FontFiles[1] := 'Bold_p.fnt';
+    FontFiles[2] := 'FontO_p.fnt';
+    FontFiles[3] := 'FontO2_p.fnt';
+  end;
+
   FontFiles[4] := 'HighResNumbersO.fnt';
 
   SetLength(Fonts, 5);
@@ -307,9 +317,18 @@ begin
   end;
 end;
 
-procedure KillFont;     		                // Delete The Font
+procedure KillFont;
+var
+  F, Tex:  integer;
+
 begin
-//  glDeleteLists(base, 256); 		                // Delete All 96 Characters
+  for F := 0 to Length(Fonts) - 1 do
+  begin
+    for Tex := 0 to Length(Fonts[F].Tex) - 1 do
+      Texture.UnloadTexture(Fonts[F].Tex[Tex].Name, false);
+  end;
+
+  SetLength(Fonts, 0);
 end;
 
 function glTextWidth(text: pchar): real;

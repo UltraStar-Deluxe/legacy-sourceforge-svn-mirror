@@ -869,14 +869,12 @@ begin
     if TexNum >= 0 then begin
       glDeleteTextures(1, @TexNum);
       TextureDatabase.Texture[T].Texture.TexNum := -1;
-//      Log.LogError('Unload texture no '+IntToStr(TexNum));
     end;
   end else begin
     TexNum := TextureDatabase.Texture[T].TextureCache.TexNum;
     if TexNum >= 0 then begin
       glDeleteTextures(1, @TexNum);
       TextureDatabase.Texture[T].TextureCache.TexNum := -1;
-//      Log.LogError('Unload texture cache no '+IntToStr(TexNum));
     end;
   end;
 end;

@@ -519,7 +519,7 @@ begin
       end;}
     end;
 
-    glColor4f(1, 1, 1, (sqrt((1+sin(Music.Position * 3))/4)/ 2 + 0.5)*Alpha);
+    glColor4f(1, 1, 1, (sqrt((1+sin((Music.Position+Ini.LipSync*0.01) * 3))/4)/ 2 + 0.5)*Alpha);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

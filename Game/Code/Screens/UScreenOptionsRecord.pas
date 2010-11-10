@@ -218,7 +218,7 @@ begin
   if WebCamPreviewOn then
   begin
     try
-      wDraw(true);
+      wDraw(true, ScreenAct);
     except
       WebCamPreviewOn := false;
     end;

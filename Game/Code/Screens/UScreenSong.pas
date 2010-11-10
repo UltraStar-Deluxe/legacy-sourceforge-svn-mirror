@@ -2380,7 +2380,7 @@ begin
   //prepare Video
   if UVideo.VideoOpened then
   begin
-    Czas.Teraz := Czas.Teraz + TimeSkip;
+    Czas.Teraz := Music.Position+Ini.LipSync*0.01;
     try
       acGetFrame(Czas.Teraz);
 
@@ -2916,8 +2916,8 @@ begin
         begin
           acOpenFile(PAnsiChar(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Video));
 
-          acSkip2(CatSongs.Song[Interaction].VideoGAP, Music.Position);
-          Czas.Teraz := Music.Position;
+          acSkip2(CatSongs.Song[Interaction].VideoGAP, Music.Position+Ini.LipSync*0.01);
+          Czas.Teraz := Music.Position+Ini.LipSync*0.01;
           Czas.Razem := Music.Length;
           StartTry := false;
           try

@@ -52,6 +52,7 @@ type
     SavePlayback:   integer;
     Threshold:      integer;
     Delay:          integer;
+    LipSync:        integer;
 
     //Song Preview
     PreviewVolume: integer;
@@ -170,6 +171,7 @@ const
   ISavePlayback:  array[0..1] of string = ('Off', 'On');
   IThreshold:     array[0..3] of string = ('5%', '10%', '15%', '20%');
   IDelay:         array[0..9] of string = ('0ms', '10ms', '20ms', '30ms', '40ms', '50ms', '60ms', '70ms', '80ms', '90ms');
+  ILipSync:       array[0..20] of string = ('0ms', '10ms', '20ms', '30ms', '40ms', '50ms', '60ms', '70ms', '80ms', '90ms', '100ms', '110ms', '120ms', '130ms', '140ms', '150ms', '160ms', '170ms', '180ms', '190ms', '200ms');
 
   //Song Preview
   IPreviewVolume: array[0..10] of string = ('Off', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%');
@@ -441,6 +443,12 @@ begin
   Tekst := IniFile.ReadString('Sound', 'Delay', IDelay[5]);
   for Pet := 0 to High(IDelay) do
     if Tekst = IDelay[Pet] then Ini.Delay := Pet;
+
+  // LipSync
+  Tekst := IniFile.ReadString('Sound', 'LipSync', ILipSync[0]);
+  for Pet := 0 to High(ILipSync) do
+    if Tekst = ILipSync[Pet] then Ini.LipSync := Pet;
+
 
   //Song Preview
   Tekst := IniFile.ReadString('Sound', 'PreviewVolume', IPreviewVolume[7]);
@@ -802,6 +810,11 @@ begin
     // Delay
     Tekst := IDelay[Ini.Delay];
     IniFile.WriteString('Sound',    'Delay',    Tekst);
+
+    // LipSync
+    Tekst := ILipSync[Ini.LipSync];
+    IniFile.WriteString('Sound',    'LipSync',    Tekst);
+
 
     // Song Preview
     Tekst := IPreviewVolume[Ini.PreviewVolume];

@@ -583,7 +583,7 @@ begin
   freeandnil( ScreenOptionsGraphics );
   freeandnil( ScreenOptionsSound );
   freeandnil( ScreenOptionsLyrics );
-//  freeandnil( ScreenOptionsThemes );
+  freeandnil( ScreenOptionsThemes );
   freeandnil( ScreenOptionsRecord );
   freeandnil( ScreenOptionsAdvanced );
   freeandnil( ScreenEditSub );
@@ -605,8 +605,6 @@ begin
 
   //Party M2 Screens
   freeandnil( ScreenPartyNewRoundM2 );
-  //freeandnil( ScreenPartyScoreM2    );
-  //freeandnil( ScreenPartyWinM2     );
   freeandnil( ScreenPartyOptionsM2  );
   freeandnil( ScreenPartyPlayerM2   );
 end;

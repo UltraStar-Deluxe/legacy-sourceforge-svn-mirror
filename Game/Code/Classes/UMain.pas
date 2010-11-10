@@ -349,7 +349,7 @@ var
   N:      integer;
 begin
   //Czas.Teraz := Czas.Teraz + TimeSkip;
-  Czas.Teraz := Music.Position;
+  Czas.Teraz := Music.Position+Ini.LipSync*0.01;
 
   Czas.OldBeat := Czas.AktBeat;
   Czas.MidBeat := GetMidBeat(Czas.Teraz - (AktSong.Gap{ + 90 I've forgotten for what it is}) / 1000); // new system with variable BPM in function
@@ -360,7 +360,7 @@ begin
   Czas.AktBeatC := Floor(Czas.MidBeatC);
 
   Czas.OldBeatD := Czas.AktBeatD;
-  Czas.MidBeatD := -0.5+GetMidBeat(Czas.Teraz - (AktSong.Gap + 120 + Ini.Delay*10) / 1000); // MidBeat with addition GAP
+  Czas.MidBeatD := -0.5+GetMidBeat(Czas.Teraz - Ini.LipSync*0.01 - (AktSong.Gap + 120 + Ini.Delay*10) / 1000); // MidBeat with addition GAP
   Czas.AktBeatD := Floor(Czas.MidBeatD);
   Czas.FracBeatD := Frac(Czas.MidBeatD);
 

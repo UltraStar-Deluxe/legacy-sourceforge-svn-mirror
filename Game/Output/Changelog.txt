@@ -1,8 +1,9 @@
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9 (xx.10.2010)
+Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC7.2 (07.11.2010)
 -----------------------------
 New: (General)     DUET support! Song syntax as proposed by hawkear, however, limited to 2 parts. Duet songs can be created and edited in the editor.
 New: (General)     Webcam support.
 New: (General)     New Fonst (higher resolution)
+New: (General)     Show/hide notes and scores in singscreen by pressing "N" (not in party mode).
 New: (General)     Option [Advanced]->DuelRatio for Challenge Mode: normal, 10%, 20%, ..., 90%: determines the percentage of the "duel" plugin.
 New: (General)     Zoom/slide effect in song selection screen when minimizing/maximizing videos via V.
 New: (General)     Video preview now has a reflection effect similar to the song cover.
@@ -15,6 +16,8 @@ New: (General)     For each session, a log file recording all played songs is cr
 New: (General)     Notes and lyrics are faded out and in for sing pauses.
 New: (General)     Support for 4 and 6 players in one screen.
 New: (General)     Sorting option 'Random' added. Avoids songs of the same artist in party mode.
+New: (Language)    Added polish language file and font (thx to Pit33)
+New: (Language)    Switch language without restart
 New: (Medley)      New tag "#CalcMedley:Off": If present, Ultrastar will not try to calculate a Medley in this song.
 New: (Party)       Display of available songs in party mode options.
 New: (Party)       In party mode, the song selection is not limited to the randomly proposed one, but also includes the song to the left and to the right of it.

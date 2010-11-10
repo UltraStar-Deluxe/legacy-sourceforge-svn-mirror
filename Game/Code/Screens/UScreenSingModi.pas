@@ -601,7 +601,7 @@ end;
     acDrawGL(ScreenAct, not WebCam); // this only draws
   end;
 
-  wDraw(WebCam);
+  wDraw(WebCam, ScreenAct);
 
   // draw static menu (FG)
   DrawFG;
