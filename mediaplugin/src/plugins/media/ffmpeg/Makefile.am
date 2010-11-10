@@ -3,7 +3,7 @@ libffmpegplugin_la_SOURCES = ../core/plugin_core.cpp ../core/util.cpp ../core/lo
 libffmpegplugin_la_CXXFLAGS = -I../include -Wall \
 	$(ffmpeg_CFLAGS) \
 	$(libswscale_CFLAGS)
-libffmpegplugin_la_LDFLAGS = -module -export-dynamic \
+libffmpegplugin_la_LDFLAGS = -dynamic \
 	$(ffmpeg_LIBS) \
 	$(libswscale_LIBS) \
 	$(LDFLAGS)
