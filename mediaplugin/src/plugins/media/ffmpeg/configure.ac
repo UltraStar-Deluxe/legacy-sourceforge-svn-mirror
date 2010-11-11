@@ -78,8 +78,19 @@ case "${host_os}" in
     CPPFLAGS="-arch i386"
     CFLAGS="-arch i386"
     CXXFLAGS="-arch i386"
+    LIB_EXT=.dylib
+    ;;
+  cygwin*)
+    LIB_EXT=.dll
+    ;;
+  *)
+    LIB_EXT=.so
     ;;
 esac
+AC_SUBST(LIB_EXT)
+
+PLUGIN_DIR="../../../../game/plugins/media"
+AC_SUBST(PLUGIN_DIR)
 
 # -----------------------------------------
 # check for libraries
