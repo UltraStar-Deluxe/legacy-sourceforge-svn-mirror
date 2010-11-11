@@ -55,6 +55,7 @@ USDX_TARNAME := @PACKAGE_TARNAME@
 
 USDX_SRC_DIR   := $(top_srcdir)/src
 USDX_GAME_DIR  := $(top_srcdir)/game
+USDX_PLUGIN_DIR  := $(USDX_GAME_DIR)/plugins
 USDX_TOOLS_DIR := $(top_srcdir)/tools
 USDX_BUILD_DIR := $(top_srcdir)/build
 USDX_LIB_DIR   := $(USDX_SRC_DIR)/lib
@@ -139,6 +140,9 @@ clean-game:
 	$(RM) $(USDX_GAME_DIR)/*.log
 	$(RM) $(USDX_GAME_DIR)/*.db
 	$(RM) $(USDX_GAME_DIR)/*.ini
+	$(RM) $(USDX_PLUGIN_DIR)/media/*.dll
+	$(RM) $(USDX_PLUGIN_DIR)/media/*.so
+	$(RM) $(USDX_PLUGIN_DIR)/media/*.dylib
 	-rmdir $(USDX_GAME_DIR)/screenshots
 	-rmdir $(USDX_GAME_DIR)/playlists
 	-rmdir $(USDX_GAME_DIR)/songs
@@ -227,7 +231,9 @@ PPROCESSOR := @FPC_PROCESSOR@
 .PHONY: install-plugins
 install-plugins:
 	$(MKDIR) "$(DESTDIR)$(INSTALL_DATADIR)/plugins"
-	$(INSTALL) "$(USDX_GAME_DIR)/plugins"/* "$(DESTDIR)$(INSTALL_DATADIR)/plugins"
+	$(MAKE) RECURSIVE_SRC_DIR="$(USDX_GAME_DIR)/plugins" \
+            RECURSIVE_DST_DIR="$(DESTDIR)$(INSTALL_DATADIR)/plugins" \
+            install-data-recursive
 
 .PHONY: install-data
 install-data:
