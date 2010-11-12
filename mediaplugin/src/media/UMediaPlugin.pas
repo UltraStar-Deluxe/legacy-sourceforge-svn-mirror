@@ -440,6 +440,7 @@ begin
   begin
     FileInfo := Iter.Next();
     ModuleFile := MediaPluginPath.Append(FileInfo.Name);
+    Module := INVALID_MODULEHANDLE_VALUE;
     if (not LoadModule(Module, PChar(ModuleFile.ToNative))) then
     begin
       Log.LogInfo('Failed to load media plugin: "' + FileInfo.Name.ToNative + '"',

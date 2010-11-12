@@ -9,4 +9,4 @@ libffmpegplugin_la_LDFLAGS = -shared -dynamic -avoid-version \
 	$(LDFLAGS)
 
 compile: libffmpegplugin.la
-	cp .libs/*$(LIB_EXT) $(PLUGIN_DIR)
+	cp .libs/libffmpegplugin$(LIB_EXT) $(PLUGIN_DIR)

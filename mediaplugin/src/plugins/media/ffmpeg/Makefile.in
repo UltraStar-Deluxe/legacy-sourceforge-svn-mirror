@@ -756,7 +756,7 @@ uninstall-am: uninstall-libLTLIBRARIES
 
 
 compile: libffmpegplugin.la
-	cp .libs/*$(LIB_EXT) $(PLUGIN_DIR)
+	cp .libs/libffmpegplugin$(LIB_EXT) $(PLUGIN_DIR)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
