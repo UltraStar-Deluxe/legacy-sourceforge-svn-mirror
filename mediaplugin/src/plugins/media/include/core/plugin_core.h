@@ -140,11 +140,11 @@ static const int g_audioSampleSize[] = {
 	4,        // asfFloat
 };
 
-struct audioFormatInfo_t {
+typedef struct audioFormatInfo_t {
     double sampleRate;
     uint8_t channels;
     audioSampleFormat_t format;
-};
+} audioFormatInfo_t;
 
 typedef struct{} audioDecodeStream_t;
 typedef struct{} audioConvertStream_t;
@@ -208,7 +208,7 @@ typedef struct pluginInfo_t {
 
 
 // plugin entry function (must be implemented by the plugin)
-DLL_EXPORT const pluginInfo_t* PLUGIN_CALL Plugin_register(const pluginCore_t *core);
+extern DLL_EXPORT const pluginInfo_t* PLUGIN_CALL Plugin_register(const pluginCore_t *core);
 
 // must be provided by the plugin and initialized on plugin initialization
 extern const pluginCore_t *pluginCore;
