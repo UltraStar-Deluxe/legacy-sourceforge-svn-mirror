@@ -209,6 +209,7 @@ static int CDECL ffmpegStreamOpen(URLContext *h, const char *filename, int flags
 		break;
 	case URL_RDONLY:
 		mode = FILE_OPEN_MODE_READ;
+		break;
 	default:
 		return AVERROR_NOTSUPP;
 	}
