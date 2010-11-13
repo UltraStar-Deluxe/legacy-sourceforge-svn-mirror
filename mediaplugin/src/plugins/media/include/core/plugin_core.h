@@ -36,17 +36,15 @@ extern "C" {
 #endif
 
 /* declaration for export */
-#ifndef DLL_EXPORT
-# if defined(__WIN32__)
-#  define DLL_EXPORT	__declspec(dllexport)
+#if defined(__WIN32__)
+# define DECLSPEC_EXPORT	__declspec(dllexport)
+#else
+# if defined(__GNUC__) && __GNUC__ >= 4
+#  define DECLSPEC_EXPORT	__attribute__ ((visibility("default")))
 # else
-#  if defined(__GNUC__) && __GNUC__ >= 4
-#   define DLL_EXPORT	__attribute__ ((visibility("default")))
-#  else
-#   define DLL_EXPORT
-#  endif
+#  define DECLSPEC_EXPORT
 # endif
-#endif /* DLL_EXPORT */
+#endif
 
 /* use C calling convention */
 #ifndef CDECL
@@ -208,7 +206,7 @@ typedef struct pluginInfo_t {
 
 
 // plugin entry function (must be implemented by the plugin)
-extern DLL_EXPORT const pluginInfo_t* PLUGIN_CALL Plugin_register(const pluginCore_t *core);
+extern DECLSPEC_EXPORT const pluginInfo_t* PLUGIN_CALL Plugin_register(const pluginCore_t *core);
 
 // must be provided by the plugin and initialized on plugin initialization
 extern const pluginCore_t *pluginCore;

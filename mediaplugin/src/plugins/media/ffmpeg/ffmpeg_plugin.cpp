@@ -31,7 +31,7 @@
 
 MediaCore_FFmpeg *ffmpegCore;
 
-DLL_EXPORT const pluginInfo_t* PLUGIN_CALL Plugin_register(const pluginCore_t *core) {
+DECLSPEC_EXPORT const pluginInfo_t* PLUGIN_CALL Plugin_register(const pluginCore_t *core) {
 	pluginInitCore(core);
 	return &pluginInfo;
 }
