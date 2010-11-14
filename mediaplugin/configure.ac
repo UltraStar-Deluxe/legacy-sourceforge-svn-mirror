@@ -92,20 +92,6 @@ AC_ARG_WITH([libprojectM],
 AC_ARG_WITH([cfg-dummy2], [
 Development options:])
 
-# add DEPRECATED global and local options
-AC_ARG_ENABLE(global, [AS_HELP_STRING([--enable-global], [(DEPRECATED, DO NOT USE]))])
-AC_ARG_ENABLE(local, [AS_HELP_STRING([--enable-local], [(DEPRECATED, DO NOT USE]))])
-
-if [[ x$enable_global != x -o x$enable_local != x ]]; then
-   AC_MSG_NOTICE([
-
-!!! NOTE: --enable-global and --enable-local are deprecated:
-!!! - global build: just type "make" and "make install"
-!!! - local  build: just type "make" and start "game/ultrastardx"
-])
-   sleep 2
-fi
-
 AC_ARG_ENABLE(debug,
   [AS_HELP_STRING([--enable-debug],
     [Enable debug build @<:@default=no@:>@])],
@@ -184,36 +170,6 @@ if [[ x$lua_HAVE = xno ]]; then
     lua_LIB_NAME="lua"
 fi
 AC_SUBST(lua_LIB_NAME)
-
-# find FFMpeg
-# Note: do not use the min/max version parameters with ffmpeg
-# otherwise it might fail in ubuntu due to a wrong version number 
-# format in ffmpeg's .pc-files.
-# For example: 0d.51.1.2 instead of the correct 51.1.2.
-#   A check for version >=52.0.0 will return version 0d.51.1.2 
-#   although it is lower because pkg-config is confused by the 0d.
-# Use [mylib]_VERSION_INT for version-checking instead
-PKG_HAVE([libavcodec], [libavcodec], yes)
-PKG_VERSION([libavcodec], [libavcodec])
-AC_CHECK_LIB([avcodec], [avcodec_decode_audio], [HAVE_AVCODEC_DECODE_AUDIO="yes"])
-AC_CHECK_LIB([avcodec], [avcodec_decode_audio2], [HAVE_AVCODEC_DECODE_AUDIO2="yes"])
-AC_CHECK_LIB([avcodec], [img_convert], [HAVE_IMG_CONVERT="yes"])
-PKG_HAVE([libavformat], [libavformat], yes)
-PKG_VERSION([libavformat], [libavformat])
-PKG_HAVE([libavutil], [libavutil], yes)
-PKG_VERSION([libavutil], [libavutil])
-if [[ x$libavcodec_HAVE = xyes -a x$libavformat_HAVE = xyes -a x$libavutil_HAVE = xyes ]]; then
-    ffmpeg_HAVE=yes
-else
-    ffmpeg_HAVE=no
-fi
-AC_SUBST_DEFINE(HAVE_FFMPEG, $ffmpeg_HAVE)
-
-# find FFMpeg's swscale lib (just if FFMpeg is compiled in GPL mode)
-PKG_HAVE([libswscale], [libswscale], no)
-PKG_VERSION([libswscale], [libswscale])
-AC_SUBST_DEFINE(HAVE_SWSCALE, $libswscale_HAVE)
-
 
 # find projectM version
 libprojectM_PKG="libprojectM >= 0.98"
