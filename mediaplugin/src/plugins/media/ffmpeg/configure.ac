@@ -21,33 +21,32 @@ AC_CONFIG_AUX_DIR(../../../../dists/autogen)
 # show features and packages in one list
 AC_PRESERVE_HELP_ORDER
 
+AC_CANONICAL_SYSTEM
+
 # -----------------------------------------
 # find tools
 # -----------------------------------------
 
+AM_INIT_AUTOMAKE([foreign])
+
 # options for make command
 AC_PROG_MAKE_SET
-# find tool for ln -s (e.g. uses cp -p for FAT-filesystems)
-#AC_LN_S
-# find a program for recursive dir creation
-#AC_PROG_MKDIR_P
-# find the best install tool
-#AC_PROG_INSTALL
-# some other useful tools
-#AC_PROG_AWK
-#AC_PROG_SED
-#AC_PROG_GREP
-AC_PROG_LIBTOOL
-#AC_PROG_RANLIB
-#AC_PROG_EGREP
+AM_PROG_LIBTOOL
 
-AM_INIT_AUTOMAKE([foreign])
+# -----------------------------------------
+# functions
+# -----------------------------------------
+
+# ADD_DEFINE(DEFINE)
+# adds a preprocessor definition
+AC_DEFUN([ADD_DEFINE],
+[
+    CPPFLAGS="-D$1 $CPPFLAGS"
+])
 
 # -----------------------------------------
 # check for compilers
 # -----------------------------------------
-
-AC_CANONICAL_HOST
 
 # find and test the C compiler (for C-libs and wrappers)
 AC_PROG_CC
@@ -57,30 +56,16 @@ AC_LANG([C])
 AC_PROG_CXX
 AC_LANG([C++])
 
-# find pkg-config
-PKG_PROG_PKG_CONFIG()
-if [[ x$PKG_CONFIG = x ]]; then
-   AC_MSG_ERROR([
-!!! pkg-config was not found on your system. 
-!!! It is needed to determine the versions of your libraries.
-!!! Install it and try again.])
-fi
-
-# ADD_DEFINE(DEFINE)
-# adds a preprocessor definition
-AC_DEFUN([ADD_DEFINE],
-[
-    CPPFLAGS="-D$1 $CPPFLAGS"
-])
-
-case "${host_os}" in
+case "${target_os}" in
   darwin*)
-    CPPFLAGS="-arch i386"
-    CFLAGS="-arch i386"
-    CXXFLAGS="-arch i386"
+    CPPFLAGS="$CPPFLAGS -arch i386"
+    CFLAGS="$CFLAGS -arch i386"
+    CXXFLAGS="$CXXFLAGS -arch i386"
+	LDFLAGS="$LDFLAGS -dynamic"
     LIB_EXT=.dylib
     ;;
-  cygwin*)
+  cygwin*|mingw*)
+	LDFLAGS="$LDFLAGS -no-undefined"
     LIB_EXT=.dll
     ;;
   *)
@@ -96,9 +81,13 @@ AC_SUBST(PLUGIN_DIR)
 # check for libraries
 # -----------------------------------------
 
+# find pkg-config
+PKG_PROG_PKG_CONFIG()
+
 # find FFmpeg
 PKG_CHECK_MODULES([ffmpeg], [libavcodec libavformat libavutil], [
     CPPFLAGS="$ffmpeg_CFLAGS $CPPFLAGS"
+    #AC_CHECK_LIB([avcodec], [img_convert], [HAVE_IMG_CONVERT="yes"])
     AC_CHECK_HEADERS(ffmpeg/avformat.h, [
       # old include layout
       ADD_DEFINE(HAVE_FFMPEG_INCLUDE_DIR)
@@ -109,7 +98,7 @@ PKG_CHECK_MODULES([libswscale], [libswscale],
   [ 
     ADD_DEFINE(HAVE_SWSCALE) 
   ], [])
-
+    
 # -----------------------------------------
 # create output files
 # -----------------------------------------
