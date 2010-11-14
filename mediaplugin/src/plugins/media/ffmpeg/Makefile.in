@@ -34,6 +34,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+target_triplet = @target@
 subdir = .
 DIST_COMMON = $(am__configure_deps) \
 	$(srcdir)/../../../../dists/autogen/config.guess \
@@ -50,7 +51,9 @@ DIST_COMMON = $(am__configure_deps) \
 	../../../../dists/autogen/ltmain.sh \
 	../../../../dists/autogen/missing compile
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.ac
+am__aclocal_m4_deps =  \
+	$(top_srcdir)/../../../../dists/autogen/m4/pkg.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -243,7 +246,11 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
+target = @target@
 target_alias = @target_alias@
+target_cpu = @target_cpu@
+target_os = @target_os@
+target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
@@ -253,7 +260,7 @@ libffmpegplugin_la_CXXFLAGS = -I../include -Wall \
 	$(ffmpeg_CFLAGS) \
 	$(libswscale_CFLAGS)
 
-libffmpegplugin_la_LDFLAGS = -shared -dynamic -avoid-version \
+libffmpegplugin_la_LDFLAGS = -shared -avoid-version \
 	$(ffmpeg_LIBS) \
 	$(libswscale_LIBS) \
 	$(LDFLAGS)
