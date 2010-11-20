@@ -118,7 +118,7 @@ const
   IDifficulty:    array[0..2] of string = ('Easy', 'Medium', 'Hard');
   ITabs:          array[0..1] of string = ('Off', 'On');
 
-  ISorting:       array[0..8] of string = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2', 'Random');
+  ISorting:       array[0..9] of string = ('Edition', 'Genre', 'Language', 'Folder', 'Title', 'Artist', 'Title2', 'Artist2', 'Random', 'Year');
   sEdition = 0;
   sGenre = 1;
   sLanguage = 2;
@@ -128,6 +128,7 @@ const
   sTitle2 = 6;
   sArtist2 = 7;
   sRandom = 8;
+  sYear = 9;
 
   IShuffleTime:   array[0..10] of string = ('Off',
                                           '15 Sec',

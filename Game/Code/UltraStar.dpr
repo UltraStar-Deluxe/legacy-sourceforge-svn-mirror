@@ -122,7 +122,7 @@ uses
   UVideo in 'Classes\UVideo.pas';
 
 const
-  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9 RC7.2';
+  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9 RC8';
 
 var
   WndTitle: string;

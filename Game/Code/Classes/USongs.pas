@@ -55,7 +55,7 @@ type
     Genre:      array of string;
     Edition:    array of string;
     Language:   string; // 0.5.0: new
-    Year:       string;
+    Year:       integer;
 
     Title:      string;
     Artist:     string;
@@ -180,6 +180,10 @@ begin
       sRandom:
         if (Random(2) = 0) then
           Result := true;
+
+      sYear: //by Year
+        Result := (TempSongArr[TempIndex].Year <= Songs.SongSort[SourceIndex].Year);
+
     end; // case
 end;
 
@@ -343,13 +347,7 @@ end;
 
 procedure TSongs.Sort(Order: integer);
 var
-  S:            integer;
-  S2:           integer;
-
-  I:            integer;
-  //TempSong:     TSong;
   MergeSort:    TMergeSorter;
-  //TempSongArr:  array of TSong;
 
 
 begin
@@ -385,6 +383,7 @@ var
   Order:    integer; // number used for ordernum
   Letter2:  char; //
   CatNumber:integer; // Number of Song in Category
+  tempstr:  string;
 
   procedure CheckEdition(SongNr: integer);
   var
@@ -510,6 +509,12 @@ begin
     sRandom:
         begin
           Songs.Sort(sRandom);
+        end;
+    sYear:
+        begin
+          Songs.Sort(sTitle);
+          Songs.Sort(sArtist);
+          Songs.Sort(sYear);
         end;
 
   end; // case
@@ -767,6 +772,37 @@ begin
         end;
 
         CatSongs.Song[CatLen].Visible := true;
+      end else if (Ini.Sorting = sYear) then
+      begin
+        I := Songs.SongSort[S].Year;
+        if (I <> -1) then
+          tempstr := IntToStr(Round(I/10)*10) + '-' + IntToStr(Round(I/10)*10+9)
+        else
+          tempstr := 'undefined';
+
+        if (tempstr <> SS) then
+        begin
+          Inc(Order);
+          SS := tempstr;
+          CatLen := Length(CatSongs.Song);
+          SetLength(CatSongs.Song, CatLen+1);
+          CatSongs.Song[CatLen].Artist := SS;
+          CatSongs.Song[CatLen].Main := true;
+          CatSongs.Song[CatLen].OrderTyp := 0;
+          CatSongs.Song[CatLen].OrderNum := Order;
+
+          CatSongs.Song[CatLen].Cover := CatCovers.GetCover(Ini.Sorting, SS);
+
+          //CatNumber Patch
+          if (SS <> '') then
+          begin
+            if (CatLen - CatNumber - 1>=0) then
+              Song[CatLen - CatNumber - 1].CatNumber := CatNumber;//Set CatNumber of Categroy
+            CatNumber := 0;
+          end;
+
+          CatSongs.Song[CatLen].Visible := true;
+        end;
       end;
     end;
 

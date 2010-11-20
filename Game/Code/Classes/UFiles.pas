@@ -153,7 +153,7 @@ begin
   SetLength(Song.Edition, 1);
   Song.Edition[0] := 'Unknown';
   Song.Language := 'Unknown'; //Language Patch
-  Song.Year := '';
+  Song.Year := -1;
 
   //Required Information
   Song.Mp3 := '';
@@ -404,7 +404,15 @@ begin
         //Year Sorting
         else if (Identifier = 'YEAR') then
         begin
-          Song.Year := Value;
+          Len := -1;
+          if (Length(Value)<>4) then
+            Log.LogError('YEAR-tag does not has 4 Digits in Song: ' + Song.Path + Song.FileName)
+          else if (not TryStrtoInt(Value, Len)) then
+            Log.LogError('YEAR-tag is not a Number in Song: ' + Song.Path + Song.FileName)
+          else if (Len<1000) or (Len>9999) then
+            Log.LogError('YEAR-tag is too low or too high in Song: ' + Song.Path + Song.FileName)
+          else
+            Song.Year := Len;
         end
 
         // Song Start
@@ -499,7 +507,7 @@ begin
 
       if lWarnIfTagsNotFound then
       begin
-        Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.FileName);
+        Log.LogError('File Incomplete or not Ultrastar TxT: ' + Song.Path + Song.FileName);
       end;
       
       break;
@@ -1216,7 +1224,7 @@ begin
   for C := 0 to Length(Song.Genre) - 1 do
     if Song.Genre[C] <> 'Unknown' then   WriteLn(SongFile, '#GENRE:' + Song.Genre[C]);
 
-  if Song.Year    <> '' then    WriteLn(SongFile, '#YEAR:'    + Song.Year);
+  if (Song.Year    <> -1) then    WriteLn(SongFile, '#YEAR:'    + IntToStr(Song.Year));
 
 
 
