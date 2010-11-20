@@ -64,7 +64,7 @@ var
   TickOld: cardinal;
   TickOld2:cardinal;
   //end Singbar Mod
-  ShowNotes:  integer; //0=show all; 1=don't show notes+rating; 2=don't show notes, rating, score+score bar
+  ShowNotes:  integer; //0=show all; 1=don't show notes+rating; 2=don't show notes, rating, score+score bar; 3=also lyrics
 
 
 
@@ -724,19 +724,26 @@ begin
   ScreenSing.LyricMain[0].SetAlpha(Alpha[0]);
   ScreenSing.LyricSub[0].SetAlpha(Alpha[2]);
 
-  ScreenSing.LyricMain[0].Draw;
-  ScreenSing.LyricSub[0].Draw;
 
-  SingDrawLyricHelper(0, NR);
+  if (ShowNotes<3) then
+  begin
+    ScreenSing.LyricMain[0].Draw;
+    ScreenSing.LyricSub[0].Draw;
+
+    SingDrawLyricHelper(0, NR);
+  end;
 
   if (AktSong.isDuet) then
   begin
     ScreenSing.LyricMain[1].SetAlpha(Alpha[1]);
     ScreenSing.LyricSub[1].SetAlpha(Alpha[3]);
 
-    ScreenSing.LyricMain[1].Draw;
-    ScreenSing.LyricSub[1].Draw;
-    SingDrawLyricHelper(1, NR);
+    if (ShowNotes<3) then
+    begin
+      ScreenSing.LyricMain[1].Draw;
+      ScreenSing.LyricSub[1].Draw;
+      SingDrawLyricHelper(1, NR);
+    end;
   end;
 
   // oscilloscope

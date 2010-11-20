@@ -99,7 +99,7 @@ type
 
     function FindSongFile(Dir, Mask: string): string;
     procedure LoadSongList; // load all songs
-    procedure BrowseDir(Dir: string); // should return number of songs in the future
+    procedure BrowseDir(Dir: string; Index: integer); // should return number of songs in the future
     procedure Sort(Order: integer);
   end;
 
@@ -217,6 +217,8 @@ begin
 end;
 
 procedure TSongs.LoadSongList;
+var
+  I:  integer;
 begin
   Log.LogStatus('Initializing', 'LoadSongList');
 
@@ -226,13 +228,14 @@ begin
 
   BrowsePos := 0;
   // browse directories
-  BrowseDir(SongPath);
+  for I := 0 to Length(SongPaths) - 1 do
+    BrowseDir(SongPaths[I], I);
 
   //Set Correct SongArray Length
   SetLength(Song, BrowsePos);
 end;
 
-procedure TSongs.BrowseDir(Dir: string);
+procedure TSongs.BrowseDir(Dir: string; Index: integer);
 var
   SR:     TSearchRec;   // for parsing Songs Directory
   SLen:   integer;
@@ -240,10 +243,11 @@ var
   Name:   string;
 
 begin
-  if FindFirst(Dir + '*', faDirectory, SR) = 0 then begin
+  if FindFirst(Dir + '*', faDirectory, SR) = 0 then
+  begin
     repeat
       if (SR.Name <> '.') and (SR.Name <> '..') then
-        BrowseDir(Dir + SR.Name + '\');
+        BrowseDir(Dir + SR.Name + '\', Index);
     until FindNext(SR) <> 0;
   end; // if
   FindClose(SR);
@@ -256,7 +260,7 @@ begin
       SLen := BrowsePos;
 
       Song[SLen].Path := Dir;
-      Song[SLen].Folder := Copy(Dir, Length(SongPath)+1, 10000);
+      Song[SLen].Folder := Copy(Dir, Length(SongPaths[Index])+1, 10000);
       Song[SLen].Folder := Copy(Song[SLen].Folder, 1, Pos('\', Song[SLen].Folder)-1);
       Song[SLen].FileName := SR.Name;
 
@@ -463,27 +467,50 @@ begin
 
   Log.BenchmarkStart(3);
   case Ini.Sorting of
-    sEdition: begin
+    sEdition:
+        begin
           Songs.Sort(sArtist);
           Songs.Sort(sEdition);
         end;
-    sGenre: begin
+    sGenre:
+        begin
           Songs.Sort(sArtist);
           Songs.Sort(sGenre);
         end;
-    sLanguage: begin
+    sLanguage:
+        begin
           Songs.Sort(sArtist);
           Songs.Sort(sLanguage);
         end;
-    sFolder:  begin
+    sFolder:
+        begin
           Songs.Sort(sArtist);
           Songs.Sort(sFolder);
         end;
-    sTitle:  Songs.Sort(sTitle);
-    sArtist:  Songs.Sort(sArtist);
-    sTitle2:  Songs.Sort(sTitle2); // by title2 ???
-    sArtist2:  Songs.Sort(sArtist2); // by artist2 ???
-    sRandom:  Songs.Sort(sRandom);
+    sTitle:
+        begin
+          Songs.Sort(sArtist);
+          Songs.Sort(sTitle);
+        end;
+    sArtist:
+        begin
+          Songs.Sort(sTitle);
+          Songs.Sort(sArtist);
+        end;
+    sTitle2:
+        begin
+          Songs.Sort(sArtist);
+          Songs.Sort(sTitle);
+        end;
+    sArtist2:
+        begin
+          Songs.Sort(sTitle);
+          Songs.Sort(sArtist);
+        end;
+    sRandom:
+        begin
+          Songs.Sort(sRandom);
+        end;
 
   end; // case
   Log.BenchmarkEnd(3);

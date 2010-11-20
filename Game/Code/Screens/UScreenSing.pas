@@ -225,7 +225,7 @@ begin
             Exit;
             
           Inc(ShowNotes);
-          if (ShowNotes>2) then
+          if (ShowNotes>3) then
             ShowNotes:=0;
         end;
 
@@ -283,7 +283,8 @@ begin
 
       SDLK_S:
         begin
-          Ini.PossibleScore := (Ini.PossibleScore+1) mod 4;
+          if (ScreenSong.Mode = smNormal) then
+            Ini.PossibleScore := (Ini.PossibleScore+1) mod 4;
           //Ini.Save;
         end;
 
@@ -2091,9 +2092,21 @@ begin
   end;
 
   Static[StaticLyricBar].Texture.Alpha := Alpha[1];
+  if (ShowNotes<3) then
+    Static[StaticLyricBar].Visible := true
+  else
+    Static[StaticLyricBar].Visible := false;
 
   if AktSong.isDuet then
+  begin
     Static[StaticLyricDuetBar].Texture.Alpha := Alpha[0];
+
+    if (ShowNotes<3) then
+      Static[StaticLyricDuetBar].Visible := true
+    else
+      Static[StaticLyricDuetBar].Visible := false;
+  end;
+
 
   // draw custom items
   SingDraw(Alpha);  // always draw
@@ -2274,6 +2287,8 @@ begin
     end else if(ScreenSong.Mode = smNormal) then
     begin
       singmode := 'Normal';
+      if AktSong.isDuet then
+        singmode := singmode + ' (Duet)';
     end;
 
     if not ScreenSong.SungToEnd then

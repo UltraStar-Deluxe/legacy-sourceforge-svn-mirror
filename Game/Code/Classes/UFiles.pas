@@ -45,7 +45,7 @@ var
   //Absolute Paths
   GamePath:         string;
   SoundPath:        string;
-  SongPath:         string;
+  SongPaths:        array of string;
   LogPath:          string;
   ThemePath:        string;
   ScreenshotsPath:  string;
@@ -82,7 +82,9 @@ begin
   GamePath :=   ExtractFilePath(ParamStr(0));
 
   SoundPath :=  GamePath + 'Sounds\';
-  SongPath :=   GamePath + 'Songs\';
+
+  SetLength(SongPaths, 1);
+  SongPaths[0] := GamePath + 'Songs\';
   LogPath := GamePath;
   ThemePath := GamePath + 'Themes\';
   ScreenshotsPath := GamePath + 'Screenshots\';
@@ -100,8 +102,8 @@ begin
   If not DirectoryExists(SoundPath) then
     Writeable := ForceDirectories(SoundPath);
 
-  If Writeable And (not DirectoryExists(SongPath)) then
-    Writeable := ForceDirectories(SongPath);
+  If Writeable And (not DirectoryExists(SongPaths[0])) then
+    Writeable := ForceDirectories(SongPaths[0]);
 
   If Writeable And (not DirectoryExists(ThemePath)) then
     Writeable := ForceDirectories(ThemePath);
@@ -745,6 +747,7 @@ var
   foundMedleyStart:   boolean;
   foundMedleyEnd:     boolean;
   medley:             boolean;
+  singer:             string;
 
 begin
   Result := true;
@@ -761,6 +764,11 @@ begin
 
   for p := 0 to Length(Czesci) - 1 do
   begin
+    if AktSong.isDuet then
+      singer := ' (P' + IntToStr(p+1) + ')'
+    else
+      singer := '';
+
     bt := low(integer);
     numLines := Length(Czesci[p].Czesc);
 
@@ -793,7 +801,7 @@ begin
       if(bt>Czesci[p].Czesc[line].Start) then
       begin
         Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Start) +
-          ' in song ' + AktSong.Path + AktSong.Filename);
+          singer + ' in song ' + AktSong.Path + AktSong.Filename);
         if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
           Result := false;
       end;
@@ -804,7 +812,7 @@ begin
         if(bt>Czesci[p].Czesc[line].Nuta[note].Start) then
         begin
           Log.LogError('Beat error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
-            ' in song ' + AktSong.Path + AktSong.Filename);
+            singer + ' in song ' + AktSong.Path + AktSong.Filename);
           if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;
@@ -813,7 +821,7 @@ begin
         if (Czesci[p].Czesc[line].Nuta[note].Dlugosc<0) then
         begin
           Log.LogError('Note length <0 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
-            ' in song ' + AktSong.Path + AktSong.Filename);
+            singer + ' in song ' + AktSong.Path + AktSong.Filename);
           if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;
@@ -821,7 +829,7 @@ begin
         if (Czesci[p].Czesc[line].Nuta[note].Dlugosc=0) and not Czesci[p].Czesc[line].Nuta[note].FreeStyle then
         begin
           Log.LogError('Note length =0 in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
-            ' in song ' + AktSong.Path + AktSong.Filename);
+            singer + ' in song ' + AktSong.Path + AktSong.Filename);
           if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;
@@ -836,7 +844,7 @@ begin
         if (bt+Czesci[p].Czesc[line].Nuta[note].Dlugosc>nextBeat) then
         begin
           Log.LogError('Note length error in sentence ' + IntToStr(line+1) + ', on beat ' + IntToStr(Czesci[p].Czesc[line].Nuta[note].Start) +
-            ' in song ' + AktSong.Path + AktSong.Filename);
+            singer + ' in song ' + AktSong.Path + AktSong.Filename);
           if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
             Result := false;
         end;

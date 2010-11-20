@@ -214,6 +214,8 @@ var
   Modes:      PPSDL_Rect;
   SR: TSearchRec; //Skin List Patch
   found: boolean;
+  txt:        string;
+  num:        integer;
 
   function GetFileName (S: String):String;
   begin
@@ -668,9 +670,29 @@ begin
 
   // SongPath
   if (Params.SongPath <> '') then
-    SongPath := IncludeTrailingPathDelimiter(Params.SongPath)
+    SongPaths[0] := IncludeTrailingPathDelimiter(Params.SongPath)
   else
-    SongPath := IncludeTrailingPathDelimiter(IniFile.ReadString('Path', 'Songs', SongPath));
+  begin
+    txt := IniFile.ReadString('Path', 'Songs', ' ');
+    if (DirectoryExists(txt)) then
+    begin
+      num := Length(SongPaths);
+      SetLength(SongPaths, num+1);
+      SongPaths[num] := IncludeTrailingPathDelimiter(txt);
+    end;
+
+    I := 1;
+    repeat
+      txt := IniFile.ReadString('Directories', 'SongDir'+IntToStr(I), ' ');
+      if (DirectoryExists(txt)) then
+      begin
+        num := Length(SongPaths);
+        SetLength(SongPaths, num+1);
+        SongPaths[num] := IncludeTrailingPathDelimiter(txt);
+        Inc(I);
+      end;
+    until (not DirectoryExists(txt));
+  end;
 
   Filename := IniFile.FileName;
   IniFile.Free;
@@ -927,6 +949,12 @@ begin
     //LogSession
     Tekst := ILogSession[Ini.LogSession];
     IniFile.WriteString('Advanced', 'LogSession', Tekst);
+
+    // Directories (add a template if section is missing, from 1.1)
+    if (not IniFile.SectionExists('Path')) then
+      IniFile.WriteString('Path', 'Songs', ' ');
+    if (not IniFile.SectionExists('Directories')) then
+      IniFile.WriteString('Directories', 'SongDir1', ' ');
 
     IniFile.Free;
   end;

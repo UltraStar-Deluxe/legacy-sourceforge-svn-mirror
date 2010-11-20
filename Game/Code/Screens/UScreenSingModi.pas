@@ -185,7 +185,7 @@ var
   I: Integer;
 begin
   PlayersPlay := TeamInfo.NumTeams;
-
+  Ini.PossibleScore := 0;
   if DLLMan.Selected.LoadSong then //Start with Song
   begin
     inherited;
