@@ -38,6 +38,8 @@ AC_CONFIG_SUBDIRS(src/plugins/media/ffmpeg)
 # find tools
 # -----------------------------------------
 
+AM_INIT_AUTOMAKE([foreign])
+
 # options for make command
 AC_PROG_MAKE_SET
 # find tool for ln -s (e.g. uses cp -p for FAT-filesystems)
