@@ -27,6 +27,9 @@ AC_CANONICAL_SYSTEM
 # find tools
 # -----------------------------------------
 
+LT_PREREQ([2.2])
+LT_INIT([disable-static])
+
 AM_INIT_AUTOMAKE([foreign])
 
 # options for make command
