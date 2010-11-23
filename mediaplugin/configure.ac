@@ -12,7 +12,7 @@
 #
 
 # Require autoconf >= 2.61
-AC_PREREQ([2.67])
+AC_PREREQ([2.61])
 
 # Init autoconf
 AC_INIT([ultrastardx],[1.1],[http://sourceforge.net/tracker/?group_id=191560&atid=937872])
