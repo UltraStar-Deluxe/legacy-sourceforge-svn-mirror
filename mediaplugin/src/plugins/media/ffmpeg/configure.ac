@@ -34,7 +34,6 @@ AM_INIT_AUTOMAKE([foreign])
 
 # options for make command
 AC_PROG_MAKE_SET
-AM_PROG_LIBTOOL
 
 # -----------------------------------------
 # functions
