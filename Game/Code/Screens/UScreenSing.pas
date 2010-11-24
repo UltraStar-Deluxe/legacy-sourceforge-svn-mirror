@@ -225,7 +225,7 @@ begin
             Exit;
             
           Inc(ShowNotes);
-          if (ShowNotes>3) then
+          if (ShowNotes>4) then
             ShowNotes:=0;
         end;
 
@@ -1996,7 +1996,8 @@ begin
 
   wDraw(WebCam, ScreenAct);
   // draw static menu (FG)
-  DrawFG;
+  if (ShowNotes<4) then
+    DrawFG;
 
   //Medley Countdown
   if ScreenSong.Mode = smMedley then

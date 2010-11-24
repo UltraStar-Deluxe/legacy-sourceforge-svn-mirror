@@ -301,18 +301,17 @@ var
     end;
   end;
 
-//  mic:      array[0..15] of integer;
 begin
   // checks for recording devices and puts them into array;
+  //Log.LogError('Init recoding devices...');
   SetLength(SoundCard, 0);
   BASS_RecordFree;
   SC := 0;
-  //Descr := BASS_RecordGetDeviceDescription(SC);
   Proceed := BASS_RecordGetDeviceInfo(SC, &Info);
-  Descr := Info.name;
 
-  while {(Descr <> '')} Proceed and not (info.flags and BASS_DEVICE_ENABLED=0) do
+  while Proceed and not (info.flags and BASS_DEVICE_ENABLED=0) do
   begin
+    Descr := Info.name;
     //If there is another SoundCard with the Same ID, Search an available Name
     if (IsDuplicate(Descr)) then
     begin
@@ -325,16 +324,15 @@ begin
     end;
 
     SetLength(SoundCard, SC+1);
-//    Log.LogError('Device #' + IntToStr(SC+1) + ': ' + Descr);
+    //Log.LogError('Device #' + IntToStr(SC+1) + ': ' + Descr);
     SoundCard[SC].Description := Descr;
 
-    // check for recording inputs
-//      mic[device] := -1; // default to no change
+    //check for recording inputs
     SCI := 0;
     BASS_RecordInit(SC);
     Flags := BASS_RecordGetInput(SCI, PSingle(nil)^);
     InputName := BASS_RecordGetInputName(SCI);
-//    Log.LogError('Input #' + IntToStr(SCI) + ' (' + IntToStr(Flags) + '): ' + InputName);
+    //Log.LogError('Input #' + IntToStr(SCI) + ' (' + IntToStr(Flags) + '): ' + InputName);
 
     SetLength(SoundCard[SC].Input, 1);
     SoundCard[SC].Input[SCI].Name := InputName;
@@ -347,33 +345,19 @@ begin
         SetLength(SoundCard[SC].Input, SCI+1);
         InputName := BASS_RecordGetInputName(SCI);
         SoundCard[SC].Input[SCI].Name := InputName;
-//        Log.LogError('Input #' + IntToStr(SCI) + ' (' + IntToStr(Flags) + '): ' + InputName);
+        //Log.LogError('Input #' + IntToStr(SCI) + ' (' + IntToStr(Flags) + '): ' + InputName);
       end;
-
-{        if (flags and BASS_INPUT_TYPE_MASK) = BASS_INPUT_TYPE_MIC then begin
-          mic[device] := input; // auto set microphone
-        end;}
 
       Inc(SCI);
       Flags := BASS_RecordGetInput(SCI, PSingle(nil)^);
     end;
 
-{      if mic[device] <> -1 then begin
-        Log.LogAnalyze('Found the mic at input ' + IntToStr(Mic[device]))
-      end else begin
-        Log.LogAnalyze('Mic not found');
-        mic[device] := 0; // setting to the first one (for kxproject)
-      end;
-      SoundCard[SC].InputSeleceted := Mic[Device];}
-
-
     BASS_RecordFree;
 
     Inc(SC);
-    //Descr := BASS_RecordGetDeviceDescription(SC);
     Proceed := BASS_RecordGetDeviceInfo(SC, &Info);
-    Descr := Info.name;
   end; // while
+  //Log.LogError('End of Init recoding devices.');
 end;
 end.
 

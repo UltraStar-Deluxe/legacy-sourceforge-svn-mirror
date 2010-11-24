@@ -75,6 +75,9 @@ const
   width = 320;
   height = 240;
 
+var
+  IWebCamDevice:  TList;
+
 begin
   if WebCamReady then
     exit;
@@ -84,7 +87,8 @@ begin
   if(Ini.EnableWebCam=0) then
     exit;
 
-  if (Length(GetCapDevices())-1 < Ini.WebCamID) then
+  GetCapDevices(IWebCamDevice);
+  if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
     Exit;
 
   try

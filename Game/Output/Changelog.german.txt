@@ -1,4 +1,4 @@
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC8 vom 20.11.2010
+Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC9 vom 24.11.2010
 -----------------------------
 New: (Allgemein) Mehrere Song-Ordner werden unterstützt (wie bei der 1.1).
 New: (Allgemein) Die Anzahl der Spieler kann bei der Namenseingabe mit Shift+Hoch/Runter angepasst werden.

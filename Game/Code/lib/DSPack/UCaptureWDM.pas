@@ -8,7 +8,7 @@ unit UCaptureWDM;
 interface
 
 uses
-	Classes, Windows, DSPack, DirectShow9, DSUtil, SDL, ExtCtrls, SyncObjs;
+	Classes, Windows, DSPack, DirectShow9, DSUtil, SDL, ExtCtrls, SyncObjs, ULog;
 
 type
 	TCaptureState = (csPlay, csStop, csDisbaled);
@@ -66,27 +66,36 @@ type
 		procedure Stop;
 	end;
 
-  function GetCapDevices: TList;
   function ListMediaTypes(DeviceID: integer): TList;
+  procedure GetCapDevices(var names: TList);
 
 implementation
 
 uses
 	Graphics, SysUtils;
 
-function GetCapDevices: TList;
+procedure GetCapDevices(var names: TList);
 var
   k:        Integer;
   tSysDev:   TSysDevEnum;
 begin
-  SetLength(Result, 0);
-  tSysDev := TSysDevEnum.Create(CLSID_VideoInputDeviceCategory);
+  SetLength(names, 0);
+  try
+    tSysDev := TSysDevEnum.Create(CLSID_VideoInputDeviceCategory);
+    SetLength(names, tSysDev.CountFilters);
+    for k := 0 to tSysDev.CountFilters - 1 do
+      names[k] := tSysDev.Filters[k].FriendlyName;
+  except
+    SetLength(names, 0);
+    //Log.LogError('GetCapDevices #4');
+  end;
 
-  SetLength(Result, tSysDev.CountFilters);
-  for k := 0 to tSysDev.CountFilters - 1 do
-    Result[k] := tSysDev.Filters[k].FriendlyName;
-
-  tSysDev.Free;
+  try
+    if (tSysDev<>nil) then
+      tSysDev.Free;
+  except
+    //Log.LogError('GetCapDevices #6');
+  end;
 end;
 
 function ListMediaTypes(DeviceID: integer): TList;

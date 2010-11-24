@@ -116,16 +116,16 @@ var
   SCI:    integer;
 begin
   inherited Create;
-  
+
   LoadFromTheme(Theme.OptionsRecord);
 
   SetLength(ICard, Length(Recording.SoundCard));
 
-  for SC := 0 to High(Recording.SoundCard) do
-    ICard[SC] := Recording.SoundCard[SC].Description;
-
   if (Length(Recording.SoundCard)>0) then
   begin
+    for SC := 0 to High(Recording.SoundCard) do
+      ICard[SC] := Recording.SoundCard[SC].Description;
+
     SetLength(IInput, Length(Recording.SoundCard[Ini.Card].Input));
     for SCI := 0 to High(Recording.SoundCard[Ini.Card].Input) do
       IInput[SCI] := Recording.SoundCard[Ini.Card].Input[SCI].Name;
@@ -136,12 +136,11 @@ begin
     SelectSlideChannelR := AddSelectSlide(Theme.OptionsRecord.SelectSlideChannelR, Ini.CardList[0].ChannelR, IChannel);
   end;
 
-  IWebCamDevice := GetCapDevices();
+  GetCapDevices(IWebCamDevice);
   if (Length(IWebCamDevice)=0) then
     Ini.EnableWebCam := 0;
 
   SelectSlideWebCamOnOff := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamOnOff, Ini.EnableWebCam, IEnableWebCam);
-
   if (Length(IWebCamDevice)>0) then
   begin
     if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
@@ -155,7 +154,6 @@ begin
     WebCamPreviewOn := (Ini.EnableWebCam=1);
   end else
     WebCamPreviewOn := false;
-
   AddButton(Theme.OptionsRecord.ButtonExit);
   if (Length(Button[0].Text)=0) then
     AddButtonText(14, 20, Theme.Options.Description[7]);
@@ -169,7 +167,7 @@ begin
   if not Help.SetHelpID(ID) then
     Log.LogError('No Entry for Help-ID ' + ID + ' (ScreenOptionsRecord)');
 
-  IWebCamDevice := GetCapDevices();
+  GetCapDevices(IWebCamDevice);
 
   if (Length(IWebCamDevice)>0) then
   begin
@@ -232,7 +230,7 @@ procedure TScreenOptionsRecord.UpdateWebCam;
 begin
   wClose;
 
-  IWebCamDevice := GetCapDevices();
+  GetCapDevices(IWebCamDevice);
 
   if (Length(IWebCamDevice)>0) then
   begin

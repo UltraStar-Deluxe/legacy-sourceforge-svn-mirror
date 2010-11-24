@@ -64,7 +64,8 @@ var
   TickOld: cardinal;
   TickOld2:cardinal;
   //end Singbar Mod
-  ShowNotes:  integer; //0=show all; 1=don't show notes+rating; 2=don't show notes, rating, score+score bar; 3=also lyrics
+  ShowNotes:  integer;  //0=show all; 1=don't show notes+rating; 2=don't show notes, rating, score+score bar;
+                        //3=also lyrics; 4=hide all
 
 
 
@@ -2014,6 +2015,9 @@ var x,y:           real;
     CurTime, TotalTime: real;
     progress:      real;
 begin
+  if (ShowNotes>3) then
+    Exit;
+    
   x := Theme.Sing.StaticTimeProgress.x;
   y := Theme.Sing.StaticTimeProgress.y;
   width:= Theme.Sing.StaticTimeProgress.w;

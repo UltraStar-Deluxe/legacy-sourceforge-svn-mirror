@@ -1,4 +1,4 @@
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC8 (20.11.2010)
+Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC9 (24.11.2010)
 -----------------------------
 New: (General)     Support for more than one song folder (like in 1.1).
 New: (General)     Adjust number of players in name screen with SHIFT+UP/DOWN.

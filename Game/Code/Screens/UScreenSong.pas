@@ -610,7 +610,8 @@ begin
 
             if Length(PlaylistMedley.Song)=0 then
               MakeMedley := false;
-          end else if (Mode = smNormal) and (Length(getVisibleMedleyArr(msCalculated)) > 0) then
+          end else if (Mode = smNormal) and (CatSongs.Song[Interaction].Medley.Source>=msCalculated) and
+            (Length(getVisibleMedleyArr(msCalculated)) > 0) then
           begin
             MakeMedley := true;
             StartMedley(99, msCalculated);
