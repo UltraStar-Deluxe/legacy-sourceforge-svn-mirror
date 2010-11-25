@@ -37,22 +37,21 @@ host_triplet = @host@
 target_triplet = @target@
 subdir = .
 DIST_COMMON = $(am__configure_deps) \
-	$(srcdir)/../../../../dists/autogen/config.guess \
-	$(srcdir)/../../../../dists/autogen/config.sub \
-	$(srcdir)/../../../../dists/autogen/depcomp \
-	$(srcdir)/../../../../dists/autogen/install-sh \
-	$(srcdir)/../../../../dists/autogen/ltmain.sh \
-	$(srcdir)/../../../../dists/autogen/missing \
-	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/configure ../../../../dists/autogen/config.guess \
-	../../../../dists/autogen/config.sub \
-	../../../../dists/autogen/depcomp \
-	../../../../dists/autogen/install-sh \
-	../../../../dists/autogen/ltmain.sh \
-	../../../../dists/autogen/missing compile
+	$(srcdir)/../../../dists/autogen/config.guess \
+	$(srcdir)/../../../dists/autogen/config.sub \
+	$(srcdir)/../../../dists/autogen/depcomp \
+	$(srcdir)/../../../dists/autogen/install-sh \
+	$(srcdir)/../../../dists/autogen/ltmain.sh \
+	$(srcdir)/../../../dists/autogen/missing $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(top_srcdir)/configure \
+	../../../dists/autogen/config.guess \
+	../../../dists/autogen/config.sub \
+	../../../dists/autogen/depcomp \
+	../../../dists/autogen/install-sh \
+	../../../dists/autogen/ltmain.sh \
+	../../../dists/autogen/missing compile
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps =  \
-	$(top_srcdir)/../../../../dists/autogen/m4/pkg.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/../../../dists/autogen/m4/pkg.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -98,7 +97,7 @@ libffmpegplugin_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(libffmpegplugin_la_CXXFLAGS) $(CXXFLAGS) \
 	$(libffmpegplugin_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
-depcomp = $(SHELL) $(top_srcdir)/../../../../dists/autogen/depcomp
+depcomp = $(SHELL) $(top_srcdir)/../../../dists/autogen/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \

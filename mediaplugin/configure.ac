@@ -32,7 +32,7 @@ AC_CONFIG_AUX_DIR(dists/autogen)
 # show features and packages in one list
 AC_PRESERVE_HELP_ORDER
 
-AC_CONFIG_SUBDIRS(src/plugins/media/ffmpeg)
+AC_CONFIG_SUBDIRS(src/mediaplugins/ffmpeg)
 
 # -----------------------------------------
 # find tools

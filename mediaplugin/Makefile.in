@@ -82,7 +82,7 @@ USE_PROJECTM_CWRAPPER = @USE_PROJECTM_CWRAPPER@
 #################################################
 
 DEPS :=
-DEPS += $(USDX_SRC_DIR)/plugins/media
+DEPS += $(USDX_SRC_DIR)/mediaplugins
 ifeq ($(USE_PROJECTM_CWRAPPER), yes)
 DEPS += $(PROJECTM_CWRAPPER_DIR)
 endif
@@ -217,7 +217,7 @@ install-strip:
                 install
 
 .PHONY: install-all
-install-all: install-exec install-plugins install-data
+install-all: install-exec install-plugins install-mediaplugins install-data
 
 .PHONY: install-exec
 install-exec:
@@ -234,6 +234,13 @@ install-plugins:
 	$(MAKE) RECURSIVE_SRC_DIR="$(USDX_GAME_DIR)/plugins" \
             RECURSIVE_DST_DIR="$(DESTDIR)$(INSTALL_DATADIR)/plugins" \
             install-data-recursive
+
+.PHONY: install-mediaplugins
+install-mediaplugins:
+	$(MKDIR) "$(DESTDIR)$(INSTALL_DATADIR)/mediaplugins"
+	$(MAKE) RECURSIVE_SRC_DIR="$(USDX_GAME_DIR)/mediaplugins" \
+	    RECURSIVE_DST_DIR="$(DESTDIR)$(INSTALL_DATADIR)/mediaplugins" \
+	    install-data-recursive
 
 .PHONY: install-data
 install-data:
@@ -277,7 +284,7 @@ install-data-recursive:
 uninstall: uninstall-all
 
 .PHONY: uninstall-all
-uninstall-all: uninstall-data uninstall-exec uninstall-plugins
+uninstall-all: uninstall-data uninstall-exec uninstall-plugins uninstall-mediaplugins
 
 .PHONY: uninstall-data
 uninstall-data:
@@ -296,6 +303,10 @@ uninstall-exec:
 .PHONY: uninstall-plugins
 uninstall-plugins:
 	$(RM_REC) "$(DESTDIR)$(INSTALL_DATADIR)/plugins"
+
+.PHONY: uninstall-mediaplugins
+uninstall-mediaplugins:
+	$(RM_REC) "$(DESTDIR)$(INSTALL_DATADIR)/mediaplugins"
 
 #################################################
 # Distributable source-package (TODO)
@@ -396,6 +407,9 @@ macosx-app: all
 
 # Copy the lua plugins. 
 	$(MAKE) install-plugins INSTALL_DATADIR=$(macosx_bundle_path) bindir=$(macosx_bundle_path)/MacOS
+
+# Copy the media plugins. 
+	$(MAKE) install-mediaplugins INSTALL_DATADIR=$(macosx_bundle_path) bindir=$(macosx_bundle_path)/MacOS
 
 # Create the song directory. 
 	$(MKDIR) $(macosx_bundle_path)/songs

@@ -3,6 +3,6 @@ AUTOGEN_DIR=dists/autogen
 #libtoolize
 aclocal -I ${AUTOGEN_DIR}/m4 && autoconf
 automake -a
-cd src/plugins/media/
+cd src/mediaplugins
 ./autogen.sh
 

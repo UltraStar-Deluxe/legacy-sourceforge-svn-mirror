@@ -16,7 +16,7 @@ AC_INIT([usdx-ffmpeg-plugin], [1.1])
 AC_CONFIG_SRCDIR(.)
 
 # Set the path to install-sh
-AC_CONFIG_AUX_DIR(../../../../dists/autogen)
+AC_CONFIG_AUX_DIR(../../../dists/autogen)
 
 # show features and packages in one list
 AC_PRESERVE_HELP_ORDER
@@ -76,7 +76,7 @@ case "${target_os}" in
 esac
 AC_SUBST(LIB_EXT)
 
-PLUGIN_DIR="../../../../game/plugins/media"
+PLUGIN_DIR="../../../game/mediaplugins"
 AC_SUBST(PLUGIN_DIR)
 
 # -----------------------------------------
