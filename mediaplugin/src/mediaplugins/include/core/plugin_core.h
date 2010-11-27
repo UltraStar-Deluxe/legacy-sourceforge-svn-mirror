@@ -25,7 +25,29 @@
 #ifndef _PLUGIN_CORE_H_
 #define _PLUGIN_CORE_H_
 
-#include "inttypes.h"
+#ifdef _MSC_VER
+typedef __int8            int8_t;
+typedef __int16           int16_t;
+typedef __int32           int32_t;
+typedef __int64           int64_t;
+typedef unsigned __int8   uint8_t;
+typedef unsigned __int16  uint16_t;
+typedef unsigned __int32  uint32_t;
+typedef unsigned __int64  uint64_t;
+#ifdef _WIN64
+   typedef __int64           intptr_t;
+   typedef unsigned __int64  uintptr_t;
+#else // !_WIN64
+   typedef _W64 int               intptr_t;
+   typedef _W64 unsigned int      uintptr_t;
+#endif // _WIN64
+#else
+#include <stdint.h>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 /*
  * C Interface
@@ -36,7 +58,7 @@ extern "C" {
 #endif
 
 /* declaration for export */
-#if defined(__WIN32__)
+#if defined(_WIN32)
 # define DECLSPEC_EXPORT	__declspec(dllexport)
 #else
 # if defined(__GNUC__) && __GNUC__ >= 4
@@ -48,7 +70,7 @@ extern "C" {
 
 /* use C calling convention */
 #ifndef CDECL
-#if defined(__WIN32__) && !defined(__GNUC__)
+#if defined(_WIN32) && !defined(__GNUC__)
 #define CDECL __cdecl
 #else
 #define CDECL
@@ -57,18 +79,21 @@ extern "C" {
 
 #define PLUGIN_CALL CDECL
 
-// VERSION: AAABBBCCC (A: Major, B: Minor, C: Revision)
+/* VERSION: AAABBBCCC (A: Major, B: Minor, C: Revision) */
 #define MAKE_VERSION(a,b,c) ((((a) * 1000 + (b)) * 1000) + (c))
 
+#ifndef _WIN32
+/* already defined in windows.h */
 typedef enum { FALSE , TRUE } BOOL;
+#endif
 
 typedef enum log_level {
-	DEBUG,
-	INFO,
-	STATUS,
-	WARN,
-	ERROR,
-	CRITICAL
+	LOG_DEBUG,
+	LOG_INFO,
+	LOG_STATUS,
+	LOG_WARN,
+	LOG_ERROR,
+	LOG_CRITICAL
 } log_level;
 
 typedef struct{} fileStream_t;
@@ -87,7 +112,7 @@ typedef struct pluginCore_t {
 	int version;
 
 	void PLUGIN_CALL (*log)(int level, const char *msg, const char *context);
-	uint32_t PLUGIN_CALL (*ticksMillis);
+	uint32_t PLUGIN_CALL (*ticksMillis)();
 
 	fileStream_t* PLUGIN_CALL (*fileOpen)(const char *utf8Filename, int mode);
 	void PLUGIN_CALL (*fileClose)(fileStream_t *stream);

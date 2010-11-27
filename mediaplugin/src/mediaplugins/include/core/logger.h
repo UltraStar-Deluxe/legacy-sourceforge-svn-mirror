@@ -48,23 +48,23 @@ public:
 	}
 
 	void info(const std::string &msg, const std::string &context) const {
-		log(INFO, msg, context);
+		log(LOG_INFO, msg, context);
 	}
 
 	void status(const std::string &msg, const std::string &context) const {
-		log(STATUS, msg, context);
+		log(LOG_STATUS, msg, context);
 	}
 
 	void warn(const std::string &msg, const std::string &context) const {
-		log(WARN, msg, context);
+		log(LOG_WARN, msg, context);
 	}
 
 	void error(const std::string &msg, const std::string &context) const {
-		log(ERROR, msg, context);
+		log(LOG_ERROR, msg, context);
 	}
 
 	void critical(const std::string &msg, const std::string &context) const {
-		log(CRITICAL, msg, context);
+		log(LOG_CRITICAL, msg, context);
 	}
 };
 

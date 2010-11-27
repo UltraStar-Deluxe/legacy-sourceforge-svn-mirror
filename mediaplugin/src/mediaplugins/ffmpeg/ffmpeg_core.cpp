@@ -359,8 +359,6 @@ void* PacketQueue::getStatusInfo(AVPacket *packet) {
 }
 
 int PacketQueue::get(AVPacket *packet, bool blocking) {
-	const int WAIT_TIMEOUT = 10; // timeout in ms
-
 	{
 		Mutex::RegionLock lock(_mutex);
 		while (true) {
@@ -384,7 +382,7 @@ int PacketQueue::get(AVPacket *packet, bool blocking) {
 			} else {
 				// block until a new package arrives,
 				// but do not wait till infinity to avoid deadlocks
-				if (_condition.waitTimeout(_mutex, WAIT_TIMEOUT) == MUTEX_TIMEDOUT) {
+				if (_condition.waitTimeout(_mutex, 10) == MUTEX_TIMEDOUT) {
 					return 0;
 				}
 			}
