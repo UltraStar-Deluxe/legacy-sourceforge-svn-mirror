@@ -28,6 +28,7 @@ AC_CONFIG_SRCDIR(src/ultrastardx.dpr)
 
 # Set the path to install-sh
 AC_CONFIG_AUX_DIR(dists/autogen)
+AC_CONFIG_MACRO_DIR(dists/autogen/m4)
 
 # show features and packages in one list
 AC_PRESERVE_HELP_ORDER
