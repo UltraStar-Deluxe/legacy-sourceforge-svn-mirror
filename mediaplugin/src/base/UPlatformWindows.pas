@@ -51,6 +51,7 @@ type
     public
       procedure Init; override;
       function TerminateIfAlreadyRunning(var WndTitle: String): Boolean; override;
+      procedure AddLibrarySearchPath(const DLLPath: IPath); override;
 
       function GetLogPath: IPath; override;
       function GetGameSharedPath: IPath; override;
@@ -63,6 +64,7 @@ uses
   SysUtils,
   ShlObj,
   Windows,
+  UPathUtils,
   UConfig;
 
 procedure TPlatformWindows.Init;
@@ -204,6 +206,14 @@ begin
     Result := GetExecutionDir()
   else
     Result := GetSpecialPath(CSIDL_APPDATA).Append('ultrastardx', pdAppend);
+end;
+
+function SetDllDirectory(lpPathName: PWideChar): Bool; stdcall;
+    external kernel32 name 'SetDllDirectoryW';
+
+procedure TPlatformWindows.AddLibrarySearchPath(const DLLPath: IPath);
+begin
+  SetDllDirectory(PWideChar(DLLPath.ToWide()));
 end;
 
 end.

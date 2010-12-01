@@ -168,6 +168,7 @@ uses
   UPath,
   UPathUtils,
   ULog,
+  UPlatform,
   UAudioDecoderPlugin,
   UAudioConverterPlugin,
   UVideoDecoderPlugin;
@@ -433,6 +434,11 @@ const
   {$IFEND}
 begin
   MediaPlugins := TList.Create;
+
+  {$IFDEF MSWINDOWS}
+  // add an additional dll search path for plugin dependencies
+  Platform.AddLibrarySearchPath(MediaPluginPath.Append('deps'));
+  {$ENDIF}
 
   LibPath := MediaPluginPath.Append('*' + ModuleExt);
   Iter := FileSystem.FileFind(LibPath, faAnyFile);

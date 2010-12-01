@@ -51,9 +51,11 @@ type
     procedure Halt; virtual;
 
     function GetLogPath:        IPath; virtual; abstract;
-    function GetMusicPath:      IPath; virtual; abstract;
+    function GetMusicPath:      IPath; virtual;
     function GetGameSharedPath: IPath; virtual; abstract;
     function GetGameUserPath:   IPath; virtual; abstract;
+
+    procedure AddLibrarySearchPath(const DLLPath: IPath); virtual;
   end;
 
   function Platform(): TPlatform;
@@ -111,6 +113,21 @@ begin
   ExecName := Path(ParamStr(0));
   ExecDir := ExecName.GetPath;
   Result := ExecDir.GetAbsolutePath();
+end;
+
+{**
+ * Dummy implementation (Mac specific)
+ *}
+function TPlatform.GetMusicPath: IPath;
+begin
+  Result := PATH_NONE;
+end;
+
+{**
+ * Dummy implementation (Windows specific)
+ *}
+procedure TPlatform.AddLibrarySearchPath(const DLLPath: IPath);
+begin
 end;
 
 (**
