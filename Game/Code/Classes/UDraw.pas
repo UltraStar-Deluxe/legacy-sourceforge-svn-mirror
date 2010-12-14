@@ -464,9 +464,10 @@ begin
           glTexCoord2f(Tex_Right[NrGracza+1].TexW, 0); glVertex2f(Rec.Right, Rec.Top);
         glEnd;
 
-        if Perfect and (Ini.EffectSing=1) then begin
+        if Perfect and (Ini.EffectSing=1) then
+        begin
           if not (Start+Dlugosc-1 = Czas.AktBeatD) then
-            GoldenRec.SavePerfectNotePos(Rec.Left, Rec.Top);
+            GoldenRec.SavePerfectNotePos(Rec.Left, Rec.Top, CP);
         end;
       end; // with
     end; // for

@@ -47,26 +47,23 @@ uses UGraphic, UHelp, UMain, UIni, UTexture, ULanguage, UParty, USongs, UScreenS
 function TScreenSongJumpto.ParseInput(PressedKey: Cardinal; ScanCode: byte; PressedDown: Boolean): Boolean;
 begin
   Result := true;
+
+  if not (ScanCode in [0..31, 127..159]) then
+  begin
+    if not isDuet then
+    begin
+      if Interaction = 0 then
+      begin
+        Button[0].Text[0].Text := Button[0].Text[0].Text + chr(ScanCode);
+        SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
+      end;
+    end;
+    Exit;
+  end;
+
   If (PressedDown) Then
   begin // Key Down
     case PressedKey of
-      SDLK_0..SDLK_9, SDLK_A..SDLK_Z,
-      SDLK_SPACE, SDLK_MINUS, SDLK_EXCLAIM,
-      SDLK_COMMA, SDLK_SLASH, SDLK_ASTERISK,
-      SDLK_QUESTION, SDLK_QUOTE, SDLK_QUOTEDBL,
-      SDLK_LEFTBRACKET, SDLK_SEMICOLON,
-      SDLK_PERIOD:
-        begin
-          if not isDuet then
-          begin
-            if Interaction = 0 then
-            begin
-              Button[0].Text[0].Text := Button[0].Text[0].Text + chr(ScanCode);
-              SetTextFound(CatSongs.SetFilter(Button[0].Text[0].Text, SelectType));
-            end;
-          end;
-        end;
-
       //MP3-Volume Up
       SDLK_PAGEUP:
         begin

@@ -221,9 +221,9 @@ begin
 
       SDLK_N:
         begin
-          if (ScreenSong.Mode <> smNormal) then
+          if (ScreenSong.Mode <> smNormal) and (ScreenSong.Mode <> smMedley)then
             Exit;
-            
+
           Inc(ShowNotes);
           if (ShowNotes>4) then
             ShowNotes:=0;
@@ -283,7 +283,7 @@ begin
 
       SDLK_S:
         begin
-          if (ScreenSong.Mode = smNormal) then
+          if (ScreenSong.Mode = smNormal) or (ScreenSong.Mode = smMedley) then
             Ini.PossibleScore := (Ini.PossibleScore+1) mod 4;
           //Ini.Save;
         end;

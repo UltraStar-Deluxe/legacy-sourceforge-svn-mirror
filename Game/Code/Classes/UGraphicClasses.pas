@@ -48,8 +48,9 @@ type
  end;
 
  PerfectNotePositions = Record
-   xPos, yPos : Real;
-   Screen     : Integer;
+   xPos, yPos:  real;
+   Screen:      integer;
+   CP:          integer;
  end;
 
  TEffectManager = Class
@@ -78,7 +79,7 @@ type
    procedure KillAll();
    procedure SentenceChange(CP: integer);   //TODO!!!!
    procedure SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: Real; CP: integer);
-   procedure SavePerfectNotePos(Xtop, Ytop: Real);
+   procedure SavePerfectNotePos(Xtop, Ytop: Real; CP: integer);
    procedure GoldenNoteTwinkle(Top,Bottom,Right: Real; Player: Integer; CP: Integer);
    procedure SpawnPerfectLineTwinkle();
  end;
@@ -411,7 +412,7 @@ Var
 begin
 //Spawn a random amount of stars within the given coordinates
 //RandomRange(0,14) <- this one starts at a random  frame, 16 is our last frame - would be senseless to start a particle with 16, cause it would be dead at the next frame
-for P:= 0 to high(RecArray) do
+  for P:= 0 to high(RecArray) do
   begin
     while (RecArray[P].TotalStarCount > RecArray[P].CurrentStarCount) do
       begin
@@ -463,18 +464,47 @@ begin
 end;
 
 procedure TEffectManager.SentenceChange(CP: integer);
-var c: Cardinal;
+var
+  c:  integer;
+  i:  integer;
+  
 begin
   c:=0;
   while c <= High(Particle) do
   begin
-    if Particle[c].SurviveSentenceChange then
+    if Particle[c].SurviveSentenceChange or (Particle[c].CP <> CP) then
       inc(c)
     else
       Kill(c);
   end;
-  SetLength(RecArray,0);  // remove GoldenRec positions
-  SetLength(PerfNoteArray,0); // remove PerfectNote positions
+
+  i := 0;
+  while i<=high(RecArray) do
+  begin
+    c := high(RecArray);
+    if (RecArray[i].CP = CP) then
+    begin
+      RecArray[i] := RecArray[c];
+      SetLength(RecArray, c);
+    end else
+      inc(i);
+  end;
+  
+  i := 0;
+  while i<=high(PerfNoteArray) do
+  begin
+    c := high(PerfNoteArray);
+    if (PerfNoteArray[i].CP = CP) then
+    begin
+      PerfNoteArray[i] := PerfNoteArray[c];
+      SetLength(PerfNoteArray, c);
+    end else
+      inc(i);
+  end;
+    
+  //SetLength(RecArray,0);  // remove GoldenRec positions
+  //SetLength(PerfNoteArray,0); // remove PerfectNote positions
+  
   for c:=0 to 5 do
   begin
     TwinkleArray[c] := 0; // reset GoldenNoteHit memory
@@ -545,57 +575,59 @@ var
   P : Integer;   // P like used in Positions
   NewIndex : Integer;
 begin
-  For P := 0 to high(RecArray) do  // Do we already have that "new" position?
-    begin
-      if (ceil(RecArray[P].xTop) = ceil(Xtop)) and
+  for P := 0 to high(RecArray) do  // Do we already have that "new" position?
+  begin
+    if (ceil(RecArray[P].xTop) = ceil(Xtop)) and
       (ceil(RecArray[P].yTop) = ceil(Ytop)) and
       (ScreenAct = RecArray[p].Screen) then
         exit; // it's already in the array, so we don't have to create a new one
-    end;
+  end;
 
   // we got a new position, add the new positions to our array
-    NewIndex := Length(RecArray);
-    SetLength(RecArray, NewIndex + 1);
-    RecArray[NewIndex].xTop    := Xtop;
-    RecArray[NewIndex].yTop    := Ytop;
-    RecArray[NewIndex].xBottom := Xbottom;
-    RecArray[NewIndex].yBottom := Ybottom;
-    RecArray[NewIndex].TotalStarCount := ceil(Xbottom - Xtop) div 12 + 3;
-    RecArray[NewIndex].CurrentStarCount := 0;
-    RecArray[NewIndex].Screen := ScreenAct;
-    RecArray[NewIndex].CP := CP;
+  NewIndex := Length(RecArray);
+  SetLength(RecArray, NewIndex + 1);
+  RecArray[NewIndex].xTop    := Xtop;
+  RecArray[NewIndex].yTop    := Ytop;
+  RecArray[NewIndex].xBottom := Xbottom;
+  RecArray[NewIndex].yBottom := Ybottom;
+  RecArray[NewIndex].TotalStarCount := ceil(Xbottom - Xtop) div 12 + 3;
+  RecArray[NewIndex].CurrentStarCount := 0;
+  RecArray[NewIndex].Screen := ScreenAct;
+  RecArray[NewIndex].CP := CP;
 end;
 
-procedure TEffectManager.SavePerfectNotePos(Xtop, Ytop: Real);
+procedure TEffectManager.SavePerfectNotePos(Xtop, Ytop: Real; CP: integer);
 var
   P : Integer;   // P like used in Positions
   NewIndex : Integer;
   RandomFrame : Integer;
   Xkatze, Ykatze : Integer;
 begin
-  For P := 0 to high(PerfNoteArray) do  // Do we already have that "new" position?
+  for P := 0 to high(PerfNoteArray) do  // Do we already have that "new" position?
+  begin
+    with PerfNoteArray[P] do
     begin
-      with PerfNoteArray[P] do
       if (ceil(xPos) = ceil(Xtop)) and (ceil(yPos) = ceil(Ytop)) and
-         (Screen = ScreenAct) then
+        (Screen = ScreenAct) then
         exit; // it's already in the array, so we don't have to create a new one
-    end; //for
+    end;
+  end; //for
 
   // we got a new position, add the new positions to our array
-    NewIndex := Length(PerfNoteArray);
-    SetLength(PerfNoteArray, NewIndex + 1);
-    PerfNoteArray[NewIndex].xPos    := Xtop;
-    PerfNoteArray[NewIndex].yPos    := Ytop;
-    PerfNoteArray[NewIndex].Screen  := ScreenAct;
+  NewIndex := Length(PerfNoteArray);
+  SetLength(PerfNoteArray, NewIndex + 1);
+  PerfNoteArray[NewIndex].xPos    := Xtop;
+  PerfNoteArray[NewIndex].yPos    := Ytop;
+  PerfNoteArray[NewIndex].Screen  := ScreenAct;
+  PerfNoteArray[NewIndex].CP      := CP;
 
-    for P:= 0 to 2 do
-      begin
-        Xkatze := RandomRange(ceil(Xtop) - 5 , ceil(Xtop) + 10);
-        Ykatze := RandomRange(ceil(Ytop) - 5 , ceil(Ytop) + 10);
-        RandomFrame := RandomRange(0,14);
-        Spawn(Xkatze, Ykatze, ScreenAct, 16 - RandomFrame, RandomFrame, -1, PerfectNote, 0, 0);
-     end; //for
-
+  for P:= 0 to 2 do
+  begin
+    Xkatze := RandomRange(ceil(Xtop) - 5 , ceil(Xtop) + 10);
+    Ykatze := RandomRange(ceil(Ytop) - 5 , ceil(Ytop) + 10);
+    RandomFrame := RandomRange(0,14);
+    Spawn(Xkatze, Ykatze, ScreenAct, 16 - RandomFrame, RandomFrame, -1, PerfectNote, 0, CP);
+  end; //for
 end;
 
 procedure TEffectManager.SpawnPerfectLineTwinkle();
@@ -603,8 +635,8 @@ var
   P,I,Life:   Cardinal;
   Left, Right, Top, Bottom: Cardinal;
   cScreen:    Integer;
-
   P4Mode:     boolean;
+
 begin
 // calculation of coordinates done with hardcoded values like in UDraw.pas
 // might need to be adjusted if drawing of SingScreen is modified
@@ -683,24 +715,24 @@ begin
       begin
         Life:=RandomRange(8,16);
         if not P4Mode then
-          Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2)
+          Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, P mod 2)
         else
         begin
           if PlayersPlay=4 then
           begin
             case P of
               0,1:
-                Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+                Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, P mod 2);
               2,3:
-                Spawn(RandomRange(Left+400,Right+400), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+                Spawn(RandomRange(Left+400,Right+400), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, P mod 2);
             end;
           end else
           begin
             case P of
               0,1,2:
-                Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+                Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, P mod 2);
               3,4,5:
-                Spawn(RandomRange(Left+400,Right+400), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, (P+1) mod 2);
+                Spawn(RandomRange(Left+400,Right+400), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P, P mod 2);
             end;
           end;
         end;

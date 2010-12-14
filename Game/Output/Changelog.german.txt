@@ -1,4 +1,4 @@
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC9 vom 24.11.2010
+Ultrastar Deluxe Challenge, Medley & Duet Edition r9 vom 30.11.2010
 -----------------------------
 New: (Allgemein) Mehrere Song-Ordner werden unterstützt (wie bei der 1.1).
 New: (Allgemein) Die Anzahl der Spieler kann bei der Namenseingabe mit Shift+Hoch/Runter angepasst werden.
@@ -6,8 +6,6 @@ New: (Allgemein) Sortierung nach Jahr (pro Dekade).
 Upd: (Allgemein) Mit N kann man nun auch die Lyrics ausblenden.
 Upd: (Editor)    Man kann nun zwischen zwei Spuren bei Duetten hin- und herkopieren (wenn es passt).
 
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC7.2 vom 07.11.2010
------------------------------
 New: (Allgemein) DUETT-Support! Song-Syntax wie von hawkear vorgeschlagen, allerdings auf 2 Stimmen begrenzt. Im Editor können die Lieder erstellt/geändert werden.
 New: (Allgemein) Webcam-Support
 New: (Allgemein) Neue Fonts (höhere Auflösung)

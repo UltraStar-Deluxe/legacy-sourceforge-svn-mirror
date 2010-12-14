@@ -776,7 +776,7 @@ begin
       begin
         I := Songs.SongSort[S].Year;
         if (I <> -1) then
-          tempstr := IntToStr(Round(I/10)*10) + '-' + IntToStr(Round(I/10)*10+9)
+          tempstr := IntToStr(Trunc(I/10)*10) + '-' + IntToStr(Trunc(I/10)*10+9)
         else
           tempstr := 'undefined';
 

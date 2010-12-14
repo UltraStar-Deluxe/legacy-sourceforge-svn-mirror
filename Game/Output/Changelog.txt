@@ -1,4 +1,4 @@
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC9 (24.11.2010)
+Ultrastar Deluxe Challenge, Medley & Duet Edition r9 (30.11.2010)
 -----------------------------
 New: (General)     Support for more than one song folder (like in 1.1).
 New: (General)     Adjust number of players in name screen with SHIFT+UP/DOWN.
@@ -6,8 +6,6 @@ New: (General)     Sort by Year (by decade).
 Upd: (General)     Disable lyrics with "N".
 Upd: (Editor)      Copy or move lines between duet tracks.
 
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9 RC7.2 (07.11.2010)
------------------------------
 New: (General)     DUET support! Song syntax as proposed by hawkear, however, limited to 2 parts. Duet songs can be created and edited in the editor.
 New: (General)     Webcam support.
 New: (General)     New Fonst (higher resolution)

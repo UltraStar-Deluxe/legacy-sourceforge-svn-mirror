@@ -117,7 +117,6 @@ begin
               FadeTo(@ScreenPartyNewRound)
             else
             begin
-              PartySession.EndRound;
               FadeTo(@ScreenPartyWin);
             end;
             Fadeout := true;

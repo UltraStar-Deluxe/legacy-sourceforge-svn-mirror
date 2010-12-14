@@ -515,6 +515,19 @@ begin
           else
             Music.EnableVocalRemover;
         end;
+
+      SDLK_O:
+        begin
+          if (Mode = smNormal) then
+          begin
+            Music.Stop;
+            Music.PlayBack;
+            acClose;
+
+            FadeTo(@ScreenOptions);
+            FadeOut := true;
+          end;
+        end;
         
       SDLK_A:
         begin
