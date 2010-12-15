@@ -491,7 +491,9 @@ begin
 
   if Music.VocalRemoverActivated() then
     Music.DisableVocalRemover;
-    
+
+  GoldenRec.KillAll;
+
   FadeOut := false; // 0.5.0: early 0.5.0 problems were by this line commented
 
   AspectHandler.changed := false;
@@ -983,6 +985,7 @@ begin
     Text[TextP4FourP].Text := 'P4';
   end;
 
+  WebCam := false;
   LoadNextSong;
 
   Log.LogStatus('End', 'onShow');
@@ -1635,7 +1638,9 @@ begin
     end;
   end;
 
-  if not FGrabFrameFlag and (Ini.EnableWebCam=1) then
+  if AktSong.VideoLoaded then
+    WebCam := false
+  else if not FGrabFrameFlag and (Ini.EnableWebCam=1) then
   begin
     //Display White Activating WebCam Text
     SetFontStyle(2); //Font: Outlined1
@@ -1644,8 +1649,8 @@ begin
     SetFontPos (400 - glTextWidth ('Activating Webcam ...')/2, 250); //Position
     glColor4f(1,1,1,1);
     glPrint('Activating Webcam ...');
-    SwapBuffers;    
-    wStartWebCam();
+    SwapBuffers;
+    WebCam := wStartWebCam();
   end;
 
   // play music (II)
