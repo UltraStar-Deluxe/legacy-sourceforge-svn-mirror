@@ -367,6 +367,19 @@ begin
 
       SDLK_ESCAPE :
         begin
+          for I := 1 to 4 do
+            Ini.Name[I-1] := Button[I].Text[0].Text;
+
+          for I := 6 to 9 do
+            Ini.Name[I-2] := Button[I].Text[0].Text;
+
+          for I := 11 to 14 do
+            Ini.Name[I-3] := Button[I].Text[0].Text;
+
+          Ini.NameTeam[0] := Button[0].Text[0].Text;
+          Ini.NameTeam[1] := Button[5].Text[0].Text;
+          Ini.NameTeam[2] := Button[10].Text[0].Text;
+
           Ini.SaveNames;
           Music.PlayBack;
           FadeTo(@ScreenPartyOptions);
@@ -374,6 +387,19 @@ begin
 
       SDLK_RETURN:
         begin
+          for I := 1 to 4 do
+            Ini.Name[I-1] := Button[I].Text[0].Text;
+
+          for I := 6 to 9 do
+            Ini.Name[I-2] := Button[I].Text[0].Text;
+
+          for I := 11 to 14 do
+            Ini.Name[I-3] := Button[I].Text[0].Text;
+
+          Ini.NameTeam[0] := Button[0].Text[0].Text;
+          Ini.NameTeam[1] := Button[5].Text[0].Text;
+          Ini.NameTeam[2] := Button[10].Text[0].Text;
+
           Ini.SaveNames;
           //Save PlayerNames
           for I := 0 to PartySession.Teams.NumTeams-1 do
