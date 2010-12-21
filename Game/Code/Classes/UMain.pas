@@ -605,17 +605,17 @@ begin
               Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > BRange) then
             begin
               // przesuwanie tonu w odpowiednia game => shifting tone in the corresponding game?
-              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
-                Sound[CP].Ton := Sound[CP].Ton - 12;
-              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
-                Sound[CP].Ton := Sound[CP].Ton + 12;
+              while (Sound[CP].TonGamy - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
+                Sound[CP].TonGamy := Sound[CP].TonGamy - 12;
+              while (Sound[CP].TonGamy - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
+                Sound[CP].TonGamy := Sound[CP].TonGamy + 12;
 
               // Half size Notes Patch
               NoteHit := false;
-              AktTon := Sound[CP].Ton;
+              AktTon := Sound[CP].TonGamy;
 
               Range := 2 - Ini.Difficulty;
-              if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
+              if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].TonGamy) <= Range) or
                 DEBUG_NOTE_HIT then
               begin
                 AktTon := Czesci[P].Czesc[S].Nuta[Pet].Ton;
@@ -784,17 +784,17 @@ begin
               Czesci[P].Czesc[S].Nuta[Pet].Dlugosc > BRange) then
             begin
               // przesuwanie tonu w odpowiednia game
-              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
-                Sound[CP].Ton := Sound[CP].Ton - 12;
-              while (Sound[CP].Ton - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
-                Sound[CP].Ton := Sound[CP].Ton + 12;
+              while (Sound[CP].TonGamy - Czesci[P].Czesc[S].Nuta[Pet].Ton > 6) do
+                Sound[CP].TonGamy := Sound[CP].TonGamy - 12;
+              while (Sound[CP].TonGamy - Czesci[P].Czesc[S].Nuta[Pet].Ton < -6) do
+                Sound[CP].TonGamy := Sound[CP].TonGamy + 12;
 
               // Half size Notes Patch
               NoteHit := false;
-              AktTon := Sound[CP].Ton;
+              AktTon := Sound[CP].TonGamy;
               
               Range := 2 - Ini.Difficulty;
-              if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].Ton) <= Range) or
+              if (abs(Czesci[P].Czesc[S].Nuta[Pet].Ton - Sound[CP].TonGamy) <= Range) or
                 DEBUG_NOTE_HIT then
               begin
                 AktTon := Czesci[P].Czesc[S].Nuta[Pet].Ton;

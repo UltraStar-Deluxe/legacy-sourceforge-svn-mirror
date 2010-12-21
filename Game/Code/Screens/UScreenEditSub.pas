@@ -2,7 +2,14 @@ unit UScreenEditSub;
 
 interface
 
-uses UMenu, UVideo, TextGL, UMusic, SDL, SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, UMenuText,
+uses
+  UMenu,
+  UVideo,
+  TextGL,
+  UMusic,
+  URecord,
+  SDL,
+  SysUtils, UFiles, UTime, USongs, UIni, ULog, UTexture, UMenuText,
   ULyrics, Math, gl, UThemes, MidiOut, UHelp;
 
 type
@@ -82,6 +89,9 @@ type
       StartTry:     boolean;
       PlayTime:     real;
 
+      ActTonePitch: integer;
+
+      procedure DrawPitch(x, y, Width, Height: single);
       procedure StartVideo;
       procedure StartVideoPreview;
       procedure NewBeat;
@@ -135,6 +145,7 @@ type
 
 const
   ID='ID_001';   //for help system
+  NumHalftones = 36;
 
 implementation
 uses UGraphic, UDraw, UMain, USkins, ULanguage;
@@ -624,6 +635,12 @@ begin
             CzesciMultiply;
             Text[TextDebug].Text := 'BPM and note lengths doubled';
           end;
+        end;
+
+      SDLK_N:
+        begin
+          // Set actual note over pitch detection
+          Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[0]].Ton := ActTonePitch;
         end;
 
       SDLK_C:
@@ -1439,6 +1456,99 @@ begin
     end;
   end;
 end;
+
+procedure TScreenEditSub.DrawPitch(x, y, Width, Height: single);
+var
+  x1, y1, x2, y2: single;
+  i: integer;
+  ToneBoxWidth: real;
+  ToneString: string;
+  ToneStringWidth, ToneStringHeight: real;
+  ToneStringMaxWidth: real;
+  ToneStringCenterXOffset: real;
+
+const
+  PitchBarInnerHSpacing = 2;
+  PitchBarInnerVSpacing = 1;
+
+begin
+  // calc tone pitch
+  Sound[0].AnalizujBufor;
+
+  // coordinates for black rect
+  x1 := x;
+  y1 := y;
+  x2 := x + Width;
+  y2 := y + Height;
+
+  // init blend mode
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
+
+  // draw black background-rect
+  glColor4f(0, 0, 0, 0.8);
+  glBegin(GL_QUADS);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y1);
+    glVertex2f(x2, y2);
+    glVertex2f(x1, y2);
+  glEnd();
+
+  // coordinates for tone boxes
+  ToneBoxWidth := Width / NumHalftones;
+  y1 := y1 + PitchBarInnerVSpacing;
+  y2 := y2 - PitchBarInnerVSpacing;
+
+  glBegin(GL_QUADS);
+    // draw tone boxes
+    for i := 0 to NumHalftones-1 do
+    begin
+      x1 := x + i * ToneBoxWidth + PitchBarInnerHSpacing;
+      x2 := x1 + ToneBoxWidth - 2*PitchBarInnerHSpacing;
+
+      if ((Sound[0].SzczytJest) and
+          (Sound[0].Ton = i)) then
+      begin
+        // highlight current tone-pitch
+        glColor3f(1, i / (NumHalftones-1), 0);
+        ActTonePitch := i;
+      end
+      else
+      begin
+        // grey other tone-pitches
+        glColor3f(0.3, i / (NumHalftones-1) * 0.3, 0);
+      end;
+
+      glVertex2f(x1, y1);
+      glVertex2f(x2, y1);
+      glVertex2f(x2, y2);
+      glVertex2f(x1, y2);
+    end;
+  glEnd();
+
+  glDisable(GL_BLEND);
+
+  ///
+  // draw the name of the tone
+  ///////
+
+  ToneString := Sound[0].GetToneString + '(' + IntToStr(ActTonePitch) + ')';
+  ToneStringHeight := 8;
+
+  SetFontSize(ToneStringHeight);
+
+  // center
+  // Note: for centering let us assume that G#4 has the max. horizontal extent
+  ToneStringWidth := glTextWidth(PChar(ToneString));
+  ToneStringMaxWidth := glTextWidth('G#4 (222)');
+  ToneStringCenterXOffset := (ToneStringMaxWidth-ToneStringWidth) / 2;
+
+  // draw
+  SetFontPos(x-ToneStringWidth-ToneStringCenterXOffset, y-ToneStringHeight/2);
+  glColor3f(0, 0, 0);
+  glPrint(PChar(ToneString));
+end;
+
 
 procedure TScreenEditSub.StartVideo;
 var
@@ -2539,6 +2649,7 @@ begin
   end
   else
   begin
+    Music.CaptureStart;
     Refresh;
     MidiOut := TMidiOutput.Create(nil);
     MidiOut.Open;
@@ -3045,7 +3156,6 @@ begin
     glEnd;
     glDisable(GL_BLEND);
   end;
-           
 
   if UVideo.VideoOpened and PlayVideo then
   begin
@@ -3093,7 +3203,10 @@ begin
       end;
     end;
   end else
+  begin
+    DrawPitch(400, 75, 390, 15);
     StartVideoPreview;
+  end;
 end;
 
 procedure TScreenEditSub.DrawStatics;
@@ -3450,6 +3563,7 @@ procedure TScreenEditSub.onHide;
 begin
   MidiOut.Close;
   MidiOut.Free;
+  Music.CaptureStop;
 end;
 
 function TScreenEditSub.GetNoteName(Note: Integer): String;

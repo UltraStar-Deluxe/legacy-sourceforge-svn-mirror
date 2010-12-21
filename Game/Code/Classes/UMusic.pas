@@ -60,6 +60,7 @@ type
 
       Loaded:             boolean;
       Loop:               boolean;
+      CaptureStarted:     boolean;
 //    DXSound:  TDXSound;
 //    Player:   TcmxMp3;
       DSP_VocalRemover:   HDSP;
@@ -415,6 +416,7 @@ var
   S:        integer;
 
 begin
+  CaptureStarted := false;
   if RecordSystem = 1 then begin
     SetLength(Sound, 6 {max players});//Ini.Players+1);
     for S := 0 to High(Sound) do begin //Ini.Players do begin
@@ -771,6 +773,9 @@ var
   P1:       integer;
   P2:       integer;
 begin
+  if CaptureStarted then
+    Exit;
+
   for S := 0 to High(Sound) do
     Sound[S].BufferLong[0].Clear;
 
@@ -785,6 +790,8 @@ begin
     if (P1 > 0) or (P2 > 0) then
       CaptureCard(SC);
   end;
+
+  CaptureStarted := true;
 end;
 
 procedure TMusic.CaptureStop;
@@ -800,6 +807,7 @@ begin
     if P2 > PlayersPlay then P2 := 0;
     if (P1 > 0) or (P2 > 0) then StopCard(SC);
   end;
+  CaptureStarted := false;
 end;
 
 //procedure TMusic.CaptureCard(RecordI, SoundNum, PlayerLeft, PlayerRight: byte);

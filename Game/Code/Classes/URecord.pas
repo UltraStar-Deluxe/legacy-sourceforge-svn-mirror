@@ -27,6 +27,7 @@ type
     procedure AnalizujBufor;    // use to analyze sound from buffers to get new pitch
     procedure AnalizujByAutocorrelation;    // we call it to analyze sound by checking Autocorrelation
     function  AnalyzeAutocorrelationFreq(Freq: real): real;   // use this to check one frequency by Autocorrelation
+    function  GetToneString: string; //from usdx 1.1
   end;
 
   TSoundCardInput = record
@@ -61,8 +62,23 @@ var
   Poz:        integer;
   Recording:  TRecord;
 
+const
+  // from usdx 1.1
+  ToneStrings: array[0..11] of string = (
+    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
+  );
+
 implementation
 uses UMain, ULog;
+
+// from usdx 1.1
+function TSound.GetToneString: string;
+begin
+  if (SzczytJest) then
+    Result := ToneStrings[TonGamy] + IntToStr(Ton div 12 + 2)
+  else
+    Result := '-';
+end;
 
 procedure TSound.ProcessNewBuffer;
 var
@@ -153,7 +169,7 @@ begin
   if MaxV >= Threshold then begin // found acceptable volume // 0.1
     SzczytJest := true;
     TonGamy := MaxT mod 12;
-    Ton := MaxT mod 12;
+    Ton := MaxT;
   end;
 
 //  Log.LogAnalyze('--> Weight: ')
