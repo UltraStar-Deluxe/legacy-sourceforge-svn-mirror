@@ -204,18 +204,27 @@ begin
 end;
 
 function TPluginVideoDecodeStream.GetFrameWidth(): integer;
+var
+  FrameInfo: TVideoFrameInfo;
 begin
-  Result := fVideoDecoderInfo.getFrameWidth(fStream);
+  fVideoDecoderInfo.getFrameInfo(fStream, @FrameInfo);
+  Result := FrameInfo.width;
 end;
 
 function TPluginVideoDecodeStream.GetFrameHeight(): integer;
+var
+  FrameInfo: TVideoFrameInfo;
 begin
-  Result := fVideoDecoderInfo.getFrameHeight(fStream);
+  fVideoDecoderInfo.getFrameInfo(fStream, @FrameInfo);
+  Result := FrameInfo.height;
 end;
 
 function TPluginVideoDecodeStream.GetFrameAspect(): real;
+var
+  FrameInfo: TVideoFrameInfo;
 begin
-  Result := fVideoDecoderInfo.getFrameAspect(fStream);
+  fVideoDecoderInfo.getFrameInfo(fStream, @FrameInfo);
+  Result := FrameInfo.aspect;
 end;
 
 end.

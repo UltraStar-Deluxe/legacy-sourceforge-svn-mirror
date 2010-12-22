@@ -203,6 +203,12 @@ typedef struct audioConverterInfo_t {
     double PLUGIN_CALL (*getRatio)(audioConvertStream_t *stream);
 } audioConverterInfo_t;
 
+typedef struct videoFrameInfo_t {
+	int width;
+	int height;
+	double aspect;
+} videoFrameInfo_t;
+
 typedef struct videoDecoderInfo_t {
 	int priority;
 	BOOL PLUGIN_CALL (*init)();
@@ -213,9 +219,7 @@ typedef struct videoDecoderInfo_t {
 	BOOL PLUGIN_CALL (*getLoop)(videoDecodeStream_t *stream);
 	void PLUGIN_CALL (*setPosition)(videoDecodeStream_t *stream, double time);
 	double PLUGIN_CALL (*getPosition)(videoDecodeStream_t *stream);
-	int PLUGIN_CALL (*getFrameWidth)(videoDecodeStream_t *stream);
-	int PLUGIN_CALL (*getFrameHeight)(videoDecodeStream_t *stream);
-	double PLUGIN_CALL (*getFrameAspect)(videoDecodeStream_t *stream);
+	void PLUGIN_CALL (*getFrameInfo)(videoDecodeStream_t *stream, videoFrameInfo_t *info);
 	uint8_t* PLUGIN_CALL (*getFrame)(videoDecodeStream_t *stream, long double time);
 } videoDecoderInfo_t;
 

@@ -119,6 +119,13 @@ type
     getRatio: function(stream: PAudioConvertStream): double; cdecl;
   end;
 
+  PVideoFrameInfo = ^TVideoFrameInfo;
+  TVideoFrameInfo = record
+    width: cint;
+    height: cint;
+    aspect: double;
+  end;
+
   PVideoDecoderInfo = ^TVideoDecoderInfo;
   TVideoDecoderInfo = record
     priority: cint;
@@ -130,9 +137,7 @@ type
     getLoop: function(stream: PVideoDecodeStream): cbool; cdecl;
     setPosition: procedure(stream: PVideoDecodeStream; time: double); cdecl;
     getPosition: function(stream: PVideoDecodeStream): double; cdecl;
-    getFrameWidth: function(stream: PVideoDecodeStream): cint; cdecl;
-    getFrameHeight: function(stream: PVideoDecodeStream): cint; cdecl;
-    getFrameAspect: function(stream: PVideoDecodeStream): double; cdecl;
+    getFrameInfo: procedure(stream: PVideoDecodeStream; info: PVideoFrameInfo); cdecl;
     getFrame: function (stream: PVideoDecodeStream; time: clongdouble): PCuint8; cdecl;
   end;
 

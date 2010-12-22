@@ -625,16 +625,13 @@ static double PLUGIN_CALL ffmpegVideoDecoder_getPosition(videoDecodeStream_t *st
 	return VideoDecodeStreamObj(stream)->getPosition();
 }
 
-static int PLUGIN_CALL ffmpegVideoDecoder_getFrameWidth(videoDecodeStream_t *stream) {
-	return VideoDecodeStreamObj(stream)->getFrameWidth();
-}
-
-static int PLUGIN_CALL ffmpegVideoDecoder_getFrameHeight(videoDecodeStream_t *stream) {
-	return VideoDecodeStreamObj(stream)->getFrameHeight();
-}
-
-static double PLUGIN_CALL ffmpegVideoDecoder_getFrameAspect(videoDecodeStream_t *stream) {
-	return VideoDecodeStreamObj(stream)->getFrameAspect();
+static void PLUGIN_CALL ffmpegVideoDecoder_getFrameInfo(videoDecodeStream_t *stream,
+	videoFrameInfo_t *info)
+{
+	FFmpegVideoDecodeStream* s = VideoDecodeStreamObj(stream);
+	info->width = s->getFrameWidth();
+	info->height = s->getFrameHeight();
+	info->aspect = s->getFrameAspect();
 }
 
 static uint8_t* PLUGIN_CALL ffmpegVideoDecoder_getFrame(videoDecodeStream_t *stream, long double time) {
@@ -655,8 +652,6 @@ const videoDecoderInfo_t videoDecoderInfo = {
 		ffmpegVideoDecoder_getLoop,
 		ffmpegVideoDecoder_setPosition,
 		ffmpegVideoDecoder_getPosition,
-		ffmpegVideoDecoder_getFrameWidth,
-		ffmpegVideoDecoder_getFrameHeight,
-		ffmpegVideoDecoder_getFrameAspect,
+		ffmpegVideoDecoder_getFrameInfo,
 		ffmpegVideoDecoder_getFrame
 };
