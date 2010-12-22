@@ -187,6 +187,26 @@ bool MediaCore_FFmpeg::convertFFmpegToAudioFormat(SampleFormat ffmpegFormat, aud
 	return true;
 }
 
+bool MediaCore_FFmpeg::convertVideoFrameFormatToFFmpeg(videoFrameFormat_t format, enum PixelFormat *ffmpegFormat) const {
+	switch (format) {
+	case FRAME_FORMAT_RGB:
+		*ffmpegFormat = PIX_FMT_RGB24;
+		break;
+	case FRAME_FORMAT_RGBA:
+		*ffmpegFormat = PIX_FMT_RGB32; //PIX_FMT_RGBA;
+		break;
+	case FRAME_FORMAT_BGR:
+		*ffmpegFormat = PIX_FMT_BGR24;
+		break;
+	case FRAME_FORMAT_BGRA:
+		*ffmpegFormat = PIX_FMT_BGR32; //PIX_FMT_BGRA;
+		break;
+	default:
+		return false;
+	}
+	return true;
+}
+
 /**
  * UTF-8 Filename wrapper based on:
  * http://www.mail-archive.com/libav-user@mplayerhq.hu/msg02460.html

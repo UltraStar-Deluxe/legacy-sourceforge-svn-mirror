@@ -417,9 +417,17 @@ type
       property Position: real read GetPosition write SetPosition;
   end;
 
+  TVideoFrameFormat = (
+    vffUnknown,
+    vffRGB,     // packed RGB  24bpp (R:8,G:8,B:8)
+    vffRGBA,    // packed RGBA 32bpp (R:8,G:8,B:8,A:8)
+    vffBGR,     // packed RGB  24bpp (B:8,G:8,R:8)
+    vffBGRA     // packed BGRA 32bpp (B:8,G:8,R:8,A:8)
+  );
+
   TVideoDecodeStream = class
     public
-      function Open(const FileName: IPath): boolean; virtual; abstract;
+      function Open(const FileName: IPath; Format: TVideoFrameFormat): boolean; virtual; abstract;
       procedure Close; virtual; abstract;
 
       procedure SetLoop(Enable: boolean); virtual; abstract;
@@ -428,11 +436,12 @@ type
       procedure SetPosition(Time: real); virtual; abstract;
       function GetPosition: real; virtual; abstract;
 
-      function GetFrameAspect(): real; virtual; abstract;
       function GetFrame(Time: Extended): PByteArray; virtual; abstract;
 
       function GetFrameWidth(): integer; virtual; abstract;
       function GetFrameHeight(): integer; virtual; abstract;
+      function GetFrameAspect(): real; virtual; abstract;
+      function GetFrameFormat(): TVideoFrameFormat; virtual; abstract;
   end;
 
 type
@@ -525,7 +534,7 @@ type
 
   IVideoDecoder = interface(IGenericDecoder)
   ['{2F184B2B-FE69-44D5-9031-0A2462391DCA}']
-      function Open(const FileName: IPath): TVideoDecodeStream;
+      function Open(const FileName: IPath; Format: TVideoFrameFormat): TVideoDecodeStream;
   end;
 
   IAudioDecoder = interface(IGenericDecoder)

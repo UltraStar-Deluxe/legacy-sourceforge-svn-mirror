@@ -32,25 +32,6 @@
 //#define DEBUG_DISPLAY
 //#define DEBUG_FRAMES
 
-// use BGR-format for accelerated colorspace conversion with swscale
-#ifdef USE_SWSCALE
-# define PIXEL_FMT_BGR
-#endif
-
-#define PIXEL_FMT_BGR
-
-#ifdef PIXEL_FMT_BGR
-# define PIXEL_FMT_FFMPEG    PIX_FMT_BGR24
-# define PIXEL_FMT_SIZE      3
-// looks strange on linux
-//# define PIXEL_FMT_FFMPEG  PIX_FMT_BGR32;
-//# define PIXEL_FMT_SIZE    4;
-#else
-// looks strange on linux:
-# define PIXEL_FMT_FFMPEG    PIX_FMT_RGB24
-# define PIXEL_FMT_SIZE      3
-#endif
-
 extern const videoDecoderInfo_t videoDecoderInfo;
 
 class FFmpegVideoDecodeStream : public VideoDecodeStream {
@@ -68,6 +49,9 @@ private:
 
 	AVFrame *_avFrame;
 	AVFrame *_avFrameRGB;
+	
+	videoFrameFormat_t _frameFormat;
+	enum PixelFormat _pixelFormat;
 
 	uint8_t *_frameBuffer; //**< stores a FFmpeg video frame
 	bool _frameTexValid; //**< if true, fFrameTex contains the current frame
@@ -87,7 +71,7 @@ private:
 	bool decodeFrame();
 	void synchronizeTime(AVFrame *frame, double &pts);
 
-	bool _open(const IPath &filename);
+	bool _open(const IPath &filename, videoFrameFormat_t format);
 	void close();
 
 public:
@@ -95,7 +79,7 @@ public:
 		close();
 	}
 
-	static FFmpegVideoDecodeStream* open(const IPath &filename);
+	static FFmpegVideoDecodeStream* open(const IPath &filename, videoFrameFormat_t format);
 
 	virtual void setLoop(bool enable);
 	virtual bool getLoop();
@@ -105,8 +89,9 @@ public:
 
 	virtual int getFrameWidth();
 	virtual int getFrameHeight();
-
 	virtual double getFrameAspect();
+	virtual videoFrameFormat_t getFrameFormat();
+	
 	virtual uint8_t* getFrame(long double time);
 };
 

@@ -51,7 +51,7 @@ type
     function InitializeDecoder(): boolean;
     function FinalizeDecoder: boolean;
 
-    function Open(const FileName: IPath): TVideoDecodeStream;
+    function Open(const FileName: IPath; Format: TVideoFrameFormat): TVideoDecodeStream;
   end;
 
 implementation
@@ -75,7 +75,7 @@ type
     constructor Create(Info: PVideoDecoderInfo);
     destructor Destroy; override;
 
-    function Open(const FileName: IPath): boolean; override;
+    function Open(const FileName: IPath; Format: TVideoFrameFormat): boolean; override;
     procedure Close; override;
 
     procedure SetLoop(Enable: boolean); override;
@@ -86,8 +86,9 @@ type
 
     function GetFrameWidth(): integer; override;
     function GetFrameHeight(): integer; override;
-
     function GetFrameAspect(): real; override;
+    function GetFrameFormat(): TVideoFrameFormat; override;
+
     function GetFrame(Time: Extended): PByteArray; override;
   end;
 
@@ -121,14 +122,14 @@ begin
   Result := true;
 end;
 
-function TVideoDecoderPlugin.Open(const FileName : IPath): TVideoDecodeStream;
+function TVideoDecoderPlugin.Open(const FileName: IPath; Format: TVideoFrameFormat): TVideoDecodeStream;
 var
   Stream: TPluginVideoDecodeStream;
 begin
   Result := nil;
 
   Stream := TPluginVideoDecodeStream.Create(fPluginInfo.videoDecoder);
-  if (not Stream.Open(FileName)) then
+  if (not Stream.Open(FileName, Format)) then
   begin
     Stream.Free;
     Exit;
@@ -153,13 +154,23 @@ begin
   inherited;
 end;
 
-function TPluginVideoDecodeStream.Open(const FileName: IPath): boolean;
+function TPluginVideoDecodeStream.Open(const FileName: IPath; Format: TVideoFrameFormat): boolean;
+var
+  CFormat: TCVideoFrameFormat;
 begin
   Result := false;
 
   Close();
 
-  fStream := fVideoDecoderInfo.open(PChar(Filename.ToUTF8()));
+  case Format of
+  vffRGB:  CFormat := FRAME_FORMAT_RGB;
+  vffRGBA: CFormat := FRAME_FORMAT_RGBA;
+  vffBGR:  CFormat := FRAME_FORMAT_BGR;
+  vffBGRA: CFormat := FRAME_FORMAT_BGRA;
+  else     CFormat := FRAME_FORMAT_UNKNOWN;
+  end;
+  
+  fStream := fVideoDecoderInfo.open(PChar(Filename.ToUTF8()), CFormat);
   if (fStream = nil) then
     Exit;
 
@@ -225,6 +236,20 @@ var
 begin
   fVideoDecoderInfo.getFrameInfo(fStream, @FrameInfo);
   Result := FrameInfo.aspect;
+end;
+
+function TPluginVideoDecodeStream.GetFrameFormat(): TVideoFrameFormat;
+var
+  FrameInfo: TVideoFrameInfo;
+begin
+  fVideoDecoderInfo.getFrameInfo(fStream, @FrameInfo);
+  case FrameInfo.format of
+  FRAME_FORMAT_RGB:  Result := vffRGB;
+  FRAME_FORMAT_RGBA: Result := vffRGBA;
+  FRAME_FORMAT_BGR:  Result := vffBGR;
+  FRAME_FORMAT_BGRA: Result := vffBGRA;
+  else               Result := vffUnknown;
+  end;
 end;
 
 end.

@@ -67,6 +67,8 @@ FFmpegVideoDecodeStream::FFmpegVideoDecodeStream() :
 		_codec(NULL),
 		_avFrame(NULL),
 		_avFrameRGB(NULL),
+		_frameFormat(FRAME_FORMAT_UNKNOWN),
+		_pixelFormat(PIX_FMT_NONE),
 		_frameBuffer(NULL),
 		_frameTexValid(false),
 #ifdef USE_SWSCALE
@@ -77,16 +79,18 @@ FFmpegVideoDecodeStream::FFmpegVideoDecodeStream() :
 		_frameTime(0),
 		_loopTime(0) {}
 
-FFmpegVideoDecodeStream* FFmpegVideoDecodeStream::open(const IPath &filename) {
+FFmpegVideoDecodeStream* FFmpegVideoDecodeStream::open(const IPath &filename, 
+	videoFrameFormat_t format) 
+{
 	FFmpegVideoDecodeStream *stream = new FFmpegVideoDecodeStream();
-	if (!stream->_open(filename)) {
+	if (!stream->_open(filename, format)) {
 		delete stream;
 		return 0;
 	}
 	return stream;
 }
 
-bool FFmpegVideoDecodeStream::_open(const IPath &filename) {
+bool FFmpegVideoDecodeStream::_open(const IPath &filename, videoFrameFormat_t format) {
 	std::stringstream ss;
 
 	// use custom 'ufile' protocol for UTF-8 support
@@ -169,10 +173,20 @@ bool FFmpegVideoDecodeStream::_open(const IPath &filename) {
 	logger.status(ss.str(), "");
 #endif
 
+	_frameFormat = format;
+	// choose default (use BGR-format for accelerated colorspace conversion with swscale)
+	if (_frameFormat == FRAME_FORMAT_UNKNOWN)
+		_frameFormat = FRAME_FORMAT_BGR;
+	if (!ffmpegCore->convertVideoFrameFormatToFFmpeg(_frameFormat, &_pixelFormat)) {
+		logger.error("Invalid pixel format", "VideoPlayback_ffmpeg.Open");
+		close();
+		return false;
+	}
+
 	// allocate space for decoded frame and rgb frame
 	_avFrame = avcodec_alloc_frame();
 	_avFrameRGB = avcodec_alloc_frame();
-	_frameBuffer = (uint8_t*) av_malloc(avpicture_get_size(PIXEL_FMT_FFMPEG,
+	_frameBuffer = (uint8_t*) av_malloc(avpicture_get_size(_pixelFormat,
 			_codecContext->width, _codecContext->height));
 
 	if (!_avFrame || !_avFrameRGB || !_frameBuffer) {
@@ -184,7 +198,7 @@ bool FFmpegVideoDecodeStream::_open(const IPath &filename) {
 	// TODO: pad data for OpenGL to GL_UNPACK_ALIGNMENT
 	// (otherwise video will be distorted if width/height is not a multiple of the alignment)
 	errnum = avpicture_fill((AVPicture*)_avFrameRGB, _frameBuffer,
-			PIXEL_FMT_FFMPEG, _codecContext->width, _codecContext->height);
+			_pixelFormat, _codecContext->width, _codecContext->height);
 	if (errnum < 0) {
 		logger.error("avpicture_fill failed: " + ffmpegCore->getErrorString(errnum),
 				"VideoPlayback_ffmpeg.Open");
@@ -223,7 +237,7 @@ bool FFmpegVideoDecodeStream::_open(const IPath &filename) {
 	// could be observed in comparison to the RGB versions.
 	_swScaleContext = sws_getCachedContext(NULL,
 			_codecContext->width, _codecContext->height, _codecContext->pix_fmt,
-			_codecContext->width, _codecContext->height, PIXEL_FMT_FFMPEG,
+			_codecContext->width, _codecContext->height, _pixelFormat,
 			SWS_FAST_BILINEAR,
 			NULL, NULL, NULL);
 	if (!_swScaleContext) {
@@ -503,7 +517,7 @@ uint8_t* FFmpegVideoDecodeStream::getFrame(long double time) {
 	// I think this should be removed, but am not sure whether there should
 	// be some other replacement or a warning, Therefore, I leave it for now.
 	// April 2009, mischi
-	errnum = img_convert((AVPicture*)_avFrameRGB, PIXEL_FMT_FFMPEG,
+	errnum = img_convert((AVPicture*)_avFrameRGB, _pixelFormat,
 			(AVPicture*)_avFrame, _codecContext->pix_fmt,
 			_codecContext->width, _codecContext->height);
 #endif
@@ -587,6 +601,10 @@ double FFmpegVideoDecodeStream::getFrameAspect() {
 	return _aspect;
 }
 
+videoFrameFormat_t FFmpegVideoDecodeStream::getFrameFormat() {
+	return _frameFormat;
+}
+
 /************************************
  * C Interface
  ************************************/
@@ -601,8 +619,10 @@ static BOOL PLUGIN_CALL ffmpegVideoDecoder_finalize() {
 	return TRUE;
 }
 
-static videoDecodeStream_t* PLUGIN_CALL ffmpegVideoDecoder_open(const char *filename) {
-	return (videoDecodeStream_t*)FFmpegVideoDecodeStream::open(filename);
+static videoDecodeStream_t* PLUGIN_CALL ffmpegVideoDecoder_open(const char *filename,
+	videoFrameFormat_t format) 
+{
+	return (videoDecodeStream_t*)FFmpegVideoDecodeStream::open(filename, format);
 }
 
 static void PLUGIN_CALL ffmpegVideoDecoder_close(videoDecodeStream_t *stream) {
@@ -632,6 +652,7 @@ static void PLUGIN_CALL ffmpegVideoDecoder_getFrameInfo(videoDecodeStream_t *str
 	info->width = s->getFrameWidth();
 	info->height = s->getFrameHeight();
 	info->aspect = s->getFrameAspect();
+	info->format = s->getFrameFormat();
 }
 
 static uint8_t* PLUGIN_CALL ffmpegVideoDecoder_getFrame(videoDecodeStream_t *stream, long double time) {

@@ -174,7 +174,7 @@ type
 
       function InitializeDecoder(): boolean;
       function FinalizeDecoder(): boolean;
-      function Open(const FileName: IPath): TVideoDecodeStream;
+      function Open(const FileName: IPath; Format: TVideoFrameFormat): TVideoDecodeStream;
     end;
 
 function  TAudio_Dummy.GetName: string;
@@ -529,7 +529,7 @@ begin
   Result := true;
 end;
 
-function TVideoDecoder_Dummy.Open(const FileName: IPath): TVideoDecodeStream;
+function TVideoDecoder_Dummy.Open(const FileName: IPath; Format: TVideoFrameFormat): TVideoDecodeStream;
 begin
   Result := nil;
 end;

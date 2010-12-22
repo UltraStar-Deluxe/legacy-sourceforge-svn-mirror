@@ -119,11 +119,22 @@ type
     getRatio: function(stream: PAudioConvertStream): double; cdecl;
   end;
 
+type
+  TCVideoFrameFormat = cint;
+const
+  FRAME_FORMAT_UNKNOWN = 0;
+  FRAME_FORMAT_RGB  = 1; // packed RGB  24bpp (R:8,G:8,B:8)
+  FRAME_FORMAT_RGBA = 2; // packed RGBA 32bpp (R:8,G:8,B:8,A:8)
+  FRAME_FORMAT_BGR  = 3; // packed RGB  24bpp (B:8,G:8,R:8)
+  FRAME_FORMAT_BGRA = 4; // packed BGRA 32bpp (B:8,G:8,R:8,A:8)
+
+type
   PVideoFrameInfo = ^TVideoFrameInfo;
   TVideoFrameInfo = record
     width: cint;
     height: cint;
     aspect: double;
+    format: TCVideoFrameFormat;
   end;
 
   PVideoDecoderInfo = ^TVideoDecoderInfo;
@@ -131,7 +142,7 @@ type
     priority: cint;
     init: function(): cbool; cdecl;
     finalize: function(): cbool; cdecl;
-    open: function(filename: PAnsiChar): PVideoDecodeStream; cdecl;
+    open: function(filename: PAnsiChar; format: TCVideoFrameFormat): PVideoDecodeStream; cdecl;
     close: procedure(stream: PVideoDecodeStream); cdecl;
     setLoop: procedure(stream: PVideoDecodeStream; enable: cbool); cdecl;
     getLoop: function(stream: PVideoDecodeStream): cbool; cdecl;

@@ -43,8 +43,9 @@ public:
 
 	virtual int getFrameWidth() = 0;
 	virtual int getFrameHeight() = 0;
-
 	virtual double getFrameAspect() = 0;
+	virtual videoFrameFormat_t getFrameFormat() = 0;	
+	
 	virtual uint8_t* getFrame(long double time) = 0;
 };
 

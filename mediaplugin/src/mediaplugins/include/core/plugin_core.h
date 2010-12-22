@@ -203,17 +203,30 @@ typedef struct audioConverterInfo_t {
     double PLUGIN_CALL (*getRatio)(audioConvertStream_t *stream);
 } audioConverterInfo_t;
 
+typedef enum videoFrameFormat_t {
+	FRAME_FORMAT_UNKNOWN,
+	FRAME_FORMAT_RGB,   // packed RGB  24bpp (R:8,G:8,B:8)
+	FRAME_FORMAT_RGBA,	// packed RGBA 32bpp (R:8,G:8,B:8,A:8)
+	FRAME_FORMAT_BGR,   // packed RGB  24bpp (B:8,G:8,R:8)
+	FRAME_FORMAT_BGRA,	// packed BGRA 32bpp (B:8,G:8,R:8,A:8)
+} videoFrameFormat_t;
+
+const int videoFrameFormatSize[5] = {
+	-1, 3, 4, 3, 4
+};
+
 typedef struct videoFrameInfo_t {
 	int width;
 	int height;
 	double aspect;
+	videoFrameFormat_t format;
 } videoFrameInfo_t;
 
 typedef struct videoDecoderInfo_t {
 	int priority;
 	BOOL PLUGIN_CALL (*init)();
 	BOOL PLUGIN_CALL (*finalize)();
-	videoDecodeStream_t* PLUGIN_CALL (*open)(const char *filename);
+	videoDecodeStream_t* PLUGIN_CALL (*open)(const char *filename, videoFrameFormat_t format);
 	void PLUGIN_CALL (*close)(videoDecodeStream_t *stream);
 	void PLUGIN_CALL (*setLoop)(videoDecodeStream_t *stream, BOOL enable);
 	BOOL PLUGIN_CALL (*getLoop)(videoDecodeStream_t *stream);

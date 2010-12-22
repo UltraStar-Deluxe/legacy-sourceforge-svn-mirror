@@ -60,16 +60,19 @@ uses
 
 const
 {$IFDEF PIXEL_FMT_BGR}
-  PIXEL_FMT_OPENGL = GL_BGR;
-  PIXEL_FMT_SIZE   = 3;
+  PIXEL_FMT_DECODER = vffBGR;
+  PIXEL_FMT_OPENGL  = GL_BGR;
+  PIXEL_FMT_SIZE    = 3;
 
   // looks strange on linux:
-  //PIXEL_FMT_OPENGL = GL_RGBA;
-  //PIXEL_FMT_SIZE   = 4;
+  //PIXEL_FMT_DECODER = vffRGBA;
+  //PIXEL_FMT_OPENGL  = GL_RGBA;
+  //PIXEL_FMT_SIZE    = 4;
 {$ELSE}
   // looks strange on linux:
-  PIXEL_FMT_OPENGL = GL_RGB;
-  PIXEL_FMT_SIZE   = 3;
+  PIXEL_FMT_DECODER = vffRGB;
+  PIXEL_FMT_OPENGL  = GL_RGB;
+  PIXEL_FMT_SIZE    = 3;
 {$ENDIF}
 
   ReflectionH = 0.5; //reflection height (50%)
@@ -202,14 +205,14 @@ begin
   Result := true;
 end;
 
-function TVideoPlayback_FFmpeg.Open(const FileName : IPath): IVideo;
+function TVideoPlayback_FFmpeg.Open(const FileName: IPath): IVideo;
 var
   Video: IVideo_FFmpeg;
   Decoder: TVideoDecodeStream;
 begin
   Result := nil;
 
-  Decoder := VideoDecoder.Open(FileName);
+  Decoder := VideoDecoder.Open(FileName, PIXEL_FMT_DECODER);
   if (Decoder = nil) then
     Exit;
 

@@ -118,6 +118,7 @@ public:
 	bool findStreamIDs(AVFormatContext *formatCtx, int *firstVideoStream, int *firstAudioStream) const;
 	int findAudioStreamIndex(AVFormatContext *formatCtx) const;
 	bool convertFFmpegToAudioFormat(SampleFormat ffmpegFormat, audioSampleFormat_t *format) const;
+	bool convertVideoFrameFormatToFFmpeg(videoFrameFormat_t format, enum PixelFormat *ffmpegFormat) const;
 
 public:
 	class AVCodecLock {
