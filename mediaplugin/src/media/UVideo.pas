@@ -78,12 +78,12 @@ const
   ReflectionH = 0.5; //reflection height (50%)
 
 type
-  IVideo_FFmpeg = interface (IVideo)
+  IVideo_OpenGL = interface (IVideo)
   ['{E640E130-C8C0-4399-AF02-67A3569313AB}']
     function Open(const Decoder: TVideoDecodeStream): boolean;
   end;
 
-  TVideo_FFmpeg = class( TInterfacedObject, IVideo_FFmpeg )
+  TVideo_OpenGL = class( TInterfacedObject, IVideo_OpenGL )
   private
     fDecoder: TVideoDecodeStream;
     fPaused: boolean;     //**< stream paused
@@ -170,7 +170,7 @@ type
     procedure DrawReflection();
   end;
 
-  TVideoPlayback_FFmpeg = class(TInterfacedObject, IMediaInterface, IVideoPlayback)
+  TVideoPlayback_OpenGL = class(TInterfacedObject, IMediaInterface, IVideoPlayback)
   public
     function GetName: String;
     function GetPriority: integer;
@@ -182,32 +182,32 @@ type
   end;
 
 {*------------------------------------------------------------------------------
- * TVideoPlayback_ffmpeg
+ * TVideoPlayback_OpenGL
  *------------------------------------------------------------------------------}
 
-function  TVideoPlayback_FFmpeg.GetName: String;
+function  TVideoPlayback_OpenGL.GetName: String;
 begin
   Result := 'OpenGL_VideoPlayback';
 end;
 
-function TVideoPlayback_FFmpeg.GetPriority: integer;
+function TVideoPlayback_OpenGL.GetPriority: integer;
 begin
   Result := 80;
 end;
 
-function TVideoPlayback_FFmpeg.Init(): boolean;
+function TVideoPlayback_OpenGL.Init(): boolean;
 begin
   Result := true;
 end;
 
-function TVideoPlayback_FFmpeg.Finalize(): boolean;
+function TVideoPlayback_OpenGL.Finalize(): boolean;
 begin
   Result := true;
 end;
 
-function TVideoPlayback_FFmpeg.Open(const FileName: IPath): IVideo;
+function TVideoPlayback_OpenGL.Open(const FileName: IPath): IVideo;
 var
-  Video: IVideo_FFmpeg;
+  Video: IVideo_OpenGL;
   Decoder: TVideoDecodeStream;
 begin
   Result := nil;
@@ -216,7 +216,7 @@ begin
   if (Decoder = nil) then
     Exit;
 
-  Video := TVideo_FFmpeg.Create();
+  Video := TVideo_OpenGL.Create();
   if (not Video.Open(Decoder)) then
   begin
     Decoder.Free;
@@ -227,21 +227,21 @@ begin
 end;
 
 
-{* TVideo_FFmpeg *}
+{* TVideo_OpenGL *}
 
-constructor TVideo_FFmpeg.Create;
+constructor TVideo_OpenGL.Create;
 begin
   glGenTextures(1, PGLuint(@fFrameTex));
   Reset();
 end;
 
-destructor TVideo_FFmpeg.Destroy;
+destructor TVideo_OpenGL.Destroy;
 begin
   Close();
   glDeleteTextures(1, PGLuint(@fFrameTex));
 end;
 
-function TVideo_FFmpeg.Open(const Decoder: TVideoDecodeStream): boolean;
+function TVideo_OpenGL.Open(const Decoder: TVideoDecodeStream): boolean;
 var
   glErr: GLenum;
 begin
@@ -269,7 +269,7 @@ begin
     if (glErr <> GL_NO_ERROR) then
     begin
       fPboEnabled := false;
-      Log.LogError('PBO initialization failed: ' + gluErrorString(glErr), 'TVideo_FFmpeg.Open');
+      Log.LogError('PBO initialization failed: ' + gluErrorString(glErr), 'TVideo_OpenGL.Open');
     end;
   end;
 
@@ -284,7 +284,7 @@ begin
   Result := true;
 end;
 
-procedure TVideo_FFmpeg.Reset();
+procedure TVideo_OpenGL.Reset();
 begin
   // close previously opened video
   Close();
@@ -313,7 +313,7 @@ begin
 end;
 
 
-procedure TVideo_FFmpeg.Close;
+procedure TVideo_OpenGL.Close;
 begin
   if (fDecoder <> nil) then
   begin
@@ -325,7 +325,7 @@ begin
     glDeleteBuffersARB(1, @fPboId);
 end;
 
-procedure TVideo_FFmpeg.GetFrame(Time: Extended);
+procedure TVideo_OpenGL.GetFrame(Time: Extended);
 var
   glErr: GLenum;
   BufferPtr: PGLvoid;
@@ -384,7 +384,7 @@ begin
 
     glErr := glGetError();
     if (glErr <> GL_NO_ERROR) then
-      Log.LogError('PBO texture stream error: ' + gluErrorString(glErr), 'TVideo_FFmpeg.GetFrame');
+      Log.LogError('PBO texture stream error: ' + gluErrorString(glErr), 'TVideo_OpenGL.GetFrame');
   end;
 
   // reset to default
@@ -397,12 +397,12 @@ begin
 
   {$IFDEF VideoBenchmark}
   Log.BenchmarkEnd(16);
-  Log.LogBenchmark('FFmpeg', 15);
+  Log.LogBenchmark('OpenGL', 15);
   Log.LogBenchmark('Texture', 16);
   {$ENDIF}
 end;
 
-procedure TVideo_FFmpeg.GetVideoRect(var ScreenRect, TexRect: TRectCoords);
+procedure TVideo_OpenGL.GetVideoRect(var ScreenRect, TexRect: TRectCoords);
 var
   ScreenAspect: double;  // aspect of screen resolution
   ScaledVideoWidth, ScaledVideoHeight: double;
@@ -461,7 +461,7 @@ begin
   TexRect.Lower := (fDecoder.GetFrameHeight() / fTexHeight) * fFrameRange.Lower;
 end;
 
-procedure TVideo_FFmpeg.DrawBorders(ScreenRect: TRectCoords);
+procedure TVideo_OpenGL.DrawBorders(ScreenRect: TRectCoords);
   procedure DrawRect(left, right, upper, lower: double);
   begin
     glColor4f(0, 0, 0, fAlpha);
@@ -490,7 +490,7 @@ begin
     DrawRect(ScreenRect.Right, fPosX+fWidth, fPosY, fPosY+fHeight);
 end;
 
-procedure TVideo_FFmpeg.DrawBordersReflected(ScreenRect: TRectCoords; AlphaUpper, AlphaLower: double);
+procedure TVideo_OpenGL.DrawBordersReflected(ScreenRect: TRectCoords; AlphaUpper, AlphaLower: double);
 var
   rPosUpper, rPosLower: double;
 
@@ -535,7 +535,7 @@ begin
 end;
 
 
-procedure TVideo_FFmpeg.Draw();
+procedure TVideo_OpenGL.Draw();
 var
   ScreenRect:   TRectCoords;
   TexRect:      TRectCoords;
@@ -608,7 +608,7 @@ begin
   {$IFEND}
 end;
 
-procedure TVideo_FFmpeg.DrawReflection();
+procedure TVideo_OpenGL.DrawReflection();
 var
   ScreenRect:   TRectCoords;
   TexRect:      TRectCoords;
@@ -696,7 +696,7 @@ begin
   glDisable(GL_SCISSOR_TEST);
 end;
 
-procedure TVideo_FFmpeg.ShowDebugInfo();
+procedure TVideo_OpenGL.ShowDebugInfo();
 begin
   {$IFDEF Info}
   if (fFrameTime+fFrameDuration < 0) then
@@ -733,58 +733,58 @@ begin
   {$ENDIF}
 end;
 
-procedure TVideo_FFmpeg.Play;
+procedure TVideo_OpenGL.Play;
 begin
 end;
 
-procedure TVideo_FFmpeg.Pause;
+procedure TVideo_OpenGL.Pause;
 begin
   fPaused := not fPaused;
 end;
 
-procedure TVideo_FFmpeg.Stop;
+procedure TVideo_OpenGL.Stop;
 begin
 end;
 
-procedure TVideo_FFmpeg.SetLoop(Enable: boolean);
+procedure TVideo_OpenGL.SetLoop(Enable: boolean);
 begin
   fDecoder.SetLoop(Enable);
 end;
 
-function TVideo_FFmpeg.GetLoop(): boolean;
+function TVideo_OpenGL.GetLoop(): boolean;
 begin
   Result := fDecoder.GetLoop();
 end;
 
-procedure TVideo_FFmpeg.SetPosition(Time: real);
+procedure TVideo_OpenGL.SetPosition(Time: real);
 begin
   fDecoder.SetPosition(Time);
 end;
 
-function  TVideo_FFmpeg.GetPosition: real;
+function  TVideo_OpenGL.GetPosition: real;
 begin
   Result := fDecoder.GetPosition();
 end;
 
-procedure TVideo_FFmpeg.SetScreen(Screen: integer);
+procedure TVideo_OpenGL.SetScreen(Screen: integer);
 begin
   fScreen := Screen;
 end;
 
-function TVideo_FFmpeg.GetScreen(): integer;
+function TVideo_OpenGL.GetScreen(): integer;
 begin
   Result := fScreen;
 end;
 
 
-procedure TVideo_FFmpeg.SetScreenPosition(X, Y, Z: double);
+procedure TVideo_OpenGL.SetScreenPosition(X, Y, Z: double);
 begin
   fPosX := X;
   fPosY := Y;
   fPosZ := Z;
 end;
 
-procedure TVideo_FFmpeg.GetScreenPosition(var X, Y, Z: double);
+procedure TVideo_OpenGL.GetScreenPosition(var X, Y, Z: double);
 begin
   X := fPosX;
   Y := fPosY;
@@ -792,58 +792,58 @@ begin
 end;
 
 
-procedure TVideo_FFmpeg.SetWidth(Width: double);
+procedure TVideo_OpenGL.SetWidth(Width: double);
 begin
   fWidth := Width;
 end;
 
-function TVideo_FFmpeg.GetWidth(): double;
+function TVideo_OpenGL.GetWidth(): double;
 begin
   Result := fWidth;
 end;
 
 
-procedure TVideo_FFmpeg.SetHeight(Height: double);
+procedure TVideo_OpenGL.SetHeight(Height: double);
 begin
   fHeight := Height;
 end;
 
-function TVideo_FFmpeg.GetHeight(): double;
+function TVideo_OpenGL.GetHeight(): double;
 begin
   Result := fHeight;
 end;
 
 
-procedure TVideo_FFmpeg.SetFrameRange(Range: TRectCoords);
+procedure TVideo_OpenGL.SetFrameRange(Range: TRectCoords);
 begin
   fFrameRange := Range;
 end;
 
-function TVideo_FFmpeg.GetFrameRange(): TRectCoords;
+function TVideo_OpenGL.GetFrameRange(): TRectCoords;
 begin
   Result := fFrameRange;
 end;
 
 
-function TVideo_FFmpeg.GetFrameAspect(): real;
+function TVideo_OpenGL.GetFrameAspect(): real;
 begin
   Result := fDecoder.GetFrameAspect();
 end;
 
 
-procedure TVideo_FFmpeg.SetAspectCorrection(AspectCorrection: TAspectCorrection);
+procedure TVideo_OpenGL.SetAspectCorrection(AspectCorrection: TAspectCorrection);
 begin
   fAspectCorrection := AspectCorrection;
 end;
 
-function TVideo_FFmpeg.GetAspectCorrection(): TAspectCorrection;
+function TVideo_OpenGL.GetAspectCorrection(): TAspectCorrection;
 begin
   Result := fAspectCorrection;
 end;
 
 
 
-procedure TVideo_FFmpeg.SetAlpha(Alpha: double);
+procedure TVideo_OpenGL.SetAlpha(Alpha: double);
 begin
   fAlpha := Alpha;
 
@@ -854,24 +854,24 @@ begin
     fAlpha := 0;
 end;
 
-function TVideo_FFmpeg.GetAlpha(): double;
+function TVideo_OpenGL.GetAlpha(): double;
 begin
   Result := fAlpha;
 end;
 
 
-procedure TVideo_FFmpeg.SetReflectionSpacing(Spacing: double);
+procedure TVideo_OpenGL.SetReflectionSpacing(Spacing: double);
 begin
   fReflectionSpacing := Spacing;
 end;
 
-function TVideo_FFmpeg.GetReflectionSpacing(): double;
+function TVideo_OpenGL.GetReflectionSpacing(): double;
 begin
   Result := fReflectionSpacing;
 end;
 
 
 initialization
-  MediaManager.Add(TVideoPlayback_FFmpeg.Create);
+  MediaManager.Add(TVideoPlayback_OpenGL.Create);
 
 end.
