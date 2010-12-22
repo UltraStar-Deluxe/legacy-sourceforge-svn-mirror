@@ -165,20 +165,20 @@ int MediaCore_FFmpeg::findAudioStreamIndex(AVFormatContext *formatCtx) const {
 bool MediaCore_FFmpeg::convertFFmpegToAudioFormat(SampleFormat ffmpegFormat, audioSampleFormat_t *format) const {
 	switch (ffmpegFormat) {
 	case SAMPLE_FMT_U8:
-		*format = asfU8;
+		*format = AUDIO_SAMPLE_FORMAT_U8;
 		break;
 	case SAMPLE_FMT_S16:
-		*format = asfS16;
+		*format = AUDIO_SAMPLE_FORMAT_S16;
 		break;
 	case SAMPLE_FMT_S32:
-		*format = asfS32;
+		*format = AUDIO_SAMPLE_FORMAT_S32;
 		break;
 	case SAMPLE_FMT_FLT:
-		*format = asfFloat;
+		*format = AUDIO_SAMPLE_FORMAT_FLOAT;
 		break;
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(51,65,0)
 	case SAMPLE_FMT_DBL:
-		*format = asfDouble;
+		*format = AUDIO_SAMPLE_FORMAT_DOUBLE;
 		break;
 #endif	
 	default:

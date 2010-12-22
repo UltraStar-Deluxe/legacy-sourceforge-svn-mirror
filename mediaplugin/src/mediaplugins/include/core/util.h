@@ -62,7 +62,7 @@ public:
 	AudioFormatInfo() :
 		_sampleRate(0),
 		_channels(0),
-		_format(asfUnknown),
+		_format(AUDIO_SAMPLE_FORMAT_UNKNOWN),
 		_frameSize(0)
 	{}
 

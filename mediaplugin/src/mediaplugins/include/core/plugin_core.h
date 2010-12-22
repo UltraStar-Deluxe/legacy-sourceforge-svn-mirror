@@ -141,26 +141,30 @@ typedef struct pluginCore_t {
 } pluginCore_t;
 
 typedef enum audioSampleFormat_t {
-	asfUnknown,           // unknown format
-	asfU8, asfS8,         // unsigned/signed  8 bits
-	asfU16LSB, asfS16LSB, // unsigned/signed 16 bits (endianness: LSB)
-	asfU16MSB, asfS16MSB, // unsigned/signed 16 bits (endianness: MSB)
-	asfU16, asfS16,       // unsigned/signed 16 bits (endianness: System)
-	asfS32,               // signed 32 bits (endianness: System)
-	asfFloat,             // float
-	asfDouble             // double
+	AUDIO_SAMPLE_FORMAT_UNKNOWN, // unknown format
+	AUDIO_SAMPLE_FORMAT_U8,      // unsigned 8 bits
+	AUDIO_SAMPLE_FORMAT_S8,      // signed 8 bits
+	AUDIO_SAMPLE_FORMAT_U16LSB,  // unsigned 16 bits (endianness: LSB)
+	AUDIO_SAMPLE_FORMAT_S16LSB,  // signed 16 bits (endianness: LSB)
+	AUDIO_SAMPLE_FORMAT_U16MSB,  // unsigned 16 bits (endianness: MSB)
+	AUDIO_SAMPLE_FORMAT_S16MSB,  // signed 16 bits (endianness: MSB)
+	AUDIO_SAMPLE_FORMAT_U16,     // unsigned 16 bits (endianness: System)
+	AUDIO_SAMPLE_FORMAT_S16,     // signed 16 bits (endianness: System)
+	AUDIO_SAMPLE_FORMAT_S32,     // signed 32 bits (endianness: System)
+	AUDIO_SAMPLE_FORMAT_FLOAT,   // float
+	AUDIO_SAMPLE_FORMAT_DOUBLE   // double
 } audioSampleFormat_t;
 
 // Size of one sample (one channel only) in bytes
 static const int g_audioSampleSize[] = {
-	0,        // asfUnknown
-	1, 1,     // asfU8, asfS8
-	2, 2,     // asfU16LSB, asfS16LSB
-	2, 2,     // asfU16MSB, asfS16MSB
-	2, 2,     // asfU16,    asfS16
-	3,        // asfS24
-	4,        // asfS32
-	4,        // asfFloat
+	0,        // Unknown
+	1, 1,     // U8, S8
+	2, 2,     // U16LSB, S16LSB
+	2, 2,     // U16MSB, S16MSB
+	2, 2,     // U16,    S16
+	3,        // S24
+	4,        // S32
+	4,        // Float
 };
 
 typedef struct audioFormatInfo_t {

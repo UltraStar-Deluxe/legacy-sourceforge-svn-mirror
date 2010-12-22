@@ -179,7 +179,7 @@ bool FFmpegAudioDecodeStream::_open(const IPath &filename) {
 	audioSampleFormat_t sampleFormat;
 	if (!ffmpegCore->convertFFmpegToAudioFormat(_codecCtx->sample_fmt, &sampleFormat)) {
 		// try standard format
-		sampleFormat = asfS16;
+		sampleFormat = AUDIO_SAMPLE_FORMAT_S16;
 	}
 	if (_codecCtx->channels > 255) {
 		logger.status("Error: _codecCtx->channels > 255", "TFFmpegDecodeStream.Open");

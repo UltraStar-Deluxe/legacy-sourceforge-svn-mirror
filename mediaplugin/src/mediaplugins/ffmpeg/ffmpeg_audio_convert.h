@@ -47,7 +47,7 @@ protected:
 	bool init() {
 		// Note: FFmpeg does not support resampling for more than 2 input channels
 
-		if (_srcFormatInfo.getFormat() != asfS16) {
+		if (_srcFormatInfo.getFormat() != AUDIO_SAMPLE_FORMAT_S16) {
 			logger.error("Unsupported format", "TAudioConverter_FFmpeg.Init");
 			return false;
 		}
