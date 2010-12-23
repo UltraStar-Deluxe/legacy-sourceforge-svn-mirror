@@ -23,8 +23,15 @@ type
     isEnd: boolean;     //end beat is declared
   end;
 
+  TVoicePitch = record
+    beat:   integer;
+    pitch:  integer;
+  end;
+
   TScreenEditSub = class(TMenu)
     private
+      PitchRecOn:   boolean;
+
       cRB, cGB, cBB:  GLfloat;
       cRR, cGR, cBR:  GLfloat;
 
@@ -91,7 +98,7 @@ type
 
       ActTonePitch: integer;
 
-      procedure DrawPitch(x, y, Width, Height: single);
+      procedure DrawPitch(x, y, Width, Height: single; beat: integer);
       procedure StartVideo;
       procedure StartVideoPreview;
       procedure NewBeat;
@@ -129,6 +136,7 @@ type
       procedure CopyLine(Pf, Cf, Pt, Ct: integer);
       procedure Refresh;
     public
+      Pitches:            array of TVoicePitch;
       Tex_Background:     TTexture;
       FadeOut:            boolean;
       Path:               string;
@@ -175,6 +183,7 @@ begin
     + KMOD_LCTRL + KMOD_RCTRL + KMOD_LALT  + KMOD_RALT {+ KMOD_CAPS});
 
   If (PressedDown) then begin // Key Down
+    PitchRecOn := false;
     case PressedKey of
       SDLK_TAB:
         begin
@@ -587,9 +596,11 @@ begin
           begin
             if (CP = MedleyNotes.Preview.CP) and
               (Czesci[CP].Akt = MedleyNotes.Preview.line) and
-              (AktNuta[CP] = MedleyNotes.Preview.note) then //reset ?
+              (AktNuta[CP] = MedleyNotes.Preview.note) and
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].IsStartPreview then //reset
             begin
-
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].IsStartPreview := false;
+              AktSong.PreviewStart := 0;
             end else //set
             begin
               if (Length(Czesci[MedleyNotes.Preview.CP].Czesc[MedleyNotes.Preview.line].Nuta)>MedleyNotes.Preview.note) then
@@ -639,8 +650,70 @@ begin
 
       SDLK_N:
         begin
-          // Set actual note over pitch detection
-          Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[0]].Ton := ActTonePitch;
+          if (SDL_ModState = KMOD_LSHIFT) then
+          begin
+            // one line, mp3
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+            PlaySentenceMidi := false;
+            PlayOneNoteMidi := false;
+            PlayOneSentence := true;
+            Click := false;
+            Music.Stop;
+            R := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
+            if R <= Music.Length then
+            begin
+              Music.MoveTo(R);
+              PlayStopTime := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec)+
+                Ini.LipSync*0.01 + (120 + Ini.Delay*10) / 1000;
+              PlaySentence := true;
+              PlayOneNote := false;
+              Music.Play;
+              LastClick := -100;
+            end;
+          end;
+
+          if (SDL_ModState = KMOD_LALT) then
+          begin
+            // Play whole file
+            MidiOut.PutShort($81, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[MidiLastNote].Ton + 60, 127);
+            PlaySentenceMidi := false;
+            PlayOneNoteMidi := false;
+            Click := false;
+            Music.Stop;
+            R := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
+            if R <= Music.Length then
+            begin
+              Music.MoveTo(R);
+              PlayStopTime := Music.Length;
+              PlaySentence := true;
+              PlayOneSentence := false;
+              PlayOneNote := false;
+              Music.Play;
+              LastClick := -100;
+            end;
+          end;
+
+          if PlaySentence then
+          begin
+            SetLength(Pitches, 0);
+            PitchRecOn := true;
+            noteStart := AktNuta[CP];
+            lineStart := Czesci[CP].Akt;
+            cpStart := CP;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+            AktNuta[CP] := 0;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+            EditorLyric[CP].Selected := AktNuta[CP];
+            LineChanged[0]:=false;
+            LineChanged[1]:=false;
+            PlayVideo := false;
+          end;
+
+          if (SDL_ModState = 0) then
+          begin
+            // Set actual note over pitch detection
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[0]].Ton := ActTonePitch;
+          end;
         end;
 
       SDLK_C:
@@ -1457,7 +1530,7 @@ begin
   end;
 end;
 
-procedure TScreenEditSub.DrawPitch(x, y, Width, Height: single);
+procedure TScreenEditSub.DrawPitch(x, y, Width, Height: single; beat: integer);
 var
   x1, y1, x2, y2: single;
   i: integer;
@@ -1547,6 +1620,21 @@ begin
   SetFontPos(x-ToneStringWidth-ToneStringCenterXOffset, y-ToneStringHeight/2);
   glColor3f(0, 0, 0);
   glPrint(PChar(ToneString));
+
+  // rec pitches
+  if not PitchRecOn then
+    Exit;
+
+  i := High(Pitches);
+  beat := Floor(GetMidBeat(GetTimeFromBeat(beat) - Ini.LipSync*0.01 - (AktSong.Gap + 120 + Ini.Delay*10) / 1000));
+
+  if (i = -1) or (Pitches[i].beat<beat) then
+  begin
+    SetLength(Pitches, i+2);
+    Pitches[i+1].beat := beat;
+    Pitches[i+1].pitch := ActTonePitch;
+  end;
+  
 end;
 
 
@@ -2589,6 +2677,17 @@ var
 begin
   FixTimings;
   LyricsCorrectSpaces;
+
+  if MedleyNotes.isStart and
+    ((High(Czesci[0].Czesc)<MedleyNotes.start.line) or
+     (High(Czesci[0].Czesc[MedleyNotes.start.line].Nuta)<MedleyNotes.start.note)) then
+    MedleyNotes.isStart := false;
+
+  if MedleyNotes.isEnd and
+    ((High(Czesci[0].Czesc)<MedleyNotes.end_.line) or
+     (High(Czesci[0].Czesc[MedleyNotes.end_.line].Nuta)<MedleyNotes.end_.note)) then
+    MedleyNotes.isEnd := false;
+
   for P := 0 to Length(Czesci) - 1 do
   begin
     Czesci[P].Ilosc := Length(Czesci[P].Czesc);
@@ -2610,6 +2709,16 @@ begin
           for N := 0 to Length(Czesci[P].Czesc[L].Nuta) - 1 do
           begin
             Nuta[N].Color := 0;
+            if (MedleyNotes.isStart and (MedleyNotes.start.CP = P) and (MedleyNotes.start.line = L) and
+              (MedleyNotes.start.note = N)) or
+              (MedleyNotes.isEnd and (MedleyNotes.end_.CP = P) and (MedleyNotes.end_.line = L) and
+              (MedleyNotes.end_.note = N)) then
+              Nuta[N].IsMedley := true
+            else
+              Nuta[N].IsMedley := false;
+
+            Nuta[N].IsStartPreview := false;
+
             Czesci[P].Wartosc := Czesci[P].Wartosc + Nuta[N].Dlugosc * Nuta[N].Wartosc;
             TotalNotes := TotalNotes + Nuta[N].Dlugosc * Nuta[N].Wartosc;
 
@@ -2621,6 +2730,12 @@ begin
       end;
     end;
   end;
+
+  //set Preview Start
+  MedleyNotes.Preview := FindNote(round(GetMidBeat(AktSong.PreviewStart-AktSong.Gap/1000)));
+  Czesci[MedleyNotes.Preview.CP].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].IsStartPreview := true;
+  AktSong.PreviewStart :=
+    GetTimeFromBeat(Czesci[MedleyNotes.Preview.CP].Czesc[MedleyNotes.Preview.line].Nuta[MedleyNotes.Preview.note].start);
 end;
 
 procedure TScreenEditSub.onShow;
@@ -2653,6 +2768,9 @@ begin
     Refresh;
     MidiOut := TMidiOutput.Create(nil);
     MidiOut.Open;
+
+    SetLength(Pitches, 0);
+    PitchRecOn := false;
 
     //Set Volume
     MP3Volume := 50;
@@ -2886,6 +3004,7 @@ begin
           begin
             Music.Stop;
             PlaySentence := false;
+            PitchRecOn := false;
             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
             if (Czesci[CP].Akt = lineStart) then
               AktNuta[CP] := noteStart;
@@ -3204,7 +3323,7 @@ begin
     end;
   end else
   begin
-    DrawPitch(400, 75, 390, 15);
+    DrawPitch(400, 75, 390, 15, AktBeat);
     StartVideoPreview;
   end;
 end;

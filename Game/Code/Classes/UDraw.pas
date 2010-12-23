@@ -1918,6 +1918,8 @@ var
   CP:       integer;
   end_:     integer;
   st:       integer;
+  I:        integer;
+  x, y:     real;
 begin
   CP := NrCzesci;
   if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
@@ -1926,57 +1928,72 @@ begin
   begin
     st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
     end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
-    begin
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
-        end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
+  end;
 
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
-        st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-    end;}
+  //glColor3f(1, 1, 1);
+  //glEnable(GL_TEXTURE_2D);
+  glEnable(GL_BLEND);
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  TempR := (Right-Left) / (end_ - st);
+
+  // Draw Pitches
+  if (Length(ScreenEditSub.Pitches)>0) then
+  begin
+    glColor4f(1, 0, 0, 0.6);
+
+    glLineWidth(NotesH*2);
+    glBegin(GL_LINE_STRIP);
+      for I := 0 to High(ScreenEditSub.Pitches) do
+      begin
+        if (ScreenEditSub.Pitches[I].beat>=st) and (ScreenEditSub.Pitches[I].beat<=end_) then
+        begin
+          x := (ScreenEditSub.Pitches[I].beat-st) * TempR + Left + 0.5 + 10*ScreenX;
+          y := Top - (ScreenEditSub.Pitches[I].pitch-Czesci[NrCzesci].Czesc[Czesci[NrCzesci].Akt].BaseNote)*Space/2;
+          glVertex2f(x, y);
+        end;
+      end;
+    glEnd;
   end;
 
   glColor3f(1, 1, 1);
   glEnable(GL_TEXTURE_2D);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  TempR := (Right-Left) / (end_ - st);
   with Czesci[NrCzesci].Czesc[Czesci[NrCzesci].Akt] do
   begin
-    for Pet := 0 to HighNut do begin
-      with Nuta[Pet] do begin
+    for Pet := 0 to HighNut do
+    begin
+      with Nuta[Pet] do
+      begin
+        // Golden Note Patch
+        if isMedley or isStartPreview then
+        begin
+          case Wartosc of
+            0: glColor4f(0, 1, 1, 0.45);
+            1: glColor4f(0, 1, 1, 0.85);
+            2: glColor4f(0, 1, 0.3, 0.85);
+          end; // case
+        end else
+        begin
+          case Wartosc of
+            0: glColor4f(0.8, 0.8, 0.8, 0.5);    //freestyle
+            1: glColor4f(0.8, 0.8, 0.8, 0.9);    //normal
+            2: glColor4f(1, 1, 0.3, 0.85);  //golden     (green)
+          end; // case
+        end;
 
-          // Golden Note Patch
-          if isMedley or isStartPreview then
-          begin
-            case Wartosc of
-              0: glColor4f(0, 1, 1, 0.45);
-              1: glColor4f(0, 1, 1, 0.85);
-              2: glColor4f(0, 1, 0.3, 0.85);
-            end; // case
-          end else
-          begin
-            case Wartosc of
-              0: glColor4f(0.8, 0.8, 0.8, 0.5);    //freestyle
-              1: glColor4f(0.8, 0.8, 0.8, 0.9);    //normal
-              2: glColor4f(1, 1, 0.3, 0.85);  //golden     (green)
-            end; // case
-          end;
-
-
-
-          // lewa czesc  -  left part
-          Rec.Left := (Start-st) * TempR + Left + 0.5 + 10*ScreenX;
-          Rec.Right := Rec.Left + NotesW;
-          Rec.Top := Top - (Ton-BaseNote)*Space/2 - NotesH;
-          Rec.Bottom := Rec.Top + 2 * NotesH;
-          glBindTexture(GL_TEXTURE_2D, Tex_Left[Color].TexNum);
-          glBegin(GL_QUADS);
-            glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
-            glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
-            glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
-            glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
-          glEnd;
+        // lewa czesc  -  left part
+        Rec.Left := (Start-st) * TempR + Left + 0.5 + 10*ScreenX;
+        Rec.Right := Rec.Left + NotesW;
+        Rec.Top := Top - (Ton-BaseNote)*Space/2 - NotesH;
+        Rec.Bottom := Rec.Top + 2 * NotesH;
+        glBindTexture(GL_TEXTURE_2D, Tex_Left[Color].TexNum);
+        glBegin(GL_QUADS);
+          glTexCoord2f(0, 0); glVertex2f(Rec.Left,  Rec.Top);
+          glTexCoord2f(0, 1); glVertex2f(Rec.Left,  Rec.Bottom);
+          glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
+          glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
+        glEnd;
 
          // srodkowa czesc  -  middle part
         Rec.Left := Rec.Right;
