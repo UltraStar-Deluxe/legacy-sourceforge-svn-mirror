@@ -99,35 +99,45 @@ public:
     //AudioFormatInfo copy();
 };
 
-class IPath {
+class Path {
 private:
 	std::string _filename;
 public:
-	IPath(const char *filename) :
-		_filename(filename)
-	{
-		// TODO
-	}
+	Path(const char *filename) :
+		_filename(filename) {}
 
-	IPath(std::string filename) :
-		_filename(filename)
-	{
-		// TODO
-	}
+	Path(std::string filename) :
+		_filename(filename) {}
 
 	std::string toNative() const {
-		// TODO
-		return _filename;
+		const char* cstr = pluginCore->pathToNative(_filename.c_str());
+		std::string result(cstr);
+		pluginCore->memFree((void*)cstr);
+		return result;
 	}
 
-	std::string toUTF8() const {
-		// TODO
-		return _filename;
+	std::string toUTF8(bool useNativeDelim = true) const {
+		const char* cstr = pluginCore->pathToUTF8(_filename.c_str(),
+				useNativeDelim ? TRUE : FALSE);
+		std::string result(cstr);
+		pluginCore->memFree((void*)cstr);
+		return result;
 	}
+
+// TODO: wchar_t sizes differ on Windows (2 byte)/Linux (4 byte).
+// USDX uses the Pascal WideChar type which is 2 bytes in size.
+#ifdef _WIN32
+	std::wstring toWide(bool useNativeDelim = true) const {
+		const wchar_t* cstr = pluginCore->pathToWide(_filename.c_str(),
+				useNativeDelim ? TRUE : FALSE);
+		std::wstring result(cstr);
+		pluginCore->memFree((void*)cstr);
+		return result;
+	}
+#endif
 
 	bool isFile() const {
-		// TODO
-		return true;
+		return pluginCore->pathIsFile(_filename.c_str());
 	}
 };
 

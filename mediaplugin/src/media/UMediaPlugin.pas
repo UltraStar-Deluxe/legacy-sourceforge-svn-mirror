@@ -45,19 +45,29 @@ type
   PMutex = Pointer;
   PCond = Pointer;
 
+  PFilePath = PAnsiChar;
+
   PMediaPluginCore = ^TMediaPluginCore;
   TMediaPluginCore = record
     version: cint;
 
+    memAlloc: function(size: cint): Pointer; cdecl;
+    memFree: procedure(ptr: Pointer); cdecl;
+
     log: procedure(level: cint; msg: PAnsiChar; context: PAnsiChar); cdecl;
     ticksMillis: function(): cuint32; cdecl;
 
-    fileOpen: function(utf8Filename: PAnsiChar; mode: cint): PFileStream; cdecl;
+    fileOpen: function(utf8Filename: PFilePath; mode: cint): PFileStream; cdecl;
     fileClose: procedure(stream: PFileStream); cdecl;
     fileRead: function(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
     fileWrite: function(stream: PFileStream; buf: PCuint8; size: cint): cint64; cdecl;
     fileSeek: function(stream: PFileStream; pos: cint64; whence: cint): cint64; cdecl;
     fileSize: function(stream: PFileStream): cint64; cdecl;
+
+    pathToNative: function(filePath: PFilePath): PChar; cdecl;
+    pathToUTF8: function(filePath: PFilePath; useNativeDelim: cbool): PChar; cdecl;
+    pathToWide: function(filePath: PFilePath; useNativeDelim: cbool): PWideChar; cdecl;
+    pathIsFile: function(filePath: PFilePath): cbool; cdecl;
 
     threadCreate: function(func: Pointer; data: Pointer): PThread; cdecl;
     threadCurrentID: function(): cuint32; cdecl;
@@ -94,7 +104,7 @@ type
     priority: cint;
     init: function(): cbool; cdecl;
     finalize: function(): cbool; cdecl;
-    open: function(filename: PAnsiChar): PAudioDecodeStream; cdecl;
+    open: function(filename: PFilePath): PAudioDecodeStream; cdecl;
     close: procedure(stream: PAudioDecodeStream); cdecl;
     getLength: function(stream: PAudioDecodeStream): double; cdecl;
     getAudioFormatInfo: procedure(stream: PAudioDecodeStream; var info: TCAudioFormatInfo); cdecl;
@@ -142,7 +152,7 @@ type
     priority: cint;
     init: function(): cbool; cdecl;
     finalize: function(): cbool; cdecl;
-    open: function(filename: PAnsiChar; format: TCVideoFrameFormat): PVideoDecodeStream; cdecl;
+    open: function(filename: PFilePath; format: TCVideoFrameFormat): PVideoDecodeStream; cdecl;
     close: procedure(stream: PVideoDecodeStream); cdecl;
     setLoop: procedure(stream: PVideoDecodeStream; enable: cbool); cdecl;
     getLoop: function(stream: PVideoDecodeStream): cbool; cdecl;
@@ -183,6 +193,7 @@ uses
   UFilesystem,
   UPath,
   UPathUtils,
+  UUnicodeUtils,
   ULog,
   UPlatform,
   UAudioDecoderPlugin,
@@ -217,6 +228,16 @@ end;
 
 {* Misc *}
 
+function Core_memAlloc(size: cint): Pointer; cdecl;
+begin
+  GetMem(Result, size);
+end;
+
+procedure Core_memFree(ptr: Pointer); cdecl;
+begin
+  FreeMem(ptr);
+end;
+
 procedure Core_log(level: cint; msg: PAnsiChar; context: PAnsiChar); cdecl;
 begin
   Log.LogMsg(msg, context, DebugLogLevels[level]);
@@ -234,7 +255,7 @@ const
   FILE_OPEN_MODE_WRITE = $02;
   FILE_OPEN_MODE_READ_WRITE = FILE_OPEN_MODE_READ or FILE_OPEN_MODE_WRITE;
 
-function Core_fileOpen(utf8Filename: PAnsiChar; mode: cint): PFileStream; cdecl;
+function Core_fileOpen(utf8Filename: PFilePath; mode: cint): PFileStream; cdecl;
 var
   OpenMode: word;
 begin
@@ -306,6 +327,48 @@ var
 begin
   FileStream := TStream(stream);
   Result := FileStream.Size;
+end;
+
+{* Path *}
+
+function Core_pathToNative(filePath: PFilePath): PChar; cdecl;
+var
+  ResStr: RawByteString;
+begin
+  ResStr := Path(filePath).ToNative();
+  // RawByteString is reference-counted -> copy characters to a new buffer
+  GetMem(Result, Length(ResStr) + 1);
+  StrCopy(Result, PChar(ResStr));
+end;
+
+function Core_pathToUTF8(filePath: PFilePath; useNativeDelim: cbool): PChar; cdecl;
+var
+  ResStr: UTF8String;
+  StrSize: integer;
+begin
+  ResStr := Path(filePath).ToUTF8(useNativeDelim);
+  // UTF8String is reference-counted -> copy characters to a new buffer
+  GetMem(Result, Length(ResStr) + 1);
+  StrCopy(Result, PChar(ResStr));
+end;
+
+function Core_pathToWide(filePath: PFilePath; useNativeDelim: cbool): PWideChar; cdecl;
+var
+  ResStr: WideString;
+  StrSize: integer;
+begin
+  ResStr := Path(filePath).ToWide(useNativeDelim);
+  // WideString is reference-counted -> copy characters to a new buffer
+  StrSize := Length(ResStr) * SizeOf(WideChar);
+  GetMem(Result, StrSize + SizeOf(WideChar));
+  Move(PWideChar(ResStr)^, Result, StrSize);
+  // terminate string
+  Result[Length(ResStr)] := #0;
+end;
+
+function Core_pathIsFile(filePath: PFilePath): cbool; cdecl;
+begin
+  Result := Path(filePath).IsFile;
 end;
 
 {* Thread *}
@@ -394,6 +457,8 @@ begin
   with MediaPluginCore_Instance do
   begin
     version := 0;
+    memAlloc := Core_memAlloc;
+    memFree := Core_memFree;
     log := Core_log;
     ticksMillis := Core_ticksMillis;
     fileOpen := Core_fileOpen;
@@ -402,6 +467,10 @@ begin
     fileWrite := Core_fileWrite;
     fileSeek := Core_fileSeek;
     fileSize := Core_fileSize;
+    pathToNative := Core_pathToNative;
+    pathToUTF8 := Core_pathToUTF8;
+    pathToWide := Core_pathToWide;
+    pathIsFile := Core_pathIsFile;
     threadCreate := Core_threadCreate;
     threadCurrentID := Core_threadCurrentID;
     threadGetID := Core_threadGetID;

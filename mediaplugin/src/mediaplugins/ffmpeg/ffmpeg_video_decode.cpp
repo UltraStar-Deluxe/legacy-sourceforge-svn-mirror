@@ -79,7 +79,7 @@ FFmpegVideoDecodeStream::FFmpegVideoDecodeStream() :
 		_frameTime(0),
 		_loopTime(0) {}
 
-FFmpegVideoDecodeStream* FFmpegVideoDecodeStream::open(const IPath &filename, 
+FFmpegVideoDecodeStream* FFmpegVideoDecodeStream::open(const Path &filename,
 	videoFrameFormat_t format) 
 {
 	FFmpegVideoDecodeStream *stream = new FFmpegVideoDecodeStream();
@@ -90,7 +90,7 @@ FFmpegVideoDecodeStream* FFmpegVideoDecodeStream::open(const IPath &filename,
 	return stream;
 }
 
-bool FFmpegVideoDecodeStream::_open(const IPath &filename, videoFrameFormat_t format) {
+bool FFmpegVideoDecodeStream::_open(const Path &filename, videoFrameFormat_t format) {
 	std::stringstream ss;
 
 	// use custom 'ufile' protocol for UTF-8 support

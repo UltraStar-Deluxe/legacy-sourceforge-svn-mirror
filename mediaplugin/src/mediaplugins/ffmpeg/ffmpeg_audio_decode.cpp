@@ -80,7 +80,7 @@ FFmpegAudioDecodeStream::FFmpegAudioDecodeStream() :
 	memset(&_audioPaketTemp, 0, sizeof(_audioPaketTemp));
 }
 
-FFmpegAudioDecodeStream* FFmpegAudioDecodeStream::open(const IPath &filename) {
+FFmpegAudioDecodeStream* FFmpegAudioDecodeStream::open(const Path &filename) {
 	FFmpegAudioDecodeStream *stream = new FFmpegAudioDecodeStream();
 	if (!stream->_open(filename)) {
 		delete stream;
@@ -89,7 +89,7 @@ FFmpegAudioDecodeStream* FFmpegAudioDecodeStream::open(const IPath &filename) {
 	return stream;
 }
 
-bool FFmpegAudioDecodeStream::_open(const IPath &filename) {
+bool FFmpegAudioDecodeStream::_open(const Path &filename) {
 	_filename = filename;
 	if (!filename.isFile()) {
 		logger.error("Audio-file does not exist: '" + filename.toNative() + "'", "UAudio_FFmpeg");

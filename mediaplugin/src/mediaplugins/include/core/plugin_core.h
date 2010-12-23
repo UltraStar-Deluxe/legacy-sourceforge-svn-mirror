@@ -111,6 +111,9 @@ typedef struct{} thread_t;
 typedef struct pluginCore_t {
 	int version;
 
+	void* PLUGIN_CALL (*memAlloc)(int size);
+	void PLUGIN_CALL (*memFree)(void* ptr);
+	
 	void PLUGIN_CALL (*log)(int level, const char *msg, const char *context);
 	uint32_t PLUGIN_CALL (*ticksMillis)();
 
@@ -121,6 +124,14 @@ typedef struct pluginCore_t {
 	int64_t PLUGIN_CALL (*fileSeek)(fileStream_t *stream, int64_t pos, int whence);
 	int64_t PLUGIN_CALL (*fileSize)(fileStream_t *stream);
 
+	// Note: result string must be freed with memFree()
+	const char* PLUGIN_CALL (*pathToNative)(const char *path);
+	// Note: result string must be freed with memFree()
+	const char* PLUGIN_CALL (*pathToUTF8)(const char *path, BOOL useNativeDelim);
+	// Note: result string must be freed with memFree()
+	wchar_t* PLUGIN_CALL (*pathToWide)(const char *path, BOOL useNativeDelim);
+	BOOL PLUGIN_CALL (*pathIsFile)(const char *path);
+	
 	thread_t* PLUGIN_CALL (*threadCreate)(int (PLUGIN_CALL *fn)(void *), void *data);
 	uint32_t PLUGIN_CALL (*threadCurrentID)();
 	uint32_t PLUGIN_CALL (*threadGetID)(thread_t *thread);

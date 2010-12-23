@@ -71,7 +71,7 @@ private:
 	bool decodeFrame();
 	void synchronizeTime(AVFrame *frame, double &pts);
 
-	bool _open(const IPath &filename, videoFrameFormat_t format);
+	bool _open(const Path &filename, videoFrameFormat_t format);
 	void close();
 
 public:
@@ -79,7 +79,7 @@ public:
 		close();
 	}
 
-	static FFmpegVideoDecodeStream* open(const IPath &filename, videoFrameFormat_t format);
+	static FFmpegVideoDecodeStream* open(const Path &filename, videoFrameFormat_t format);
 
 	virtual void setLoop(bool enable);
 	virtual bool getLoop();

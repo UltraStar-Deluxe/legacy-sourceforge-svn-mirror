@@ -87,7 +87,7 @@ private:
 	int _audioBufferSize;
 	DECLARE_ALIGNED(16, uint8_t, _audioBuffer[AUDIO_BUFFER_SIZE]);
 
-	IPath _filename;
+	Path _filename;
 
 private:
 	FFmpegAudioDecodeStream();
@@ -119,7 +119,7 @@ private:
 	int decodeFrame(uint8_t *buffer, int bufferSize);
 	void flushCodecBuffers();
 
-	bool _open(const IPath &filename);
+	bool _open(const Path &filename);
 	void close();
 
 public:
@@ -127,7 +127,7 @@ public:
 		close();
 	}
 
-	static FFmpegAudioDecodeStream* open(const IPath &filename);
+	static FFmpegAudioDecodeStream* open(const Path &filename);
 
 	virtual double getLength();
 
