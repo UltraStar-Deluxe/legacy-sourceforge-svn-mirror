@@ -199,6 +199,7 @@ begin
 
   glEnable(GL_BLEND);
   glColor4f(Skin_P1_LinesR, Skin_P1_LinesG, Skin_P1_LinesB, 0.4*Alpha);
+  glLineWidth(1);
   glBegin(GL_LINES);
   for Pet := 0 to 9 do begin
     glVertex2f(Left,  Top + Pet * Space);
@@ -220,28 +221,13 @@ begin
     Exit;
 
   CP := NrCzesci;
-  {if (Length(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta)=0) then
-  begin
-    CP := (CP+1) mod 2;
-    st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
-    end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-  end else
-  begin }
-    st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
-    end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
-    {if AktSong.isDuet and (Length(Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Nuta)>0)then
-    begin
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec > end_) then
-        end_ := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].Koniec;
-
-      if (Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote < st) then
-        st := Czesci[(CP+1) mod 2].Czesc[Czesci[CP].Akt].StartNote;
-    end;
-  end; }
+  st := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote;
+  end_ := Czesci[CP].Czesc[Czesci[CP].Akt].Koniec;
 
   TempR := (Right-Left) / (end_ - st);
 
   glEnable(GL_BLEND);
+  glLineWidth(1);
   glBegin(GL_LINES);
   for Pet := st to end_ do
   begin
