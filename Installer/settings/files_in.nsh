@@ -96,6 +96,7 @@ ${EndIf}
   File "..\Game\Output\Languages\English.ini"
   File "..\Game\Output\Languages\German.ini"
   File "..\Game\Output\Languages\Italian.ini"
+  File "..\Game\Output\Languages\Magyar.ini"
   File "..\Game\Output\Languages\Polish.ini"
 
   SetOutPath "$INSTDIR\Plugins\"

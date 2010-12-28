@@ -84,6 +84,7 @@ ${EndIf}
  Delete "$INSTDIR\Languages\English.ini"
  Delete "$INSTDIR\Languages\German.ini"
  Delete "$INSTDIR\Languages\Italian.ini"
+ Delete "$INSTDIR\Languages\Magyar.ini"
  Delete "$INSTDIR\Languages\Polish.ini"
  
 ; Delete provided plugins
