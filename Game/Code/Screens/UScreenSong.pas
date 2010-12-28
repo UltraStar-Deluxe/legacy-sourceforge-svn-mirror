@@ -985,7 +985,6 @@ begin
             Music.PlayChange;
             SelectNext;
             ChangeMusic;
-            SetScroll4;
           end;
         end;
 
@@ -1001,7 +1000,6 @@ begin
             Music.PlayChange;
             SelectPrev;
             ChangeMusic;
-            SetScroll4;
           end;
         end;
 
@@ -2580,6 +2578,13 @@ begin
     Static[StaticTop].Visible := false;
   end;
 
+  if ScreenSongMenu.Visible or ScreenSongJumpto.Visible then
+  begin
+    WaitHandler.change_time := 0;
+    WaitHandler.changed := false;
+  end else if (Mode = smNormal) then
+    WaitHandler.changed := true;
+
   if (Mode = smNormal) and (Ini.ShuffleTime>0) and
     not MakeMedley and not CatSongs.Song[Interaction].Main and
     (Length(CatSongs.Song)-CatSongs.CatCount>1) then
@@ -2660,7 +2665,6 @@ begin
 
       //Music.PlayChange;
       ChangeMusic;
-      SetScroll4;
     end else if (Ini.ShuffleTime>0) then
       WaitHandler.change_time := WaitHandler.change_time + TimeSkip;
   end;

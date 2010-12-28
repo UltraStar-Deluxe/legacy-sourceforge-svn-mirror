@@ -166,6 +166,8 @@ begin
       SDLK_RETURN:
         begin
           HandleReturn;
+          if (CurMenu = SM_Playlist_Add) then
+            MenuShow(CurMenu);
         end;
 
       SDLK_DOWN:    InteractNext;
@@ -186,8 +188,16 @@ begin
             Music.PlayChange;
             ScreenSong.SelectNext;
             ScreenSong.ChangeMusic;
-            ScreenSong.SetScroll4;
           end;
+
+          if (CurMenu = SM_Playlist_Add) and (Interaction <> 3) then
+          begin
+            Music.PlayChange;
+            ScreenSong.SelectNext;
+            ScreenSong.ChangeMusic;
+            MenuShow(CurMenu);
+          end else if (CurMenu = SM_Playlist_Add) then
+            MenuShow(CurMenu);
         end;
       SDLK_LEFT:
         begin
@@ -204,8 +214,16 @@ begin
             Music.PlayChange;
             ScreenSong.SelectPrev;
             ScreenSong.ChangeMusic;
-            ScreenSong.SetScroll4;
           end;
+
+          if (CurMenu = SM_Playlist_Add) and (Interaction <> 3) then
+          begin
+            Music.PlayChange;
+            ScreenSong.SelectPrev;
+            ScreenSong.ChangeMusic;
+            MenuShow(CurMenu);
+          end else if (CurMenu = SM_Playlist_Add) then
+            MenuShow(CurMenu);
         end;
 
       SDLK_1:
@@ -403,7 +421,7 @@ begin
         Button[0].Visible := True;
         Button[1].Visible := False;
         Button[2].Visible := False;
-        Button[3].Visible := True;
+        Button[3].Visible := not PlaylistMan.SongExists(ScreenSong.Interaction, SelectValue);
         SelectsS[0].Visible := True;
 
         Button[0].Text[0].Text := Language.Translate('SONG_MENU_PLAYLIST_ADD_NEW');
@@ -773,7 +791,7 @@ begin
               PlaylistMan.AddItem(ScreenSong.Interaction, SelectValue);
               ScreenSong.WaitHandler.changed := true;
               ScreenSong.WaitHandler.change_time := 0;
-              Visible := False;
+              //Visible := False;
             end;
         end;
       end;

@@ -43,6 +43,8 @@ type
       Function    AddPlaylist(Name: String): Cardinal;
       Procedure   DelPlaylist(const Index: Cardinal);
 
+      Function    SongExists(const SongID: Cardinal; const iPlaylist: Integer): boolean;
+
       Procedure   AddItem(const SongID: Cardinal; const iPlaylist: Integer = -1);
       Procedure   DelItem(const iItem: Cardinal; const iPlaylist: Integer = -1);
 
@@ -339,6 +341,30 @@ begin
     ScreenSong.Interaction := 0;
     ScreenSong.FixSelected;
     ScreenSong.ChangeMusic;
+  end;
+end;
+
+Function    TPlayListManager.SongExists(const SongID: Cardinal; const iPlaylist: Integer): boolean;
+var
+  P: Cardinal;
+  I: Cardinal;
+begin
+  Result := false;
+
+  if iPlaylist = -1 then
+    P := CurPlaylist
+  else if (iPlaylist >= 0) AND (iPlaylist <= high(Playlists)) then
+    P := iPlaylist
+  else
+    exit;
+
+  if (SongID <= High(CatSongs.Song)) AND (NOT CatSongs.Song[SongID].Main) then
+  begin
+    for I := 0 to High(Playlists[P].Items) do
+    begin
+      if (Playlists[P].Items[I].SongID = SongID) then
+        Result := true;
+    end;
   end;
 end;
 
