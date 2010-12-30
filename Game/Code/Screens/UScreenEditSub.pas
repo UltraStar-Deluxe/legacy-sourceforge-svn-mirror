@@ -115,6 +115,7 @@ type
       procedure DeleteSentence;
       procedure TransposeNote(Transpose: integer);
       procedure ChangeWholeTone(Tone: integer);
+      procedure ChangeWholeToneActLine(Tone: integer);
       procedure MoveAllToEnd(Move: integer);
       procedure MoveTextToRight;
       procedure MarkSrc;
@@ -1376,19 +1377,49 @@ begin
       //MP3-Volume Up
       SDLK_PAGEUP:
         begin
-          if (MP3Volume<100) then
-            MP3Volume := MP3Volume+5;
+          if (SDL_ModState = 0) then
+          begin
+            if (MP3Volume<100) then
+              MP3Volume := MP3Volume+5;
             Music.SetMusicVolume(MP3Volume);
             Text[TextDebug].Text := 'MP3 Volume: ' + IntToStr(MP3Volume) + '%';
+          end;
+
+          // Increase tone of all notes
+          if (SDL_ModState = KMOD_LCTRL or KMOD_LALT) then
+            ChangeWholeTone(1);
+          if (SDL_ModState = KMOD_LCTRL or KMOD_LSHIFT or KMOD_LALT) then
+            ChangeWholeTone(12);
+
+          // Increase tone of all notes of actual line
+          if (SDL_ModState = KMOD_LCTRL) then
+            ChangeWholeToneActLine(1);
+          if (SDL_ModState = KMOD_LCTRL or KMOD_LSHIFT) then
+            ChangeWholeToneActLine(12);
         end;
 
       //MP3-Volume Down
       SDLK_PAGEDOWN:
         begin
-          if (MP3Volume>0) then
-            MP3Volume := MP3Volume-5;
+          if (SDL_ModState = 0) then
+          begin
+            if (MP3Volume>0) then
+              MP3Volume := MP3Volume-5;
             Music.SetMusicVolume(MP3Volume);
             Text[TextDebug].Text := 'MP3 Volume: ' + IntToStr(MP3Volume) + '%';
+          end;
+
+          // Decrease tone of all notes
+          if (SDL_ModState = KMOD_LCTRL or KMOD_LALT) then
+            ChangeWholeTone(-1);
+          if (SDL_ModState = KMOD_LCTRL or KMOD_LSHIFT or KMOD_LALT) then
+            ChangeWholeTone(-12);
+
+          // Decrease tone of all notes of actual line
+          if (SDL_ModState = KMOD_LCTRL) then
+            ChangeWholeToneActLine(-1);
+          if (SDL_ModState = KMOD_LCTRL or KMOD_LSHIFT) then
+            ChangeWholeToneActLine(-12);
         end;
       end;
     end;
@@ -2257,21 +2288,33 @@ end;
 
 procedure TScreenEditSub.ChangeWholeTone(Tone: integer);
 var
-  P:  integer;
   C:  integer;
   N:  integer;
 begin
-  for P := 0 to Length(Czesci) - 1 do
-  begin
-    for C := 0 to Czesci[P].High do
+
+    for C := 0 to Czesci[CP].High do
     begin
-      if (Length(Czesci[P].Czesc[C].Nuta)>0) then
+      if (Length(Czesci[CP].Czesc[C].Nuta)>0) then
       begin
-        Czesci[P].Czesc[C].BaseNote := Czesci[P].Czesc[C].BaseNote + Tone;
-        for N := 0 to Czesci[P].Czesc[C].HighNut do
-          Czesci[P].Czesc[C].Nuta[N].Ton := Czesci[P].Czesc[C].Nuta[N].Ton + Tone;
+        Czesci[CP].Czesc[C].BaseNote := Czesci[CP].Czesc[C].BaseNote + Tone;
+        for N := 0 to Czesci[CP].Czesc[C].HighNut do
+          Czesci[CP].Czesc[C].Nuta[N].Ton := Czesci[CP].Czesc[C].Nuta[N].Ton + Tone;
       end;
     end;
+end;
+
+procedure TScreenEditSub.ChangeWholeToneActLine(Tone: integer);
+var
+  C:  integer;
+  N:  integer;
+
+begin
+  C := Czesci[CP].Akt;
+  if (Length(Czesci[CP].Czesc[C].Nuta)>0) then
+  begin
+    Czesci[CP].Czesc[C].BaseNote := Czesci[CP].Czesc[C].BaseNote + Tone;
+    for N := 0 to Czesci[CP].Czesc[C].HighNut do
+      Czesci[CP].Czesc[C].Nuta[N].Ton := Czesci[CP].Czesc[C].Nuta[N].Ton + Tone;
   end;
 end;
 
