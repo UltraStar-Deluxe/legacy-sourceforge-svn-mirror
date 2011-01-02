@@ -25,7 +25,6 @@ type
       procedure InteractInc; override;
       procedure InteractDec; override;
       procedure SetAnimationProgress(Progress: real); override;
-      //function Draw: boolean; override;
   end;
 
 const
@@ -314,6 +313,9 @@ begin
 end;
 
 function TScreenMain.Draw: boolean;
+var
+  txt:  string;
+
 begin
   Result := inherited Draw;
 
@@ -324,6 +326,14 @@ begin
   begin
     StartScreenScredits;
   end;
+
+  glColor4f(1,1,1,1);
+  SetFontStyle(0);
+  SetFontItalic(False);
+  SetFontSize(6);
+  txt := Language.Translate('US_VERSION_NUMBER');
+  SetFontPos(795 - glTextWidth(PChar(txt)), 580);
+  glPrint(PChar(txt));
 end;
 
 procedure TScreenMain.InteractNext;

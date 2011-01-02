@@ -146,14 +146,22 @@ begin
     if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
       Ini.WebCamID := 0;
 
-    IWebCamMedia := ListMediaTypes(Ini.WebCamID);
+    ListMediaTypes(Ini.WebCamID, IWebCamMedia);
 
-    SelectSlideWebCamDevice := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamDevice, Ini.WebCamID, IWebCamDevice);
-    SelectSlideWebCamMedia  := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamMedia, Ini.WebCamMediaID, IWebCamMedia);
+    if (Length(IWebCamMedia)=0) then
+    begin
+      Ini.EnableWebCam := 0;
+      WebCamPreviewOn := false;
+    end else
+    begin
+      SelectSlideWebCamDevice := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamDevice, Ini.WebCamID, IWebCamDevice);
+      SelectSlideWebCamMedia  := AddSelectSlide(Theme.OptionsRecord.SelectSlideWebCamMedia, Ini.WebCamMediaID, IWebCamMedia);
 
-    WebCamPreviewOn := (Ini.EnableWebCam=1);
+      WebCamPreviewOn := (Ini.EnableWebCam=1);
+    end;
   end else
     WebCamPreviewOn := false;
+
   AddButton(Theme.OptionsRecord.ButtonExit);
   if (Length(Button[0].Text)=0) then
     AddButtonText(14, 20, Theme.Options.Description[7]);
@@ -174,12 +182,18 @@ begin
     if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
       Ini.WebCamID := 0;
 
-    IWebCamMedia := ListMediaTypes(Ini.WebCamID);
+    ListMediaTypes(Ini.WebCamID, IWebCamMedia);
 
-    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideCard, SelectSlideWebCamDevice, IWebCamDevice, Ini.WebCamID);
-    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideInput, SelectSlideWebCamMedia, IWebCamMedia, Ini.WebCamMediaID);
-
-    WebCamPreviewOn := (Ini.EnableWebCam=1);
+    if (Length(IWebCamMedia)=0) then
+    begin
+      Ini.EnableWebCam := 0;
+      WebCamPreviewOn := false;
+    end else
+    begin
+      UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideCard, SelectSlideWebCamDevice, IWebCamDevice, Ini.WebCamID);
+      UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideInput, SelectSlideWebCamMedia, IWebCamMedia, Ini.WebCamMediaID);
+      WebCamPreviewOn := (Ini.EnableWebCam=1);
+    end;
   end else
     WebCamPreviewOn := false;
 
@@ -237,12 +251,19 @@ begin
     if (Length(IWebCamDevice)-1 < Ini.WebCamID) then
       Ini.WebCamID := 0;
 
-    IWebCamMedia := ListMediaTypes(Ini.WebCamID);
+    ListMediaTypes(Ini.WebCamID, IWebCamMedia);
 
-    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideWebCamDevice, SelectSlideWebCamDevice, IWebCamDevice, Ini.WebCamID);
-    UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideWebCamMedia, SelectSlideWebCamMedia, IWebCamMedia, Ini.WebCamMediaID);
+    if (Length(IWebCamMedia)=0) then
+    begin
+      Ini.EnableWebCam := 0;
+      WebCamPreviewOn := false;
+    end else
+    begin
+      UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideWebCamDevice, SelectSlideWebCamDevice, IWebCamDevice, Ini.WebCamID);
+      UpdateSelectSlideOptions(Theme.OptionsRecord.SelectSlideWebCamMedia, SelectSlideWebCamMedia, IWebCamMedia, Ini.WebCamMediaID);
 
-    WebCamPreviewOn := (Ini.EnableWebCam=1);
+      WebCamPreviewOn := (Ini.EnableWebCam=1);
+    end;
   end else
     WebCamPreviewOn := false;
 

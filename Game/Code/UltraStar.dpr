@@ -122,15 +122,18 @@ uses
   UVideo in 'Classes\UVideo.pas';
 
 const
-  Version = 'UltraStar Deluxe Challenge, Medley & Duet Edition r9.5';
+  VersionName = 'UltraStar Deluxe Challenge, Medley & Duet Edition';
+  VersionNumber = 'r9.7';
 
 var
-  WndTitle: string;
-  hWnd: THandle;
-  I: Integer;
+  WndTitle:       string;
+  hWnd:           THandle;
+  I:              Integer;
+  VersionString:  string;
 
 begin
-  WndTitle := Version;
+  VersionString := VersionName + ' ' + VersionNumber;
+  WndTitle := VersionString;
 
   //------------------------------
   //Start more than One Time Prevention
@@ -174,7 +177,9 @@ begin
   Log.LogStatus('Initialize Paths', 'Initialization');        InitializePaths;
   Log.LogStatus('Load Language', 'Initialization');           Language := TLanguage.Create;
   //Add Const Values:
-    Language.AddConst('US_VERSION', Version);
+  Language.AddConst('US_VERSION', VersionString);
+  Language.AddConst('US_VERSION_NUMBER', VersionNumber);
+
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Loading Language', 1);
 

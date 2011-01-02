@@ -2013,7 +2013,7 @@ begin
   if ShowFinish then
   begin
     if (not Music.Finished) and (not medley_end or (ScreenSong.Mode <> smMedley))
-      and ((AktSong.Finish = 0) or (Music.Position + Ini.LipSync*0.01 <= AktSong.Finish)) then
+      and ((AktSong.Finish = 0) or ((Music.Position + Ini.LipSync*0.01)*1000 <= AktSong.Finish)) then
     begin
       //Pause Mod:
       if not Paused then

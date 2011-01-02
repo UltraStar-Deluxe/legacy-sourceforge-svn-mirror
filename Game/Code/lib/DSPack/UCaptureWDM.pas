@@ -66,7 +66,7 @@ type
 		procedure Stop;
 	end;
 
-  function ListMediaTypes(DeviceID: integer): TList;
+  procedure ListMediaTypes(DeviceID: integer; var types: TList);
   procedure GetCapDevices(var names: TList);
 
 implementation
@@ -98,7 +98,7 @@ begin
   end;
 end;
 
-function ListMediaTypes(DeviceID: integer): TList;
+procedure ListMediaTypes(DeviceID: integer; var types: TList);
 var
   PinList:          TPinList;
   tSysDev:          TSysDevEnum;
@@ -108,40 +108,70 @@ var
   k:                Integer;
 
 begin
-  SetLength(Result, 0);
+  SetLength(types, 0);
 
-  tSysDev := TSysDevEnum.Create(CLSID_VideoInputDeviceCategory);
+  try
+    tSysDev := TSysDevEnum.Create(CLSID_VideoInputDeviceCategory);
 
-  FilterGraph := TFilterGraph.Create( nil );
-	FilterGraph.Mode := gmCapture;
-	FilterGraph.Active := False;
-	FilterGraph.AutoCreate := False;
-	FilterGraph.GraphEdit := True;
+    FilterGraph := TFilterGraph.Create( nil );
+	  FilterGraph.Mode := gmCapture;
+	  FilterGraph.Active := False;
+	  FilterGraph.AutoCreate := False;
+	  FilterGraph.GraphEdit := True;
 
-	Filter := TFilter.Create( nil );
-	Filter.FilterGraph := FilterGraph;
+	  Filter := TFilter.Create( nil );
+	  Filter.FilterGraph := FilterGraph;
 
-  Filter.BaseFilter.Moniker := tSysDev.GetMoniker(DeviceID);
-  Filter.FilterGraph.Active := true;
-  PinList := TPinList.Create(Filter as IBaseFilter);
-  VideoMediaTypes := TEnumMediaType.Create(PinList.First);
+    Filter.BaseFilter.Moniker := tSysDev.GetMoniker(DeviceID);
+    Filter.FilterGraph.Active := true;
+    PinList := TPinList.Create(Filter as IBaseFilter);
+    VideoMediaTypes := TEnumMediaType.Create(PinList.First);
 
-  SetLength(Result, VideoMediaTypes.Count);
-  for k := 0 to VideoMediaTypes.Count - 1 do
-  begin
-    Result[k] := VideoMediaTypes.MediaFormatDescription[k];
-    //writeln(Result[k]);
-    //writeln(VideoMediaTypes.MediaFormatDescription[k]);
+    SetLength(types, VideoMediaTypes.Count);
+    for k := 0 to VideoMediaTypes.Count - 1 do
+    begin
+      types[k] := VideoMediaTypes.MediaFormatDescription[k];
+      //writeln(Result[k]);
+      //writeln(VideoMediaTypes.MediaFormatDescription[k]);
+    end;
+  except
+    SetLength(types, 0);
   end;
 
-  PinList.Free;
-  VideoMediaTypes.Free;
-	FilterGraph.Stop;
-	FilterGraph.ClearGraph;
-	FilterGraph.Active := False;
-	FilterGraph.Free;
-	Filter.Free;
-	tSysDev.Free;
+  try
+    if (PinList<>nil) then
+      PinList.Free;
+  except
+  end;
+
+  try
+    if (VideoMediaTypes<>nil) then
+      VideoMediaTypes.Free;
+  except
+  end;
+
+  try
+    if (FilterGraph<>nil) then
+    begin
+	    FilterGraph.Stop;
+	    FilterGraph.ClearGraph;
+	    FilterGraph.Active := False;
+	    FilterGraph.Free;
+    end;
+  except
+  end;
+
+  try
+    if (Filter<>nil) then
+	    Filter.Free;
+  except
+  end;
+
+  try
+    if (tSysDev<>nil) then
+	    tSysDev.Free;
+  except
+  end;
 end;
 
 constructor TSampleClass.Create(DeviceID, MediaTypeID: integer);

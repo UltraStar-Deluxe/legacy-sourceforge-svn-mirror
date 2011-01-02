@@ -1,4 +1,4 @@
-Ultrastar Deluxe Challenge, Medley & Duet Edition r9.4 vom 24.12.2010
+Ultrastar Deluxe Challenge, Medley & Duet Edition r9.5 vom 24.12.2010
 -----------------------------
 NEW: (Editor)    Stimmhöhen können im Editor eingesungen werden (setzen mit N).
                  Man kann mit SHIFT+N eine Zeile, mit ALT+N das ganze Lied "einsingen". Hierbei wird eine Gesangspur hinter den Noten gelegt, an der man sich orientieren kann. Die Funktion dient dazu, um ein Lied zu überprüfen.

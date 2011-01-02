@@ -197,7 +197,10 @@ begin
             ScreenSong.ChangeMusic;
             MenuShow(CurMenu);
           end else if (CurMenu = SM_Playlist_Add) then
+          begin
             MenuShow(CurMenu);
+            Interaction := 3;
+          end;
         end;
       SDLK_LEFT:
         begin
@@ -223,7 +226,10 @@ begin
             ScreenSong.ChangeMusic;
             MenuShow(CurMenu);
           end else if (CurMenu = SM_Playlist_Add) then
+          begin
             MenuShow(CurMenu);
+            Interaction := 3;
+          end;
         end;
 
       SDLK_1:
