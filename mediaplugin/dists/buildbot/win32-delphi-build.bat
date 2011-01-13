@@ -1,2 +1,2 @@
-PWD=
-bash -s ./win32-delphi-build.sh
+set PWD=
+bash ./win32-delphi-build.sh
