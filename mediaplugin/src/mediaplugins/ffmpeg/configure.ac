@@ -68,7 +68,7 @@ case "${target_os}" in
     LIB_EXT=.dylib
     ;;
   cygwin*|mingw*)
-	LDFLAGS="$LDFLAGS -no-undefined"
+	LDFLAGS="$LDFLAGS -no-undefined -Wl,--enable-auto-import"
     LIB_EXT=.dll
     ;;
   *)
