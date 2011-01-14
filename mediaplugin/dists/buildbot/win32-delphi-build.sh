@@ -8,6 +8,13 @@ if ([ "$GREP_DIR" != "/bin/grep.exe" ] && [ "$GREP_DIR" != "/usr/bin/grep.exe" ]
 fi
 cd src/mediaplugins/ffmpeg
 ./autogen.sh
-FFMPEG_LIBDIR="libffmpeg"
-./configure ffmpeg_CFLAGS="-I${FFMPEG_LIBDIR}/include" ffmpeg_LIBS="-L${FFMPEG_LIBDIR}/lib -lavcodec -lavformat -lavutil" libswscale_CFLAGS="-I${FFMPEG_LIBDIR}/include" libswscale_LIBS="-L${FFMPEG_LIBDIR}/lib -lswscale"
+FFMPEG_DIR="libffmpeg"
+FFMPEG_LIB="${FFMPEG_DIR}/lib"
+FFMPEG_INCLUDE="${FFMPEG_DIR}/include"
+# remove MSVC compatibility files inttypes.h and stdint.h
+if [ -e "${FFMPEG_INCLUDE}/inttypes.h" ]; then
+  mkdir -p "${FFMPEG_INCLUDE}/intheader"
+  mv -f "${FFMPEG_INCLUDE}/inttypes.h" "${FFMPEG_INCLUDE}/stdint.h" "${FFMPEG_INCLUDE}/intheader"
+fi
+./configure ffmpeg_CFLAGS="-I${FFMPEG_INCLUDE}" ffmpeg_LIBS="-L${FFMPEG_LIB} -lavcodec -lavformat -lavutil" libswscale_CFLAGS="-I${FFMPEG_INCLUDE}" libswscale_LIBS="-L${FFMPEG_LIB} -lswscale"
 make compile
