@@ -7,7 +7,7 @@ if ([ "$GREP_DIR" != "/bin/grep.exe" ] && [ "$GREP_DIR" != "/usr/bin/grep.exe" ]
   exit 1
 fi
 cd src/mediaplugins/ffmpeg
-#./autogen.sh
+./autogen.sh
 FFMPEG_DIR="libffmpeg"
 FFMPEG_LIB="${FFMPEG_DIR}/lib"
 FFMPEG_INCLUDE="${FFMPEG_DIR}/include"
