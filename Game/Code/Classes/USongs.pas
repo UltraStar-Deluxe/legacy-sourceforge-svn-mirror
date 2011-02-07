@@ -542,7 +542,7 @@ begin
         SS := Songs.SongSort[S].Edition[0];
         CatLen := Length(CatSongs.Song);
         SetLength(CatSongs.Song, CatLen+1);
-        CatSongs.Song[CatLen].Artist := '[' + SS + ']';
+        CatSongs.Song[CatLen].Artist :=  SS;
         CatSongs.Song[CatLen].Main := true;
         CatSongs.Song[CatLen].OrderTyp := 0;
         CatSongs.Song[CatLen].OrderNum := Order;
