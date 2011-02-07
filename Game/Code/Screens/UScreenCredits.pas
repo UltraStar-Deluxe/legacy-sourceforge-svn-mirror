@@ -200,6 +200,7 @@ end;
 procedure TScreenCredits.onHide;
 begin
   Music.Stop;
+  Music.SetLoop(False);
 end;
 
 Procedure TScreenCredits.Draw_FunkyText;
