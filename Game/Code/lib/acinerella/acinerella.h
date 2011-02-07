@@ -241,6 +241,7 @@ extern void CALL_CONVT ac_free_decoder(lp_ac_decoder pDecoder);
 /*Decodes a package using the specified decoder. The decodec data is stored in the
  "buffer" property of the decoder.*/
 extern int CALL_CONVT ac_decode_package(lp_ac_package pPackage, lp_ac_decoder pDecoder);
+extern int CALL_CONVT ac_drop_decode_package(lp_ac_package pPackage, lp_ac_decoder pDecoder);
 
 /*Seeks to the given target position in the file. The seek funtion is not able to seek a single audio/video stream
 but seeks the whole file forward. The stream number paremter (nb) is only used for the timecode reference.

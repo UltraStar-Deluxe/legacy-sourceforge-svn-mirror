@@ -237,6 +237,7 @@ procedure ac_free_decoder(pDecoder: PAc_decoder); cdecl; external ac_dll;
 {Decodes a package using the specified decoder. The decodec data is stored in the
  "buffer" property of the decoder.}
 function ac_decode_package(pPackage: PAc_package; pDecoder: PAc_decoder): integer; cdecl; external ac_dll;
+function ac_drop_decode_package(pPackage: PAc_package; pDecoder: PAc_decoder): integer; cdecl; external ac_dll;
 
 {Seeks to the given target position in the file. The seek funtion is not able to seek a single audio/video stream
 but seeks the whole file forward. The deocder parameter is only used as an timecode reference.

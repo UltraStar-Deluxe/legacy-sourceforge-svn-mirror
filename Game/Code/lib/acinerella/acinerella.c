@@ -680,7 +680,7 @@ int ac_decode_video_package(lp_ac_package pPackage, lp_ac_video_decoder pDecoder
     pDecoder->pSwsCtx = sws_getCachedContext(pDecoder->pSwsCtx,
         pDecoder->pCodecCtx->width, pDecoder->pCodecCtx->height, pDecoder->pCodecCtx->pix_fmt,
         pDecoder->pCodecCtx->width, pDecoder->pCodecCtx->height, convert_pix_format(pDecoder->decoder.pacInstance->output_format),
-                                  SWS_BICUBIC, NULL, NULL, NULL);
+                                  SWS_FAST_BILINEAR, NULL, NULL, NULL);
                                   
       sws_scale(
         pDecoder->pSwsCtx,
@@ -776,6 +776,48 @@ int CALL_CONVT ac_decode_package(lp_ac_package pPackage, lp_ac_decoder pDecoder)
     return ac_decode_audio_package(pPackage, (lp_ac_audio_decoder)pDecoder);
   } else if (pDecoder->type == AC_DECODER_TYPE_VIDEO) {
     return ac_decode_video_package(pPackage, (lp_ac_video_decoder)pDecoder, pDecoder);
+  }
+  return 0;
+}
+
+int CALL_CONVT ac_drop_decode_package(lp_ac_package pPackage, lp_ac_decoder pDecoder) {
+  if (pDecoder->type == AC_DECODER_TYPE_VIDEO) {
+    return ac_drop_decode_video_package(pPackage, (lp_ac_video_decoder)pDecoder, pDecoder);
+  }
+  return 0;
+}
+
+int ac_drop_decode_video_package(lp_ac_package pPackage, lp_ac_video_decoder pDecoder, lp_ac_decoder pDec) {
+  int finished;
+  double pts;
+
+  avcodec_decode_video2(
+    pDecoder->pCodecCtx, pDecoder->pFrame, &finished, 
+    &(((lp_ac_package_data)pPackage)->ffpackage));  
+
+  if (finished) {
+	pts=0;
+    global_video_pkt_pts = ((lp_ac_package_data)pPackage)->ffpackage.pts;
+	
+    if(((lp_ac_package_data)pPackage)->ffpackage.dts == AV_NOPTS_VALUE &&
+	  *(uint64_t*)pDecoder->pFrame->opaque != AV_NOPTS_VALUE ){
+	  pts = *(uint64_t*)pDecoder->pFrame->opaque;
+    } else if(((lp_ac_package_data)pPackage)->ffpackage.dts != AV_NOPTS_VALUE){
+      pts = ((lp_ac_package_data)pPackage)->ffpackage.dts;
+    } else {
+	  pts = 0;
+    }
+	
+	if(((lp_ac_data)pDec->pacInstance)->pFormatCtx->streams[pPackage->stream_index]->start_time != AV_NOPTS_VALUE){
+      pts -= ((lp_ac_data)pDec->pacInstance)->pFormatCtx->streams[pPackage->stream_index]->start_time;
+	}
+
+    pts *= av_q2d(((lp_ac_data)pDec->pacInstance)->pFormatCtx->streams[pPackage->stream_index]->time_base);
+	
+    pts = ac_sync_video(pPackage, pDec, pDecoder->pFrame, pts);
+	pDec->timecode = pts;
+
+    return 1;
   }
   return 0;
 }
