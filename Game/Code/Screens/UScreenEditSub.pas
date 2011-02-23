@@ -157,7 +157,7 @@ const
   NumHalftones = 36;
 
 implementation
-uses UGraphic, UDraw, UMain, USkins, ULanguage;
+uses UGraphic, UDisplay, UDraw, UMain, USkins, ULanguage;
 
 // Method for input parsing. If False is returned, GetNextWindow
 // should be checked to know the next window to load;
@@ -193,15 +193,17 @@ begin
 
       SDLK_ESCAPE:
         begin
-          Music.Close;
-          acClose;
-          
-          FadeTo(@ScreenSong);
+          CheckFadeTo(@ScreenSong,'Do you really want to quit?');
+          if (Display.NextScreen <> nil) then
+          begin
+            Music.Close;
+            acClose;
+          end;
         end;
 
       SDLK_Q:
         begin
-          Result := false;
+          //Result := false;
         end;
 
       SDLK_BACKQUOTE:
@@ -713,7 +715,7 @@ begin
           if (SDL_ModState = 0) then
           begin
             // Set actual note over pitch detection
-            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[0]].Ton := ActTonePitch;
+            Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Ton := ActTonePitch;
           end;
         end;
 
