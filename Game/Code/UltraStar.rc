@@ -1,15 +1,3 @@
-Font      PNG "..\Fonts\Normal\eurostar_regular.png"
-Font      FNT "..\Fonts\Normal\eurostar_regular.dat"
-
-FontB     PNG "..\Fonts\Bold\eurostar_regular_bold.png"
-FontB     FNT "..\Fonts\Bold\eurostar_regular_bold.dat"
-
-FontO     PNG "..\Fonts\Outline 1\Outline 1.PNG"
-FontO     FNT "..\Fonts\Outline 1\Outline 1.dat"
-
-FontO2    PNG "..\Fonts\Outline 2\Outline 2.PNG"
-FontO2    FNT "..\Fonts\Outline 2\Outline 2.dat"
-
 MAINICON  ICON "..\Graphics\ustar-icon_v01.ico"
 
 CRDTS_BG		  PNG "..\Graphics\credits_v5_bg.png"
