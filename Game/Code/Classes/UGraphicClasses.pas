@@ -414,7 +414,9 @@ begin
 //RandomRange(0,14) <- this one starts at a random  frame, 16 is our last frame - would be senseless to start a particle with 16, cause it would be dead at the next frame
   for P:= 0 to high(RecArray) do
   begin
-    while (RecArray[P].TotalStarCount > RecArray[P].CurrentStarCount) do
+    if (P <> -1) then
+    begin
+      while (RecArray[P].TotalStarCount > RecArray[P].CurrentStarCount) do
       begin
         Xkatze := RandomRange(Ceil(RecArray[P].xTop), Ceil(RecArray[P].xBottom));
         Ykatze := RandomRange(Ceil(RecArray[P].yTop), Ceil(RecArray[P].yBottom));
@@ -425,6 +427,7 @@ begin
         inc(RecArray[P].CurrentStarCount);
       end;
     end;
+  end;
   draw(Alph);
 end;
 
@@ -467,7 +470,7 @@ procedure TEffectManager.SentenceChange(CP: integer);
 var
   c:  integer;
   i:  integer;
-  
+  p:  integer;
 begin
   c:=0;
   while c <= High(Particle) do
@@ -484,8 +487,24 @@ begin
     c := high(RecArray);
     if (RecArray[i].CP = CP) then
     begin
-      RecArray[i] := RecArray[c];
+      RecArray[i].xTop := RecArray[c].xTop;
+      RecArray[i].yTop := RecArray[c].yTop;
+      RecArray[i].xBottom := RecArray[c].xBottom;
+      RecArray[i].yBottom := RecArray[c].yBottom;
+      RecArray[i].TotalStarCount := RecArray[c].TotalStarCount;
+      RecArray[i].CurrentStarCount := RecArray[c].CurrentStarCount;
+      RecArray[i].Screen := RecArray[c].Screen;
+      RecArray[i].CP := RecArray[c].CP;
       SetLength(RecArray, c);
+
+      for p:=0 to high(Particle) do
+      begin
+        if (Particle[p].RecIndex <> -1) then
+        begin
+          if (Particle[p].RecIndex = c) then
+            Particle[p].RecIndex := i;
+        end;
+      end;
     end else
       inc(i);
   end;
@@ -496,7 +515,10 @@ begin
     c := high(PerfNoteArray);
     if (PerfNoteArray[i].CP = CP) then
     begin
-      PerfNoteArray[i] := PerfNoteArray[c];
+      PerfNoteArray[i].xPos := PerfNoteArray[c].xPos;
+      PerfNoteArray[i].yPos := PerfNoteArray[c].yPos;
+      PerfNoteArray[i].Screen := PerfNoteArray[c].Screen;
+      PerfNoteArray[i].CP := PerfNoteArray[c].CP;
       SetLength(PerfNoteArray, c);
     end else
       inc(i);
@@ -507,7 +529,8 @@ begin
   
   for c:=0 to 5 do
   begin
-    TwinkleArray[c] := 0; // reset GoldenNoteHit memory
+    if ((c mod 2) = CP)  then
+      TwinkleArray[c] := 0; // reset GoldenNoteHit memory
   end;
 end;
 
@@ -519,7 +542,8 @@ var
   H: Real;
 begin
   // make sure we spawn only one time at one position
-  if (TwinkleArray[Player] < Right) then
+  if (TwinkleArray[Player] < Right) and (high(RecArray) <> -1) then
+  begin
     For P := 0 to high(RecArray) do  // Are we inside a GoldenNoteRectangle?
     begin
       H := (Top+Bottom)/2; // helper...
@@ -568,6 +592,7 @@ begin
         exit; // found a matching GoldenRec, did spawning stuff... done
       end;
     end;
+  end;
 end;
 
 procedure TEffectManager.SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: Real; CP: integer);
@@ -575,12 +600,15 @@ var
   P : Integer;   // P like used in Positions
   NewIndex : Integer;
 begin
-  for P := 0 to high(RecArray) do  // Do we already have that "new" position?
+  if (high(RecArray) <> -1) then
   begin
-    if (ceil(RecArray[P].xTop) = ceil(Xtop)) and
-      (ceil(RecArray[P].yTop) = ceil(Ytop)) and
-      (ScreenAct = RecArray[p].Screen) then
-        exit; // it's already in the array, so we don't have to create a new one
+    for P := 0 to high(RecArray) do  // Do we already have that "new" position?
+    begin
+      if (ceil(RecArray[P].xTop) = ceil(Xtop)) and
+        (ceil(RecArray[P].yTop) = ceil(Ytop)) and
+        (ScreenAct = RecArray[p].Screen) then
+          exit; // it's already in the array, so we don't have to create a new one
+    end;
   end;
 
   // we got a new position, add the new positions to our array
@@ -603,15 +631,18 @@ var
   RandomFrame : Integer;
   Xkatze, Ykatze : Integer;
 begin
-  for P := 0 to high(PerfNoteArray) do  // Do we already have that "new" position?
+  if (high(PerfNoteArray) <> -1) then
   begin
-    with PerfNoteArray[P] do
+    for P := 0 to high(PerfNoteArray) do  // Do we already have that "new" position?
     begin
-      if (ceil(xPos) = ceil(Xtop)) and (ceil(yPos) = ceil(Ytop)) and
-        (Screen = ScreenAct) then
-        exit; // it's already in the array, so we don't have to create a new one
-    end;
-  end; //for
+      with PerfNoteArray[P] do
+      begin
+        if (ceil(xPos) = ceil(Xtop)) and (ceil(yPos) = ceil(Ytop)) and
+          (Screen = ScreenAct) then
+          exit; // it's already in the array, so we don't have to create a new one
+      end;
+    end; //for
+  end;
 
   // we got a new position, add the new positions to our array
   NewIndex := Length(PerfNoteArray);
