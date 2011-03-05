@@ -121,7 +121,7 @@ begin
 
   // file name
   AddBox(20, 540, 500, 40);
-  TextN := AddText(50, 548, 0, 8, 0, 0, 0, FileName);
+  TextN := AddText(20, 400, 1, 6, 1, 1, 1, FileName);
   AddInteraction(iText, TextN);
 
   // buttons
