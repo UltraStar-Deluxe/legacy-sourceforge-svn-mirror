@@ -354,7 +354,7 @@ begin
     SoundCard[SC].Input[SCI].Name := InputName;
 
     // process each input
-    while (Flags <> -1) and (Flags and BASS_INPUT_OFF<>0) do
+    while (Flags <> -1) and (Flags and BASS_INPUT_TYPE_MIC<>0) do
     begin
       if SCI >= 1 then
       begin
