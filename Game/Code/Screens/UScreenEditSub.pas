@@ -3757,7 +3757,7 @@ begin
     7: Result := 'g';
     8: Result := 'g#';
     9: Result := 'a';
-    10: Result := 'b';
+    10: Result := 'a#';
     11: Result := 'h';
   end;
 
