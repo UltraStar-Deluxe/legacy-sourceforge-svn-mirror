@@ -3758,7 +3758,7 @@ begin
     8: Result := 'g#';
     9: Result := 'a';
     10: Result := 'a#';
-    11: Result := 'h';
+    11: Result := 'b';
   end;
 
   case N2 of
