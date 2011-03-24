@@ -2,7 +2,7 @@
 unit UGraphicClasses;
 
 interface
-uses UTexture;
+uses UTexture, USongs;
 const  DelayBetweenFrames : Cardinal = 60;
 type
 
@@ -529,7 +529,7 @@ begin
   
   for c:=0 to 5 do
   begin
-    if ((c mod 2) = CP)  then
+    if not AktSong.isDuet or ((c mod 2) = CP)  then
       TwinkleArray[c] := 0; // reset GoldenNoteHit memory
   end;
 end;
