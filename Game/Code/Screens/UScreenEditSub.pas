@@ -554,7 +554,7 @@ begin
                   Czesci[0].Czesc[MedleyNotes.end_.line].Nuta[MedleyNotes.end_.note].Dlugosc);
                 PlaySentence := true;
                 Music.Play;
-                LastClick := -100;
+                LastClick := Czesci[0].Czesc[MedleyNotes.start.line].Nuta[MedleyNotes.start.note].Start-1;
               end;
             end;
           end;
@@ -671,7 +671,7 @@ begin
               PlaySentence := true;
               PlayOneNote := false;
               Music.Play;
-              LastClick := -100;
+              LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
             end;
           end;
 
@@ -692,7 +692,7 @@ begin
               PlayOneSentence := false;
               PlayOneNote := false;
               Music.Play;
-              LastClick := -100;
+              LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
             end;
           end;
 
@@ -891,7 +891,7 @@ begin
               PlaySentence := true;
               PlayOneNote := false;
               Music.Play;
-              LastClick := -100;
+              LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
             end;
           end;
 
@@ -908,7 +908,7 @@ begin
             MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
 
-            LastClick := -100;
+            LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
           end;
 
           // one line midi + mp3
@@ -920,16 +920,14 @@ begin
             MidiTime := USTime.GetTime;
             MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
-            LastClick := -100;
 
             PlaySentence := true;
             PlayOneNote := false;
-            //Click := true;
             Music.Stop;
-            Music.MoveTo(GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote)+0{-0.10});
-            PlayStopTime := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec)+0;
+            Music.MoveTo(GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote));
+            PlayStopTime := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
             Music.Play;
-            LastClick := -100;
+            LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
           end;
 
           //new: play hole file + LALT
@@ -949,7 +947,7 @@ begin
               PlaySentence := true;
               PlayOneNote := false;
               Music.Play;
-              LastClick := -100;
+              LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
             end;
           end;
 
@@ -964,7 +962,7 @@ begin
             MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             MidiStop := Music.Length;
 
-            LastClick := -100;
+            LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
           end;
 
           if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL or KMOD_LALT then
@@ -974,16 +972,14 @@ begin
             MidiTime := USTime.GetTime;
             MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote);
             MidiStop := Music.Length;
-            LastClick := -100;
 
             PlaySentence := true;
             PlayOneNote := false;
-            //Click := true;
             Music.Stop;
             Music.MoveTo(GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].StartNote)+0{-0.10});
             PlayStopTime := Music.Length;
             Music.Play;
-            LastClick := -100;
+            LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
           end;
 
           if PlaySentenceMidi or PlaySentence then
@@ -1015,7 +1011,7 @@ begin
             MidiTime := USTime.GetTime;
             MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
             MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
-            LastClick := -100;
+            LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start-1;
           end
 
           else if SDL_ModState = KMOD_LSHIFT or KMOD_LCTRL then
@@ -1026,7 +1022,6 @@ begin
             MidiTime := USTime.GetTime;
             MidiStart := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start);
             MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc);
-            LastClick := -100;
 
             PlaySentence := false;
             PlayOneNote := true;
@@ -1037,7 +1032,7 @@ begin
                              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start +
                              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc));
             Music.Play;
-            LastClick := -100;
+            LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start-1;
           end
 
           Else
@@ -1056,7 +1051,7 @@ begin
             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start +
             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Dlugosc));
             Music.Play;
-            LastClick := -100;
+            LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Start-1;
           end;
         end;
       SDLK_RETURN:
@@ -1487,6 +1482,7 @@ begin
             if AktNuta[CP] = Czesci[CP].Czesc[Czesci[CP].Akt].IlNut then
               AktNuta[CP] := 0;
             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
             EditorLyric[CP].Selected := AktNuta[CP];
             editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
           end;
@@ -1501,10 +1497,72 @@ begin
             if AktNuta[CP] = -1 then
               AktNuta[CP] := Czesci[CP].Czesc[Czesci[CP].Akt].HighNut;
             Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
             EditorLyric[CP].Selected := AktNuta[CP];
             editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
           end;
-      end;
+        end;
+      SDLK_UP:
+        begin
+          if SDL_ModState = 0 then
+          begin
+            Refresh;
+            Dec(Czesci[CP].Akt);
+            AktNuta[CP] := 0;
+            if Czesci[CP].Akt = -1 then
+              Czesci[CP].Akt := Czesci[CP].High;
+
+            SelectPrevNote;
+
+            EditorLyric[CP].Selected := AktNuta[CP];
+            editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
+          end;
+
+          // select singer 1 notes if possible
+          if (SDL_ModState = KMOD_LSHIFT) and AktSong.isDuet then
+          begin
+            if (Length(Czesci[0].Czesc[Czesci[0].Akt].Nuta)>0) then
+            begin
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+              CP := 0;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
+              EditorLyric[CP].Selected := AktNuta[CP];
+              editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
+            end;
+          end;
+        end;
+      SDLK_DOWN:
+        begin
+          if SDL_ModState = 0 then
+          begin
+            Refresh;
+            Inc(Czesci[CP].Akt);
+            AktNuta[CP] := 0;
+            //AktNuta[1] := 0;
+            if Czesci[CP].Akt > Czesci[CP].High then
+              Czesci[CP].Akt := 0;
+
+            SelectNextNote;
+
+            EditorLyric[CP].Selected := AktNuta[CP];
+            editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
+          end;
+
+          // select singer 2 notes if possible
+          if (SDL_ModState = KMOD_LSHIFT) and AktSong.isDuet then
+          begin
+            if (Length(Czesci[1].Czesc[Czesci[1].Akt].Nuta)>0) then
+            begin
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 0;
+              CP := 1;
+              Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+
+              EditorLyric[CP].Selected := AktNuta[CP];
+              editText := Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Tekst;
+            end;
+          end;
+        end;
     end;
   end;
 end;
@@ -1698,7 +1756,7 @@ begin
     PlaySentence := true;
     PlayOneNote := false;
     Music.Play;
-    LastClick := -100;
+    LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
   end;
 
   noteStart := AktNuta[CP];
