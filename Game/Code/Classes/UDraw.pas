@@ -19,7 +19,7 @@ type
   end;
 
 procedure SingDraw(Alpha: TAlpha);
-procedure SingDrawLyricHelper(CP: integer; NR: TRecR);
+procedure SingDrawLyricHelper(CP: integer; NR: TRecR; Alpha: real);
 procedure SingDrawNotes(P4Mode: boolean; NR: TRecR; Alpha: TAlpha);
 procedure SingDrawNotesDuet(P4Mode: boolean; NR: TRecR; Alpha: TAlpha);
 procedure SingModiDraw(PlayerInfo: TPlayerInfo; Alpha: TAlpha);
@@ -584,7 +584,7 @@ begin
   end;
 end;
 
-procedure SingDrawLyricHelper(CP: integer; NR: TRecR);
+procedure SingDrawLyricHelper(CP: integer; NR: TRecR; Alpha: real);
 var
   BarFrom:  integer;
   BarWspol: real;
@@ -622,7 +622,7 @@ begin
       glColor4f(1, 1, 1, 0);
       glTexCoord2f(0, 0); glVertex2f(Rec.Left, Rec.Top);
       glTexCoord2f(0, 1); glVertex2f(Rec.Left, Rec.Bottom);
-      glColor4f(1, 1, 1, 0.5);
+      glColor4f(1, 1, 1, 0.5*Alpha);
       glTexCoord2f(1, 1); glVertex2f(Rec.Right, Rec.Bottom);
       glTexCoord2f(1, 0); glVertex2f(Rec.Right, Rec.Top);
     glEnd;
@@ -718,7 +718,7 @@ begin
     ScreenSing.LyricMain[0].Draw;
     ScreenSing.LyricSub[0].Draw;
 
-    SingDrawLyricHelper(0, NR);
+    SingDrawLyricHelper(0, NR, Alpha[0]);
   end;
 
   if (AktSong.isDuet) then
@@ -730,7 +730,7 @@ begin
     begin
       ScreenSing.LyricMain[1].Draw;
       ScreenSing.LyricSub[1].Draw;
-      SingDrawLyricHelper(1, NR);
+      SingDrawLyricHelper(1, NR, Alpha[1]);
     end;
   end;
 
