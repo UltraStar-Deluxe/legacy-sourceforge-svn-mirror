@@ -122,8 +122,6 @@ type
       procedure PasteText;
       procedure CopySentence(Src, Dst: integer);
       procedure CopySentences(Src, Dst, Num: integer);
-      //Note Name Mod
-      function GetNoteName(Note: Integer): String;
       function GetMedleyLength: real; //returns if availible the length of the medley in seconds, else 0
       procedure DrawInfoBar(P, x, y, w, h: integer);
       procedure DrawStatics;
@@ -154,7 +152,6 @@ type
 
 const
   ID='ID_001';   //for help system
-  NumHalftones = 36;
 
 implementation
 uses UGraphic, UDisplay, UDraw, UMain, USkins, ULanguage;
@@ -3786,48 +3783,6 @@ begin
   MidiOut.Close;
   MidiOut.Free;
   Music.CaptureStop;
-end;
-
-function TScreenEditSub.GetNoteName(Note: Integer): String;
-var N1, N2: Integer;
-begin
-  if (Note > 0) then
-  begin
-    N1 := Note mod 12;
-    N2 := Note div 12;
-  end
-  else
-  begin
-    N1 := (Note + (-Trunc(Note/12)+1)*12) mod 12;
-    N2 := -1;
-  end;
-
-
-
-  case N1 of
-    0: Result := 'c';
-    1: Result := 'c#';
-    2: Result := 'd';
-    3: Result := 'd#';
-    4: Result := 'e';
-    5: Result := 'f';
-    6: Result := 'f#';
-    7: Result := 'g';
-    8: Result := 'g#';
-    9: Result := 'a';
-    10: Result := 'a#';
-    11: Result := 'b';
-  end;
-
-  case N2 of
-    0: Result := UpperCase(Result); //Normal Uppercase Note, 1: Normal lowercase Note
-    2: Result := Result + '''';     //One Striped
-    3: Result := Result + '''''';   //Two Striped
-    4: Result := Result + ''''''''; //etc.
-    5: Result := Result + '''''''''';
-    6: Result := Result + '''''''''''';
-    7: Result := Result + '''''''''''''';
-  end;
 end;
 
 function TScreenEditSub.GetMedleyLength: real;

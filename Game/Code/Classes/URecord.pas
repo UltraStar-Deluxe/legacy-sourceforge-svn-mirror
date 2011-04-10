@@ -55,6 +55,8 @@ type
   // procedures - bass record
   function GetMicrophone(handle: HSTREAM; buffer: Pointer; len: DWORD; user: DWORD): boolean; stdcall;
 
+  function GetNoteName(Note: integer): string;
+
 
 var
   Sound:      array of TSound;
@@ -68,14 +70,34 @@ const
     'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
   );
 
+  NumHalftones = 47;
+
 implementation
 uses UMain, ULog;
+
+function GetNoteName(Note: integer): string;
+var
+  N1, N2: Integer;
+
+begin
+  if (Note >= 0) then
+  begin
+    N1 := Note mod 12;
+    N2 := Note div 12 + 4;
+  end else
+  begin
+    N1 := (Note + (-Trunc(Note/12)+1)*12) mod 12;
+    N2 := (Note + 1) div 12 + 3;
+  end;
+
+  Result := ToneStrings[N1] + IntToStr(N2);
+end;
 
 // from usdx 1.1
 function TSound.GetToneString: string;
 begin
   if (SzczytJest) then
-    Result := ToneStrings[TonGamy] + IntToStr(Ton div 12 + 2)
+    Result := GetNoteName(Ton)
   else
     Result := '-';
 end;
@@ -117,7 +139,7 @@ procedure TSound.AnalizujByAutocorrelation;
 var
   T:        integer;  // tone
   F:        real; // freq
-  Wages:    array[0..35] of real; // wages
+  Wages:    array[0..NumHalftones] of real; // wages
   MaxT:     integer; // max tone
   MaxW:     real; // max wage
   V:        real; // volume
@@ -147,7 +169,7 @@ begin
   MaxT := 0;
 
   // analyze all 12 halftones
-  for T := 0 to 35 do begin // to 11, then 23, now 35 (for Whitney and my high voice)
+  for T := 0 to NumHalftones do begin // to 11, then 23, now 35 (for Whitney and my high voice)
     F := 130.81*Power(1.05946309436, T)/2; // let's analyze below 130.81
     Wages[T] := AnalyzeAutocorrelationFreq(F);
 
