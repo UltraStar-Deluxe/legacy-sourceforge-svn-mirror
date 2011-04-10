@@ -370,18 +370,18 @@ begin
           // Save Song
           if SDL_ModState = KMOD_LSHIFT then
           begin
-            if (AktSong.Medley.Source = msTag) then
-            begin
-              ScreenPopupError.ShowPopup('Medley with Relative is not supported!');
-              Exit;
-            end;
-
             if (AktSong.isDuet) then
             begin
               ScreenPopupError.ShowPopup('Duet with Relative is not supported!');
               Exit;
             end;
 
+            if (AktSong.Medley.Source = msTag) then
+            begin
+              ScreenPopupError.ShowPopup('Medley with Relative is not supported! Medley-Tags deleted!');
+            end;
+
+            AktSong.Medley.Source := msNone;
             SResult := SaveSong(AktSong, Czesci, Path + FileName, true); //save with relative
           end else
             SResult := SaveSong(AktSong, Czesci, Path + FileName, false);
