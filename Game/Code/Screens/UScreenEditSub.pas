@@ -906,6 +906,7 @@ begin
             MidiStop := GetTimeFromBeat(Czesci[CP].Czesc[Czesci[CP].Akt].Koniec);
 
             LastClick := Czesci[CP].Czesc[Czesci[CP].Akt].StartNote-1;
+            Click := true;
           end;
 
           // one line midi + mp3
@@ -3093,6 +3094,9 @@ begin
               MidiOut.PutShort($91, Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[Pet].Ton + 60, 127);
               MidiLastNote := Pet;
             end;
+
+            if Click and not PlaySentence then
+              Music.PlayClick;
           end;
         end; // if PlaySentenceMidi
 
@@ -3113,7 +3117,7 @@ begin
             EditorLyric[CP].Selected := AktNuta[CP];
           end;
 
-          if (Click) and (PlaySentence) then
+          if Click then
           begin
             Text[TextDebug].Text := IntToStr(AktBeat);
             if PlayClick then
