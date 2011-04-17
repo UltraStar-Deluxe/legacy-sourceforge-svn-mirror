@@ -266,6 +266,8 @@ begin
     Button[I-1].Visible := false;
     Button[I-1].Selectable := false;
   end;
+
+  Interaction := 0;
 end;
 
 procedure TScreenName.SetAnimationProgress(Progress: real);
