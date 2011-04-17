@@ -127,7 +127,8 @@ type
       procedure SetAnimationProgress(Progress: real); virtual;
 
       function IsSelectable(Int: Cardinal): Boolean;
-      
+      function NumSelectable(Int: Cardinal): Integer;
+
       procedure InteractNext; virtual;
       procedure InteractCustom(CustomSwitch: integer); virtual;
       procedure InteractPrev; virtual;
@@ -837,6 +838,19 @@ begin
   end;
 end;
 
+function TMenu.NumSelectable(Int: Cardinal): Integer;
+var
+  i:  Integer;
+
+begin
+  Result := 0;
+  for i := 0 to Length(Interactions) - 1 do
+  begin
+    if (i <> Int) and IsSelectable(i) then
+      inc(Result);
+  end;
+end;
+
 procedure TMenu.InteractNext;
 var
   Int: Integer;
@@ -844,10 +858,12 @@ begin
   Int := Interaction;
 
   // change interaction as long as it's needed
-  repeat
-    Int := (Int + 1) Mod Length(Interactions);
-  Until IsSelectable(Int);
-
+  if (NumSelectable(Int)>0) then
+  begin
+    repeat
+      Int := (Int + 1) Mod Length(Interactions);
+    Until IsSelectable(Int);
+  end;
   //Set Interaction
   Interaction := Int;
 end;
@@ -860,12 +876,14 @@ begin
   Int := Interaction;
 
   // change interaction as long as it's needed
-  repeat
-    Int := Int - 1;
-    if Int = -1 then
-      Int := High(Interactions);
-  Until IsSelectable(Int);
-
+  if (NumSelectable(Int)>0) then
+  begin
+    repeat
+      Int := Int - 1;
+      if Int = -1 then
+        Int := High(Interactions);
+    Until IsSelectable(Int);
+  end;
   //Set Interaction
   Interaction := Int
 end;
