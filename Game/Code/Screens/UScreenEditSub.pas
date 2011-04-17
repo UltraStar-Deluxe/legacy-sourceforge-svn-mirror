@@ -121,6 +121,7 @@ type
       procedure MarkSrc;
       procedure PasteText;
       procedure CopySentence(Src, Dst: integer);
+      procedure CopySentenceNotes(Src, Dst: integer);
       procedure CopySentences(Src, Dst, Num: integer);
       function GetMedleyLength: real; //returns if availible the length of the medley in seconds, else 0
       procedure DrawInfoBar(P, x, y, w, h: integer);
@@ -773,6 +774,12 @@ begin
           begin
             CopySentence(CopySrcLine, Czesci[CP].Akt);
             Text[TextDebug].Text := 'Line pasted';
+          end;
+
+          if (SDL_ModState = KMOD_LCTRL + KMOD_LALT) then
+          begin
+            CopySentenceNotes(CopySrcLine, Czesci[CP].Akt);
+            Text[TextDebug].Text := 'Notes pasted';
           end;
 
           if SDL_ModState = 0 then
@@ -2467,6 +2474,35 @@ begin
     Czesci[CP].Czesc[Dst].Nuta[N].Dlugosc := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Dlugosc;
     Czesci[CP].Czesc[Dst].Nuta[N].Ton := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Ton;
     Czesci[CP].Czesc[Dst].Nuta[N].FreeStyle := Czesci[CopySrcCP].Czesc[Src].Nuta[N].FreeStyle;
+    Czesci[CP].Czesc[Dst].Nuta[N].Wartosc := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Wartosc;
+    Czesci[CP].Czesc[Dst].Nuta[N].Start := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Start + TD;
+  end;
+  N := Czesci[CopySrcCP].Czesc[Src].HighNut;
+  Czesci[CP].Czesc[Dst].Koniec := Czesci[CP].Czesc[Dst].Nuta[N].Start + Czesci[CP].Czesc[Dst].Nuta[N].Dlugosc;
+
+  Refresh;
+  Czesci[CP].Czesc[Czesci[CP].Akt].Nuta[AktNuta[CP]].Color := 2;
+  EditorLyric[CP].AddCzesc(CP, Czesci[CP].Akt);
+end;
+
+procedure TScreenEditSub.CopySentenceNotes(Src, Dst: integer);
+var
+  N:      integer;
+  Time1:  integer;
+  Time2:  integer;
+  TD:  integer;
+begin
+  Time1 := Czesci[CopySrcCP].Czesc[Src].Nuta[0].Start;
+  Time2 := Czesci[CP].Czesc[Dst].Nuta[0].Start;
+  TD := Time2-Time1;
+
+  SetLength(Czesci[CP].Czesc[Dst].Nuta, Czesci[CopySrcCP].Czesc[Src].IlNut);
+  Czesci[CP].Czesc[Dst].IlNut := Czesci[CopySrcCP].Czesc[Src].IlNut;
+  Czesci[CP].Czesc[Dst].HighNut := Czesci[CopySrcCP].Czesc[Src].HighNut;
+  for N := 0 to Czesci[CopySrcCP].Czesc[Src].HighNut do
+  begin
+    Czesci[CP].Czesc[Dst].Nuta[N].Dlugosc := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Dlugosc;
+    Czesci[CP].Czesc[Dst].Nuta[N].Ton := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Ton;
     Czesci[CP].Czesc[Dst].Nuta[N].Wartosc := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Wartosc;
     Czesci[CP].Czesc[Dst].Nuta[N].Start := Czesci[CopySrcCP].Czesc[Src].Nuta[N].Start + TD;
   end;
