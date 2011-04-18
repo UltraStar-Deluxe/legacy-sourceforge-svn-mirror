@@ -130,7 +130,7 @@ begin
                 Music.VoicesClose;
 
               FadeTo(@ScreenPartyNewRoundM2);
-            end else if (ScreenSong.Mode <> smMedley) and not AktSong.isDuet then
+            end else if (ScreenSong.Mode <> smMedley) and not AktSong.isDuet and not ScreenSong.SingTogether then
               FadeTo(@ScreenTop)
             else
             begin

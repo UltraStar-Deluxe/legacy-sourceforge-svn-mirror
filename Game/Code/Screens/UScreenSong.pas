@@ -119,7 +119,8 @@ type
       PartyPlayed:  array of integer; //played in Party Classic
       MedleyPlayed: array of integer; //played in Challenge or Classic Medley-mode
 
-      SungToEnd: boolean; //Song was sung to the end?
+      SungToEnd:    boolean; //Song was sung to the end?
+      SingTogether: boolean; //Calc mean score
 
       //party Statics (Joker)
       StaticTeam1Joker1: Cardinal;
@@ -774,8 +775,16 @@ begin
                   CatSongs.Selected := Interaction;
                   //Do the Action that is specified in Ini
                   case Ini.OnSongClick of
-                    0: StartSong;
-                    1: SelectPlayers;
+                    0: begin
+                        if (SDL_ModState = KMOD_LCTRL) then
+                          SingTogether := true;
+                        StartSong;
+                      end;
+                    1: begin
+                        if (SDL_ModState = KMOD_LCTRL) then
+                          SingTogether := true;
+                        SelectPlayers;
+                      end;
                     2:begin
                       if (TargetVidVis = full) then
                       begin
@@ -2024,6 +2033,7 @@ begin
   FadeOut := false;
 
   SungToEnd := false;
+  SingTogether := false;
   if Mode = smMedley then
     Mode := smNormal;
 

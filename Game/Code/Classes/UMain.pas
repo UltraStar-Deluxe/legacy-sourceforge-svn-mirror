@@ -96,6 +96,7 @@ var
 
   // gracz i jego nuty
   Player:         array of TPlayer;
+  MeanPlayer:     TPLayer;
   PlayersPlay:    integer;
   PlaylistMedley: TMedleyPlaylist;
 
@@ -112,6 +113,7 @@ procedure NewNote(P: integer; Sender: TScreenSing); // detect note
 function GetMidBeat(Time: real): real;
 function GetTimeFromBeat(Beat: integer): real;
 procedure ClearScores(PlayerNum: integer);
+procedure ClearMeanScore();
 
 implementation
 uses USongs, Math, UCommandLine, UVideo, UWebCam;
@@ -627,26 +629,56 @@ begin
                 begin
                   // add points without LineBonus
                   case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
-                    1:  Player[CP].Score := Player[CP].Score + 10000 / Czesci[P].Wartosc *
+                    1:  begin
+                      Player[CP].Score := Player[CP].Score + 10000 / Czesci[P].Wartosc *
                           Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                    2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 10000 / Czesci[P].Wartosc *
+                      MeanPlayer.Score := MeanPlayer.Score + (10000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc) / PlayersPlay;
+                    end;
+                    2:  begin
+                      Player[CP].ScoreGolden := Player[CP].ScoreGolden + 10000 / Czesci[P].Wartosc *
                           Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                      MeanPlayer.ScoreGolden := MeanPlayer.ScoreGolden + (10000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc) / PlayersPlay;
+                    end;
                   end;
                 end else
                 begin
                   // add points with Line Bonus
                   case Czesci[P].Czesc[S].Nuta[Pet].Wartosc of
-                    1:  Player[CP].Score := Player[CP].Score + 9000 / Czesci[P].Wartosc *
+                    1:  begin
+                      Player[CP].Score := Player[CP].Score + 9000 / Czesci[P].Wartosc *
                           Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
-                    2:  Player[CP].ScoreGolden := Player[CP].ScoreGolden + 9000 / Czesci[P].Wartosc *
+                      MeanPlayer.Score := MeanPlayer.Score + (9000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc) / PlayersPlay;
+                    end;
+                    2:  begin
+                      Player[CP].ScoreGolden := Player[CP].ScoreGolden + 9000 / Czesci[P].Wartosc *
                           Czesci[P].Czesc[S].Nuta[Pet].Wartosc;
+                      MeanPlayer.ScoreGolden := MeanPlayer.ScoreGolden + (9000 / Czesci[P].Wartosc *
+                          Czesci[P].Czesc[S].Nuta[Pet].Wartosc) / PlayersPlay;
+                    end;
                   end;
                 end;
 
-                Player[CP].ScoreI := Floor(Player[CP].Score / 10) * 10;
-                Player[CP].ScoreGoldenI := Floor(Player[CP].ScoreGolden / 10) * 10;
+                MeanPlayer.ScoreI := Floor(MeanPlayer.Score / 10) * 10;
+                MeanPlayer.ScoreGoldenI := Floor(MeanPlayer.ScoreGolden / 10) * 10;
 
-                Player[CP].ScoreTotalI := Player[CP].ScoreI + Player[CP].ScoreGoldenI + Player[CP].ScoreLineI;
+                MeanPlayer.ScoreTotalI := MeanPlayer.ScoreI + MeanPlayer.ScoreGoldenI + MeanPlayer.ScoreLineI;
+
+                if ScreenSong.SingTogether then
+                begin
+                  Player[CP].ScoreI := MeanPlayer.ScoreI;
+                  Player[CP].ScoreGoldenI := MeanPlayer.ScoreGoldenI;
+
+                  Player[CP].ScoreTotalI := MeanPlayer.ScoreTotalI;
+                end else
+                begin
+                  Player[CP].ScoreI := Floor(Player[CP].Score / 10) * 10;
+                  Player[CP].ScoreGoldenI := Floor(Player[CP].ScoreGolden / 10) * 10;
+
+                  Player[CP].ScoreTotalI := Player[CP].ScoreI + Player[CP].ScoreGoldenI + Player[CP].ScoreLineI;
+                end;
               end;
             end; // operowanie
           end;
@@ -943,7 +975,6 @@ begin
   Player[PlayerNum].ScoreGoldenI := 0;
   Player[PlayerNum].ScoreTotalI := 0;
 
-
   //SingBar Mod
   Player[PlayerNum].ScoreLast := 0;
   Player[PlayerNum].ScorePercent := 50;// Sets to 50% when song starts
@@ -955,10 +986,29 @@ begin
   //PhrasenBonus - Line Bonus Mod
   Player[PlayerNum].LineBonus_Visible := False; //Hide Line Bonus
   Player[PlayerNum].LineBonus_Alpha   := 0;
-  //Player[PlayerNum].LineBonus_TargetX := 70 + PlayerNum*500;  //will be done by onShow
-  //Player[PlayerNum].LineBonus_TargetY := 30;                  //will be done by onShow
-  //PhrasenBonus - Line Bonus Mod End
+end;
 
+procedure ClearMeanScore();
+begin
+  MeanPlayer.Score := 0;
+  MeanPlayer.ScoreI := 0;
+  MeanPlayer.ScoreLine := 0;
+  MeanPlayer.ScoreLineI := 0;
+  MeanPlayer.ScoreGolden := 0;
+  MeanPlayer.ScoreGoldenI := 0;
+  MeanPlayer.ScoreTotalI := 0;
+
+  //SingBar Mod
+  MeanPlayer.ScoreLast := 0;
+  MeanPlayer.ScorePercent := 50;// Sets to 50% when song starts
+  MeanPlayer.ScorePercentTarget := 50;// Sets to 50% when song starts
+  //end SingBar Mod
+
+  MeanPlayer.ScoreMax := 9990;
+
+  //PhrasenBonus - Line Bonus Mod
+  MeanPlayer.LineBonus_Visible := False; //Hide Line Bonus
+  MeanPlayer.LineBonus_Alpha   := 0;
 end;
 
 end.

@@ -26,6 +26,7 @@ const
   SM_Main = 1;
 
   SM_Song = 8 or 1;
+  SM_Song_Play = 8 or 2;
 
   SM_Medley = 16 or 1;
 
@@ -359,6 +360,22 @@ begin
         Button[3].Text[0].Text := Language.Translate('SONG_MENU_EDIT');
       end;
 
+    SM_Song_Play:
+      begin
+        ID := 'ID_032';
+        CurMenu := sMenu;
+        Text[0].Text := Language.Translate('SONG_MENU_PLAY');
+
+        Button[0].Visible := True;
+        Button[1].Visible := not CatSongs.Song[ScreenSong.Interaction].isDuet;
+        Button[2].Visible := False;
+        Button[3].Visible := False;
+        SelectsS[0].Visible := False;
+
+        Button[0].Text[0].Text := Language.Translate('SONG_MENU_PLAY');
+        Button[1].Text[0].Text := Language.Translate('SONG_MENU_PLAY_TOGETHER');
+      end;
+
     SM_Medley:
       begin
         ID := 'ID_032';
@@ -629,8 +646,7 @@ begin
         Case Interaction of
           0: //Button 1
             begin
-              ScreenSong.StartSong;
-              Visible := False;
+              MenuShow(SM_Song_Play);
             end;
 
           1: //Button 2
@@ -654,6 +670,25 @@ begin
           4: //Button 4
             begin
               ScreenSong.OpenEditor;
+              Visible := False;
+            end;
+        end;
+      end;
+
+    SM_Song_Play:
+      begin
+        Case Interaction of
+          0: //Button 1
+            begin
+              ScreenSong.StartSong;
+              Visible := False;
+            end;
+
+          1: //Button 2
+            begin
+              //Select New Players then Sing:
+              ScreenSong.SingTogether := true;
+              ScreenSong.StartSong;
               Visible := False;
             end;
         end;

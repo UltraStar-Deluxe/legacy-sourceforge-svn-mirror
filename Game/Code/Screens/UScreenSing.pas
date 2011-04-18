@@ -1560,6 +1560,8 @@ begin
   for P := 0 to High(Player) do
     ClearScores(P);
 
+  ClearMeanScore();
+
   // fill texts
   LyricMain[0].AddCzesc(0, 0);
   LyricMain[0].Selected := -1;
@@ -2293,6 +2295,8 @@ begin
     end else if(ScreenSong.Mode = smNormal) then
     begin
       singmode := 'Normal';
+      if ScreenSong.SingTogether then
+        singmode := singmode + ' (Sing together)';
       if AktSong.isDuet then
         singmode := singmode + ' (Duet)';
     end;
@@ -2496,12 +2500,29 @@ begin
 
         //PhrasenBonus give Points
         if (Length(Czesci[CP].Czesc) - NumEmptySentences[CP])>0 then
+        begin
           Player[I].ScoreLine := Player[I].ScoreLine +
             (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8);
 
-        Player[I].ScoreLineI := Round(Player[I].ScoreLine / 10) * 10;
+          MeanPlayer.ScoreLine := MeanPlayer.ScoreLine +
+            (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8);
+        end;
+
+        MeanPlayer.ScoreLineI := Round(MeanPlayer.ScoreLine / 10) * 10;
         //Update Total Score
-        Player[I].ScoreTotalI := Player[I].ScoreI + Player[I].ScoreGoldenI + Player[I].ScoreLineI;
+        MeanPlayer.ScoreTotalI := MeanPlayer.ScoreI + MeanPlayer.ScoreGoldenI + MeanPlayer.ScoreLineI;
+
+        if ScreenSong.SingTogether then
+        begin
+          Player[I].ScoreLineI := MeanPlayer.ScoreLineI;
+          //Update Total Score
+          Player[I].ScoreTotalI := MeanPlayer.ScoreTotalI;
+        end else
+        begin
+          Player[I].ScoreLineI := Round(Player[I].ScoreLine / 10) * 10;
+          //Update Total Score
+          Player[I].ScoreTotalI := Player[I].ScoreI + Player[I].ScoreGoldenI + Player[I].ScoreLineI;
+        end;
 
         //Color
         Case Floor(A) of
