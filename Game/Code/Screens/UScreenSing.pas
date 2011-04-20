@@ -2481,11 +2481,11 @@ begin
   else
     B := 10000;
 
-  for I := 0 to High(Player) do
+  for I := 0 to PlayersPlay-1 do
   begin
     if not AktSong.isDuet or (I mod 2 = CP) then
     begin
-      
+
       A := Player[I].Score + Player[I].ScoreGolden - Player[I].ScoreLast + 2;
 
       //SingBar Mod
@@ -2518,19 +2518,14 @@ begin
             (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8);
 
           MeanPlayer.ScoreLine := MeanPlayer.ScoreLine +
-            (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8);
+            (1000 / (Length(Czesci[CP].Czesc) - NumEmptySentences[CP]) * A / 8) / PlayersPlay;
         end;
 
         MeanPlayer.ScoreLineI := Round(MeanPlayer.ScoreLine / 10) * 10;
         //Update Total Score
         MeanPlayer.ScoreTotalI := MeanPlayer.ScoreI + MeanPlayer.ScoreGoldenI + MeanPlayer.ScoreLineI;
 
-        if ScreenSong.SingTogether then
-        begin
-          Player[I].ScoreLineI := MeanPlayer.ScoreLineI;
-          //Update Total Score
-          Player[I].ScoreTotalI := MeanPlayer.ScoreTotalI;
-        end else
+        if not ScreenSong.SingTogether then
         begin
           Player[I].ScoreLineI := Round(Player[I].ScoreLine / 10) * 10;
           //Update Total Score
@@ -2594,6 +2589,16 @@ begin
       Player[I].LastSentencePerfect := False;
     end;
   end;
+
+  if ScreenSong.SingTogether then
+  begin
+    for I := 0 to PlayersPlay - 1 do
+    begin
+      Player[I].ScoreLineI := MeanPlayer.ScoreLineI;
+      //Update Total Score
+      Player[I].ScoreTotalI := MeanPlayer.ScoreTotalI;
+    end;
+  end; 
 
   //PerfectLineTwinkle Mod (effect) Pt.2
   if Ini.EffectSing=1 then

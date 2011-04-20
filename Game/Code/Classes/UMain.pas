@@ -536,7 +536,7 @@ end;
 
 procedure NewNote(P: integer; Sender: TScreenSing);
 const
-  DEBUG_NOTE_HIT = false;
+  DEBUG_NOTE_HIT = true;
 
 var
   CP:     integer; // current player
@@ -666,13 +666,7 @@ begin
 
                 MeanPlayer.ScoreTotalI := MeanPlayer.ScoreI + MeanPlayer.ScoreGoldenI + MeanPlayer.ScoreLineI;
 
-                if ScreenSong.SingTogether then
-                begin
-                  Player[CP].ScoreI := MeanPlayer.ScoreI;
-                  Player[CP].ScoreGoldenI := MeanPlayer.ScoreGoldenI;
-
-                  Player[CP].ScoreTotalI := MeanPlayer.ScoreTotalI;
-                end else
+                if not ScreenSong.SingTogether then
                 begin
                   Player[CP].ScoreI := Floor(Player[CP].Score / 10) * 10;
                   Player[CP].ScoreGoldenI := Floor(Player[CP].ScoreGolden / 10) * 10;
@@ -769,6 +763,13 @@ begin
 
       Player[CP].ScoreMax := Player[CP].ScoreTotalI + Player[CP].ScoreMax;
 
+      if ScreenSong.SingTogether then
+      begin
+        Player[CP].ScoreI := MeanPlayer.ScoreI;
+        Player[CP].ScoreGoldenI := MeanPlayer.ScoreGoldenI;
+
+        Player[CP].ScoreTotalI := MeanPlayer.ScoreTotalI;
+      end;
     end else
     begin     //############################ DUET #####################
       if (CP mod 2 = P) then
