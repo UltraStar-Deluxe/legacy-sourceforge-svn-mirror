@@ -536,7 +536,7 @@ end;
 
 procedure NewNote(P: integer; Sender: TScreenSing);
 const
-  DEBUG_NOTE_HIT = true;
+  DEBUG_NOTE_HIT = false;
 
 var
   CP:     integer; // current player
