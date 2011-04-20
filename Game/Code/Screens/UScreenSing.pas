@@ -1314,43 +1314,51 @@ begin
       begin
         Lyric.FontStyle := 0;
         Lyric.Size := 14; // 13
-        Lyric.ColR := Skin_FontR;
-        Lyric.ColG := Skin_FontG;
-        Lyric.ColB := Skin_FontB;
-        Lyric.ColSR := 5/255; //26
-        Lyric.ColSG := 163/255; //165
-        Lyric.ColSB := 210/255;  //220
+        Lyric.ColR[0] := Skin_FontR;
+        Lyric.ColG[0] := Skin_FontG;
+        Lyric.ColB[0] := Skin_FontB;
+        Lyric.ColSR[0] := 5/255; //26
+        Lyric.ColSG[0] := 163/255; //165
+        Lyric.ColSB[0] := 210/255;  //220
       end;
     1:
       begin
         Lyric.FontStyle := 2;
         Lyric.Size := 14;
-        Lyric.ColR := 0.6;
-        Lyric.ColG := 0.6;
-        Lyric.ColB := 1;
-        Lyric.ColSR := 0.25;
-        Lyric.ColSG := 0.25;
-        Lyric.ColSB := 1;
+        Lyric.ColR[0] := 0.6;
+        Lyric.ColG[0] := 0.6;
+        Lyric.ColB[0] := 1;
+        Lyric.ColSR[0] := 0.25;
+        Lyric.ColSG[0] := 0.25;
+        Lyric.ColSB[0] := 1;
       end;
     2:
       begin
         Lyric.FontStyle := 3;
         Lyric.Size := 12;
-        Lyric.ColR := 0.6;
-        Lyric.ColG := 0.6;
-        Lyric.ColB := 1;
-        Lyric.ColSR := 0.25;
-        Lyric.ColSG := 0.25;
-        Lyric.ColSB := 1;
+        Lyric.ColR[0] := 0.6;
+        Lyric.ColG[0] := 0.6;
+        Lyric.ColB[0] := 1;
+        Lyric.ColSR[0] := 0.25;
+        Lyric.ColSG[0] := 0.25;
+        Lyric.ColSB[0] := 1;
       end;
-    end; // case
+  end; // case
 
-    case Ini.LyricsEffect of
+  // Golden Note Color
+  Lyric.ColR[1] := 0.95;
+  Lyric.ColG[1] := 0.95;
+  Lyric.ColB[1] := 0.55;
+  Lyric.ColSR[1] := 0.9;
+  Lyric.ColSG[1] := 0.9;
+  Lyric.ColSB[1] := 0.2;
+
+  case Ini.LyricsEffect of
       0:  Lyric.Style := 1; // 0 - one selected, 1 - selected all to the current
       1:  Lyric.Style := 2;
       2:  Lyric.Style := 3;
       3:  Lyric.Style := 4;
-    end; // case
+  end; // case
 end;
 
 procedure TScreenSing.SetLyricFontSub(Lyric: TLyric);
@@ -1361,27 +1369,32 @@ begin
       begin
         Lyric.FontStyle := 0;
         Lyric.Size := 14; // 13
-        Lyric.ColR := 0.4; //0.6
-        Lyric.ColG := 0.4; //0.6
-        Lyric.ColB := 0.4; //0.6
+        Lyric.ColR[0] := 0.4; //0.6
+        Lyric.ColG[0] := 0.4; //0.6
+        Lyric.ColB[0] := 0.4; //0.6
       end;
     1:
       begin
         Lyric.FontStyle := 2;
         Lyric.Size := 14;
-        Lyric.ColR := 0.8;
-        Lyric.ColG := 0.8;
-        Lyric.ColB := 0.8;
+        Lyric.ColR[0] := 0.8;
+        Lyric.ColG[0] := 0.8;
+        Lyric.ColB[0] := 0.8;
       end;
     2:
       begin
         Lyric.FontStyle := 3;
         Lyric.Size := 12;
-        Lyric.ColR := 0.8;
-        Lyric.ColG := 0.8;
-        Lyric.ColB := 0.8;
+        Lyric.ColR[0] := 0.8;
+        Lyric.ColG[0] := 0.8;
+        Lyric.ColB[0] := 0.8;
       end;
-    end; // case
+  end; // case
+
+  // Golden Note Color
+  Lyric.ColR[1] := 0.95;
+  Lyric.ColG[1] := 0.95;
+  Lyric.ColB[1] := 0.75;
 end;
 
 procedure TScreenSing.LoadNextSong;

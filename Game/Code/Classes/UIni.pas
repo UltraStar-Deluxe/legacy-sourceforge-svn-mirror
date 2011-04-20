@@ -62,6 +62,7 @@ type
     LyricsFont:     integer;
     LyricsEffect:   integer;
     Solmization:    integer;
+    LyricsGolden:   integer;
 
     // Themes
     Theme:          integer;
@@ -182,6 +183,7 @@ const
   ILyricsFont:    array[0..2] of string = ('Plain', 'OLine1', 'OLine2');
   ILyricsEffect:  array[0..3] of string = ('Simple', 'Zoom', 'Slide', 'Ball');
   ISolmization:   array[0..3] of string = ('Off', 'Euro', 'Jap', 'American');
+  ILyricsGolden:  array[0..1] of string = ('Off', 'On');
 
   IColor:         array[0..8] of string = ('Blue', 'Green', 'Pink', 'Red', 'Violet', 'Orange', 'Yellow', 'Brown', 'Black');
 
@@ -476,6 +478,11 @@ begin
   Tekst := IniFile.ReadString('Lyrics',    'Solmization',   ISolmization[0]);
   for Pet := 0 to High(ISolmization) do
     if Tekst = ISolmization[Pet] then Ini.Solmization := Pet;
+
+  // LyricsGolden
+  Tekst := IniFile.ReadString('Lyrics',    'LyricsGolden',   ILyricsGolden[0]);
+  for Pet := 0 to High(ILyricsGolden) do
+    if Tekst = ILyricsGolden[Pet] then Ini.LyricsGolden := Pet;
 
   // Theme
 
@@ -861,6 +868,10 @@ begin
     // Solmization
     Tekst := ISolmization[Ini.Solmization];
     IniFile.WriteString('Lyrics',    'Solmization',    Tekst);
+
+    // LyricsGolden
+    Tekst := ILyricsGolden[Ini.LyricsGolden];
+    IniFile.WriteString('Lyrics',    'LyricsGolden',    Tekst);
 
     // Theme
     Tekst := ITheme[Ini.Theme];

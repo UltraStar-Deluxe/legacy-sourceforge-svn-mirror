@@ -2670,12 +2670,20 @@ begin
 
     EditorLyric[I].Align := 1;
     EditorLyric[I].Size := 13;
-    EditorLyric[I].ColR := 0;
-    EditorLyric[I].ColG := 0;
-    EditorLyric[I].ColB := 0;
-    EditorLyric[I].ColSR := Skin_FontHighlightR;
-    EditorLyric[I].ColSG := Skin_FontHighlightG;
-    EditorLyric[I].ColSB := Skin_FontHighlightB;
+    EditorLyric[I].ColR[0] := 0;
+    EditorLyric[I].ColG[0] := 0;
+    EditorLyric[I].ColB[0] := 0;
+    EditorLyric[I].ColSR[0] := Skin_FontHighlightR;
+    EditorLyric[I].ColSG[0] := Skin_FontHighlightG;
+    EditorLyric[I].ColSB[0] := Skin_FontHighlightB;
+
+    EditorLyric[I].ColR[1] := 0;
+    EditorLyric[I].ColG[1] := 0;
+    EditorLyric[I].ColB[1] := 0;
+    EditorLyric[I].ColSR[1] := Skin_FontHighlightR;
+    EditorLyric[I].ColSG[1] := Skin_FontHighlightG;
+    EditorLyric[I].ColSB[1] := Skin_FontHighlightB;
+
     EditorLyric[I].Style := 0;
     EditorLyric[I].AddCzesc(I, Czesci[I].Akt);
     EditorLyric[I].Selected := 0;
@@ -2969,12 +2977,20 @@ begin
 
       EditorLyric[I].Align := 1;
       EditorLyric[I].Size := 13;
-      EditorLyric[I].ColR := 0;
-      EditorLyric[I].ColG := 0;
-      EditorLyric[I].ColB := 0;
-      EditorLyric[I].ColSR := Skin_FontHighlightR;
-      EditorLyric[I].ColSG := Skin_FontHighlightG;
-      EditorLyric[I].ColSB := Skin_FontHighlightB;
+      EditorLyric[I].ColR[0] := 0;
+      EditorLyric[I].ColG[0] := 0;
+      EditorLyric[I].ColB[0] := 0;
+      EditorLyric[I].ColSR[0] := Skin_FontHighlightR;
+      EditorLyric[I].ColSG[0] := Skin_FontHighlightG;
+      EditorLyric[I].ColSB[0] := Skin_FontHighlightB;
+
+      EditorLyric[I].ColR[1] := 0;
+      EditorLyric[I].ColG[1] := 0;
+      EditorLyric[I].ColB[1] := 0;
+      EditorLyric[I].ColSR[1] := Skin_FontHighlightR;
+      EditorLyric[I].ColSG[1] := Skin_FontHighlightG;
+      EditorLyric[I].ColSB[1] := Skin_FontHighlightB;
+
       EditorLyric[I].Style := 0;
       EditorLyric[I].AddCzesc(I, Czesci[I].Akt);
       EditorLyric[I].Selected := 0;

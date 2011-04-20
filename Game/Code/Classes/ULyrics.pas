@@ -1,7 +1,7 @@
 unit ULyrics;
 
 interface
-uses SysUtils, gl, glext, UMusic;
+uses SysUtils, gl, glext, UMusic, UIni;
 
 type
   TWord = record
@@ -10,6 +10,7 @@ type
       Size:   real;
       Width:  real;
       Text:   string;
+      Color:  integer; //0=normal, 1=golden
       ColR:   real;
       ColG:   real;
       ColB:   real;
@@ -49,12 +50,13 @@ type
       procedure DrawScaled(W: integer);
       procedure DrawSlide(W: integer);
     public
-      ColR:     real;
-      ColG:     real;
-      ColB:     real;
-      ColSR:    real;
-      ColSG:    real;
-      ColSB:    real;
+      ColR:     array [0..1] of real;
+      ColG:     array [0..1] of real;
+      ColB:     array [0..1] of real;
+      ColSR:    array [0..1] of real;
+      ColSG:    array [0..1] of real;
+      ColSB:    array [0..1] of real;
+
       Italic:   boolean;
       Text:     string;   // LCD
 
@@ -69,7 +71,7 @@ type
       property Scale: real write SetScale;
       property Style: integer write SetStyle;
       property FontStyle: integer write SetFStyle;
-      procedure AddWord(Text: string);
+      procedure AddWord(Text: string; Golden: boolean);
       procedure AddCzesc(CP, NrCzesci: integer); //AddLine?
       procedure ChangeCurText(Text: String);
 
@@ -140,43 +142,51 @@ procedure TLyric.SetSelected(Value: integer);
 var
   W:  integer;
 begin
-  if (StyleI = 0) or (StyleI = 2) or (StyleI = 4) then begin
-    if (SelectedI > -1) and (SelectedI <= High(Word)) then begin
+  if (StyleI = 0) or (StyleI = 2) or (StyleI = 4) then
+  begin
+    if (SelectedI > -1) and (SelectedI <= High(Word)) then
+    begin
       Word[SelectedI].Selected := false;
-      Word[SelectedI].ColR := ColR;
-      Word[SelectedI].ColG := ColG;
-      Word[SelectedI].ColB := ColB;
+      Word[SelectedI].ColR := ColR[Word[SelectedI].Color];
+      Word[SelectedI].ColG := ColG[Word[SelectedI].Color];
+      Word[SelectedI].ColB := ColB[Word[SelectedI].Color];
       Word[SelectedI].Done := 0;
     end;
 
     SelectedI := Value;
-    if (Value > -1) and (Value <= High(Word)) then begin
+    if (Value > -1) and (Value <= High(Word)) then
+    begin
       Word[Value].Selected := true;
-      Word[Value].ColR := ColSR;
-      Word[Value].ColG := ColSG;
-      Word[Value].ColB := ColSB;
+      Word[Value].ColR := ColSR[Word[Value].Color];
+      Word[Value].ColG := ColSG[Word[Value].Color];
+      Word[Value].ColB := ColSB[Word[Value].Color];
       Word[Value].Scale := ScaleR;
     end;
   end;
 
-  if (StyleI = 1) or (StyleI = 3) then begin
-    if (SelectedI > -1) and (SelectedI <= High(Word)) then begin
-      for W := SelectedI to High(Word) do begin
+  if (StyleI = 1) or (StyleI = 3) then
+  begin
+    if (SelectedI > -1) and (SelectedI <= High(Word)) then
+    begin
+      for W := SelectedI to High(Word) do
+      begin
         Word[W].Selected := false;
-        Word[W].ColR := ColR;
-        Word[W].ColG := ColG;
-        Word[W].ColB := ColB;
+        Word[W].ColR := ColR[Word[W].Color];
+        Word[W].ColG := ColG[Word[W].Color];
+        Word[W].ColB := ColB[Word[W].Color];
         Word[W].Done := 0;
       end;
     end;
 
     SelectedI := Value;
-    if (Value > -1) and (Value <= High(Word)) then begin
-      for W := 0 to Value do begin
+    if (Value > -1) and (Value <= High(Word)) then
+    begin
+      for W := 0 to Value do
+      begin
         Word[W].Selected := true;
-        Word[W].ColR := ColSR;
-        Word[W].ColG := ColSG;
-        Word[W].ColB := ColSB;
+        Word[W].ColR := ColSR[Word[W].Color];
+        Word[W].ColG := ColSG[Word[W].Color];
+        Word[W].ColB := ColSB[Word[W].Color];
         Word[W].Scale := ScaleR;
         Word[W].Done := 1;
       end;
@@ -210,7 +220,7 @@ begin
   FontStyleI := Value;
 end;
 
-procedure TLyric.AddWord(Text: string);
+procedure TLyric.AddWord(Text: string; Golden: boolean);
 var
   WordNum:    integer;
 begin
@@ -229,9 +239,16 @@ begin
   SetFontSize(SizeR);
   Word[WordNum].Width := glTextWidth(pchar(Text));
   Word[WordNum].Text := Text;
-  Word[WordNum].ColR := ColR;
-  Word[WordNum].ColG := ColG;
-  Word[WordNum].ColB := ColB;
+
+  if not Golden or (Ini.LyricsGolden=0) then
+    Word[WordNum].Color := 0
+  else
+    Word[WordNum].Color := 1;
+
+  Word[WordNum].ColR := ColR[Word[WordNum].Color];
+  Word[WordNum].ColG := ColG[Word[WordNum].Color];
+  Word[WordNum].ColB := ColB[Word[WordNum].Color];
+  
   Word[WordNum].Scale := 1;
   Word[WordNum].Done := 0;
   Word[WordNum].Italic := Italic;
@@ -249,13 +266,13 @@ begin
     for N := 0 to Czesci[CP].Czesc[NrCzesci].HighNut do
     begin
       Italic := Czesci[CP].Czesc[NrCzesci].Nuta[N].FreeStyle;
-      AddWord(Czesci[CP].Czesc[NrCzesci].Nuta[N].Tekst);
+      AddWord(Czesci[CP].Czesc[NrCzesci].Nuta[N].Tekst, Czesci[CP].Czesc[NrCzesci].Nuta[N].Wartosc=2);
       Text := Text + Czesci[CP].Czesc[NrCzesci].Nuta[N].Tekst;
     end;
   end else
   begin
     Italic := false;
-    AddWord(' ');
+    AddWord(' ', false);
     Text := ' ';
   end;
   Selected := -1;
@@ -263,9 +280,6 @@ end;
 
 procedure TLyric.Clear;
 begin
-{  ColR := Skin_FontR;
-  ColG := Skin_FontG;
-  ColB := Skin_FontB;}
   SetLength(Word, 0);
   Text := '';
   SelectedI := -1;
@@ -364,9 +378,9 @@ begin
   SetFontSize(Word[W].Size);
   SetFontItalic(Word[W].Italic);
   if D = 0 then
-    glColor4f(ColR, ColG, ColB, Alpha)
+    glColor4f(Word[W].ColR, Word[W].ColG, Word[W].ColB, Alpha)
   else
-    glColor4f(ColSR, ColSG, ColSB, Alpha);
+    glColor4f(ColSR[Word[W].Color], ColSG[Word[W].Color], ColSB[Word[W].Color], Alpha);
 
   glPrint(pchar(Word[W].Text));
 end;
@@ -395,7 +409,7 @@ begin
   SetFontSize(Word[W].Size);
   SetFontItalic(Word[W].Italic);
   glColor4f(Word[W].ColR, Word[W].ColG, Word[W].ColB, Alpha);
-  glPrintDone(pchar(Word[W].Text), D, ColR, ColG, ColB, Alpha);
+  glPrintDone(pchar(Word[W].Text), D, ColR[Word[W].Color], ColG[Word[W].Color], ColB[Word[W].Color], Alpha);
 end;
 
 function TLyric.SelectedLetter;  // LCD
