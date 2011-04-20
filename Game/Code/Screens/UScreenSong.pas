@@ -2289,7 +2289,7 @@ begin
   if (Display.NextScreen <> @ScreenSong) and (Display.NextScreen <> @ScreenSing) and
     (Display.NextScreen <> @ScreenSingModi) and (Display.NextScreen <> @ScreenEditSub) and
     (Music <> nil) then
-    Music.Stop;
+    Music.Close;
 end;
 
 procedure TScreenSong.DrawExtensions;
@@ -2873,7 +2873,7 @@ end;
 procedure TScreenSong.ChangeMusic;
 begin
   //When Music Preview is avtivated -> then Change Music
-  if (Ini.PreviewVolume >= 0) then
+  if (Ini.PreviewVolume >= 0) and not FadeOut then
   begin
     if (NOT CatSongs.Song[Interaction].Main) AND(CatSongs.VisibleSongs > 0) then
     begin
@@ -2892,7 +2892,7 @@ end;
 
 procedure TScreenSong.StartPreview;
 begin
-  if (Ini.PreviewVolume >= 0) and not isScrolling and not Music.isOpen then
+  if (Ini.PreviewVolume >= 0) and not isScrolling and not Music.isOpen and not FadeOut then
   begin
     if Music.Open(CatSongs.Song[Interaction].Path + CatSongs.Song[Interaction].Mp3) then
     begin
@@ -2922,7 +2922,7 @@ end;
 
 procedure TScreenSong.StartVideoPreview;
 begin
-  if (Ini.PreviewVolume >= 0) and (Ini.MovieSize < 3) then
+  if (Ini.PreviewVolume >= 0) and (Ini.MovieSize < 3) and not FadeOut then
   begin
     if (NOT CatSongs.Song[Interaction].Main) AND (CatSongs.VisibleSongs > 0) then
     begin
@@ -3626,7 +3626,7 @@ begin
   WaitHandler.changed := false;
   CatSongs.Selected := Interaction;
   if (Music.isOpen) then
-    Music.Stop;
+    Music.Close;
   //Party Mode
   if (Mode = smParty) or (Mode = smChallenge) then
   begin
@@ -3643,7 +3643,7 @@ end;
 procedure TScreenSong.SelectPlayers;
 begin
   CatSongs.Selected := Interaction;
-  Music.Stop;
+  Music.Close;
   acClose;
   VidVis := none;
   ScreenName.Goto_SingScreen := True;
@@ -3655,7 +3655,7 @@ procedure TScreenSong.OpenEditor;
 begin
   if (Length(Songs.Song) > 0) and (not CatSongs.Song[Interaction].Main) AND (Mode = smNormal) then
   begin
-    Music.Stop;
+    Music.Close;
     acClose;
     VidVis := none;
     Music.PlayStart;
