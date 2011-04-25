@@ -40,6 +40,7 @@ type
       ChooseableSongs:  integer;
       isScrolling:      boolean;
       FadeOut:          boolean;
+      ShowSongQuality:  boolean;
 
     public
       Sel3:             integer; //Selection in party mode (0=current, -1=left, 1=right)
@@ -515,6 +516,12 @@ begin
             Music.DisableVocalRemover
           else
             Music.EnableVocalRemover;
+        end;
+
+      SDLK_I:
+        begin
+          if (Mode = smNormal) then
+            ShowSongQuality := not ShowSongQuality;
         end;
 
       SDLK_O:
@@ -1388,6 +1395,8 @@ begin
     EqualizerBands[I] := 3;
 
   MP3Volume := Ini.PreviewVolume * 10;
+
+  ShowSongQuality := false;
 end;
 
 procedure TScreenSong.ChangeSorting(tabs: boolean; sorting: integer);
@@ -2680,6 +2689,34 @@ begin
   end;
 
   DrawExtensions;
+
+  // Song Quality
+  if ShowSongQuality and not CatSongs.Song[Interaction].Main then
+  begin
+    SetFontStyle(0);
+    SetFontItalic(false);
+    SetFontSize(6);
+
+    glColor4f(1, 1, 1, 1);
+
+    SetFontPos (525, 80);
+    glPrint(PChar(FormatFloat('STX: 000%', CatSongs.Song[Interaction].Quality.Syntax)));
+
+    SetFontPos (600, 80);
+    glPrint(PChar(FormatFloat('BPM: 000%', CatSongs.Song[Interaction].Quality.BPM)));
+
+    SetFontPos (675, 80);
+    glPrint(PChar(FormatFloat('NGP: 000%', CatSongs.Song[Interaction].Quality.NoteGaps)));
+
+    SetFontPos (525, 95);
+    glPrint(PChar(FormatFloat('NJP: 000%', CatSongs.Song[Interaction].Quality.NoteJumps)));
+
+    SetFontPos (600, 95);
+    glPrint(PChar(FormatFloat('SCO: 000%', CatSongs.Song[Interaction].Quality.Scores)));
+
+    SetFontPos (675, 95);
+    glPrint(PChar(FormatFloat('VAL: 000%', CatSongs.Song[Interaction].Quality.Value)));
+  end;
 
   StartPreview;
 end;

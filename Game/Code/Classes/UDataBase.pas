@@ -57,6 +57,8 @@ type
     function  GetHandicap(P1: string; P2: string): THandicapResult; //for Handicap-Mode
     function  GetAspect(Artist, Title: string; def: integer): integer;
     procedure SetAspect(Artist, Title: string; aspect: integer);
+
+    function  GetMaxScore(Artist, Title: string; difficulty: integer): integer;
   end;
 
 var
@@ -116,6 +118,34 @@ begin
       Result.P1m := 1-((P1m-P2m)/10000)/1.75
     else
       Result.P2m := 1-((P2m-P1m)/10000)/1.75
+  end;
+end;
+
+function TDataBaseSystem.GetMaxScore(Artist, Title: string; difficulty: integer): integer;
+var
+  ID:               Integer;
+  tArtist, tTitle:  string;
+
+begin
+  Result := 0;
+
+  if not Assigned(ScoreDB) then
+    Exit;
+
+  try
+    tArtist := StringReplace(Artist,'"','""',[rfReplaceAll, rfIgnoreCase]);
+    tTitle := StringReplace(Title,'"','""',[rfReplaceAll, rfIgnoreCase]);
+
+    ID := ScoreDB.GetTableValue('SELECT `ID` FROM `US_Songs` WHERE `Artist` = "' +
+      tArtist + '" AND `Title` = "' + tTitle + '"');
+
+    if ID <> 0 then
+    begin
+      Result := ScoreDB.GetTableValue('SELECT MAX(`Score`) FROM `US_Scores` WHERE `SongID` = "' +
+        IntToStr(ID) + '" AND `Difficulty` = "' + IntToStr(difficulty) + '"');
+    end;
+  except
+    Result := 0;
   end;
 end;
 

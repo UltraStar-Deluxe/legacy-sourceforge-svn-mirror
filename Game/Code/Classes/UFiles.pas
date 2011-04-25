@@ -6,7 +6,8 @@ uses USongs,
      SysUtils,
      StrUtils,
      ULog,
-     UMusic;
+     UMusic,
+     UDataBase;
 
 const
   DEFAULT_FADE_IN_TIME = 8;    //TODO in INI
@@ -33,9 +34,10 @@ procedure   ClearSong(var Song: TSong); //Clears Song Header values
 procedure ResetSingTemp;
 procedure ParseNote(NrCzesci: integer; TypeP: char; StartP, DurationP, NoteP: integer; LyricS: string);
 procedure NewSentence(NrCzesciP: integer; Param1, Param2: integer; LoadFullFile: boolean);
-function LoadSong(Name: string; LoadFullFile: boolean): boolean;
-function CheckSong: boolean;
-function SaveSong(Song: TSong; Czesc: array of TCzesci; Name: string; Relative: boolean): boolean;
+function  LoadSong(Name: string; LoadFullFile: boolean): boolean;
+function  CheckSong: boolean;
+procedure SongQuality(Check: boolean);
+function  SaveSong(Song: TSong; Czesc: array of TCzesci; Name: string; Relative: boolean): boolean;
 procedure FindRefrainStart(var Song: TSong);
 procedure SetMedleyMode;
 
@@ -180,6 +182,14 @@ begin
   SetLength(Song.DuetNames, 2);
   Song.DuetNames[0] := 'P1';
   Song.DuetNames[1] := 'P2';
+
+  //Quality
+  Song.Quality.Syntax := 0;
+  Song.Quality.BPM := 0;
+  Song.Quality.NoteGaps := 0;
+  Song.Quality.NoteJumps := 0;
+  Song.Quality.Scores := 50;
+  Song.Quality.Value := 0;
 end;
 
 //--------------------
@@ -879,6 +889,112 @@ begin
     if (Ini.LoadFaultySongs=0) and (Ini.LoadFaultySongs_temp=0) then
       Result := false;
   end;
+
+  SongQuality(Result);
+end;
+
+procedure SongQuality(Check: boolean);
+var
+  p, line, note:  integer;
+  numLines:       integer;
+  numNotes:       integer;
+  firstNote:      boolean;
+
+  lastNoteTone:   integer;
+  lastNoteEnd:    integer;
+
+  Gaps:           array[0..2] of integer; //0=total; 1=gaps with length 0; 2=gaps with length 0 + note jump
+  GoldenNotes:    integer;
+  gn:             real;
+
+begin
+  // syntax quality
+  if Check then
+    AktSong.Quality.Syntax := 100
+  else
+    AktSong.Quality.Syntax := 0;
+
+  // BPM quality (check only 1st)
+  if (AktSong.BPM[0].BPM/4 < 100) then
+    AktSong.Quality.BPM := 5
+  else if (AktSong.BPM[0].BPM/4 < 200) then
+    AktSong.Quality.BPM := (AktSong.BPM[0].BPM/4-100)*0.95 + 5
+  else if (AktSong.BPM[0].BPM/4 < 1000) then
+    AktSong.Quality.BPM := 100
+  else
+    AktSong.Quality.BPM := 50;
+
+  // Score quality
+  p := Database.GetMaxScore(AktSong.Artist, AktSong.Title, 0);
+  if (p=0) then
+  begin
+    p := round(Database.GetMaxScore(AktSong.Artist, AktSong.Title, 1)*1.2);
+    if (p=0) then
+      p := round(Database.GetMaxScore(AktSong.Artist, AktSong.Title, 2)*1.5);
+  end;
+
+  if (p=0) then
+    AktSong.Quality.Scores := 50
+  else
+  begin
+    if (p>10000) then
+      p := 10000;
+
+    AktSong.Quality.Scores := p/100;
+  end;
+
+  Gaps[0] := 0;
+  Gaps[1] := 0;
+  Gaps[2] := 0;
+
+  GoldenNotes := 0;
+  gn := 0;
+
+  for p := 0 to Length(Czesci) - 1 do
+  begin
+    numLines := Length(Czesci[p].Czesc);
+    firstNote := true;
+
+    for line := 0 to numLines - 1 do
+    begin
+      numNotes := Length(Czesci[p].Czesc[line].Nuta);
+
+      for note := 0 to numNotes - 1 do
+      begin
+        if (Czesci[p].Czesc[line].Nuta[note].Wartosc = 2) then
+          Inc(GoldenNotes);
+
+        if firstNote then
+          firstNote := false
+        else
+        begin
+          Gaps[0] := Gaps[0] + 1;
+          if (lastNoteEnd = Czesci[p].Czesc[line].Nuta[note].Start) then
+          begin
+            Gaps[1] := Gaps[1] + 1;
+            if (abs(lastNoteTone - Czesci[p].Czesc[line].Nuta[note].Ton) > 1) then
+              Gaps[2] := Gaps[2] + 1;
+          end;
+        end;
+
+        lastNoteTone := Czesci[p].Czesc[line].Nuta[note].Ton;
+        lastNoteEnd := Czesci[p].Czesc[line].Nuta[note].Start + Czesci[p].Czesc[line].Nuta[note].Dlugosc;
+      end;
+    end;
+  end;
+
+  if (Gaps[0]>0) then
+  begin
+    AktSong.Quality.NoteGaps := 100 * (1-Gaps[1]/Gaps[0]);
+    AktSong.Quality.NoteJumps := 100 * (1-Gaps[2]/Gaps[0]);
+    gn := 100 * GoldenNotes/(Gaps[0]+1);
+  end;
+
+  AktSong.Quality.Value := (AktSong.Quality.Syntax + AktSong.Quality.BPM*3 + AktSong.Quality.NoteGaps*2 +
+    AktSong.Quality.NoteJumps*2 + AktSong.Quality.Scores*2) / 10;
+
+  Log.LogSongQuality(AktSong.Artist, AktSong.Title, AktSong.Quality.Syntax, AktSong.Quality.BPM, AktSong.Quality.NoteGaps,
+    AktSong.Quality.NoteJumps, AktSong.Quality.Scores, AktSong.Quality.Value, gn);
 end;
 
 

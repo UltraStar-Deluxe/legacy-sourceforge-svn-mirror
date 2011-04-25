@@ -18,6 +18,16 @@ type
     FadeOut_time: real;     //FadeOut-Time in seconds
   end;
 
+  TSongQuality = record     //  0..100%  0% = worst, 100% = should be good
+    Syntax:       real;     // are there syntax errors in txt?
+    BPM:          real;     // should be between 200 and 450
+    NoteGaps:     real;     // notes should have some space between each other
+    NoteJumps:    real;     // don't change the note level too much if there's no space between the notes
+    Scores:       real;     // 50% if no highscore available, else: maximum highscore/10
+    
+    Value:        real;     // summarized quality indicator
+  end;
+
   { used to hold header tags that are not supported by this version of
     usdx (e.g. some tags from ultrastar 0.7.0) when songs are loaded in
     songeditor. They will be written the end of the song header } //from usdx 1.1
@@ -42,6 +52,8 @@ type
     Path:       string;
     Folder:     string; // for sorting by folder
     FileName:   string;
+
+    Quality:    TSongQuality;
 
     isDuet:     boolean;
     DuetNames:  array of string;

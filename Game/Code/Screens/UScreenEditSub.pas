@@ -387,6 +387,9 @@ begin
           if SResult then
           begin
             Text[TextDebug].Text := Language.Translate('INFO_FILE_SAVED');
+            if not CheckSong then
+              ScreenPopupError.ShowPopup('This song contains some syntax errors!');
+              
             CatSongs.Song[SongIndex] := AktSong;
           end else
           begin

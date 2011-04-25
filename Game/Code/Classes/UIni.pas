@@ -358,7 +358,7 @@ begin
     if Tekst = IResolution[Pet] then Ini.Resolution := Pet;
 
   // FullScreen
-  Tekst := IniFile.ReadString('Graphics', 'FullScreen', 'On');
+  Tekst := IniFile.ReadString('Graphics', 'FullScreen', 'Off');
   for Pet := 0 to High(IFullScreen) do
     if Tekst = IFullScreen[Pet] then Ini.FullScreen := Pet;
 

@@ -17,6 +17,9 @@ type
     FileSession:      TextFile;
     FileSessionO:     boolean; // opened
 
+    FileSongQuality:  TextFile;
+    FileSongQualityO: boolean; // opened
+
     NumErrors:        integer;
     NumSungSongs:     integer;
 
@@ -43,6 +46,7 @@ type
     function LogVoice(SoundNr: Integer; Player, Artist, Title, Points: string): string;
 
     procedure LogSession(names: array of string; points: array of string; Artist, Title, singmode: string);
+    procedure LogSongQuality(artist, title: string; syntax, bpm, notegaps, notejumps, score, value, goldennotes: real);
 
     // compability
     procedure LogStatus(Log1, Log2: string);
@@ -285,7 +289,7 @@ begin
 //  if FileAnalyzeO then CloseFile(FileAnalyze);
   if FileErrorO then CloseFile(FileError);
   if FileSessionO then CloseFile(FileSession);
-
+  if FileSongQualityO then CloseFile(FileSongQuality);
 end;
 
 procedure TLog.BenchmarkStart(Number: integer);
@@ -623,6 +627,43 @@ begin
       Flush(FileSession);
     except
       FileSessionO := false;
+    end;
+  end;
+end;
+
+procedure TLog.LogSongQuality(artist, title: string;
+  syntax, bpm, notegaps, notejumps, score, value, goldennotes: real);
+var
+  FileName: string;
+
+begin
+  if not FileSongQualityO then
+  begin
+    NumSungSongs := 0;
+    FileName := GamePath + 'quality.csv';
+
+    AssignFile(FileSongQuality, FileName);
+    {$I-}
+    Rewrite(FileSongQuality);
+    if IOResult = 0 then FileSongQualityO := true;
+    {$I+}
+
+    //If File is opened write column names to File
+    If (FileSongQualityO) then
+    begin
+      WriteLn(FileSongQuality, 'Artist; Title; Syntax; BPM; Note Gaps; Note Jumps; Scores; Value; Anteil Goldene Noten');
+      Flush(FileSongQuality);
+    end;
+  end;
+
+  if FileSongQualityO then
+  begin
+    try
+      WriteLn(FileSongQuality, artist + ';' + title + ';' + FloatToStr(syntax) + ';' +
+        FloatToStr(bpm) + ';' + FloatToStr(notegaps) + ';' + FloatToStr(notejumps) + ';' +
+        FloatToStr(score) + ';' + FloatToStr(value) + ';' + FloatToStr(goldennotes) + ';');
+    except
+      FileSongQualityO := false;
     end;
   end;
 end;
