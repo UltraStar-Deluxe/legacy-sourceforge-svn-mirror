@@ -82,7 +82,7 @@ C\              C/C++ API and examples...
     SPECTRUM.C
     SPECTRUM.DSP
     MAKEFILE
-  SYNTH\          Synth example
+  SYNTH\          Low latency custom streaming example
     SYNTH.C
     SYNTH.DSP
     MAKEFILE
@@ -157,7 +157,7 @@ VB\             Visual Basic API and examples...
     PRJSPECTRUM.VBP
     FRMSPECTRUM.FRM
     MODSPECTRUM.BAS
-  SYNTH\          Synth example
+  SYNTH\          Low latency custom streaming example
     PRJSYNTH.VBP
     FRMSYNTH.FRM
     MODSYNTH.BAS
@@ -269,6 +269,7 @@ CHMOX.APP       CHM file viewer
 BASS.H          BASS C/C++ header file
 MAKEFILE        Makefile for all examples
 MAKEFILE.IN     Makefile helper macros
+BASS.XCODEPROJ  Xcode project for examples
 MP3-FREE
   LIBBASS.DYLIB   BASS module using the OSX MP3 decoder
 3DTEST\         3D example
@@ -319,6 +320,10 @@ SPEAKERS\       Multi-speaker example
 SPECTRUM\       Spectrum analyser example
   SPECTRUM.C
   MAKEFILE
+SYNTH\          Low latency custom streaming example
+  SYNTH.C
+  MAKEFILE
+  SYNTH.NIB
 WRITEWAV\       WAVE writer example
   WRITEWAV.C
   MAKEFILE
@@ -396,20 +401,20 @@ Main Features
 * High precision synchronization
   synchronize events in your software to the streams and MOD musics
 
-* DirectX 8 effects
+* Effects
   chorus/compressor/distortion/echo/flanger/gargle/parameq/reverb
 
 * User defined DSP functions
   custom effects may be applied to musics and streams
 
 * 32 bit floating-point decoding and processing
-  floating-point stream/music decoding, DSP, FX, and recording
+  floating-point stream/music decoding, DSP/FX, and recording
 
 * 3D sound
-  play samples/streams/musics in any 3D position, with EAX support
+  play samples/streams/musics in any 3D position
 
 * Small
-  BASS is under 100KB (on Windows), so won't bloat your distribution
+  BASS (Win32 version) is under 100KB, so won't bloat your distribution
 
 
 Using BASS
@@ -466,7 +471,7 @@ string.
 
 MacOSX version
 --------------
-A separate "LIB" file is not required for OSX. Using XCode, you can simply
+A separate "LIB" file is not required for OSX. Using Xcode, you can simply
 add the DYLIB file to the project. Or using a makefile, you can build your
 programs like this, for example:
 
@@ -575,6 +580,33 @@ These are the major (and not so major) changes at each version stage.
 There are of course bug fixes and other little improvements made along
 the way too! To make upgrading simpler, all functions affected by a
 change to the BASS interface are listed.
+
+2.4.7 - 30/11/2010
+------------------
+* Decode-to-position seeking
+	BASS_POS_DECODETO (BASS_ChannelSetPosition flag)
+* Support for RIFF "DISP" text tags
+	BASS_TAG_RIFF_DISP (BASS_ChannelGetTags type)
+* Support for APEv1 tags
+	BASS_TAG_APE (BASS_ChannelGetTags type)
+	BASS_TAG_APE_BINARY (BASS_ChannelGetTags type)
+* 16384 sample FFT
+	BASS_DATA_FFT16384 (BASS_ChannelGetData flag)
+* Support for AIFF files larger than 4GB
+	BASS_StreamCreateFile/User/Url
+* Acceptance of self-signed and invalid certificates
+	BASS_StreamCreateURL
+* Internet stream reading timeout
+	BASS_CONFIG_NET_READTIMEOUT
+* Support for removing a DSP within its DSPPROC
+	BASS_ChannelRemoveDSP
+* Buffer-bypassing for lower latency output (not available on Windows)
+	BASS_ATTRIB_NOBUFFER (BASS_ChannelSetAttribute option)
+	SYNTH example added (OSX)
+* A "Default" device that follows default device changes on Windows 7
+	BASS_CONFIG_DEV_DEFAULT (BASS_SetConfig option)
+* Xcode examples project added for OSX
+* Documentation updated with platform-specific info for iOS/Linux/WinCE
 
 2.4.6 - 17/6/2010
 -----------------
