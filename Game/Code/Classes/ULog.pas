@@ -651,7 +651,7 @@ begin
     //If File is opened write column names to File
     If (FileSongQualityO) then
     begin
-      WriteLn(FileSongQuality, 'Artist; Title; Syntax; BPM; Note Gaps; Note Jumps; Scores; Value; Anteil Goldene Noten');
+      WriteLn(FileSongQuality, '"Artist";"Title";"Syntax";"BPM";"Note Gaps";"Note Jumps";"Scores";"Value";"Golden Note Ratio"');
       Flush(FileSongQuality);
     end;
   end;
@@ -659,9 +659,10 @@ begin
   if FileSongQualityO then
   begin
     try
-      WriteLn(FileSongQuality, artist + ';' + title + ';' + FloatToStr(syntax) + ';' +
-        FloatToStr(bpm) + ';' + FloatToStr(notegaps) + ';' + FloatToStr(notejumps) + ';' +
-        FloatToStr(score) + ';' + FloatToStr(value) + ';' + FloatToStr(goldennotes) + ';');
+      WriteLn(FileSongQuality, '"' + artist + '";"' + title + '";' + FormatFloat('#.0', syntax) + ';' +
+        FormatFloat('#.0', bpm) + ';' + FormatFloat('#.0', notegaps) + ';' +
+        FormatFloat('#.0', notejumps) + ';' + FormatFloat('#.0', score) + ';' +
+        FormatFloat('#.0', value) + ';' + FormatFloat('#.0', goldennotes) + ';');
     except
       FileSongQualityO := false;
     end;

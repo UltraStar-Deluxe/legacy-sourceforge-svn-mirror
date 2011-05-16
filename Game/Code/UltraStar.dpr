@@ -272,6 +272,19 @@ begin
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Initializing 3D', 1);
 
+  // Score Saving System
+  Log.BenchmarkStart(1);
+  Log.LogStatus('DataBase System', 'Initialization');
+  DataBase := TDataBaseSystem.Create;
+
+  if (Params.ScoreFile = '') then
+    DataBase.Init ('Ultrastar.db')
+  else
+    DataBase.Init (Params.ScoreFile);
+
+  Log.BenchmarkEnd(1);
+  Log.LogBenchmark('Loading DataBase System', 1);
+
   // Songs
   Log.BenchmarkStart(1);
   Log.LogStatus('Creating Song Array', 'Initialization');     Songs := TSongs.Create;
@@ -301,19 +314,6 @@ begin
   InitializeSound;
   Log.BenchmarkEnd(1);
   Log.LogBenchmark('Initializing Sound', 1);
-
-  // Score Saving System
-  Log.BenchmarkStart(1);
-  Log.LogStatus('DataBase System', 'Initialization');
-  DataBase := TDataBaseSystem.Create;
-
-  if (Params.ScoreFile = '') then
-    DataBase.Init ('Ultrastar.db')
-  else
-    DataBase.Init (Params.ScoreFile);
-
-  Log.BenchmarkEnd(1);
-  Log.LogBenchmark('Loading DataBase System', 1);
 
   //Playlist Manager
   Log.BenchmarkStart(1);

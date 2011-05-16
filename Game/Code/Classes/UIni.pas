@@ -95,6 +95,10 @@ type
     PossibleScore:  integer;
     LogSession:     integer;
 
+    // Quality-Check
+    EnableQualityCheck:  integer;
+    QualityFactors: array[0..4] of integer;
+
     // Soundcards
     SoundCard:      array[0..7, 1..2] of integer;
 
@@ -199,6 +203,9 @@ const
   IDuelRatio:     array[0..9] of string = ('normal', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%');
   IPossibleScore: array[0..3] of string = ('Off', 'Bar', 'Numbers', 'Name');
   ILogSession:    array[0..1] of string = ('Off', 'On');
+
+  IEnableQualityCheck:  array[0..1] of string = ('Off', 'On');
+  IQualityFactors:  array[0..9] of string = ('x0', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9');
 
   IChannel:       array[0..6] of string = ('Off', '1', '2', '3', '4', '5', '6');
 
@@ -676,6 +683,36 @@ begin
   for Pet := 0 to High(ILogSession) do
     if Tekst = ILogSession[Pet] then Ini.LogSession := Pet;
 
+  // EnableQualityCheck
+  Tekst := IniFile.ReadString('Quality', 'EnableQualityCheck', IEnableQualityCheck[0]);
+  for Pet := 0 to High(IEnableQualityCheck) do
+    if Tekst = IEnableQualityCheck[Pet] then Ini.EnableQualityCheck := Pet;
+
+  // Quality Factor Syntax
+  Tekst := IniFile.ReadString('Quality', 'QualityFactorSyntax', IQualityFactors[1]);
+  for Pet := 0 to High(IQualityFactors) do
+    if Tekst = IQualityFactors[Pet] then Ini.QualityFactors[0] := Pet;
+
+  // Quality Factor BPM
+  Tekst := IniFile.ReadString('Quality', 'QualityFactorBPM', IQualityFactors[3]);
+  for Pet := 0 to High(IQualityFactors) do
+    if Tekst = IQualityFactors[Pet] then Ini.QualityFactors[1] := Pet;
+
+  // Quality Factor Note Gaps
+  Tekst := IniFile.ReadString('Quality', 'QualityFactorNoteGaps', IQualityFactors[2]);
+  for Pet := 0 to High(IQualityFactors) do
+    if Tekst = IQualityFactors[Pet] then Ini.QualityFactors[2] := Pet;
+
+  // Quality Factor Note Jumps
+  Tekst := IniFile.ReadString('Quality', 'QualityFactorNoteJumps', IQualityFactors[2]);
+  for Pet := 0 to High(IQualityFactors) do
+    if Tekst = IQualityFactors[Pet] then Ini.QualityFactors[3] := Pet;
+
+  // Quality Factor Scores
+  Tekst := IniFile.ReadString('Quality', 'QualityFactorScores', IQualityFactors[1]);
+  for Pet := 0 to High(IQualityFactors) do
+    if Tekst = IQualityFactors[Pet] then Ini.QualityFactors[4] := Pet;
+
   // SongPath
   if (Params.SongPath <> '') then
     SongPaths[0] := IncludeTrailingPathDelimiter(Params.SongPath)
@@ -961,6 +998,30 @@ begin
     //LogSession
     Tekst := ILogSession[Ini.LogSession];
     IniFile.WriteString('Advanced', 'LogSession', Tekst);
+
+    // EnableQualityCheck
+    Tekst := IEnableQualityCheck[Ini.EnableQualityCheck];
+    IniFile.WriteString('Quality', 'EnableQualityCheck', Tekst);
+
+    //Quality Factor Syntax
+    Tekst := IQualityFactors[Ini.QualityFactors[0]];
+    IniFile.WriteString('Quality', 'QualityFactorSyntax', Tekst);
+
+    //Quality Factor BPM
+    Tekst := IQualityFactors[Ini.QualityFactors[1]];
+    IniFile.WriteString('Quality', 'QualityFactorBPM', Tekst);
+
+    //Quality Factor NoteJumps
+    Tekst := IQualityFactors[Ini.QualityFactors[2]];
+    IniFile.WriteString('Quality', 'QualityFactorNoteJumps', Tekst);
+
+    //Quality Factor NoteGaps
+    Tekst := IQualityFactors[Ini.QualityFactors[3]];
+    IniFile.WriteString('Quality', 'QualityFactorNoteGaps', Tekst);
+
+    //Quality Factor Scores
+    Tekst := IQualityFactors[Ini.QualityFactors[4]];
+    IniFile.WriteString('Quality', 'QualityFactorScores', Tekst);
 
     // Directories (add a template if section is missing, from 1.1)
     if (not IniFile.SectionExists('Path')) then

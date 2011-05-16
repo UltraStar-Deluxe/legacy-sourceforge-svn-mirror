@@ -520,7 +520,7 @@ begin
 
       SDLK_I:
         begin
-          if (Mode = smNormal) then
+          if (Mode = smNormal) and (Ini.EnableQualityCheck = 1) then
             ShowSongQuality := not ShowSongQuality;
         end;
 
@@ -2691,7 +2691,8 @@ begin
   DrawExtensions;
 
   // Song Quality
-  if ShowSongQuality and not CatSongs.Song[Interaction].Main then
+  if ShowSongQuality and (TargetVidVis = windowed) and (VidVis = windowed)
+    and not CatSongs.Song[Interaction].Main then
   begin
     SetFontStyle(0);
     SetFontItalic(false);

@@ -890,7 +890,8 @@ begin
       Result := false;
   end;
 
-  SongQuality(Result);
+  if (Ini.EnableQualityCheck=1) then
+    SongQuality(Result);
 end;
 
 procedure SongQuality(Check: boolean);
@@ -906,6 +907,7 @@ var
   Gaps:           array[0..2] of integer; //0=total; 1=gaps with length 0; 2=gaps with length 0 + note jump
   GoldenNotes:    integer;
   gn:             real;
+  Sum:            integer;
 
 begin
   // syntax quality
@@ -964,21 +966,24 @@ begin
         if (Czesci[p].Czesc[line].Nuta[note].Wartosc = 2) then
           Inc(GoldenNotes);
 
-        if firstNote then
-          firstNote := false
-        else
+        if not Czesci[p].Czesc[line].Nuta[note].FreeStyle then
         begin
-          Gaps[0] := Gaps[0] + 1;
-          if (lastNoteEnd = Czesci[p].Czesc[line].Nuta[note].Start) then
+          if firstNote then
+            firstNote := false
+          else
           begin
-            Gaps[1] := Gaps[1] + 1;
-            if (abs(lastNoteTone - Czesci[p].Czesc[line].Nuta[note].Ton) > 1) then
-              Gaps[2] := Gaps[2] + 1;
+            Gaps[0] := Gaps[0] + 1;
+            if (lastNoteEnd = Czesci[p].Czesc[line].Nuta[note].Start) then
+            begin
+              Gaps[1] := Gaps[1] + 1;
+              if (abs(lastNoteTone - Czesci[p].Czesc[line].Nuta[note].Ton) > 1) then
+                Gaps[2] := Gaps[2] + 1;
+            end;
           end;
-        end;
 
-        lastNoteTone := Czesci[p].Czesc[line].Nuta[note].Ton;
-        lastNoteEnd := Czesci[p].Czesc[line].Nuta[note].Start + Czesci[p].Czesc[line].Nuta[note].Dlugosc;
+          lastNoteTone := Czesci[p].Czesc[line].Nuta[note].Ton;
+          lastNoteEnd := Czesci[p].Czesc[line].Nuta[note].Start + Czesci[p].Czesc[line].Nuta[note].Dlugosc;
+        end;
       end;
     end;
   end;
@@ -990,8 +995,18 @@ begin
     gn := 100 * GoldenNotes/(Gaps[0]+1);
   end;
 
-  AktSong.Quality.Value := (AktSong.Quality.Syntax + AktSong.Quality.BPM*3 + AktSong.Quality.NoteGaps*2 +
-    AktSong.Quality.NoteJumps*2 + AktSong.Quality.Scores*2) / 10;
+  Sum := Ini.Qualityfactors[0] + Ini.Qualityfactors[1] + Ini.Qualityfactors[2] +
+    Ini.Qualityfactors[3] + Ini.Qualityfactors[4];
+
+  if (Sum>0) then
+    AktSong.Quality.Value := (
+      AktSong.Quality.Syntax * Ini.Qualityfactors[0] +
+      AktSong.Quality.BPM  * Ini.Qualityfactors[1] +
+      AktSong.Quality.NoteGaps * Ini.Qualityfactors[2] +
+      AktSong.Quality.NoteJumps * Ini.Qualityfactors[3] +
+      AktSong.Quality.Scores * Ini.Qualityfactors[4]) / Sum
+  else
+    AktSong.Quality.Value := 0;
 
   Log.LogSongQuality(AktSong.Artist, AktSong.Title, AktSong.Quality.Syntax, AktSong.Quality.BPM, AktSong.Quality.NoteGaps,
     AktSong.Quality.NoteJumps, AktSong.Quality.Scores, AktSong.Quality.Value, gn);
