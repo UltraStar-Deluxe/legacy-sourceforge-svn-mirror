@@ -123,7 +123,7 @@ uses
 
 const
   VersionName = 'UltraStar Deluxe Challenge, Medley & Duet Edition';
-  VersionNumber = 'r9.20';
+  VersionNumber = 'r9.21';
 
 var
   WndTitle:       string;

@@ -234,6 +234,10 @@ type
     else if r<3 then
       Result:=false
 
+    else if (num > 3) and (
+      (ar[r-2].x=Pair.Player1) or (ar[r-2].y=Pair.Player1) or
+      (ar[r-2].x=Pair.Player2) or (ar[r-2].y=Pair.Player2)) then
+      Result := true
     //
     else if
       ((ar[r-2].x = Pair.Player1) and (ar[r-3].x = Pair.Player1)) or
@@ -245,10 +249,9 @@ type
       ((ar[r-2].y = Pair.Player2) and (ar[r-3].x = Pair.Player2)) or
       ((ar[r-2].y = Pair.Player2) and (ar[r-3].y = Pair.Player2))then
 
-      Result:=true
-
+      Result := true
     else
-      Result:=false;
+      Result := false;
   end;
 
 var
@@ -258,6 +261,7 @@ var
   I, J, K:     integer;
   arr:  array of TFields;
   temp_pairs: array of TPair;
+  pairs_season: array of boolean;
   season: integer;
   num: integer;
   max_played: integer;
@@ -310,6 +314,7 @@ begin
   //build the playlist
   SetLength (arr, 0);
   SetLength (arr, NumRounds);
+  SetLength (pairs_season, (NumPlayers*NumPlayers-NumPlayers) div 2);
 
   for I := 0 to NumRounds - 1 do
   begin
@@ -349,8 +354,10 @@ begin
 
     for J := 0 to Length(Pairs) - 1 do
     begin
+      K := Floor(J / 2);
+
       if (not HasPlayed(Pairs[J], arr, I+1, NumPlayers)) and
-        (Pairs[J].played<season) then
+        (Pairs[J].played<season) and not pairs_season[K] then
       begin
         if (not max_flag and (must_sing=-1)) or
           ((must_sing>=0) and (
@@ -371,9 +378,12 @@ begin
     begin
       for J := 0 to Length(Pairs) - 1 do
       begin
+        K := Floor(J / 2);
+
         if (max_flag and (
           (Player[Pairs[J].Player1].played<max_played) and
-          (Player[Pairs[J].Player2].played<max_played))) then
+          (Player[Pairs[J].Player2].played<max_played))) and
+          not pairs_season[K] then
         begin
           SetLength(temp_pairs, Length(temp_pairs)+1);
           temp_pairs[Length(temp_pairs)-1]:=Pairs[J];
@@ -386,8 +396,9 @@ begin
     begin
       for J := 0 to Length(Pairs) - 1 do
       begin
+        K := Floor(J / 2);
         if (not HasPlayed(Pairs[J], arr, I+1, NumPlayers)) and
-          (Pairs[J].played<season) then
+          (Pairs[J].played<season) and not pairs_season[K] then
         begin
           SetLength(temp_pairs, Length(temp_pairs)+1);
           temp_pairs[Length(temp_pairs)-1]:=Pairs[J];
@@ -400,19 +411,40 @@ begin
     begin
       for J := 0 to Length(Pairs) - 1 do
       begin
-        SetLength(temp_pairs, Length(temp_pairs)+1);
-        temp_pairs[Length(temp_pairs)-1]:=Pairs[J];
+        K := Floor(J / 2);
+        if not pairs_season[K] then
+        begin
+          SetLength(temp_pairs, Length(temp_pairs)+1);
+          temp_pairs[Length(temp_pairs)-1]:=Pairs[J];
+        end;
       end;
     end;
 
     num:=Random(Length(temp_pairs));
 
     inc(Pairs[temp_pairs[num].origin].played);
+    J := Floor(temp_pairs[num].origin / 2);
+    pairs_season[J] := true;
     arr[I].x:=temp_pairs[num].Player1;
     arr[I].y:=temp_pairs[num].Player2;
 
     inc(Player[arr[I].x].played);
     inc(Player[arr[I].y].played);
+
+    K := 0;
+    for J := 0 to Length(pairs_season) - 1 do
+    begin
+      if pairs_season[J] then
+        Inc(K);
+    end;
+
+    if K = Length(pairs_season) then
+    begin
+      for J := 0 to Length(pairs_season) - 1 do
+      begin
+        pairs_season[J] := false;
+      end;
+    end;
   end;
 
   //debug
