@@ -756,8 +756,7 @@ begin
 
             end else
             begin // clicked on song
-              if (CatSongs.Song[Interaction].isDuet and ((PlayersPlay=1) or
-                (PlayersPlay=3) or (PlayersPlay=6))) then
+              if (CatSongs.Song[Interaction].isDuet and (PlayersPlay=1)) then
               begin
                 ScreenPopupError.ShowPopup(Language.Translate('SING_ERROR_DUET_NUM_PLAYERS'));
                 Exit;
