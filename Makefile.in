@@ -416,7 +416,8 @@ macosx-app: all
 	@echo "Have fun."
 	@echo ""
 
-AVCODECLIB := $(shell $(OTOOL) -L $(macosx_bundle_path)/MacOS/ultrastardx | grep avcodec | cut -f 1 -d ' ' | cut -f 2 -d '/')
+AVCODECLIB := $(shell $(OTOOL) -L $(macosx_bundle_path)/MacOS/ultrastardx | grep avcodec | cut -f 1 -d ' ' | cut -f 4-6 -d '/')
+SWRESAMPLELIB := $(shell $(OTOOL) -L $(macosx_bundle_path)/MacOS/libavcodec*.dylib | grep swresample  | cut -f 1 -d ' ' | cut -f 4-6 -d '/')
 .PHONY: macosx-standalone-app
 macosx-standalone-app: macosx-app 
 # Create double clickable standalone (does not need fink) Mac OS X 
@@ -443,7 +444,7 @@ macosx-standalone-app: macosx-app
 	$(foreach dylib,$(shell $(OTOOL) -L $(finkLibDir)/libtiff.dylib | grep version | cut -f 1 -d ' ' | grep -v \/System\/Library | grep -v \/usr\/lib),$(install_osx_libraries))
 
 # X11 libs as well, because users may not have installed it on 10.4
-	$(foreach dylib,$(shell $(OTOOL) -L /usr/X11R6/lib/libX11.dylib  | grep version | cut -f 1 -d ' ' | grep -v \/System\/Library | grep -v \/usr\/lib),$(install_osx_libraries))
+	$(foreach dylib,$(shell $(OTOOL) -L /opt/X11/lib/libX11.dylib  | grep version | cut -f 1 -d ' ' | grep -v \/System\/Library | grep -v \/usr\/lib),$(install_osx_libraries))
 
 # libpcre.dylib must be installed extra, since it is not linked to the executable but opened using dlopen
 	$(shell $(INSTALL) -m 755 $(finkLibDir)/libpcre.dylib $(macosx_bundle_path)/MacOS)

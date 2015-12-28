@@ -99,6 +99,7 @@ uses
       {$ENDIF}
       {$IFDEF UseSWScale}
         swscale           in 'lib\' + FFMPEG_DIR + '\swscale.pas',
+				swresample        in 'lib\' + FFMPEG_DIR + '\swresample.pas',
       {$ENDIF}
     {$ELSE} // speak: This is for Delphi. Change version as needed!
       avcodec            in 'lib\ffmpeg-0.10\avcodec.pas',
@@ -108,6 +109,7 @@ uses
       avio               in 'lib\ffmpeg-0.10\avio.pas',
       {$IFDEF UseSWScale}
         swscale          in 'lib\ffmpeg-0.10\swscale.pas',
+				swresample       in 'lib\ffmpeg-0.10\swresample.pas',
       {$ENDIF}
     {$ENDIF}
     UMediaCore_FFmpeg    in 'media\UMediaCore_FFmpeg.pas',
@@ -353,6 +355,7 @@ uses
 
 const
   sLineBreak = {$IFDEF LINUX} AnsiChar(#10) {$ENDIF}
+	             {$IFDEF DARWIN} AnsiChar(#10) {$ENDIF}
                {$IFDEF MSWINDOWS} AnsiString(#13#10) {$ENDIF};
 var
   I: Integer;

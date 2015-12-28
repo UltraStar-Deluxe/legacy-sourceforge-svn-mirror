@@ -242,6 +242,11 @@ PKG_HAVE([libswscale], [libswscale], no)
 PKG_VERSION([libswscale], [libswscale])
 AC_SUBST_DEFINE(HAVE_SWSCALE, $libswscale_HAVE)
 
+# find FFMpeg's swresample lib (just if FFMpeg is compiled in GPL mode)
+PKG_HAVE([libswresample], [libswresample], no)
+PKG_VERSION([libswresample], [libswresample])
+AC_SUBST_DEFINE(HAVE_SWRESAMPLE, $libswresample_HAVE)
+
 # find projectM version
 libprojectM_PKG="libprojectM >= 0.98"
 PKG_HAVE([libprojectM], [$libprojectM_PKG], no)
