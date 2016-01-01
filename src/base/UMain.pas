@@ -37,6 +37,11 @@ uses
   SysUtils,
   SDL;
 
+var
+  CheckMouseButton: boolean; // for checking mouse motion
+  MAX_FPS: byte; // 0 to 255 is enough
+
+
 procedure Main;
 procedure MainLoop;
 procedure CheckEvents;
@@ -106,6 +111,14 @@ begin
     WindowTitle := USDXVersionStr;
 
     Platform.Init;
+    
+    // Commandline Parameter Parser
+    Params := TCMDParams.Create;
+
+    // Log + Benchmark
+    Log := TLog.Create;
+    Log.Title := WindowTitle;
+    //Log.FileOutputEnabled := not Params.NoLog;
 
     if Platform.TerminateIfAlreadyRunning(WindowTitle) then
       Exit;
@@ -135,14 +148,6 @@ begin
 
     USTime := TTime.Create;
     VideoBGTimer := TRelativeTimer.Create;
-
-    // Commandline Parameter Parser
-    Params := TCMDParams.Create;
-
-    // Log + Benchmark
-    Log := TLog.Create;
-    Log.Title := WindowTitle;
-    Log.FileOutputEnabled := not Params.NoLog;
 
     // Language
     Log.LogStatus('Initialize Paths', 'Initialization');
@@ -301,7 +306,7 @@ begin
   CountSkipTime();  // JB - for some reason this seems to be needed when we use the SDL Timer functions.
   repeat
     TicksBeforeFrame := SDL_GetTicks;
-    
+
     // joypad
     if (Ini.Joypad = 1) or (Params.Joypad) then
       Joy.Update;
@@ -365,14 +370,17 @@ begin
           case Event.type_ of
             SDL_MOUSEMOTION:
             begin
-              mouseDown := false;
+              if (CheckMouseButton) then
+                mouseDown := true
+              else
+                mouseDown := false;
               mouseBtn  := 0;
             end;
             SDL_MOUSEBUTTONDOWN:
             begin
               mouseDown := true;
               mouseBtn  := Event.button.button;
-              
+              CheckMouseButton := true;
               if (mouseBtn = SDL_BUTTON_LEFT) or (mouseBtn = SDL_BUTTON_RIGHT) then
                 Display.OnMouseButton(true);
             end;
@@ -380,7 +388,7 @@ begin
             begin
               mouseDown := false;
               mouseBtn  := Event.button.button;
-
+              CheckMouseButton := false;
               if (mouseBtn = SDL_BUTTON_LEFT) or (mouseBtn = SDL_BUTTON_RIGHT) then
                 Display.OnMouseButton(false);
             end;
