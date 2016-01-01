@@ -135,6 +135,10 @@ type
     Title:      UTF8String;
     Artist:     UTF8String;
 
+    // use in search
+    TitleNoAccent:  UTF8String;
+    ArtistNoAccent: UTF8String;
+
     Creator:    UTF8String;
 
     CoverTex:   TTexture;
@@ -787,12 +791,14 @@ begin
 
     //Title
     self.Title := Parser.SongInfo.Header.Title;
+    self.TitleNoAccent := LowerCase(GetStringWithNoAccents(UTF8Decode(Parser.SongInfo.Header.Title)));
 
     //Add Title Flag to Done
     Done := Done or 1;
 
     //Artist
     self.Artist := Parser.SongInfo.Header.Artist;
+    self.ArtistNoAccent := LowerCase(GetStringWithNoAccents(UTF8Decode(Parser.SongInfo.Header.Artist)));
 
     //Add Artist Flag to Done
     Done := Done or 2;
@@ -968,6 +974,8 @@ begin
       if (Identifier = 'TITLE') then
       begin
         DecodeStringUTF8(Value, Title, Encoding);
+        self.TitleNoAccent := LowerCase(GetStringWithNoAccents(UTF8Decode(Title)));
+
         //Add Title Flag to Done
         Done := Done or 1;
       end
@@ -975,6 +983,8 @@ begin
       else if (Identifier = 'ARTIST') then
       begin
         DecodeStringUTF8(Value, Artist, Encoding);
+        self.ArtistNoAccent := LowerCase(GetStringWithNoAccents(UTF8Decode(Artist)));
+
         //Add Artist Flag to Done
         Done := Done or 2;
       end
@@ -1073,7 +1083,7 @@ begin
         DecodeStringUTF8(Value, Language, Encoding)
       end
 
-      //Language Sorting
+      //Year Sorting
       else if (Identifier = 'YEAR') then
       begin
         TryStrtoInt(Value, self.Year)

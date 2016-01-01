@@ -374,6 +374,8 @@ begin
 
   if (Filter <> '') then
   begin
+    Filter := GetStringWithNoAccents(UTF8Decode(UTF8LowerCase(Filter)));
+
     SetLength(JukeboxVisibleSongs, 0);
     for I := 0 to High(JukeboxSongsList) do
     begin

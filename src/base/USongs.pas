@@ -777,7 +777,10 @@ var
   TmpString: UTF8String;
   WordArray: array of UTF8String;
 begin
-  FilterStr := Trim(FilterStr);
+
+  FilterStr := Trim(UTF8Decode(FilterStr));
+  FilterStr := GetStringWithNoAccents(FilterStr);
+
   if (FilterStr <> '') then
   begin
     Result := 0;
