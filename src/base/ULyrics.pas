@@ -516,7 +516,11 @@ var
   WordY: real;                    // word y-position
   LyricsEffect: TLyricsEffect;
   Alpha: real;                    // alphalevel to fade out at end
-  ClipPlaneEq: array[0..3] of GLdouble; // clipping plane for slide effect 
+  ClipPlaneEq: array[0..3] of GLdouble; // clipping plane for slide effect
+
+  OutlineColor_act: TRGB;                  // outline color actual line
+  OutlineColor_dis: TRGB;                  // outline color next line
+  OutlineColor_en:  TRGB;                  // outline color sing line
   {// duet mode
   IconSize: real;                 // size of player icons
   IconAlpha: real;                // alpha level of player icons
@@ -592,6 +596,9 @@ begin
         Alpha := 0;
     end;
 
+    // outline color
+    SetOutlineColor(OutlineColor_act.R, OutlineColor_act.G, OutlineColor_act.B, Alpha);
+
     // draw sentence before current word
     if (LyricsEffect in [lfxSimple, lfxBall, lfxShift]) then
       // only highlight current word and not that ones before in this line
@@ -604,9 +611,16 @@ begin
     glColorRGB(LineColor_en, Alpha);
     if (NextWord <> nil) then
     begin
+
+      // outline color
+      SetOutlineColor(OutlineColor_en.R, OutlineColor_en.G, OutlineColor_en.B, Alpha);
+
       DrawLyricsWords(Line, LyricX + NextWord.X, LyricY,
                       Line.CurWord+1, High(Line.Words));
     end;
+
+    // outline color
+    SetOutlineColor(OutlineColor_act.R, OutlineColor_act.G, OutlineColor_act.B, Alpha);
 
     // draw current word
     if (LyricsEffect in [lfxSimple, lfxBall, lfxShift]) then
@@ -680,12 +694,26 @@ begin
 
     // enable the upper, disable the lower line
     if (Line = UpperLine) then
+    begin
+      // outline color
+      SetOutlineColor(OutlineColor_en.R, OutlineColor_en.G, OutlineColor_en.B, Alpha);
+
       glColorRGB(LineColor_en)
+    end
     else
+    begin
+      // outline color
+      SetOutlineColor(OutlineColor_dis.R, OutlineColor_dis.G, OutlineColor_dis.B, Alpha);
+
       glColorRGB(LineColor_dis);
+    end;
 
     DrawLyricsWords(Line, LyricX, LyricY, 0, High(Line.Words));
   end;
+
+  // reset
+  SetOutlineColor(0,0,0,1);
+
 end;
 
 {**
