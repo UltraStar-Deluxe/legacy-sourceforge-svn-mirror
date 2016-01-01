@@ -116,8 +116,15 @@ type
       LineColor_en:   TRGBA;      // Color of words in an enabled line
       LineColor_dis:  TRGBA;      // Color of words in a disabled line
       LineColor_act:  TRGBA;      // Color of the active word
+
+      {
+      LineOColor_en:   TRGBA;      // Color of outline words in an enabled line
+      LineOColor_dis:  TRGBA;      // Color of outline words in a disabled line
+      LineOColor_act:  TRGBA;      // Color of outline the active word
+      }
+
       FontStyle:      byte;       // Font for the lyric text
-      
+
       { // currently not used
        FadeInEffect:   byte;       // Effect for line fading in: 0: No Effect; 1: Fade Effect; 2: Move Upwards from Bottom to Pos
        FadeOutEffect:  byte;       // Effect for line fading out: 0: No Effect; 1: Fade Effect; 2: Move Upwards
@@ -487,7 +494,7 @@ begin
     // italic font to avoid overlapping.
     // - if two italic words follow each other use the normal style's
     // width otherwise the spacing between the words will be too big.
-    // - if it is the line's last word use normal width  
+    // - if it is the line's last word use normal width
     if CurWord.Freestyle and
        (I+1 < Length(LyricLine.Words)) and
        (not LyricLine.Words[I+1].Freestyle) then
