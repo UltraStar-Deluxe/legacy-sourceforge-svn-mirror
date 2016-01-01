@@ -155,6 +155,12 @@ begin
       if Song.Finish      <> 0  then    SongFile.WriteLine('#END:'         + IntToStr(Song.Finish));
       if Relative               then    SongFile.WriteLine('#RELATIVE:yes');
 
+      if (Song.Medley.Source=msTag) and not Relative and (Song.Medley.EndBeat - Song.Medley.StartBeat > 0) then
+      begin
+        SongFile.WriteLine('#MedleyStartBeat:' + IntToStr(Song.Medley.StartBeat));
+        SongFile.WriteLine('#MedleyEndBeat:' + IntToStr(Song.Medley.EndBeat));
+      end;
+
       SongFile.WriteLine('#BPM:' + FloatToStr(Song.BPM[0].BPM / 4));
       SongFile.WriteLine('#GAP:' + FloatToStr(Song.GAP));
 
