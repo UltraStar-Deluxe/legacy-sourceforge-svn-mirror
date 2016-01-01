@@ -95,7 +95,7 @@ type
       procedure LoadScreenModes(IniFile: TCustomIniFile);
 
     public
-      Name:           array[0..11] of UTF8String;
+      Name:           array[0..15] of UTF8String;
 
       // Templates for Names Mod
       NameTeam:       array[0..2] of UTF8String;
@@ -242,7 +242,7 @@ const
 type
   TSyncToType = (stMusic, stLyrics, stOff);
 
-const  
+const
   IAudioOutputBufferSize:     array[0..9] of UTF8String  = ('Auto', '256', '512', '1024', '2048', '4096', '8192', '16384', '32768', '65536');
   IAudioOutputBufferSizeVals: array[0..9] of integer     = ( 0,      256,   512 ,  1024 ,  2048 ,  4096 ,  8192 ,  16384 ,  32768 ,  65536 );
 
@@ -366,7 +366,7 @@ uses
   UUnicodeUtils;
 
 (**
- * Translate and set the values of options, which need translation. 
+ * Translate and set the values of options, which need translation.
  *)
 procedure TIni.TranslateOptionValues;
 var
@@ -392,7 +392,7 @@ begin
 
   ITabsTranslated[0]                  := ULanguage.Language.Translate('OPTION_VALUE_OFF');
   ITabsTranslated[1]                  := ULanguage.Language.Translate('OPTION_VALUE_ON');
-  
+
   ISortingTranslated[0]               := ULanguage.Language.Translate('OPTION_VALUE_EDITION');
   ISortingTranslated[1]               := ULanguage.Language.Translate('OPTION_VALUE_GENRE');
   ISortingTranslated[2]               := ULanguage.Language.Translate('OPTION_VALUE_LANGUAGE');
@@ -494,7 +494,7 @@ begin
 
   ILineBonusTranslated[0]             := ULanguage.Language.Translate('OPTION_VALUE_OFF');
   ILineBonusTranslated[1]             := ULanguage.Language.Translate('OPTION_VALUE_ON');
- 
+
   IPartyPopupTranslated[0]            := ULanguage.Language.Translate('OPTION_VALUE_OFF');
   IPartyPopupTranslated[1]            := ULanguage.Language.Translate('OPTION_VALUE_ON');
 
