@@ -65,12 +65,12 @@ type
    SurviveSentenceChange : Boolean;
 
    constructor Create(cX, cY         : real;
-                      cScreen        : integer; 
-		      cLive          : byte; 
-		      cFrame         : integer; 
-		      cRecArrayIndex : integer; 
-		      cStarType      : TParticleType; 
-		      Player         : cardinal);
+                      cScreen        : integer;
+                      cLive          : byte;
+                      cFrame         : integer;
+                      cRecArrayIndex : integer;
+                      cStarType      : TParticleType;
+                      Player         : cardinal);
    destructor Destroy(); override;
    procedure Draw;
    procedure LiveOn;
@@ -111,7 +111,7 @@ type
    procedure SpawnRec();
    procedure Kill(index: cardinal);
    procedure KillAll();
-   procedure SentenceChange();
+   procedure SentenceChange(CP: integer);
    procedure SaveGoldenStarsRec(Xtop, Ytop, Xbottom, Ybottom: real);
    procedure SavePerfectNotePos(Xtop, Ytop: real);
    procedure GoldenNoteTwinkle(Top, Bottom, Right: real; Player: integer);
@@ -356,6 +356,11 @@ procedure TParticle.Draw;
 var
   L: cardinal;
 begin
+  { if screens = 2 and playerplay <= 3 the 2nd screen shows the
+    textures of screen 1 }
+  if (Screens = 2) and (PlayersPlay <= 3) then
+    ScreenAct := 1;
+
   if (ScreenAct = Screen) then
   begin
     glEnable(GL_TEXTURE_2D);
@@ -511,9 +516,10 @@ begin
   end;
 end;
 
-procedure TEffectManager.SentenceChange();
+procedure TEffectManager.SentenceChange(CP: integer);
 var
   c: cardinal;
+  p: integer;
 begin
   c := 0;
   while c <= High(Particle) do
@@ -527,7 +533,8 @@ begin
   SetLength(PerfNoteArray,0); // remove PerfectNote positions
   for c := 0 to 5 do
   begin
-    TwinkleArray[c] := 0; // reset GoldenNoteHit memory
+    if ((c mod 2) = CP) then
+      TwinkleArray[c] := 0; // reset GoldenNoteHit memory
   end;
 end;
 
@@ -651,7 +658,7 @@ procedure TEffectManager.SpawnPerfectLineTwinkle();
 var
   P, I, Life: cardinal;
   Left, Right, Top, Bottom: cardinal;
-  cScreen: integer;
+  cScreen, Nstars: integer;
 begin
 // calculation of coordinates done with hardcoded values like in UDraw.pas
 // might need to be adjusted if drawing of SingScreen is modified
@@ -665,10 +672,43 @@ begin
     Left := 30;
   end;
   Right := 770;
+
   // spawn effect for every player with a perfect line
   for P := 0 to PlayersPlay-1 do
     if Player[P].LastSentencePerfect then
     begin
+      // 3 and 6 players in 1 screen
+      if (Ini.Screens = 0) then
+      begin
+        if (PlayersPlay = 4) then
+        begin
+          if (P <= 1) then
+          begin
+            Left := 30;
+            Right := 385;
+          end
+          else
+          begin
+            Left := 415;
+            Right := 770;
+          end;
+        end;
+
+        if (PlayersPlay = 6) then
+        begin
+          if (P <= 2) then
+          begin
+            Left := 30;
+            Right := 385;
+          end
+          else
+          begin
+            Left := 415;
+            Right := 770;
+          end;
+        end;
+      end;
+
       // calculate area where notes of this player are drawn
       case PlayersPlay of
         1: begin
@@ -689,7 +729,13 @@ begin
                end;
                case P of
                  0,1: cScreen := 1;
-                 else cScreen := 2;
+                 else
+                 begin
+                   if (Ini.Screens = 1) then
+                     cScreen := 2
+                   else
+                     cScreen := 1;
+                 end;
                end;
              end;
         3,6: begin
@@ -709,12 +755,23 @@ begin
                end;
                case P of
                  0,1,2: cScreen := 1;
-                 else cScreen := 2;
+                 else
+                 begin
+                   if (Ini.Screens = 1) then
+                     cScreen := 2
+                   else
+                     cScreen := 1;
+                 end;
                end;
              end;
       end;
+
       // spawn Sparkling Stars inside calculated coordinates
-      for I := 0 to 80 do
+      Nstars := 80;
+      if (Ini.Screens = 0) and (PlayersPlay > 3) then
+        Nstars := 40;
+
+      for I := 0 to Nstars do
       begin
         Life := RandomRange(8,16);
         Spawn(RandomRange(Left,Right), RandomRange(Top,Bottom), cScreen, Life, 16-Life, -1, PerfectLineTwinkle, P);

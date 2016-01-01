@@ -198,8 +198,8 @@ type
     procedure Finish;
     procedure Pause; // toggle pause
 
-    procedure OnSentenceEnd(SentenceIndex: cardinal);     // for linebonus + singbar
-    procedure OnSentenceChange(SentenceIndex: cardinal);  // for golden notes
+    procedure OnSentenceEnd(CP: integer; SentenceIndex: cardinal);     // for linebonus + singbar
+    procedure OnSentenceChange(CP: integer; SentenceIndex: cardinal);  // for golden notes
 
     //procedure DeleteSong(Id: integer);
     procedure FilterSongList(Filter: UTF8String);
@@ -1391,7 +1391,7 @@ begin
   end;
 end;
 
-procedure TScreenJukebox.OnSentenceEnd(SentenceIndex: cardinal);
+procedure TScreenJukebox.OnSentenceEnd(CP: integer; SentenceIndex: cardinal);
 var
   PlayerIndex: byte;
   CurrentPlayer: PPLayer;
@@ -1425,7 +1425,7 @@ end;
 
  // Called on sentence change
  // SentenceIndex: index of the new active sentence
-procedure TScreenJukebox.OnSentenceChange(SentenceIndex: cardinal);
+procedure TScreenJukebox.OnSentenceChange(CP: integer; SentenceIndex: cardinal);
 begin
   // fill lyrics queue and set upper line to the current sentence
   while (Lyrics.GetUpperLineIndex() < SentenceIndex) or

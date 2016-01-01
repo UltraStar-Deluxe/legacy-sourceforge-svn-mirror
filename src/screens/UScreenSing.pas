@@ -163,8 +163,8 @@ type
     procedure Finish; virtual;
     procedure Pause; // toggle pause
 
-    procedure OnSentenceEnd(SentenceIndex: cardinal);     // for linebonus + singbar
-    procedure OnSentenceChange(SentenceIndex: cardinal);  // for golden notes
+    procedure OnSentenceEnd(CP: integer; SentenceIndex: cardinal);     // for linebonus + singbar
+    procedure OnSentenceChange(CP: integer; SentenceIndex: cardinal);  // for golden notes
   end;
 
 implementation
@@ -949,7 +949,9 @@ begin
   end;
 
   // kill all stars not killed yet (goldenstarstwinkle mod)
-  GoldenRec.SentenceChange;
+  GoldenRec.SentenceChange(0);
+  if (PlayersPlay <> 1) then
+    GoldenRec.SentenceChange(1);
 
   // set position of line bonus - line bonus end
   // set number of empty sentences for line bonus
@@ -1324,7 +1326,7 @@ begin
   end;
 end;
 
-procedure TScreenSing.OnSentenceEnd(SentenceIndex: cardinal);
+procedure TScreenSing.OnSentenceEnd(CP: integer; SentenceIndex: cardinal);
 var
   PlayerIndex:    byte;
   CurrentPlayer:  PPLayer;
@@ -1420,10 +1422,10 @@ end;
 
  // Called on sentence change
  // SentenceIndex: index of the new active sentence
-procedure TScreenSing.OnSentenceChange(SentenceIndex: cardinal);
+procedure TScreenSing.OnSentenceChange(CP: integer; SentenceIndex: cardinal);
 begin
   // goldenstarstwinkle
-  GoldenRec.SentenceChange;
+  GoldenRec.SentenceChange(CP);
 
   // fill lyrics queue and set upper line to the current sentence
   while (Lyrics.GetUpperLineIndex() < SentenceIndex) or
