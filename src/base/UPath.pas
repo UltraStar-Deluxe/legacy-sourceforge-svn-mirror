@@ -37,9 +37,6 @@ uses
   SysUtils,
   Classes,
   IniFiles,
-  {$IFDEF MSWINDOWS}
-  TntClasses,
-  {$ENDIF}
   UConfig,
   UUnicodeUtils;
 
@@ -81,11 +78,7 @@ type
   {**
    * TBinaryFileStream (inherited from THandleStream)
    *}
-  {$IFDEF MSWINDOWS}
-  TBinaryFileStream = class(TTntFileStream)
-  {$ELSE}
   TBinaryFileStream = class(TFileStream)
-  {$ENDIF}
   public
     {**
      * @seealso TFileStream.Create for valid Mode parameters
