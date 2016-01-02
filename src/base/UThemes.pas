@@ -1047,7 +1047,7 @@ begin
       // set correct default skin
       Skin.GetSkinsByTheme(Entry.Name, Skins);
       Entry.DefaultSkin := max(0, GetArrayIndex(Skins, SkinName, true));
-  
+
       Len := Length(Themes);
       SetLength(Themes, Len + 1);
       SetLength(ITheme, Len + 1);
@@ -1106,7 +1106,7 @@ begin
       Skin.SkinReg := false; }
       Skin.Color := sColor;
 
-      Skin.LoadSkin(ISkin[Ini.SkinNo]);
+      Skin.LoadSkin(ISkin[Ini.SkinNo], Themes[ThemeNum].Name);
 
       LoadColors;
 

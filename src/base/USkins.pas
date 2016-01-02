@@ -62,9 +62,9 @@ type
     procedure LoadList;
     procedure ParseDir(Dir: IPath);
     procedure LoadHeader(FileName: IPath);
-    procedure LoadSkin(Name: string);
+    procedure LoadSkin(Name, Theme: string);
     function GetTextureFileName(TextureName: string): IPath;
-    function GetSkinNumber(Name: string): integer;
+    function GetSkinNumber(Name, Theme: string): integer;
     function GetDefaultColor(SkinNo: integer): integer;
 
     procedure GetSkinsByTheme(Theme: string; out Skins: TUTF8StringDynArray);
@@ -143,14 +143,14 @@ begin
   SkinIni.Free;
 end;
 
-procedure TSkin.LoadSkin(Name: string);
+procedure TSkin.LoadSkin(Name, Theme: string);
 var
   SkinIni: TMemIniFile;
   SL:      TStringList;
   T:       integer;
   S:       integer;
 begin
-  S        := GetSkinNumber(Name);
+  S        := GetSkinNumber(Name, Theme);
   SkinPath := Skin[S].Path;
 
   SkinIni  := TMemIniFile.Create(SkinPath.Append(Skin[S].FileName).ToNative);
@@ -191,13 +191,13 @@ begin
   end;
 end;
 
-function TSkin.GetSkinNumber(Name: string): integer;
+function TSkin.GetSkinNumber(Name, Theme: string): integer;
 var
   S: integer;
 begin
   Result := 0; // set default to the first available skin
   for S := 0 to High(Skin) do
-    if CompareText(Skin[S].Name, Name) = 0 then
+    if (CompareText(Skin[S].Name, Name) = 0) and (CompareText(Skin[S].Theme, Theme) = 0) then
       Result := S;
 end;
 
