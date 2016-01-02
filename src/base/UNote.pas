@@ -209,6 +209,7 @@ var
   CurBeat: real;
   CurBPM:  integer;
 begin
+  try
   // static BPM
   if Length(CurrentSong.BPM) = 1 then
   begin
@@ -232,6 +233,10 @@ begin
   begin
     Result := 0;
   end;
+  except
+    on E: Exception do
+    Result := 0;
+  end;
 end;
 
 function GetTimeFromBeat(Beat: integer; SelfSong: TSong = nil): real;
@@ -243,6 +248,8 @@ begin
     Song := SelfSong
   else
     Song := CurrentSong;
+
+  Result := 0;
 
   // static BPM
   if Length(Song.BPM) = 1 then
@@ -295,11 +302,16 @@ var
   Count:   integer;
   CountGr: integer;
   CP:      integer;
+  PetGr:   integer;
 begin
   LyricsState.UpdateBeats();
 
+  PetGr := 0;
+  if (PlayersPlay <> 1) then
+    PetGr := 1;
+
   // sentences routines
-  for CountGr := 0 to 0 do //High(Lines)
+  for CountGr := 0 to PetGr do //High(Lines)
   begin;
     CP := CountGr;
     // old parts
@@ -379,6 +391,9 @@ var
   Count: integer;
 begin
   // beat click
+
+  if (PlayersPlay = 1) then
+  begin
   if ((Ini.BeatClick = 1) and
       ((LyricsState.CurrentBeatC + Lines[0].Resolution + Lines[0].NotesGAP) mod Lines[0].Resolution = 0)) then
   begin
@@ -387,6 +402,7 @@ begin
 
   for Count := 0 to Lines[0].Line[Lines[0].Current].HighNote do
   begin
+    //basisbit todo
     if (Lines[0].Line[Lines[0].Current].Note[Count].Start = LyricsState.CurrentBeatC) then
     begin
       // click assist
@@ -403,12 +419,13 @@ begin
       *)
     end;
   end;
+  end;
 end;
 
 procedure NewBeatDetect(Screen: TScreenSing);
   var
-    CP, SentenceEnd: integer;
-    I: cardinal;
+    MaxCP, CP, SentenceEnd: integer;
+    I, J: cardinal;
 begin
   // check for sentence end
   // we check all lines here because a new sentence may
@@ -421,10 +438,15 @@ begin
   // do it for most corrupt txt and for lines in
   // non-corrupt txts that start immediatly after the prev.
   // line ends
+  MaxCP := 0;
+  if (PlayersPlay <> 1) then
+    MaxCP := 1;
 
   if (assigned(Screen)) then
   begin
-    CP := 0;
+    for J := 0 to MaxCP do
+    begin
+      CP := J;
 
     NewNote(CP, Screen);
 
@@ -440,6 +462,7 @@ begin
             Screen.OnSentenceEnd(CP, I);
         end;
       end;
+    end;
     end;
   end;
 end;
