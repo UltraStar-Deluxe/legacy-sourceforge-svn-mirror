@@ -64,7 +64,7 @@ uses
 
 type
 
-  TSingMode = ( smNormal, smPartyMode, smPlaylistRandom, smMedley );
+  TSingMode = ( smNormal, smPartyClassic, smPartyFree, smPartyChallenge, smPartyTournament, smJukebox, smPlaylistRandom , smMedley );
 
   TMedleySource = ( msNone, msCalculated, msTag );
 

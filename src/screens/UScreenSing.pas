@@ -634,7 +634,7 @@ begin
     // error loading song -> go back to previous screen and show some error message
     Display.AbortScreenChange;
     // select new song in party mode
-    if ScreenSong.Mode = smPartyMode then
+    if ScreenSong.Mode = smPartyClassic then
       ScreenSong.SelectRandomSong();
     if Length(CurrentSong.LastError) > 0 then
       ScreenPopupError.ShowPopup(Format(Language.Translate(CurrentSong.LastError), [CurrentSong.ErrorLineNo]))
@@ -665,7 +665,7 @@ begin
         //Error Loading Song in Medley Mode -> Go back to Song Screen and Show some Error Message
         Display.AbortScreenChange;
         // select new song in party mode
-        if ScreenSong.Mode = smPartyMode then
+        if ScreenSong.Mode = smPartyClassic then
           ScreenSong.SelectRandomSong();
         if Length(CurrentSong.LastError) > 0 then
           ScreenPopupError.ShowPopup(Format(Language.Translate(CurrentSong.LastError), [CurrentSong.ErrorLineNo]))

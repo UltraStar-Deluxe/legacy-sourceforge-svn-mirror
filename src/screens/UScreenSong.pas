@@ -592,7 +592,7 @@ begin
             end;
           end
           //When in party Mode then Ask before Close
-          else if (Mode = smPartyMode) then
+          else if (Mode = smPartyClassic) then
           begin
             AudioPlayback.PlaySound(SoundLib.Back);
             CheckFadeTo(@ScreenMain,'MSG_END_PARTY');
@@ -635,7 +635,7 @@ begin
                     end;
                 end;
               end
-              else if (Mode = smPartyMode) then //PartyMode -> Show Menu
+              else if (Mode = smPartyClassic) then //PartyMode -> Show Menu
               begin
                 if (Ini.PartyPopup = 1) then
                   ScreenSongMenu.MenuShow(SM_Party_Main)
@@ -1596,7 +1596,7 @@ begin
     end;
   end
   //Party Mode
-  else if Mode = smPartyMode then
+  else if Mode = smPartyClassic then
   begin
     SelectRandomSong;
     //Show Menu directly in PartyMode
@@ -2006,7 +2006,7 @@ begin
           else
             SkipTo(Random(CatSongs.VisibleSongs));
         end;
-      smPartyMode:  // one category select category and select random song
+      smPartyClassic:  // one category select category and select random song
         begin
           CatSongs.ShowCategoryList;
           CatSongs.ClickCategoryButton(PlaylistMan.CurPlayList);
@@ -2033,7 +2033,7 @@ end;
 procedure TScreenSong.SetJoker;
 begin
   // If Party Mode
-  if Mode = smPartyMode then //Show Joker that are available
+  if Mode = smPartyClassic then //Show Joker that are available
   begin
     if (Length(Party.Teams) >= 1) then
     begin
@@ -2114,7 +2114,7 @@ var
   Visible: boolean;
 begin
   //Set Visibility of Party Statics and Text
-  Visible := (Mode = smPartyMode);
+  Visible := (Mode = smPartyClassic);
 
   for I := 0 to High(StaticParty) do
     Statics[StaticParty[I]].Visible := Visible;
@@ -2137,10 +2137,14 @@ end;
 procedure TScreenSong.StartSong;
 begin
   CatSongs.Selected := Interaction;
+
+  if (Mode = smPartyFree) then
+    Party.SaveSungPartySong(Interaction);
+
   StopMusicPreview();
 
   //Party Mode
-  if (Mode = smPartyMode) then
+  if (Mode = smPartyClassic) then
   begin
     FadeTo(@ScreenSing);
   end
@@ -2175,7 +2179,7 @@ end;
 //Team No of Team (0-5)
 procedure TScreenSong.DoJoker (Team: integer);
 begin
-  if (Mode = smPartyMode) and
+  if (Mode = smPartyClassic) and
      (High(Party.Teams) >= Team) and
      (Party.Teams[Team].JokersLeft > 0) then
   begin
