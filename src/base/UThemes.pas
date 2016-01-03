@@ -79,6 +79,13 @@ const
 
 
 type
+  TThemePosition = record
+    X: integer;
+    Y: integer;
+    H: integer;
+    W: integer;
+  end;
+
   TThemeStatic = record
     X:      integer;
     Y:      integer;
@@ -118,6 +125,7 @@ type
     Size:   integer;
     Align:  integer;
     Text:   UTF8String;
+    Writable: boolean; // true -> add a blink char (|) at the end
     //Reflection
     Reflection:           boolean;
     ReflectionSpacing:    real;

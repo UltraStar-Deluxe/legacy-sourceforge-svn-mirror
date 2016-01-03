@@ -116,10 +116,7 @@ type
       function AddText(ThemeText: TThemeText): integer; overload;
       function AddText(X, Y: real; const Text_: UTF8String): integer; overload;
       function AddText(X, Y: real; Style: integer; Size, ColR, ColG, ColB: real; const Text: UTF8String): integer; overload;
-      function AddText(X, Y, W: real; Style: integer; Size, ColR, ColG, ColB: real; Align: integer; const Text_: UTF8String; Reflection_: boolean; ReflectionSpacing_: real; Z : real): integer; overload;
-{ for later additions
       function AddText(X, Y, W: real; Style: integer; Size, ColR, ColG, ColB: real; Align: integer; const Text_: UTF8String; Reflection_: boolean; ReflectionSpacing_: real; Z : real; Writable: boolean): integer; overload;
-}
 
       // button
       procedure SetButtonLength(Length: cardinal); //Function that Set Length of Button Array in one Step instead of register new Memory for every Button
@@ -802,9 +799,7 @@ end;
 function TMenu.AddText(ThemeText: TThemeText): integer;
 begin
   Result := AddText(ThemeText.X, ThemeText.Y, ThemeText.W, ThemeText.Font, ThemeText.Size,
-    ThemeText.ColR, ThemeText.ColG, ThemeText.ColB, ThemeText.Align, ThemeText.Text, ThemeText.Reflection, ThemeText.ReflectionSpacing, ThemeText.Z);
-// add later when writable is available
-//    ThemeText.ColR, ThemeText.ColG, ThemeText.ColB, ThemeText.Align, ThemeText.Text, ThemeText.Reflection, ThemeText.ReflectionSpacing, ThemeText.Z, ThemeText.Writable);
+    ThemeText.ColR, ThemeText.ColG, ThemeText.ColB, ThemeText.Align, ThemeText.Text, ThemeText.Reflection, ThemeText.ReflectionSpacing, ThemeText.Z, ThemeText.Writable);
 end;
 
 function TMenu.AddText(X, Y: real; const Text_: UTF8String): integer;
@@ -823,9 +818,7 @@ function TMenu.AddText(X, Y: real;
                       Size, ColR, ColG, ColB: real;
                       const Text: UTF8String): integer;
 begin
-  Result := AddText(X, Y, 0, Style, Size, ColR, ColG, ColB, 0, Text, false, 0, 0);
-// add with writable
-//  Result := AddText(X, Y, 0, Style, Size, ColR, ColG, ColB, 0, Text, false, 0, 0, false);
+  Result := AddText(X, Y, 0, Style, Size, ColR, ColG, ColB, 0, Text, false, 0, 0, false);
 end;
 
 function TMenu.AddText(X, Y, W: real;
@@ -835,18 +828,15 @@ function TMenu.AddText(X, Y, W: real;
                        const Text_: UTF8String;
                        Reflection_: boolean;
                        ReflectionSpacing_: real;
-                       Z : real{;  add writable
-                       Writable: boolean}): integer;
+                       Z : real;
+                       Writable: boolean): integer;
 var
   TextNum: integer;
 begin
   // adds text
   TextNum := Length(Text);
   SetLength(Text, TextNum + 1);
-  Text[TextNum] := TText.Create(X, Y, W, Style, Size, ColR, ColG, ColB, Align, Text_, Reflection_, ReflectionSpacing_, Z);
-{ add with writable
   Text[TextNum] := TText.Create(X, Y, W, Style, Size, ColR, ColG, ColB, Align, Text_, Reflection_, ReflectionSpacing_, Z, Writable);
-}
   Result := TextNum;
 end;
 

@@ -72,7 +72,7 @@ type
       Reflection:        boolean;
       ReflectionSpacing: real;
 
-// for adding later      Writable: boolean;
+			Writable: boolean;
 
       procedure SetSelect(Value: boolean);
       property Selected: boolean read SelectBool write SetSelect;
@@ -85,10 +85,8 @@ type
       procedure Draw;
       constructor Create; overload;
       constructor Create(X, Y: real; const Text: UTF8String); overload;
-      constructor Create(ParX, ParY, ParW: real; ParStyle: integer; ParSize, ParColR, ParColG, ParColB: real; ParAlign: integer; const ParText: UTF8String; ParReflection: boolean; ParReflectionSpacing: real; ParZ: real); overload;
-{ when adding writable
       constructor Create(ParX, ParY, ParW: real; ParStyle: integer; ParSize, ParColR, ParColG, ParColB: real; ParAlign: integer; const ParText: UTF8String; ParReflection: boolean; ParReflectionSpacing: real; ParZ: real; Writable: boolean); overload;
-
+{
       function GetMouseOverArea: TMouseOverRect;
 }
   end;
@@ -321,14 +319,13 @@ begin
         if (not (SelectBool and SelectBlink)) or (I <> High(TextTiles)) then
           Text2 := TextTiles[I]
         else
-//         begin
-//          if (Writable) then
-         Text2 := TextTiles[I] + '|';
-{
+        begin
+          if (Writable) then
+            Text2 := TextTiles[I] + '|'
           else
             Text2 := TextTiles[I];
         end;
-}
+
         case Align of
           1: X2 := X + MoveX - glTextWidth(tmpText2)/2; { centered }
           2: X2 := X + MoveX - glTextWidth(tmpText2); { right aligned }
@@ -362,7 +359,7 @@ end;
 
 constructor TText.Create(X, Y: real; const Text: UTF8String);
 begin
-  Create(X, Y, 0, ftNormal, 30, 0, 0, 0, 0, Text, false, 0, 0{, false});
+  Create(X, Y, 0, ftNormal, 30, 0, 0, 0, 0, Text, false, 0, 0, false);
 end;
 
 constructor TText.Create(ParX, ParY, ParW: real;
@@ -372,8 +369,8 @@ constructor TText.Create(ParX, ParY, ParW: real;
                          const ParText: UTF8String;
                          ParReflection: boolean;
                          ParReflectionSpacing: real;
-                         ParZ: real{;
-                         Writable: boolean});
+                         ParZ: real;
+                         Writable: boolean);
 begin
   inherited Create;
   Alpha := 1;
@@ -393,7 +390,7 @@ begin
   Visible := true;
   Reflection := ParReflection;
   ReflectionSpacing := ParReflectionSpacing;
-//  Writable := Writable;
+  Writable := Writable;
 end;
 { add later
 function TText.GetMouseOverArea: TMouseOverRect;
