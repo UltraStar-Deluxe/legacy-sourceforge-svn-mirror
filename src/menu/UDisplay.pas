@@ -215,7 +215,7 @@ begin
   for i := 0 to 1 do
   begin
     glBindTexture(GL_TEXTURE_2D, FadeTex[i]);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, 3, TexW, TexH, 0, GL_RGB, GL_UNSIGNED_BYTE, nil);
   end;
@@ -270,7 +270,16 @@ begin
       else if (ScreenPopupInfo <> nil) and ScreenPopupInfo.Visible then
         ScreenPopupInfo.Draw
       else if (ScreenPopupCheck <> nil) and ScreenPopupCheck.Visible then
-        ScreenPopupCheck.Draw;
+        ScreenPopupCheck.Draw
+{ add as needed
+      else if (ScreenPopupInsertUser <> nil) and ScreenPopupInsertUser.Visible then
+        ScreenPopupInsertUser.Draw
+      else if (ScreenPopupSendScore <> nil) and ScreenPopupSendScore.Visible then
+        ScreenPopupSendScore.Draw
+      else if (ScreenPopupScoreDownload <> nil) and ScreenPopupScoreDownload.Visible then
+        ScreenPopupScoreDownload.Draw
+}
+      ;
 
       // fade
       FadeStartTime := 0;
@@ -536,7 +545,7 @@ begin
       Cursor_LastMove := Ticks;
       Cursor_Fade := true;
     end;
-    
+
     // fading
     if Cursor_Fade then
     begin
