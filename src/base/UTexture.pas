@@ -56,6 +56,8 @@ type
     ScaleW:   real; // for dynamic scalling while leaving width constant
     ScaleH:   real; // for dynamic scalling while leaving height constant
     Rot:      real; // 0 - 2*pi
+    RightScale: real; //
+    LeftScale:  real; //
     Int:      real; // intensity
     ColR:     real;
     ColG:     real;
@@ -311,6 +313,7 @@ begin
 
   glBindTexture(GL_TEXTURE_2D, ActTex);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -359,6 +362,9 @@ begin
     TexY1 := 0;
     TexX2 := 1;
     TexY2 := 1;
+
+    RightScale := 1;
+    LeftScale := 1;
 
     Name := Identifier;
   end;
@@ -465,6 +471,9 @@ begin
   Result.TexY1 := 0;
   Result.TexX2 := 1;
   Result.TexY2 := 1;
+
+  Result.RightScale := 1;
+  Result.LeftScale := 1;
 
   Result.Name := Name;
 end;
