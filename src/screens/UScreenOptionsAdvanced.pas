@@ -70,7 +70,7 @@ begin
           Exit;
         end;
     end;
-    
+
     // check special keys
     case PressedKey of
       SDLK_ESCAPE,
@@ -82,9 +82,8 @@ begin
         end;
       SDLK_RETURN:
         begin
-          //SelectLoadAnimation Hidden because it is useless atm
-          //if SelInteraction = 7 then begin
           if SelInteraction = 6 then
+//          if SelInteraction = 8 then
           begin
             Ini.Save;
             AudioPlayback.PlaySound(SoundLib.Back);
@@ -97,9 +96,8 @@ begin
         InteractPrev;
       SDLK_RIGHT:
         begin
-          //SelectLoadAnimation Hidden because it is useless atm
-          //if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
           if (SelInteraction >= 0) and (SelInteraction <= 5) then
+//          if (SelInteraction >= 0) and (SelInteraction <= 7) then
           begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractInc;
@@ -107,9 +105,8 @@ begin
         end;
       SDLK_LEFT:
         begin
-          //SelectLoadAnimation Hidden because it is useless atm
-          //if (SelInteraction >= 0) and (SelInteraction <= 6) then begin
           if (SelInteraction >= 0) and (SelInteraction <= 5) then
+//          if (SelInteraction >= 0) and (SelInteraction <= 7) then
           begin
             AudioPlayback.PlaySound(SoundLib.Option);
             InteractDec;
@@ -150,10 +147,19 @@ begin
   Theme.OptionsAdvanced.SelectPartyPopup.showArrows := true;
   Theme.OptionsAdvanced.SelectPartyPopup.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsAdvanced.SelectPartyPopup, Ini.PartyPopup, IPartyPopupTranslated);
+{
+  Theme.OptionsAdvanced.SelectSingScores.showArrows := true;
+  Theme.OptionsAdvanced.SelectSingScores.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsAdvanced.SelectSingScores, Ini.SingScores, ISingScoresTranslated);
 
+  Theme.OptionsAdvanced.SelectTopScores.showArrows := true;
+  Theme.OptionsAdvanced.SelectTopScores.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsAdvanced.SelectTopScores, Ini.TopScores, ITopScoresTranslated);
+}
   AddButton(Theme.OptionsAdvanced.ButtonExit);
   if (Length(Button[0].Text)=0) then
     AddButtonText(20, 5, Theme.Options.Description[7]);
+//    AddButtonText(20, 5, Theme.Options.Description[10]);
 
   Interaction := 0;
 end;
