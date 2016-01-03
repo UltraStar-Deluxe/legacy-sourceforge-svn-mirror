@@ -124,15 +124,27 @@ begin
       glTexCoord2f(TexW, 0);    glVertex3f(x4, y4, z);
     glEnd;
 }
-
+{
     glBegin(GL_QUADS);
       glTexCoord2f(TexX1*TexW, TexY1*TexH); glVertex3f(x1, y1, z);
       glTexCoord2f(TexX1*TexW, TexY2*TexH); glVertex3f(x2, y2, z);
       glTexCoord2f(TexX2*TexW, TexY2*TexH); glVertex3f(x3, y3, z);
       glTexCoord2f(TexX2*TexW, TexY1*TexH); glVertex3f(x4, y4, z);
     glEnd;
+    }
+    glBegin(GL_QUADS);
+      glTexCoord2f(TexX1*TexW, TexY1*TexH);
+      glVertex3f(x1, y1 + (y2 - (LeftScale * (y2))), z);
+      glTexCoord2f(TexX1*TexW, TexY2*TexH);
+      glVertex3f(x2, y2 - (y2 - (LeftScale * (y2))), z);
+      glTexCoord2f(TexX2*TexW, TexY2*TexH);
+      glVertex3f(x3, y3 - (y2 - (RightScale * (y2))), z);
+      glTexCoord2f(TexX2*TexW, TexY1*TexH);
+      glVertex3f(x4, y4 + (y2 - (RightScale * (y2))), z);
+    glEnd;
+
   end;
-  glDisable(GL_DEPTH_TEST); 
+  glDisable(GL_DEPTH_TEST);
   glDisable(GL_TEXTURE_2D);
 end;
 
