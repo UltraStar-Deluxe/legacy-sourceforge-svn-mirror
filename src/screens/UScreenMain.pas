@@ -64,7 +64,7 @@ type
 
 const
   { start credits after 60 seconds w/o interaction }
-  TicksUntilCredits = 60 * 1000;
+  TicksUntilCredits = 5 * 60 * 1000;
 
 implementation
 
@@ -79,6 +79,7 @@ uses
   UParty,
   UScreenCredits,
   USkins,
+  USong,
   UUnicodeUtils;
 
 function TScreenMain.ParseInput(PressedKey: Cardinal; CharCode: UCS4Char;
@@ -103,11 +104,8 @@ begin
         Exit;
       end;
       Ord('C'): begin
-        if (SDL_ModState = KMOD_LALT) then
-        begin
-          FadeTo(@ScreenCredits, SoundLib.Start);
-          Exit;
-        end;
+         FadeTo(@ScreenCredits, SoundLib.Start);
+         Exit;
       end;
       Ord('M'): begin
         if (Ini.Players >= 1) and (Party.ModesAvailable) then
@@ -159,6 +157,9 @@ begin
 
       SDLK_RETURN:
       begin
+        // reset
+        Party.bPartyGame := false;
+
         //Solo
         if (Interaction = 0) then
         begin
@@ -181,25 +182,38 @@ begin
             ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));
         end;
 
-        //Multi
+        //Party
         if Interaction = 1 then
         begin
           if (Songs.SongList.Count >= 1) then
           begin
+            Party.bPartyGame := true;
+
             FadeTo(@ScreenPartyOptions, SoundLib.Start);
           end
           else //show error message, No Songs Loaded
             ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));
         end;
 
-        //Stats
+        //Jukebox
         if Interaction = 2 then
+        begin
+          if (Songs.SongList.Count >= 1) then
+          begin
+// disable for now            FadeTo(@ScreenJukeboxPlaylist, SoundLib.Start);
+          end
+          else //show error message, No Songs Loaded
+            ScreenPopupError.ShowPopup(Language.Translate('ERROR_NO_SONGS'));
+        end;
+
+        //Stats
+        if Interaction = 3 then
         begin
           FadeTo(@ScreenStatMain, SoundLib.Start);
         end;
 
         //Editor
-        if Interaction = 3 then
+        if Interaction = 4 then
         begin
           {$IFDEF UseMIDIPort}
           FadeTo(@ScreenEdit, SoundLib.Start);
@@ -209,13 +223,19 @@ begin
         end;
 
         //Options
-        if Interaction = 4 then
+        if Interaction = 5 then
         begin
           FadeTo(@ScreenOptions, SoundLib.Start);
         end;
 
+        //About
+        if Interaction = 6 then
+        begin
+// disable for now          FadeTo(@ScreenAbout, SoundLib.Start);
+        end;
+
         //Exit
-        if Interaction = 5 then
+        if Interaction = 7 then
         begin
           Result := false;
         end;
@@ -266,9 +286,11 @@ begin
 
   AddButton(Theme.Main.ButtonSolo);
   AddButton(Theme.Main.ButtonMulti);
+// disable for now  AddButton(Theme.Main.ButtonJukebox);
   AddButton(Theme.Main.ButtonStat);
   AddButton(Theme.Main.ButtonEditor);
   AddButton(Theme.Main.ButtonOptions);
+// disable for now  AddButton(Theme.Main.ButtonAbout);
   AddButton(Theme.Main.ButtonExit);
 
   Interaction := 0;
@@ -279,6 +301,8 @@ begin
   inherited;
 
   SoundLib.StartBgMusic;
+
+  ScreenSong.Mode := smNormal;
 
  {**
   * Clean up TPartyGame here
@@ -298,7 +322,7 @@ begin
   if (UserInteractionTicks + TicksUntilCredits < SDL_GetTicks) then
   begin
     FadeTo(@ScreenCredits, SoundLib.Start);
-  end;  
+  end;
 end;
 
 procedure TScreenMain.SetInteraction(Num: integer);
