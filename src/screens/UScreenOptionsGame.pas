@@ -45,7 +45,13 @@ uses
 
 type
   TScreenOptionsGame = class(TMenu)
+    private
+      procedure ReloadScreens;
+
     public
+      ActualLanguage: integer;
+      ActualSongMenu: integer;
+
       old_Tabs, old_Sorting: integer;
       constructor Create; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
@@ -56,9 +62,10 @@ type
 implementation
 
 uses
+  SysUtils,
   UGraphic,
-  UUnicodeUtils,
-  SysUtils;
+  UScreenSong,
+  UUnicodeUtils;
 
 function TScreenOptionsGame.ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean;
 begin
@@ -73,12 +80,13 @@ begin
           Exit;
         end;
     end;
-    
+
     // check special keys
     case PressedKey of
       SDLK_ESCAPE,
       SDLK_BACKSPACE :
         begin
+          ReloadScreens;
           AudioPlayback.PlaySound(SoundLib.Back);
           RefreshSongs;
           FadeTo(@ScreenOptions);
@@ -87,6 +95,7 @@ begin
         begin
           if SelInteraction = 6 then
           begin
+            ReloadScreens;
             AudioPlayback.PlaySound(SoundLib.Back);
             RefreshSongs;
             FadeTo(@ScreenOptions);
@@ -137,7 +146,11 @@ begin
   Theme.OptionsGame.SelectLanguage.showArrows  := true;
   Theme.OptionsGame.SelectLanguage.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsGame.SelectLanguage,   Ini.Language,   ILanguageTranslated);
-
+{
+  Theme.OptionsGame.SelectSongMenu.showArrows  := true;
+  Theme.OptionsGame.SelectSongMenu.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsGame.SelectSongMenu,   Ini.SongMenu,   ISongMenuTranslated);
+}
   Theme.OptionsGame.SelectTabs.showArrows  := true;
   Theme.OptionsGame.SelectTabs.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsGame.SelectTabs,       Ini.Tabs,       ITabsTranslated);
@@ -145,16 +158,19 @@ begin
   Theme.OptionsGame.SelectSorting.showArrows  := true;
   Theme.OptionsGame.SelectSorting.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsGame.SelectSorting,    Ini.Sorting,    ISortingTranslated);
-
+{
+  Theme.OptionsGame.SelectShowScores.showArrows  := true;
+  Theme.OptionsGame.SelectShowScores.oneItemOnly := true;
+  AddSelectSlide(Theme.OptionsGame.SelectShowScores, Ini.ShowScores, IShowScoresTranslated);
+}
   Theme.OptionsGame.SelectDebug.showArrows  := true;
   Theme.OptionsGame.SelectDebug.oneItemOnly := true;
   AddSelectSlide(Theme.OptionsGame.SelectDebug,      Ini.Debug,      IDebugTranslated);
 
-
-
   AddButton(Theme.OptionsGame.ButtonExit);
   if (Length(Button[0].Text) = 0) then
     AddButtonText(20, 5, Theme.Options.Description[7]);
+//    AddButtonText(20, 5, Theme.Options.Description[10]);
 
 end;
 
@@ -169,7 +185,47 @@ procedure TScreenOptionsGame.OnShow;
 begin
   inherited;
 
-//  Interaction := 0;
+  ActualLanguage := Ini.Language;
+// for later addition  ActualSongMenu := Ini.SongMenu;
+
+  Interaction := 0;
+end;
+
+procedure TScreenOptionsGame.ReloadScreens;
+begin
+{ for later adding
+  if(ActualSongMenu <> Ini.SongMenu) then
+  begin
+    Theme.ThemeSongLoad;
+
+    ScreenSong.Free;
+    ScreenSong := TScreenSong.Create;
+  end;
+}
+  // Reload all screens, after language change
+  if (ActualLanguage <> Ini.Language) then
+  begin
+{
+    //Language.ChangeLanguage(ILanguage[Ini.Language]);
+    Ini.Save;
+
+    Language.Free;
+    Language := TLanguage.Create;
+
+    Ini.Free;
+    Ini := TIni.Create;
+    //Ini.Load;
+
+    Theme.Free;
+    Theme := TTheme.Create;
+
+    Menu.Free;
+    Menu := TMenu.Create;
+
+    UGraphic.UnLoadScreens();
+    UGraphic.LoadScreens(true);
+}
+  end;
 end;
 
 end.
