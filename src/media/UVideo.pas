@@ -396,8 +396,9 @@ begin
   //fCodecContext^.error_resilience := FF_ER_CAREFUL; //FF_ER_COMPLIANT;
   // allow non spec compliant speedup tricks.
 
-  fCodecContext^.flags2 := CODEC_FLAG2_FAST;
-  fCodecContext^.flags := CODEC_FLAG_LOW_DELAY;
+  //fCodecContext^.flags2 := CODEC_FLAG2_FAST;
+  if not (FileName.GetExtension().ToUTF8() = '.avi' )then
+    fCodecContext^.flags := CODEC_FLAG_LOW_DELAY;  //ffmpeg has a bug here when playing certain avi files
 
   // Note: avcodec_open() and avcodec_close() are not thread-safe and will
   // fail if called concurrently by different threads.
@@ -538,7 +539,7 @@ begin
   glBindTexture(GL_TEXTURE_2D, fFrameTex);
   glTexImage2D(GL_TEXTURE_2D, 0, 3, fTexWidth, fTexHeight, 0,
       PIXEL_FMT_OPENGL, GL_UNSIGNED_BYTE, nil);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
   fOpened := true;
