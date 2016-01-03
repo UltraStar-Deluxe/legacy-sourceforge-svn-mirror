@@ -207,7 +207,6 @@ begin
   // get rankings for current round
   Ranking := Party.Rounds[Party.CurrentRound].Ranking;
 
-
   {//Set Statics Length
   Statics[StaticTeam1].Texture.ScaleW := ScreenSingModi.PlayerInfo.Playerinfo[0].Percentage / 100;
   Statics[StaticTeam2].Texture.ScaleW := ScreenSingModi.PlayerInfo.Playerinfo[1].Percentage / 100;

@@ -904,6 +904,8 @@ type
     procedure ThemeSaveText(ThemeText: TThemeText; const Name: string);
     procedure ThemeSaveTexts(ThemeText: AThemeText; const Name: string);
     procedure ThemeSaveButton(ThemeButton: TThemeButton; const Name: string);
+
+//    procedure ThemeSongLoad;
   end;
 
   TColor = record
@@ -1171,6 +1173,8 @@ begin
       ThemeLoadButton(Level.ButtonMedium, 'LevelButtonMedium');
       ThemeLoadButton(Level.ButtonHard, 'LevelButtonHard');
 
+      //Song
+//      ThemeSongLoad();
 
       // Song
       ThemeLoadBasic(Song, 'Song');
@@ -2583,6 +2587,215 @@ begin
   for T := 0 to High(ThemeButton.Text) do
     ThemeSaveText(ThemeButton.Text[T], Name + 'Text' + IntToStr(T+1));
 end;
+
+{
+procedure TTheme.ThemeSongLoad;
+var
+  I, C: integer;
+  prefix: string;
+begin
+  case (TSongMenuMode(Ini.SongMenu)) of
+    smRoulette: prefix := 'Roulette';
+    smChessboard: prefix := 'Chessboard';
+    smCarousel: prefix := 'Carousel';
+    smSlotMachine: prefix := 'SlotMachine';
+    smSlide: prefix := 'Slide';
+    smList: prefix := 'List';
+    smMosaic: prefix := 'Mosaic';
+  end;
+
+  ThemeIni := TMemIniFile.Create(Themes[Ini.Theme].FileName.ToNative);
+
+  // Song
+  ThemeLoadBasic(Song, 'Song' + prefix);
+
+  ThemeLoadText(Song.TextArtist, 'Song' + prefix + 'TextArtist');
+  ThemeLoadText(Song.TextTitle, 'Song' + prefix + 'TextTitle');
+  ThemeLoadText(Song.TextNumber, 'Song' + prefix + 'TextNumber');
+  ThemeLoadText(Song.TextYear, 'Song' + prefix + 'TextYear');
+
+  // medley playlist
+  Song.TextMedleyMax := ThemeIni.ReadInteger('Song' + prefix + 'TextMedleyMax', 'N', 4);
+
+  SetLength(Song.TextArtistMedley, Song.TextMedleyMax);
+  SetLength(Song.TextTitleMedley, Song.TextMedleyMax);
+  SetLength(Song.TextNumberMedley, Song.TextMedleyMax);
+  SetLength(Song.StaticMedley, Song.TextMedleyMax);
+
+  for I := 0 to Song.TextMedleyMax - 1 do
+  begin
+    ThemeLoadText(Song.TextArtistMedley[I], 'Song' + prefix + 'TextMedleyArtist' + IntToStr(I + 1));
+    ThemeLoadText(Song.TextTitleMedley[I], 'Song' + prefix + 'TextMedleyTitle' + IntToStr(I + 1));
+    ThemeLoadText(Song.TextNumberMedley[I], 'Song' + prefix + 'TextMedleyNumber' + IntToStr(I + 1));
+    ThemeLoadStatic(Song.StaticMedley[I], 'Song' + prefix + 'StaticMedley' + IntToStr(I + 1));
+  end;
+
+  //Video Icon Mod
+  ThemeLoadStatic(Song.VideoIcon, 'Song' + prefix + 'VideoIcon');
+
+  //Medley Icons
+  ThemeLoadStatic(Song.MedleyIcon, 'Song' + prefix + 'MedleyIcon');
+  ThemeLoadStatic(Song.CalculatedMedleyIcon, 'Song' + prefix + 'CalculatedMedleyIcon');
+
+  //Duet Icon
+  ThemeLoadStatic(Song.DuetIcon, 'Song' + prefix + 'DuetIcon');
+
+  //Show Cat in TopLeft Mod
+  ThemeLoadStatic(Song.StaticCat, 'Song' + prefix + 'StaticCat');
+  ThemeLoadText(Song.TextCat, 'Song' + prefix + 'TextCat');
+
+  //Load Cover Pos and Size from Theme Mod
+  Song.Cover.X := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'X', 300);
+  Song.Cover.Y := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'Y', 190);
+  Song.Cover.W := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'W', 300);
+  Song.Cover.H := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'H', 200);
+
+  // 0 - roulette
+  // 1 - chessboard
+  // 2 - carousel
+  // 3 - slotmachine
+  // 4 - slide
+  // 5 - list
+  // 6 - mosaic
+  
+  if (TSongMenuMode(Ini.SongMenu) in [smChessboard, smMosaic]) then
+  begin
+    Song.Cover.Rows := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'Rows', 4);
+    Song.Cover.Cols := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'Cols', 4);
+    Song.Cover.Padding := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'Padding', 0);
+    Song.Cover.SelectX := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectX', 300);
+    Song.Cover.SelectY := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectY', 120);
+    Song.Cover.SelectW := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectW', 325);
+    Song.Cover.SelectH := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectH', 200);
+    Song.Cover.SelectReflection := ThemeIni.ReadBool('Song' + prefix + 'Cover', 'SelectReflection', false);
+    Song.Cover.SelectReflectionSpacing := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectReflectionSpacing', 0);
+    Song.Cover.ZoomThumbW := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'ZoomThumbW', 120);
+    Song.Cover.ZoomThumbH := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'ZoomThumbH', 120);
+    Song.Cover.ZoomThumbStyle := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'ZoomThumbStyle', 0);
+    Song.Cover.Tex := ThemeIni.ReadString('Song' + prefix + 'Cover',  'Text', '');
+  end;
+
+  if (TSongMenuMode(Ini.SongMenu) in [smCarousel, smSlide]) then
+  begin
+    Song.Cover.Padding := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'Padding', 60);
+  end;
+
+  if (TSongMenuMode(Ini.SongMenu) = smList) then
+  begin
+    Song.Cover.SelectX := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectX', 300);
+    Song.Cover.SelectY := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectY', 120);
+    Song.Cover.SelectW := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectW', 325);
+    Song.Cover.SelectH := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectH', 200);
+    Song.Cover.SelectReflection := ThemeIni.ReadBool('Song' + prefix + 'Cover', 'SelectReflection', false);
+    Song.Cover.SelectReflectionSpacing := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'SelectReflectionSpacing', 0);
+    Song.Cover.Padding := ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'Padding', 4);
+
+    Song.ListCover.Rows := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'Rows', 5);
+    Song.ListCover.X := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'X', 300);
+    Song.ListCover.Y := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'Y', 120);
+    Song.ListCover.W := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'W', 325);
+    Song.ListCover.H := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'H', 200);
+    Song.ListCover.Z := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'Z', 1);
+    Song.ListCover.Reflection := ThemeIni.ReadBool('Song' + prefix + 'SelectSong', 'Reflection', false);
+    Song.ListCover.ReflectionSpacing := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'ReflectionSpacing', 0);
+    Song.ListCover.Padding := ThemeIni.ReadInteger('Song' + prefix + 'SelectSong', 'Padding', 4);
+
+    Song.ListCover.Typ   := ParseTextureType(ThemeIni.ReadString('Song' + prefix + 'SelectSong', 'Type', ''), TEXTURE_TYPE_PLAIN);
+    Song.ListCover.Tex := ThemeIni.ReadString('Song' + prefix + 'SelectSong', 'Tex', '');
+    Song.ListCover.DTex := ThemeIni.ReadString('Song' + prefix + 'SelectSong', 'DTex', '');
+
+    Song.ListCover.Color := ThemeIni.ReadString('Song' + prefix + 'SelectSong', 'Color', '');
+
+    C := ColorExists(Song.ListCover.Color);
+    if C >= 0 then
+    begin
+      Song.ListCover.ColR := Color[C].RGB.R;
+      Song.ListCover.ColG := Color[C].RGB.G;
+      Song.ListCover.ColB := Color[C].RGB.B;
+    end;
+
+    Song.ListCover.DColor := ThemeIni.ReadString('Song' + prefix + 'SelectSong', 'DColor', '');
+
+    C := ColorExists(Song.ListCover.DColor);
+    if C >= 0 then
+    begin
+      Song.ListCover.DColR := Color[C].RGB.R;
+      Song.ListCover.DColG := Color[C].RGB.G;
+      Song.ListCover.DColB := Color[C].RGB.B;
+    end;
+
+  end;
+
+  //  Song.Cover.Style := ThemeIni.ReadInteger('SongCover', 'Style', 4);
+  Song.Cover.Reflections := (ThemeIni.ReadInteger('Song' + prefix + 'Cover', 'Reflections', 0) = 1);
+  //Load Cover Pos and Size from Theme Mod End
+
+  ThemeLoadEqualizer(Song.Equalizer, 'Song' + prefix + 'Equalizer');
+
+  //Screen Song Scores
+  ThemeLoadText(Song.TextScore, 'Song' + prefix + 'TextScore');
+  ThemeLoadText(Song.TextMaxScore, 'Song' + prefix + 'TextMaxScore');
+  ThemeLoadText(Song.TextMediaScore, 'Song' + prefix + 'TextMediaScore');
+  ThemeLoadText(Song.TextMaxScore2, 'Song' + prefix + 'TextMaxScore2');
+  ThemeLoadText(Song.TextMediaScore2, 'Song' + prefix + 'TextMediaScore2');
+  ThemeLoadText(Song.TextScoreUser, 'Song' + prefix + 'TextScoreUser');
+  ThemeLoadText(Song.TextMaxScoreLocal, 'Song' + prefix + 'TextMaxScoreLocal');
+  ThemeLoadText(Song.TextMediaScoreLocal, 'Song' + prefix + 'TextMediaScoreLocal');
+  ThemeLoadText(Song.TextScoreUserLocal, 'Song' + prefix + 'TextScoreUserLocal');
+
+  //Party and Non Party specific Statics and Texts
+  ThemeLoadStatics (Song.StaticParty, 'Song' + prefix + 'StaticParty');
+  ThemeLoadTexts (Song.TextParty, 'Song' + prefix + 'TextParty');
+
+  ThemeLoadStatics (Song.StaticNonParty, 'Song' + prefix + 'StaticNonParty');
+  ThemeLoadTexts (Song.TextNonParty, 'Song' + prefix + 'TextNonParty');
+
+  // Duet Singers
+  ThemeLoadStatic (Song.Static2PlayersDuetSingerP1, 'Song' + prefix + 'Static2PlayersDuetSingerP1');
+  ThemeLoadStatic (Song.Static2PlayersDuetSingerP2, 'Song' + prefix + 'Static2PlayersDuetSingerP2');
+  ThemeLoadText (Song.Text2PlayersDuetSingerP1, 'Song' + prefix + 'Text2PlayersDuetSingerP1');
+  ThemeLoadText (Song.Text2PlayersDuetSingerP2, 'Song' + prefix + 'Text2PlayersDuetSingerP2');
+
+  ThemeLoadStatic (Song.Static3PlayersDuetSingerP1, 'Song' + prefix + 'Static3PlayersDuetSingerP1');
+  ThemeLoadStatic (Song.Static3PlayersDuetSingerP2, 'Song' + prefix + 'Static3PlayersDuetSingerP2');
+  ThemeLoadStatic (Song.Static3PlayersDuetSingerP3, 'Song' + prefix + 'Static3PlayersDuetSingerP3');
+  ThemeLoadText (Song.Text3PlayersDuetSingerP1, 'Song' + prefix + 'Text3PlayersDuetSingerP1');
+  ThemeLoadText (Song.Text3PlayersDuetSingerP2, 'Song' + prefix + 'Text3PlayersDuetSingerP2');
+  ThemeLoadText (Song.Text3PlayersDuetSingerP3, 'Song' + prefix + 'Text3PlayersDuetSingerP3');
+
+  // 4/6 players 1 screen
+  ThemeLoadStatic (Song.Static4PlayersDuetSingerP3, 'Song' + prefix + 'Static4PlayersDuetSingerP3');
+  ThemeLoadStatic (Song.Static4PlayersDuetSingerP4, 'Song' + prefix + 'Static4PlayersDuetSingerP4');
+
+  ThemeLoadStatic (Song.Static6PlayersDuetSingerP4, 'Song' + prefix + 'Static6PlayersDuetSingerP4');
+  ThemeLoadStatic (Song.Static6PlayersDuetSingerP5, 'Song' + prefix + 'Static6PlayersDuetSingerP5');
+  ThemeLoadStatic (Song.Static6PlayersDuetSingerP6, 'Song' + prefix + 'Static6PlayersDuetSingerP6');
+
+  //Party Mode
+  ThemeLoadStatic(Song.StaticTeam1Joker1, 'Song' + prefix + 'StaticTeam1Joker1');
+  ThemeLoadStatic(Song.StaticTeam1Joker2, 'Song' + prefix + 'StaticTeam1Joker2');
+  ThemeLoadStatic(Song.StaticTeam1Joker3, 'Song' + prefix + 'StaticTeam1Joker3');
+  ThemeLoadStatic(Song.StaticTeam1Joker4, 'Song' + prefix + 'StaticTeam1Joker4');
+  ThemeLoadStatic(Song.StaticTeam1Joker5, 'Song' + prefix + 'StaticTeam1Joker5');
+
+  ThemeLoadStatic(Song.StaticTeam2Joker1, 'Song' + prefix + 'StaticTeam2Joker1');
+  ThemeLoadStatic(Song.StaticTeam2Joker2, 'Song' + prefix + 'StaticTeam2Joker2');
+  ThemeLoadStatic(Song.StaticTeam2Joker3, 'Song' + prefix + 'StaticTeam2Joker3');
+  ThemeLoadStatic(Song.StaticTeam2Joker4, 'Song' + prefix + 'StaticTeam2Joker4');
+  ThemeLoadStatic(Song.StaticTeam2Joker5, 'Song' + prefix + 'StaticTeam2Joker5');
+
+  ThemeLoadStatic(Song.StaticTeam3Joker1, 'Song' + prefix + 'StaticTeam3Joker1');
+  ThemeLoadStatic(Song.StaticTeam3Joker2, 'Song' + prefix + 'StaticTeam3Joker2');
+  ThemeLoadStatic(Song.StaticTeam3Joker3, 'Song' + prefix + 'StaticTeam3Joker3');
+  ThemeLoadStatic(Song.StaticTeam3Joker4, 'Song' + prefix + 'StaticTeam3Joker4');
+  ThemeLoadStatic(Song.StaticTeam3Joker5, 'Song' + prefix + 'StaticTeam3Joker5');
+
+  ThemeLoadText (Song.TextPartyTime, 'Song' + prefix + 'TextPartyTime');
+
+  ThemeLoadText (Song.InfoMessageText, 'Song' + prefix + 'InfoMessageText');
+  ThemeLoadStatic (Song.InfoMessageBG, 'Song' + prefix + 'InfoMessageBG');
+end;
+}
 
 procedure TTheme.CreateThemeObjects();
 begin

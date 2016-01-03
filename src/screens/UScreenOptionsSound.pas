@@ -98,6 +98,7 @@ begin
       SDLK_RIGHT:
       begin
         if (SelInteraction >= 0) and (SelInteraction < 6) then
+//        if (SelInteraction >= 0) and (SelInteraction < 8) then
         begin
           AudioPlayback.PlaySound(SoundLib.Option);
           InteractInc;
@@ -106,6 +107,7 @@ begin
       SDLK_LEFT:
       begin
         if (SelInteraction >= 0) and (SelInteraction < 6) then
+//        if (SelInteraction >= 0) and (SelInteraction < 8) then
         begin
           AudioPlayback.PlaySound(SoundLib.Option);
           InteractDec;
@@ -164,6 +166,7 @@ begin
   AddButton(Theme.OptionsSound.ButtonExit);
   if (Length(Button[0].Text) = 0) then
     AddButtonText(20, 5, Theme.Options.Description[7]);
+//    AddButtonText(20, 5, Theme.Options.Description[10]);
 
   Interaction := 0;
 end;

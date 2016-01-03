@@ -92,7 +92,7 @@ type
 
   { textures for playerstatics of seconds screen players }
   TPlayerStaticTexture = record
-    Tex: TTexture;    
+    Tex: TTexture;
   end;
 
   TScreenScore = class(TMenu)
@@ -291,7 +291,7 @@ end;
 procedure TScreenScore.RefreshTexts;
 var
   P: integer;
-  
+
 begin
   if ActualRound < Length(PlaylistMedley.Stats) - 1 then
   begin
@@ -537,8 +537,6 @@ begin
     for Counter := 0 to High(Theme.Score.PlayerStatic[Player]) do
       PlayerStatic[Player, Counter]      := AddStatic(Theme.Score.PlayerStatic[Player, Counter]);
 
-    
-
     for Counter := 0 to High(Theme.Score.PlayerTexts[Player]) do
       PlayerTexts[Player, Counter]       := AddText(Theme.Score.PlayerTexts[Player, Counter]);
 
@@ -658,7 +656,7 @@ procedure TScreenScore.DrawPlayerBars;
   var
     I: integer;
 begin
-  for I := 0 to PlayersPlay-1 do
+  for I := 0 to PlayersPlay - 1 do
   begin
     if (PlayerPositionMap[I].Position > 0) and ((ScreenAct = PlayerPositionMap[I].Screen) or (PlayerPositionMap[I].BothScreens)) then
     begin
@@ -699,7 +697,7 @@ begin
   inherited;
 
   ActualRound := 0;
-  if ScreenSong.Mode = smMedley then
+  if (ScreenSong.Mode = smMedley) then
   begin
     for P := 0 to PlayersPlay - 1 do
       Player[P] := PlaylistMedley.Stats[ActualRound].Player[P];

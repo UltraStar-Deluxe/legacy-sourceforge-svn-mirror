@@ -339,7 +339,7 @@ begin
       end;
     end;
 
-    Theme.OptionsRecord.SelectThreshold.showArrows := true;
+    Theme.OptionsRecord.SelectThreshold.showArrows := true; //basisbit TODO
     Theme.OptionsRecord.SelectThreshold.oneItemOnly := true;
     AddSelectSlide(Theme.OptionsRecord.SelectThreshold, Ini.ThresholdIndex, IThreshold);
 
@@ -353,6 +353,7 @@ begin
   AddButton(Theme.OptionsRecord.ButtonExit);
   if (Length(Button[0].Text) = 0) then
     AddButtonText(20, 5, Theme.Options.Description[7]);
+//    AddButtonText(20, 5, Theme.Options.Description[10]);
   // store InteractionID
   if (Length(AudioInputProcessor.DeviceList) > 0) then
     ExitButtonIID := MaxChannelCount + 4

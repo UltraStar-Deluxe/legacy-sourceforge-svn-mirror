@@ -202,7 +202,7 @@ begin
   if Party.ModesAvailable then
   begin
     UpdateInterface;
-    
+
     ModeList := Party.GetAvailableModes;
     SetLength(IModeNames, Length(ModeList));
     SetLength(IModeIds, Length(ModeList));

@@ -34,7 +34,7 @@ interface
 {$I switches.inc}
 
 uses
-  SysUtils, 
+  SysUtils,
   SDL,
   UDisplay,
   UFiles,
@@ -56,7 +56,7 @@ implementation
 
 uses
   UCommon,
-  UGraphic, 
+  UGraphic,
   UIni,
   UNote,
   UTexture,

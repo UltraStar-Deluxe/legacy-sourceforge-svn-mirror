@@ -145,7 +145,7 @@ type
 
 const
   Funky_Text: string =
-    'Grandma Deluxe has arrived! Thanks to Corvus5 for the massive work on UltraStar, Wome for the nice tune you are hearing, '+
+    'Grandma Deluxe v2 has arrived! Thanks to Corvus5, brian-ch, brunzelchen, canni0, k-m_schindler, whiteshark0, BasisBit and the USDX WP team for the massive work on UltraStar and USDX, Wome for the nice tune you are hearing, '+
     'all the people who put massive effort and work in new songs (do not forget UltraStar w/o songs would be nothing), ppl from '+
     'irc helping us - eBandit and Gabari, scene ppl who really helped instead of compiling and running away. Greetings to DennisTheMenace for betatesting, '+
     'Demoscene.tv, pouet.net, KakiArts, Sourceforge,..';

@@ -174,6 +174,7 @@ begin
   AddButton(Theme.StatDetail.ButtonExit);
   if (Length(Button[3].Text)=0) then
     AddButtonText(14, 20, Theme.Options.Description[7]);
+//    AddButtonText(14, 20, Theme.Options.Description[9]);
 
   Interaction := 0;
   Typ := TStatType(0);

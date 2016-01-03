@@ -134,6 +134,7 @@ begin
   AddButton(Theme.OptionsLyrics.ButtonExit);
   if (Length(Button[0].Text)=0) then
     AddButtonText(20, 5, Theme.Options.Description[7]);
+//    AddButtonText(20, 5, Theme.Options.Description[10]);
 
 end;
 

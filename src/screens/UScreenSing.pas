@@ -585,7 +585,7 @@ end;
 
 procedure TScreenSing.onShowFinish;
 begin
-  // hide cursor on singscreen show    
+  // hide cursor on singscreen show
   Display.SetCursor;
 
   // prepare music
