@@ -44,6 +44,7 @@ type
   TScreenLoading = class(TMenu)
     public
       Fadeout: boolean;
+      TextDescription: integer;
 
       constructor Create; override;
       procedure OnShow; override;
