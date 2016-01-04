@@ -544,6 +544,8 @@ begin
       end;
 
       SetLength(Lines, 0);
+      SetLength(Lines, 2);
+{ for later Duet addition
       if (CurLine[1] = 'P') then
       begin
         CurrentSong.isDuet := true;
@@ -552,6 +554,7 @@ begin
       end
       else
         SetLength(Lines, 1);
+}
 
       for Count := 0 to High(Lines) do
       begin
@@ -640,6 +643,10 @@ begin
           end;
 
           // add notes
+          if not Both then
+            // P1
+            ParseNote(CP, Param0, (Param1+Rel[CP]) * Mult, Param2 * Mult, Param3, ParamLyric)
+{ for later replacement
           if (CP <> 2) then
           begin
             // P1
@@ -650,8 +657,7 @@ begin
               FileNamePath.ToNative+' Line:'+IntToStr(FileLineNo));
               Break;
             end;
-            ParseNote(CP, Param0, (Param1+Rel[CP]) * Mult, Param2 * Mult, Param3, ParamLyric);
-          end
+}
           else
           begin
             // P1 + P2
@@ -669,8 +675,12 @@ begin
             Param2 := ParseLyricIntParam(CurLine, LinePos); // read one more data for relative system
 
           // new sentence
+          if not Both then
+            // P1
+{ for later addition
           if not CurrentSong.isDuet then
             // one singer
+}
             NewSentence(CP, (Param1 + Rel[CP]) * Mult, Param2)
           else
           begin
@@ -1739,7 +1749,7 @@ begin
     CurrentSong := self;
 { add with Duet 
     Result := Result and LoadSong(DuetChange);
-}
+
     if Result then
     begin
       //Medley and Duet - is it possible? Perhaps later...
@@ -1748,6 +1758,7 @@ begin
       else
         Self.Medley.Source := msNone;
     end;
+}
 
   finally
     SongFile.Free;
