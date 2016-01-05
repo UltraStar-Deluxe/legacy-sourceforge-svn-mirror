@@ -286,11 +286,11 @@ begin
 
   AddButton(Theme.Main.ButtonSolo);
   AddButton(Theme.Main.ButtonMulti);
-// disable for now  AddButton(Theme.Main.ButtonJukebox);
+  AddButton(Theme.Main.ButtonJukebox);
   AddButton(Theme.Main.ButtonStat);
   AddButton(Theme.Main.ButtonEditor);
   AddButton(Theme.Main.ButtonOptions);
-// disable for now  AddButton(Theme.Main.ButtonAbout);
+  AddButton(Theme.Main.ButtonAbout);
   AddButton(Theme.Main.ButtonExit);
 
   Interaction := 0;

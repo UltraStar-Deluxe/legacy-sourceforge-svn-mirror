@@ -251,15 +251,17 @@ type
   TThemeMain = class(TThemeBasic)
     ButtonSolo:       TThemeButton;
     ButtonMulti:      TThemeButton;
+    ButtonJukebox:    TThemeButton;
     ButtonStat:       TThemeButton;
     ButtonEditor:     TThemeButton;
     ButtonOptions:    TThemeButton;
+    ButtonAbout:      TThemeButton;
     ButtonExit:       TThemeButton;
 
     TextDescription:      TThemeText;
     TextDescriptionLong:  TThemeText;
-    Description:          array[0..5] of UTF8String;
-    DescriptionLong:      array[0..5] of UTF8String;
+    Description:          array[0..7] of UTF8String;
+    DescriptionLong:      array[0..7] of UTF8String;
   end;
 
   TThemeName = class(TThemeBasic)
@@ -780,6 +782,14 @@ type
     SelectRound: array [0..6] of TThemeSelectSlide;
   end;
 
+  //About
+  TThemeAboutMain = class(TThemeBasic)
+    ButtonCredits:    TThemeButton;
+    ButtonExit:       TThemeButton;
+
+    TextOverview:     TThemeText;
+  end;
+
   //Stats Screens
   TThemeStatMain = class(TThemeBasic)
     ButtonScores:     TThemeButton;
@@ -867,6 +877,9 @@ type
     PartyOptions:     TThemePartyOptions;
     PartyPlayer:      TThemePartyPlayer;
     PartyRounds:      TThemePartyRounds;
+
+    // About
+    AboutMain:        TThemeAboutMain;
 
     //Stats Screens:
     StatMain:         TThemeStatMain;
@@ -1003,6 +1016,9 @@ begin
   PartyPlayer := TThemePartyPlayer.Create;
   PartyRounds := TThemePartyRounds.Create;
 
+  // About
+  AboutMain :=   TThemeAboutMain.Create;
+
   //Stats Screens:
   StatMain :=   TThemeStatMain.Create;
   StatDetail := TThemeStatDetail.Create;
@@ -1135,9 +1151,11 @@ begin
       ThemeLoadText(Main.TextDescriptionLong, 'MainTextDescriptionLong');
       ThemeLoadButton(Main.ButtonSolo, 'MainButtonSolo');
       ThemeLoadButton(Main.ButtonMulti, 'MainButtonMulti');
+      ThemeLoadButton(Main.ButtonJukebox, 'MainButtonJukebox');
       ThemeLoadButton(Main.ButtonStat, 'MainButtonStats');
       ThemeLoadButton(Main.ButtonEditor, 'MainButtonEditor');
       ThemeLoadButton(Main.ButtonOptions, 'MainButtonOptions');
+      ThemeLoadButton(Main.ButtonAbout, 'MainButtonAbout');
       ThemeLoadButton(Main.ButtonExit, 'MainButtonExit');
 
       //Main Desc Text Translation Start
@@ -1146,14 +1164,18 @@ begin
       Main.DescriptionLong[0] := Language.Translate('SING_SING_DESC');
       Main.Description[1] := Language.Translate('SING_MULTI');
       Main.DescriptionLong[1] := Language.Translate('SING_MULTI_DESC');
-      Main.Description[2] := Language.Translate('SING_STATS');
-      Main.DescriptionLong[2] := Language.Translate('SING_STATS_DESC');
-      Main.Description[3] := Language.Translate('SING_EDITOR');
-      Main.DescriptionLong[3] := Language.Translate('SING_EDITOR_DESC');
-      Main.Description[4] := Language.Translate('SING_GAME_OPTIONS');
-      Main.DescriptionLong[4] := Language.Translate('SING_GAME_OPTIONS_DESC');
-      Main.Description[5] := Language.Translate('SING_EXIT');
-      Main.DescriptionLong[5] := Language.Translate('SING_EXIT_DESC');
+      Main.Description[2] := Language.Translate('SING_JUKEBOX');
+      Main.DescriptionLong[2] := Language.Translate('SING_JUKEBOX_DESC');
+      Main.Description[3] := Language.Translate('SING_STATS');
+      Main.DescriptionLong[3] := Language.Translate('SING_STATS_DESC');
+      Main.Description[4] := Language.Translate('SING_EDITOR');
+      Main.DescriptionLong[4] := Language.Translate('SING_EDITOR_DESC');
+      Main.Description[5] := Language.Translate('SING_GAME_OPTIONS');
+      Main.DescriptionLong[5] := Language.Translate('SING_GAME_OPTIONS_DESC');
+      Main.Description[6] := Language.Translate('SING_ABOUT');
+      Main.DescriptionLong[6] := Language.Translate('SING_ABOUT_DESC');
+      Main.Description[7] := Language.Translate('SING_EXIT');
+      Main.DescriptionLong[7] := Language.Translate('SING_EXIT_DESC');
 
       //Main Desc Text Translation End
 
@@ -1736,6 +1758,13 @@ begin
       {ThemeLoadButton(ButtonNext, 'PartyPlayerButtonNext');
       ThemeLoadButton(ButtonPrev, 'PartyPlayerButtonPrev');}
 
+      // About
+      ThemeLoadBasic(AboutMain, 'AboutMain');
+      ThemeLoadButton(AboutMain.ButtonCredits, 'AboutMainButtonCredits');
+      ThemeLoadButton(AboutMain.ButtonExit, 'AboutMainButtonExit');
+      ThemeLoadText (AboutMain.TextOverview, 'AboutMainTextOverview');
+
+      // Stats
       ThemeLoadBasic(StatMain, 'StatMain');
 
       ThemeLoadButton(StatMain.ButtonScores, 'StatMainButtonScores');
@@ -2816,9 +2845,12 @@ begin
 
   freeandnil(Sing);
   Sing := TThemeSing.Create;
-  
+
   freeandnil(Jukebox);
   Jukebox := TThemeJukebox.Create;
+
+  freeandnil(AboutMain);
+  AboutMain := TThemeAboutMain.Create;
 
   freeandnil(Score);
   Score := TThemeScore.Create;
