@@ -67,6 +67,7 @@ uses
   UScreenEditConvert,
   UScreenEditHeader,
   UScreenOpen,
+  UScreenAbout,
   UThemes,
   USkins,
   UScreenSongMenu,
@@ -129,6 +130,7 @@ var
   ScreenEditConvert:  TScreenEditConvert;
   ScreenEditHeader:   TScreenEditHeader;
   ScreenOpen:         TScreenOpen;
+  ScreenAbout:        TScreenAbout;
 
   ScreenSongMenu:     TScreenSongMenu;
   ScreenSongJumpto:     TScreenSongJumpto;
@@ -761,6 +763,9 @@ begin
   SDL_WM_SetCaption(PChar(Title + ' - Loading ScreenEditConvert & ScreenOpen'), nil);
   ScreenEditConvert :=      TScreenEditConvert.Create;
   ScreenOpen :=             TScreenOpen.Create;
+  SDL_WM_SetCaption(PChar(Title + ' - Loading ScreenAbout'), nil);
+  ScreenAbout :=             TScreenAbout.Create;
+  Log.BenchmarkEnd(3); Log.LogBenchmark('====> Screen About', 3); Log.BenchmarkStart(3);
   SDL_WM_SetCaption(PChar(Title + ' - Loading ScreenSongMenu & ScreenSongJumpto'), nil);
   ScreenSongMenu :=         TScreenSongMenu.Create;
   ScreenSongJumpto :=         TScreenSongJumpto.Create;
@@ -813,6 +818,7 @@ begin
   ScreenEdit.Free;
   ScreenEditConvert.Free;
   ScreenOpen.Free;
+  ScreenAbout.Free;
   //ScreenSingModi.Free;
   ScreenSongMenu.Free;
   ScreenSongJumpto.Free;

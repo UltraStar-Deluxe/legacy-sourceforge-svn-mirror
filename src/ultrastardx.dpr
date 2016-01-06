@@ -351,6 +351,8 @@ uses
   UScreenPartyRounds      in 'screens\UScreenPartyRounds.pas',
   UScreenPartyWin         in 'screens\UScreenPartyWin.pas',
 
+  UScreenAbout            in 'screens\UScreenAbout.pas',
+
   SysUtils;
 
 const

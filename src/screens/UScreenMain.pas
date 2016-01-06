@@ -231,7 +231,7 @@ begin
         //About
         if Interaction = 6 then
         begin
-// disable for now          FadeTo(@ScreenAbout, SoundLib.Start);
+          FadeTo(@ScreenAbout, SoundLib.Start);
         end;
 
         //Exit
