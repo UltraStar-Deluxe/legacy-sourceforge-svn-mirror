@@ -244,11 +244,12 @@ AC_SUBST_DEFINE(HAVE_SWSCALE, $libswscale_HAVE)
 
 # the first swresample header translation was in ffmpeg 2.1 (avutil 52.48.100)
 if [[ "$libavutil_VERSION_MAJOR" -gt 52 ]] || ([[ "$libavutil_VERSION_MAJOR" -eq 52 ]] && [[ "$libavutil_VERSION_MINOR" -ge 48 ]]); then
-		# find FFMpeg's swresample lib (just if FFMpeg is compiled in GPL mode)
-		PKG_HAVE([libswresample], [libswresample], no)
-		PKG_VERSION([libswresample], [libswresample])
-		AC_SUBST_DEFINE(HAVE_SWRESAMPLE, $libswresample_HAVE)
-	
+	# find FFMpeg's swresample lib (just if FFMpeg is compiled in GPL mode)
+	PKG_HAVE([libswresample], [libswresample], no)
+	PKG_VERSION([libswresample], [libswresample])
+	AC_SUBST_DEFINE(HAVE_SWRESAMPLE, $libswresample_HAVE)
+else
+	AC_SUBST_DEFINE(HAVE_SWRESAMPLE, xno)
 fi
 
 # find projectM version
