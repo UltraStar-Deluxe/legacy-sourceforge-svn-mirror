@@ -7129,7 +7129,7 @@ $as_echo "[$FFMPEG_VERSION]" >&6; }
 
 
 # the first swresample header translation was in ffmpeg 2.1 (avutil 52.48.100)
-if [ "$libavutil_VERSION_MAJOR" -gt 80 ] || ([ "$libavutil_VERSION_MAJOR" -eq 52 ] && [ "$libavutil_VERSION_MINOR" -ge 48 ]); then
+if [ "$libavutil_VERSION_MAJOR" -gt 52 ] || ([ "$libavutil_VERSION_MAJOR" -eq 52 ] && [ "$libavutil_VERSION_MINOR" -ge 48 ]); then
 		# find FFMpeg's swresample lib (just if FFMpeg is compiled in GPL mode)
 
     have_lib="no"
