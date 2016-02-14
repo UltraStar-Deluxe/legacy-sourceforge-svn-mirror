@@ -99,7 +99,9 @@ uses
       {$ENDIF}
       {$IFDEF UseSWScale}
         swscale           in 'lib\' + FFMPEG_DIR + '\swscale.pas',
-				swresample        in 'lib\' + FFMPEG_DIR + '\swresample.pas',
+      {$ENDIF}
+      {$IFDEF UseSWResample}
+        swresample          in 'lib\' + FFMPEG_DIR + '\swresample.pas',
       {$ENDIF}
     {$ELSE} // speak: This is for Delphi. Change version as needed!
       avcodec            in 'lib\ffmpeg-0.10\avcodec.pas',
@@ -109,7 +111,9 @@ uses
       avio               in 'lib\ffmpeg-0.10\avio.pas',
       {$IFDEF UseSWScale}
         swscale          in 'lib\ffmpeg-0.10\swscale.pas',
-				swresample       in 'lib\ffmpeg-0.10\swresample.pas',
+      {$ENDIF}
+      {$IFDEF UseSWResample}
+        swresample          in 'lib\ffmpeg-0.10\swresample.pas',
       {$ENDIF}
     {$ENDIF}
     UMediaCore_FFmpeg    in 'media\UMediaCore_FFmpeg.pas',

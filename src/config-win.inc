@@ -53,6 +53,14 @@
   LIBSWSCALE_VERSION_RELEASE = 101;
 {$IFEND}
 
+{$DEFINE HaveSWResample}
+{$IF Defined(HaveSWScale) and Defined(IncludeConstants)}
+  sw__resample = 'libswresample';
+  LIBSWRESAMPLE_VERSION_MAJOR   = 1;
+  LIBSWRESAMPLE_VERSION_MINOR   = 2;
+  LIBSWRESAMPLE_VERSION_RELEASE = 101;
+{$IFEND}
+
 {$DEFINE HaveProjectM}
 {$IF Defined(HaveProjectM) and Defined(IncludeConstants)}
   ProjectM_DataDir = 'Visuals\projectM';

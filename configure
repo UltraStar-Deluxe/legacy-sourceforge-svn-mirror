@@ -7128,7 +7128,9 @@ $as_echo "[$FFMPEG_VERSION]" >&6; }
 
 
 
-# find FFMpeg's swresample lib (just if FFMpeg is compiled in GPL mode)
+# the first swresample header translation was in ffmpeg 2.1 (avutil 52.48.100)
+if [ "$libavutil_VERSION_MAJOR" -gt 80 ] || ([ "$libavutil_VERSION_MAJOR" -eq 52 ] && [ "$libavutil_VERSION_MINOR" -ge 48 ]); then
+		# find FFMpeg's swresample lib (just if FFMpeg is compiled in GPL mode)
 
     have_lib="no"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libswresample" >&5
@@ -7361,6 +7363,8 @@ $as_echo "[$FFMPEG_VERSION]" >&6; }
     fi
 
 
+
+fi
 
 # find projectM version
 libprojectM_PKG="libprojectM >= 0.98"
